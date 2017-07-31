@@ -27,7 +27,7 @@ module.exports = () => {
         number: randomNumber,
         zip: address.zipCode(),
         city: address.city(),
-        ordernumber: randomNumber
+        orderNumber: randomNumber
       }
     })
   );
@@ -41,29 +41,29 @@ module.exports = () => {
       position: name.jobTitle(),
       email: faker.internet.email(),
       title: name.title(),
-      livingaddress: generateAddress(1, 2),
-      payingaddress: generateAddress(1, 3),
-      deliveryaddress: fillArray(1, 3, () => {
+      livingAddress: generateAddress(1, 2),
+      payingAddress: generateAddress(1, 3),
+      deliveryAddress: fillArray(1, 3, () => {
         return {
           country: address.countryCode(),
           street: address.streetName(),
           number: randomNumber,
           zip: address.zipCode(),
           city: address.city(),
-          ordernumber: randomNumber,
-          normaltime: {
+          orderNumber: randomNumber,
+          normalTime: {
             from: `${_.random(8, 12)}:${_.random(1, 5)}0`,
             to: `${_.random(13, 19)}:${_.random(1, 5)}0`
           }
         }
       }),
-      payingoption: fillArray(1, 5, () => {
+      payingOption: fillArray(1, 5, () => {
         return {
           type: payingOption(),
           number: finance.iban(),
           name: `${name.firstName()} ${name.lastName()}`,
           limit: finance.amount(),
-          ordernumber: randomNumber
+          orderNumber: randomNumber
         }
       }),
       birthday: {
@@ -72,24 +72,24 @@ module.exports = () => {
         year: _.random(1950, 1994)
       },
       sex: selectGender(),
-      profilepicture: faker.image.image(),
+      profilePicture: faker.image.image(),
       nationality: fillArray(1, 2, () => address.country()),
-      companyname: company.companyName(),
-      companylogo: image.business(),
-      companylegalform: company.companySuffix(),
-      companyaddress: generateAddress(1, 5),
-      companypayingaddress: generateAddress(1, 5),
-      companydeliveryaddress: generateAddress(1, 5),
-      companypayingoption: fillArray(1, 5, () => {
+      companyName: company.companyName(),
+      companyLogo: image.business(),
+      companyLegalform: company.companySuffix(),
+      companyAddress: generateAddress(1, 5),
+      companyPayingAddress: generateAddress(1, 5),
+      companyDeliveryAddress: generateAddress(1, 5),
+      companyPayingOption: fillArray(1, 5, () => {
         return {
           type: payingOption(),
           number: finance.iban(),
           name: `${name.firstName()} ${name.lastName()}`,
           limit: finance.amount(),
-          ordernumber: randomNumber
+          orderNumber: randomNumber
         }
       }),
-      yearsincompany: _.random(1, 40),
+      yearsInCompany: _.random(1, 40),
       position: fillArray(1, 5, () => name.title()),
       department: fillArray(1, 5, () => name.jobArea()),
       admin: random.boolean(),
@@ -112,37 +112,31 @@ module.exports = () => {
           text: lorem.text()
         }
       }),
-      phonenumber: fillArray(1, 4, () => phone.phoneNumber()),
-      recoveryemail: internet.email(),
+      phoneNumber: fillArray(1, 4, () => phone.phoneNumber()),
+      recoveryEmail: internet.email(),
       websites: fillArray(0, 4, () => internet.domainName()),
       languages: fillArray(1, 5, () => address.countryCode()),
       // tollskills [],
       certificates: fillArray(0, 5, () => company.bsAdjective()),
-      socialprofiles: fillArray(0, 4, () => {
+      socialProfiles: fillArray(0, 4, () => {
         return {
           site: internet.domainWord(),
           link: internet.domainName()
         }
       }),
-      accessgroups: fillArray(0, 5, () => commerce.department()),
+      accessGroups: fillArray(0, 5, () => commerce.department()),
       permissions: fillArray(0, 15, () => {
         return {
           value: _.random(1, 4),
           company: company.companyName()
         }
       }),
-      additionalcompanyapps: fillArray(0, 20, () => commerce.productName()),
-      additionalpersonalapps: fillArray(0, 20, () => commerce.productName()),
-      rights: fillArray(0, 9, () => {
-        return {
-          key: commerce.department(),
-          value: random.boolean()
-        }
-      }),
-      personalbillhistory: fillArray(0, 20, () => finance.amount()),
+      companyApps: fillArray(0, 20, () => commerce.productName()),
+      personalApps: fillArray(0, 20, () => commerce.productName()),
+      personalBillHistory: fillArray(0, 20, () => finance.amount()),
       companybillhistory: fillArray(0, 20, () => finance.amount()),
       recoveryOptionCompany: fillArray(0, 3, () => recoveryOption()),
-      recoveryoptionpersonal: fillArray(0, 3, () => recoveryOption())
+      recoveryOptionPersonal: fillArray(0, 3, () => recoveryOption())
     })
   }
   return data

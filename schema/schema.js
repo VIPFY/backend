@@ -6,8 +6,18 @@ const {
   GraphQLString,
   GraphQLInt,
   GraphQLBoolean,
-  GraphQLSchema
+  GraphQLSchema,
+  GraphQLList
 } = graphql;
+
+const BirthdayType = new GraphQLObjectType({
+  name: 'Birthday',
+  fields: {
+    day: { type: GraphQLInt },
+    month: { type: GraphQLInt },
+    year: { type: GraphQLInt }
+  }
+});
 
 const UserType = new GraphQLObjectType({
   name: 'User',
@@ -19,44 +29,44 @@ const UserType = new GraphQLObjectType({
     position: { type: GraphQLString },
     email: { type: GraphQLString },
     title: { type: GraphQLString },
-    // livingaddress [{country, city, street, number, ordernumber}],
-    // payingaddress [{country, city, street, number, ordernumber}],
-    // deliveryaddress [{country, city, street, number, normaltime{from,to}, ordernumber}],
-    // payingoption [{type, number, name, limit, ordernumber}]
-    // birthday {date, month, year},
+    livingAddress: { type: new GraphQLList(GraphQLString) },
+    payingAddress: { type: new GraphQLList(GraphQLString) },
+    deliveryAddress: { type: new GraphQLList(GraphQLString) },
+    payingOption: { type: new GraphQLList(GraphQLString) },
+    birthday: { type: BirthdayType },
     sex: { type: GraphQLString },
-    profilepicture: { type: GraphQLString },
-    // nationality [],
-    companyname: { type: GraphQLString },
-    companylogo: { type: GraphQLString },
-    companylegalform: { type: GraphQLString },
-    // companyaddress {country, city, street, number, ordernumber},
-    // companypayingaddress [{country, city, street, number, ordernumber}],
-    // companydeliveryaddress [{country, city, street, number, ordernumber}],
-    // companypayingoption [{type, number, name, limit, ordernumber}],
-    // yearsincompany { type: GraphQLInt },
-    // position [history],
-    // department [history],
-    // admin [{type, option}],
+    profilePicture: { type: GraphQLString },
+    nationality: { type: new GraphQLList(GraphQLString) },
+    companyName: { type: GraphQLString },
+    companyLogo: { type: GraphQLString },
+    companyLegalForm: { type: GraphQLString },
+    companyAddress: { type: new GraphQLList(GraphQLString) },
+    companyPayingAddress: { type: new GraphQLList(GraphQLString) },
+    companyDeliveryAddress: { type: new GraphQLList(GraphQLString) },
+    companyPayingOption: { type: new GraphQLList(GraphQLString) },
+    yearsInCompany: { type: GraphQLInt },
+    position: { type: new GraphQLList(GraphQLString) },
+    department: { type: new GraphQLList(GraphQLString) },
+    admin: { type: new GraphQLList(GraphQLString) },
     salary: { type: GraphQLInt },
-    // likes [{key, value}],
-    // dislikes [{key, value}],
-    // notifications [{type, text}],
-    // phonenumber [],
-    recoveryemail: { type: GraphQLString },
-    // websites[],
-    // languages [],
-    // tollskills [],
-    // certificates [],
-    // socialprofiles [{site, link}],
-    // accessgroups [],
-    // additionalcompanyapps [],
-    // additionalpersonalapps: [ type: GraphQLString ],
-    // rights [{key, value}],
-    // personalbillhistory [],
-    // companybillhistory [],
-    // recoveryoptioncompany [], //was erlaubt ist
-    recoveryoptionpersonal: { type: GraphQLString }  //was gewählt wurde
+    likes: { type: new GraphQLList(GraphQLString) },
+    dislikes: { type: new GraphQLList(GraphQLString) },
+    notifications: { type: new GraphQLList(GraphQLString) },
+    phoneNumber: { type: new GraphQLList(GraphQLString) },
+    recoveryEmail: { type: GraphQLString },
+    websites: { type: new GraphQLList(GraphQLString) },
+    languages: { type: new GraphQLList(GraphQLString) },
+    // softskills: { type: new GraphQLList(GraphQLString) },
+    certificates: { type: new GraphQLList(GraphQLString) },
+    socialProfiles: { type: new GraphQLList(GraphQLString) },
+    accessGroups: { type: new GraphQLList(GraphQLString) },
+    companyApps: { type: new GraphQLList(GraphQLString) },
+    personalApps: { type: new GraphQLList(GraphQLString) },
+    rights: { type: new GraphQLList(GraphQLString) },
+    personalBillHistory: { type: new GraphQLList(GraphQLString) },
+    companyBillHistory: { type: new GraphQLList(GraphQLString) },
+    recoveryOptionCompany: { type: new GraphQLList(GraphQLString) },
+    recoveryOptionPersonal: { type: GraphQLString }
   }
 });
 //Defines the entry point into a Graph
