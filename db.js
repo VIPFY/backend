@@ -3,15 +3,17 @@ var _ = require('lodash');
 
 module.exports = () => {
   const data = { users: [] }
-  const { name, address, finance, company, lorem, image, phone, internet } = faker;
-  const bool = faker.random.boolean();
+  const { name, address, finance, random, commerce, company, lorem, image, phone, internet } = faker;
   const randomNumber = faker.random.number();
 
   const payingOptions = ['VISA', 'MASTERCARD', 'PAYPAL', 'BANK']
   const payingOption = () => _.nth(payingOptions, _.random(0, 3));
 
   const gender = ['male', 'female', 'n/a'];
-  const selectGender = () => _.nth(gender, _.random(0,2));
+  const selectGender = () => _.nth(gender, _.random(0, 2));
+
+  const recoveryOptions = ['email', 'phone', 'passphrase'];
+  const recoveryOption = () => _.nth(recoveryOptions, _.random(0, 2));
 
   const fillArray = (start, end, callback) => (
     _.times(_.random(start, end), callback)
@@ -35,7 +37,7 @@ module.exports = () => {
       id: `${i}`,
       firstName: name.firstName(),
       lastName: name.lastName(),
-      referral: bool,
+      referral: random.boolean(),
       position: name.jobTitle(),
       email: faker.internet.email(),
       title: name.title(),
@@ -90,7 +92,7 @@ module.exports = () => {
       yearsincompany: _.random(1, 40),
       position: fillArray(1, 5, () => name.title()),
       department: fillArray(1, 5, () => name.jobArea()),
-      admin: bool,
+      admin: random.boolean(),
       salary: finance.amount(),
       likes: fillArray(0, 10, () => {
         return {
@@ -112,19 +114,35 @@ module.exports = () => {
       }),
       phonenumber: fillArray(1, 4, () => phone.phoneNumber()),
       recoveryemail: internet.email(),
-      // // websites[],
-      // // languages [],
-      // // tollskills [],
-      // // certificates [],
-      // // socialprofiles [{site, link}],
-      // // accessgroups [],
-      // // additionalcompanyapps [],
-      // // additionalpersonalapps: [ type: GraphQLString ],
-      // // rights [{key, value}],
-      // // personalbillhistory [],
-      // // companybillhistory [],
-      // // recoveryoptioncompany [], //was erlaubt ist
-      // recoveryoptionpersonal: { type: GraphQLString }  //was gewählt wurde
+      websites: fillArray(0, 4, () => internet.domainName()),
+      languages: fillArray(1, 5, () => address.countryCode()),
+      // tollskills [],
+      certificates: fillArray(0, 5, () => company.bsAdjective()),
+      socialprofiles: fillArray(0, 4, () => {
+        return {
+          site: internet.domainWord(),
+          link: internet.domainName()
+        }
+      }),
+      accessgroups: fillArray(0, 5, () => commerce.department()),
+      permissions: fillArray(0, 15, () => {
+        return {
+          value: _.random(1, 4),
+          company: company.companyName()
+        }
+      }),
+      additionalcompanyapps: fillArray(0, 20, () => commerce.productName()),
+      additionalpersonalapps: fillArray(0, 20, () => commerce.productName()),
+      rights: fillArray(0, 9, () => {
+        return {
+          key: commerce.department(),
+          value: random.boolean()
+        }
+      }),
+      personalbillhistory: fillArray(0, 20, () => finance.amount()),
+      companybillhistory: fillArray(0, 20, () => finance.amount()),
+      recoveryOptionCompany: fillArray(0, 3, () => recoveryOption()),
+      recoveryoptionpersonal: fillArray(0, 3, () => recoveryOption())
     })
   }
   return data
