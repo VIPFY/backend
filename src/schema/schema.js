@@ -1,17 +1,17 @@
-const graphql = require('graphql');
-const axios = require('axios');
-//These are the Types which GraphQL will use, like String, Object, ...
-const {
+import {
   GraphQLObjectType,
   GraphQLString,
+  GraphQLID,
   GraphQLInt,
   GraphQLBoolean,
   GraphQLSchema,
   GraphQLList
-} = graphql;
+} from 'graphql';
+import axios from 'axios';
 
 const BirthdayType = new GraphQLObjectType({
   name: 'Birthday',
+  description: 'The format will be dd/mm/yyyy',
   fields: {
     day: { type: GraphQLInt },
     month: { type: GraphQLInt },
@@ -21,8 +21,9 @@ const BirthdayType = new GraphQLObjectType({
 
 const UserType = new GraphQLObjectType({
   name: 'User',
+  description: 'A natural person which can work for several companies.',
   fields: {
-    id: { type: GraphQLString },
+    id: { type: GraphQLID },
     referral: { type: GraphQLBoolean },
     firstName: { type: GraphQLString },
     lastName: { type: GraphQLString },
@@ -72,20 +73,23 @@ const UserType = new GraphQLObjectType({
 //Defines the entry point into a Graph
 const RootQuery = new GraphQLObjectType({
   name: 'RootQueryType',
+  description: 'This is the Root Query',
   fields: {
-    user: {
+    users: {
       type: UserType,
       //Graphql wants the id as an argument
-      args: { id: { type: GraphQLString } },
+      args: { id: { type: GraphQLID } },
       //and will return an user with the corresponding id for it
       resolve(parentValue, args) {
-        return axios.get(`http://localhost:3004/users/${args.id}`)
+        return axios.get(`http://localhost:5432/users/${args.id}`)
           .then(resp => resp.data);
       }
     }
   }
 });
 
-module.exports = new GraphQLSchema({
+const Schema = new GraphQLSchema({
   query: RootQuery
 });
+
+export default Schema

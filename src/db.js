@@ -1,5 +1,5 @@
-var faker = require('faker');
-var _ = require('lodash');
+import faker from 'faker';
+import _ from 'lodash';
 
 module.exports = () => {
   const data = { users: [] }
