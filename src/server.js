@@ -26,11 +26,14 @@ const PORT = process.env.PORT || 4000;
 app.use(postgraphql(
   `postgres://postgres:${postgresLogin}@localhost:5432/postgres`,
   'public', //Name of the Schema that should be used
-  { graphiql: true }
+  {
+    graphiql: true,
+    enableCors: true
+    }
 ));
 
 app.listen(PORT, () => {
   console.log(`App listening on PORT ${PORT}...`);
-  console.log(`Go to localhost:${PORT}/graphql for the GraphQL-Interface.`);
+  console.log(`Go to localhost:${PORT}/graphiql for the GraphQL-Interface.`);
   console.log('Press Ctrl+C to quit.');
 });
