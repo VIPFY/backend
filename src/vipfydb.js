@@ -3,7 +3,8 @@ import _ from 'lodash';
 import Faker from 'faker';
 import { postgresLogin } from './login-data';
 
-const { name, address, finance, random, commerce, company, lorem, image, phone, internet } = Faker;
+const { name, address, date, finance, random, commerce, company, lorem, image,
+  phone, internet } = Faker;
 
 const Conn = new Sequelize(
   'postgres', //Name of the database
@@ -22,15 +23,15 @@ const User = Conn.define('user', {
     primaryKey: true,
     autoIncrement: true
   },
-  firstName: {
+  firstname: {
     type: Sequelize.STRING,
     allowNull: false
   },
-  middleName: {
+  middlename: {
     type: Sequelize.STRING,
     allowNull: false
   },
-  lastName: {
+  lastname: {
     type: Sequelize.STRING,
     allowNull: false
   },
@@ -45,7 +46,7 @@ const User = Conn.define('user', {
     },
     unique: true
   },
-  passwordHash: {
+  passwordhash: {
     type: Sequelize.STRING,
     allowNull: false
   },
@@ -56,48 +57,48 @@ const User = Conn.define('user', {
   sex: {
     type: Sequelize.CHAR(1)
   },
-  userStatus: {
+  userstatus: {
     type: Sequelize.ENUM('toverify', 'normal', 'banned', 'onlynews'),
     defaultValue: 'toverify'
   },
-  birthdayDate: {
+  birthdaydate: {
     type: Sequelize.DATEONLY
   },
-  recoveryEmail: {
+  recoveryemail: {
     type: Sequelize.STRING
   },
-  handyNumber: {
+  handynumber: {
     type: Sequelize.STRING
   },
-  telefonNumber: {
+  telefonnumber: {
     type: Sequelize.STRING
   },
-  addressCountry: {
+  addresscountry: {
     type: Sequelize.STRING
   },
-  addressState: {
+  addressstate: {
     type: Sequelize.STRING
   },
-  addressCity: {
+  addresscity: {
     type: Sequelize.STRING
   },
-  addressStreet: {
+  addressstreet: {
     type: Sequelize.STRING
   },
-  addressNumber: {
+  addressnumber: {
     type: Sequelize.INTEGER
   },
-  profilPicture: {
+  profilpicture: {
     type: Sequelize.STRING
   },
   lastactive: {
     type: Sequelize.DATE,
     defaultValue: Sequelize.NOW
   },
-  lastSecret: {
+  lastsecret: {
     type: Sequelize.STRING
   },
-  riskValue: {
+  riskvalue: {
     type: Sequelize.INTEGER
   },
   newsletter: {
@@ -112,56 +113,170 @@ const User = Conn.define('user', {
     type: Sequelize.INTEGER,
     defaultValue: 0
   },
-  resetOption: {
+  resetoption: {
     type: Sequelize.INTEGER,
     defaultValue: 0
   }
 });
 
-// const Company = define('companies', {
-//   id: {
-//     type: Sequelize.INTEGER,
-//     primaryKey: true,
-//     autoIncrement: true
-//   },
-//   name: {
-//     type: Sequelize.STRING,
-//     allowNull: false
-//   },
-//   companyLogo: {
-//     type: Sequelize.STRING
-//   },
-//   addressCountry: {
-//     type: Sequelize.STRING
-//   },
-//   addressState: {
-//     type: Sequelize.STRING
-//   },
-//   addressCity: {
-//     type: Sequelize.STRING
-//   },
-//   addressStreet: {
-//     type: Sequelize.STRING
-//   },
-//   addressnumber: {
-//     type: Sequelize.INT
-//   }
-// });
-//
+const Company = Conn.define('company', {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+    autoIncrement: true
+  },
+  name: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
+  companylogo: {
+    type: Sequelize.STRING
+  },
+  addresscountry: {
+    type: Sequelize.STRING
+  },
+  addressstate: {
+    type: Sequelize.STRING
+  },
+  addresscity: {
+    type: Sequelize.STRING
+  },
+  addressstreet: {
+    type: Sequelize.STRING
+  },
+  addressnumber: {
+    type: Sequelize.INTEGER
+  }
+}, {
+  timestamps: false
+});
+
+const Department = Conn.define('department', {
+  departmentid: {
+    type: Sequelize.INTEGER,
+    autoIncrement: true,
+    unique: true,
+    primaryKey: true
+  },
+  name: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
+  addresscountry: {
+    type: Sequelize.STRING
+  },
+  addressstate: {
+    type: Sequelize.STRING
+  },
+  addresscity: {
+    type: Sequelize.STRING
+  },
+  addressstreet: {
+    type: Sequelize.STRING
+  },
+  addressnumber: {
+    type: Sequelize.INTEGER
+  },
+  companyid: {
+    type: Sequelize.INTEGER
+  }
+}, {
+  timestamps: false
+});
+
+const Developer = Conn.define("developer", {
+  name: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
+  website: {
+    type: Sequelize.STRING
+  },
+  legalwebsite: {
+    type: Sequelize.STRING
+  },
+  bankaccount: {
+    type: Sequelize.STRING
+  }
+}, {
+  timestamps: false
+});
+
+const Review = Conn.define('review', {
+  userid: {
+    type: Sequelize.INTEGER
+  },
+  appid: {
+    type: Sequelize.INTEGER
+  },
+  reviewdate: {
+    type: Sequelize.DATE
+  },
+  stars: {
+    type: Sequelize.INTEGER
+  },
+  reviewtext: {
+    type: Sequelize.TEXT,
+    primaryKey: true
+  }
+}, {
+  timestamps: false
+});
 // // Relationships
-// Company.hasMany(Users);
+// Company.hasMany(Department);
+//
+// Department.belongsTo(Company);
 // User.belongsTo(Company);
 
 Conn.sync().then(() => {
+  // _.times(10, () => {
+  //   return User.create({
+  //     firstname: name.firstName(),
+  //     middlename: name.firstName(),
+  //     lastname: name.lastName(),
+  //     position: name.jobTitle(),
+  //     email: internet.email(),
+  //     passwordhash: random.word()
+  //   });
+  // });
+  // _.times(10, () => {
+  //   return Company.create({
+  //     name: company.companyName(),
+  //     companylogo: image.business(),
+  //     addresscountry: address.country(),
+  //     addressstate: address.state(),
+  //     addresscity: address.city(),
+  //     addressstreet: address.streetName(),
+  //     addressnumber: _.random(1, 9)
+  //   });
+  // });
+  // _.times(10, () => {
+  //   return Department.create({
+  //     name: commerce.department(),
+  //     addresscountry: address.country(),
+  //     addressstate: address.state(),
+  //     addresscity: address.city(),
+  //     addressstreet: address.streetName(),
+  //     addressnumber: _.random(1, 9),
+  //     companyid: _.random(1, 10)
+  //   });
+  // });
+  // _.times(10, () => {
+  //   return Developer.create({
+  //     name: company.companyName(),
+  //     website: internet.domainName(),
+  //     legalwebsite: internet.domainName(),
+  //     bankaccount: finance.account()
+  //   });
+  // });
   _.times(10, () => {
-    return User.create({
-      firstName: name.firstName(),
-      middleName: name.firstName(),
-      lastName: name.lastName(),
-      position: name.jobTitle(),
-      email: internet.email(),
-      passwordHash: random.word()
-    })
+    return Review.create({
+      userid: _.random(1, 15),
+      appid: _.random(1, 10),
+      reviewdate: date.past(),
+      stars: _.random(1, 5),
+      reviewtext: lorem.text()
+    });
   });
 });
 

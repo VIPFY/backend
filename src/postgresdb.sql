@@ -1,7 +1,7 @@
 Create Type userstatus AS ENUM ('toverify', 'normal', 'banned', 'onlynews');
 
 Create Table users (
-	id serial primary key,
+	id serial PRIMARY KEY,
 	email varchar(50) UNIQUE NOT NULL,
 	passwordhash char(66),
 	status userstatus NOT NULL DEFAULT 'toverify',
