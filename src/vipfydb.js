@@ -229,16 +229,24 @@ const Review = Conn.define('review', {
 // User.belongsTo(Company);
 
 Conn.sync().then(() => {
-  // _.times(10, () => {
-  //   return User.create({
-  //     firstname: name.firstName(),
-  //     middlename: name.firstName(),
-  //     lastname: name.lastName(),
-  //     position: name.jobTitle(),
-  //     email: internet.email(),
-  //     passwordhash: random.word()
-  //   });
-  // });
+  let id = 0;
+  _.times(40, () => {
+    id++;
+    return User.update(
+      { firstname: name.firstName() },
+      { middlename: name.firstName() },
+      { lastname: name.lastName() },
+       { position: name.jobTitle() },
+       { email: internet.email() },
+       { passwordhash: random.word() },
+       { profilpicture: image.avatar() },
+       { sex: _.random("male", "female") },
+       { birthdaydate: date.past() },
+       { recoveryemail: internet.email() },
+       { handynumber: phone.phoneNumber() },
+       { where: { id } }
+    ).then(() => console.log("Success"));
+  });
   // _.times(10, () => {
   //   return Company.create({
   //     name: company.companyName(),
@@ -269,15 +277,15 @@ Conn.sync().then(() => {
   //     bankaccount: finance.account()
   //   });
   // });
-  _.times(10, () => {
-    return Review.create({
-      userid: _.random(1, 15),
-      appid: _.random(1, 10),
-      reviewdate: date.past(),
-      stars: _.random(1, 5),
-      reviewtext: lorem.text()
-    });
-  });
+  // _.times(10, () => {
+  //   return Review.create({
+  //     userid: _.random(1, 15),
+  //     appid: _.random(1, 10),
+  //     reviewdate: date.past(),
+  //     stars: _.random(1, 5),
+  //     reviewtext: lorem.text()
+  //   });
+  // });
 });
 
 export default Conn;
