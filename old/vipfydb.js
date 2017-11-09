@@ -1,23 +1,34 @@
-import Sequelize from 'sequelize';
-import _ from 'lodash';
-import Faker from 'faker';
-import { postgresLogin } from './login-data';
+import Sequelize from "sequelize";
+import _ from "lodash";
+import Faker from "faker";
+import { postgresLogin } from "./login-data";
 
-const { name, address, date, finance, random, commerce, company, lorem, image,
-  phone, internet } = Faker;
+const {
+  name,
+  address,
+  date,
+  finance,
+  random,
+  commerce,
+  company,
+  lorem,
+  image,
+  phone,
+  internet
+} = Faker;
 
 const Conn = new Sequelize(
-  'postgres', //Name of the database
-  'postgres', //Username
+  "postgres", //Name of the database
+  "postgres", //Username
   postgresLogin, //Password
   {
-    dialect: 'postgres', //Which database is used
-    host: 'localhost', //The host used
-    port: '5432'
+    dialect: "postgres", //Which database is used
+    host: "localhost", //The host used
+    port: "5432"
   }
 );
 
-const User = Conn.define('user', {
+const User = Conn.define("user", {
   id: {
     type: Sequelize.INTEGER,
     primaryKey: true,
@@ -36,7 +47,7 @@ const User = Conn.define('user', {
     allowNull: false
   },
   position: {
-    type: Sequelize.STRING,
+    type: Sequelize.STRING
   },
   email: {
     type: Sequelize.STRING,
@@ -46,7 +57,7 @@ const User = Conn.define('user', {
     },
     unique: true
   },
-  passwordhash: {
+  passwordHash: {
     type: Sequelize.STRING,
     allowNull: false
   },
@@ -58,8 +69,8 @@ const User = Conn.define('user', {
     type: Sequelize.CHAR(1)
   },
   userstatus: {
-    type: Sequelize.ENUM('toverify', 'normal', 'banned', 'onlynews'),
-    defaultValue: 'toverify'
+    type: Sequelize.ENUM("toverify", "normal", "banned", "onlynews"),
+    defaultValue: "toverify"
   },
   birthdaydate: {
     type: Sequelize.DATEONLY
@@ -119,109 +130,125 @@ const User = Conn.define('user', {
   }
 });
 
-const Company = Conn.define('company', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
+const Company = Conn.define(
+  "company",
+  {
+    id: {
+      type: Sequelize.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+    name: {
+      type: Sequelize.STRING,
+      allowNull: false
+    },
+    companylogo: {
+      type: Sequelize.STRING
+    },
+    addresscountry: {
+      type: Sequelize.STRING
+    },
+    addressstate: {
+      type: Sequelize.STRING
+    },
+    addresscity: {
+      type: Sequelize.STRING
+    },
+    addressstreet: {
+      type: Sequelize.STRING
+    },
+    addressnumber: {
+      type: Sequelize.INTEGER
+    }
   },
-  name: {
-    type: Sequelize.STRING,
-    allowNull: false
-  },
-  companylogo: {
-    type: Sequelize.STRING
-  },
-  addresscountry: {
-    type: Sequelize.STRING
-  },
-  addressstate: {
-    type: Sequelize.STRING
-  },
-  addresscity: {
-    type: Sequelize.STRING
-  },
-  addressstreet: {
-    type: Sequelize.STRING
-  },
-  addressnumber: {
-    type: Sequelize.INTEGER
+  {
+    timestamps: false
   }
-}, {
-  timestamps: false
-});
+);
 
-const Department = Conn.define('department', {
-  departmentid: {
-    type: Sequelize.INTEGER,
-    autoIncrement: true,
-    unique: true,
-    primaryKey: true
+const Department = Conn.define(
+  "department",
+  {
+    departmentid: {
+      type: Sequelize.INTEGER,
+      autoIncrement: true,
+      unique: true,
+      primaryKey: true
+    },
+    name: {
+      type: Sequelize.STRING,
+      allowNull: false
+    },
+    addresscountry: {
+      type: Sequelize.STRING
+    },
+    addressstate: {
+      type: Sequelize.STRING
+    },
+    addresscity: {
+      type: Sequelize.STRING
+    },
+    addressstreet: {
+      type: Sequelize.STRING
+    },
+    addressnumber: {
+      type: Sequelize.INTEGER
+    },
+    companyid: {
+      type: Sequelize.INTEGER
+    }
   },
-  name: {
-    type: Sequelize.STRING,
-    allowNull: false
-  },
-  addresscountry: {
-    type: Sequelize.STRING
-  },
-  addressstate: {
-    type: Sequelize.STRING
-  },
-  addresscity: {
-    type: Sequelize.STRING
-  },
-  addressstreet: {
-    type: Sequelize.STRING
-  },
-  addressnumber: {
-    type: Sequelize.INTEGER
-  },
-  companyid: {
-    type: Sequelize.INTEGER
+  {
+    timestamps: false
   }
-}, {
-  timestamps: false
-});
+);
 
-const Developer = Conn.define("developer", {
-  name: {
-    type: Sequelize.STRING,
-    allowNull: false
+const Developer = Conn.define(
+  "developer",
+  {
+    name: {
+      type: Sequelize.STRING,
+      allowNull: false
+    },
+    website: {
+      type: Sequelize.STRING
+    },
+    legalwebsite: {
+      type: Sequelize.STRING
+    },
+    bankaccount: {
+      type: Sequelize.STRING
+    }
   },
-  website: {
-    type: Sequelize.STRING
-  },
-  legalwebsite: {
-    type: Sequelize.STRING
-  },
-  bankaccount: {
-    type: Sequelize.STRING
+  {
+    timestamps: false
   }
-}, {
-  timestamps: false
-});
+);
 
-const Review = Conn.define('review', {
-  userid: {
-    type: Sequelize.INTEGER
+const Review = Conn.define(
+  "review",
+  {
+    userid: {
+      type: Sequelize.INTEGER
+    },
+    appid: {
+      type: Sequelize.INTEGER
+    },
+    reviewdate: {
+      type: Sequelize.DATE
+    },
+    stars: {
+      type: Sequelize.INTEGER
+    },
+    reviewtext: {
+      type: Sequelize.TEXT,
+      primaryKey: true
+    }
   },
-  appid: {
-    type: Sequelize.INTEGER
-  },
-  reviewdate: {
-    type: Sequelize.DATE
-  },
-  stars: {
-    type: Sequelize.INTEGER
-  },
-  reviewtext: {
-    type: Sequelize.TEXT,
-    primaryKey: true
+  {
+    timestamps: false
   }
-}, {
-  timestamps: false
-});
+);
 // // Relationships
 // Company.hasMany(Department);
 //
@@ -229,23 +256,20 @@ const Review = Conn.define('review', {
 // User.belongsTo(Company);
 
 Conn.sync().then(() => {
-  let id = 0;
-  _.times(40, () => {
-    id++;
-    return User.update(
-      { firstname: name.firstName() },
-      { middlename: name.firstName() },
-      { lastname: name.lastName() },
-       { position: name.jobTitle() },
-       { email: internet.email() },
-       { passwordhash: random.word() },
-       { profilpicture: image.avatar() },
-       { sex: _.random("male", "female") },
-       { birthdaydate: date.past() },
-       { recoveryemail: internet.email() },
-       { handynumber: phone.phoneNumber() },
-       { where: { id } }
-    ).then(() => console.log("Success"));
+  _.times(1, () => {
+    return User.create({
+      firstname: name.firstName(),
+      middlename: name.firstName(),
+      lastname: name.lastName(),
+      position: name.jobTitle(),
+      email: internet.email(),
+      passwordhash: random.word(),
+      profilpicture: image.avatar(),
+      sex: _.random("male", "female"),
+      birthdayDate: date.past(),
+      recoveryEmail: internet.email(),
+      handyNumber: phone.phoneNumber()
+    });
   });
   // _.times(10, () => {
   //   return Company.create({

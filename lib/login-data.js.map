@@ -1,1 +1,0 @@
-{"version":3,"sources":["../src/login-data.js"],"names":["postgresLogin"],"mappings":";;;;;AAAO,IAAMA,wCAAgB,kBAAtB","file":"login-data.js","sourcesContent":["export const postgresLogin = \"N2InaiEj8iG8EvrJ\";\n"]}
