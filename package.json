@@ -1,13 +1,13 @@
 {
-  "name": "graphql_server_template",
+  "name": "vipfy_graphql_server",
   "version": "1.0.0",
-  "description": "",
+  "description": "A GraphQL server backend for Vipfy",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon --exec babel-node index.js"
   },
-  "author": "",
+  "author": "Gh05d",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^1.0.3",
@@ -16,9 +16,7 @@
     "graphql-server-express": "^0.8.0",
     "graphql-tools": "^1.0.0",
     "jsonwebtoken": "^8.1.0",
-    "lodash": "^4.17.4",
     "pg": "^7.4.0",
-    "postgraphql": "^3.5.1",
     "sequelize": "^4.1.0"
   },
   "devDependencies": {

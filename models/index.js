@@ -1,10 +1,10 @@
 import Sequelize from "sequelize";
-import { postgresLogin } from "../login-data";
+import { POSTGRESLOGIN } from "../login-data";
 
 const sequelize = new Sequelize(
   "postgres", //Name of the database
   "postgres", //Username
-  postgresLogin, //Password
+  POSTGRESLOGIN, //Password
   {
     dialect: "postgres", //Which database is used
     host: "localhost", //The host used
@@ -13,8 +13,16 @@ const sequelize = new Sequelize(
 );
 
 const db = {
-  user: sequelize.import("./user")
+  User: sequelize.import("./user"),
+  App: sequelize.import("./app"),
+  Developer: sequelize.import("./developer")
 };
+
+Object.keys(db).forEach(modelName => {
+  if ("associate" in db[modelName]) {
+    db[modelName].associate(db);
+  }
+});
 
 db.sequelize = sequelize;
 // db.Sequelize = Sequelize;
