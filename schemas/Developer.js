@@ -10,9 +10,9 @@ type Developer {
 
 export const queries = `
 allDevelopers: [Developer]!
-findDeveloper: Developer
+fetchDeveloper(id: Int!): Developer
 `;
 
 export const mutations = `
-  
+
 `;

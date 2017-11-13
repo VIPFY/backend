@@ -19,10 +19,30 @@ export default {
     },
     allApps: (parent, args, { models }) => models.App.findAll(),
     allDevelopers: (parent, args, { models }) => models.Developer.findAll(),
-    findDeveloper: (parent, { id }, { models, developer }) =>
+    allReviews: (parent, args, { models }) => models.Review.findAll(),
+    allAppImages: (parent, args, { models }) => models.AppImage.findAll(),
+    fetchApp: (parent, { name }, { models }) =>
+      models.App.findOne({
+        where: {
+          name
+        }
+      }),
+    fetchDeveloper: (parent, { id }, { models }) =>
       models.Developer.findOne({
         where: {
-          id: args.id
+          id
+        }
+      }),
+    fetchReview: (parent, { appid }, { models }) =>
+      models.Review.findOne({
+        where: {
+          appid
+        }
+      }),
+    fetchAppImage: (parent, { appid }, { models }) =>
+      models.AppImage.findOne({
+        where: {
+          appid
         }
       })
   },

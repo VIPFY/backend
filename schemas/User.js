@@ -6,6 +6,7 @@
 // }
 
 // userstatus(status: USER_STATUS)
+// birthday: String,
 
 export const types = `
 type User {
@@ -18,7 +19,6 @@ type User {
   lastname: String
   title: String
   sex: String
-  birthday: String,
   recoveryemail: String
   mobilenumber: String
   telefonnumber: String
@@ -43,6 +43,6 @@ me: User
 export const mutations = `
 updateUser(firstname: String!, newFirstname: String!): [Int!]!
 deleteUser(email: String!): Int!
-register(username: String!, email: String!, password: String!): User!
+register(email: String!, password: String!): User!
 login(email: String!, password: String!): String!
 `;

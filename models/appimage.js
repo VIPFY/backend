@@ -1,29 +1,27 @@
 export default (sequelize, { INTEGER, STRING }) => {
-  const App = sequelize.define(
-    "app",
+  const AppImage = sequelize.define(
+    "appimage",
     {
       id: {
         type: INTEGER,
         primaryKey: true,
         autoIncrement: true,
-        unique: true
+        allowNull: false
       },
-      name: {
+      appid: {
+        type: INTEGER,
+        allowNull: false
+      },
+      link: {
         type: STRING,
-        unique: true
+        allowNull: false
       },
-      applogo: {
-        type: STRING
-      },
-      description: {
-        type: STRING
-      },
-      developerid: {
+      sequence: {
         type: INTEGER
       }
     },
     { timestamps: false }
   );
 
-  return App;
+  return AppImage;
 };

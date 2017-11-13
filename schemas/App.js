@@ -10,9 +10,9 @@ type App {
 
 export const queries = `
 allApps: [App]!
-
+fetchApp(name: String!): App
 `;
 
 export const mutations = `
-  
+
 `;

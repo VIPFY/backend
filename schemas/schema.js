@@ -1,6 +1,8 @@
 import * as User from "./User";
 import * as App from "./App";
 import * as Developer from "./Developer";
+import * as Review from "./Review";
+import * as AppImage from "./AppImage";
 
 //Create Arrays to store the data from every schema
 const types = [];
@@ -8,7 +10,7 @@ const queries = [];
 const mutations = [];
 
 //Enter every schema into this array to map over it's data
-const schemas = [User, App, Developer];
+const schemas = [User, App, Developer, Review, AppImage];
 
 //Push the value into the corresponding Array to export it
 schemas.forEach(schema => {

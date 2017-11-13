@@ -12,10 +12,13 @@ const sequelize = new Sequelize(
   }
 );
 
+//Load the definitions
 const db = {
   User: sequelize.import("./user"),
   App: sequelize.import("./app"),
-  Developer: sequelize.import("./developer")
+  Developer: sequelize.import("./developer"),
+  Review: sequelize.import("./review"),
+  AppImage: sequelize.import("./appimage")
 };
 
 Object.keys(db).forEach(modelName => {
