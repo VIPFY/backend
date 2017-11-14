@@ -21,6 +21,12 @@ export default {
     allDevelopers: (parent, args, { models }) => models.Developer.findAll(),
     allReviews: (parent, args, { models }) => models.Review.findAll(),
     allAppImages: (parent, args, { models }) => models.AppImage.findAll(),
+    fetchUser: (parent, { id }, { models }) =>
+      models.User.findOne({
+        where: {
+          id
+        }
+      }),
     fetchApp: (parent, { name }, { models }) =>
       models.App.findOne({
         where: {

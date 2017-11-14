@@ -3,7 +3,7 @@ import bodyParser from "body-parser";
 import { graphiqlExpress, graphqlExpress } from "graphql-server-express";
 import { makeExecutableSchema } from "graphql-tools";
 //Install if problems occur
-// import cors from "cors";
+import cors from "cors";
 import jwt from "jsonwebtoken";
 
 import typeDefs from "./schemas/schema";
@@ -19,19 +19,25 @@ const schema = makeExecutableSchema({
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-const addUser = async req => {
-  const token = req.headers.authorization;
-  try {
-    const { user } = await jwt.verify(token, SECRET);
-    req.user = user;
-  } catch (err) {
-    console.log(err);
-  }
-  req.next();
-};
+// const addUser = async req => {
+//   const token = req.headers.authorization;
+//   try {
+//     const { user } = await jwt.verify(token, SECRET);
+//     req.user = user;
+//   } catch (err) {
+//     console.log(err);
+//   }
+//   req.next();
+// };
 
-// app.use(cors("*"));
-app.use(addUser);
+// enable cors
+const corsOptions = {
+  origin: "http://localhost:3000",
+  credentials: true // <-- REQUIRED backend setting
+};
+app.use(cors(corsOptions));
+
+//app.use(addUser);
 
 app.use(
   "/graphiql",

@@ -37,6 +37,7 @@ type User {
 
 export const queries = `
 allUsers: [User!]!
+fetchUser(id: Int!): User!
 me: User
 `;
 
@@ -46,3 +47,4 @@ deleteUser(email: String!): Int!
 register(email: String!, password: String!): User!
 login(email: String!, password: String!): String!
 `;
+//login will pass back a JSON Web token for authentication

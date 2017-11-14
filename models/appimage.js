@@ -8,10 +8,6 @@ export default (sequelize, { INTEGER, STRING }) => {
         autoIncrement: true,
         allowNull: false
       },
-      appid: {
-        type: INTEGER,
-        allowNull: false
-      },
       link: {
         type: STRING,
         allowNull: false
@@ -22,6 +18,10 @@ export default (sequelize, { INTEGER, STRING }) => {
     },
     { timestamps: false }
   );
+
+  AppImage.associate = models => {
+    AppImage.belongsTo(models.App, { foreignKey: "appid" });
+  };
 
   return AppImage;
 };

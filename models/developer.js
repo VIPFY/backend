@@ -1,24 +1,24 @@
-export default (sequelize, DataTypes) => {
+export default (sequelize, { INTEGER, STRING }) => {
   const Developer = sequelize.define(
     "developer",
     {
       id: {
-        type: DataTypes.INTEGER,
+        type: INTEGER,
         primaryKey: true,
         autoIncrement: true,
         unique: true
       },
       name: {
-        type: DataTypes.STRING
+        type: STRING
       },
       website: {
-        type: DataTypes.STRING
+        type: STRING
       },
       legalwebsite: {
-        type: DataTypes.STRING
+        type: STRING
       },
       bankaccount: {
-        type: DataTypes.STRING
+        type: STRING
       }
     },
     {

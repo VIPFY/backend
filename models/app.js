@@ -17,13 +17,14 @@ export default (sequelize, { INTEGER, STRING }) => {
       },
       description: {
         type: STRING
-      },
-      developerid: {
-        type: INTEGER
       }
     },
     { timestamps: false }
   );
+
+  App.associate = models => {
+    App.belongsTo(models.Developer, { foreignKey: "developerid" });
+  };
 
   return App;
 };
