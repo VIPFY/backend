@@ -6,7 +6,6 @@
 // }
 
 // userstatus(status: USER_STATUS)
-// birthday: String,
 
 export const types = `
 type User {
@@ -20,6 +19,7 @@ type User {
   title: String
   sex: String
   recoveryemail: String
+  birthday: String
   mobilenumber: String
   telefonnumber: String
   addresscountry: String
@@ -39,12 +39,14 @@ export const queries = `
 allUsers: [User!]!
 fetchUser(id: Int!): User!
 me: User
+user: User
 `;
 
 export const mutations = `
 updateUser(firstname: String!, newFirstname: String!): [Int!]!
 deleteUser(email: String!): Int!
-register(email: String!, password: String!): User!
-login(email: String!, password: String!): String!
+signUp(email: String!, password: String!): User!
+signIn(email: String!, password: String!): String!
+signOut: User!
 `;
 //login will pass back a JSON Web token for authentication

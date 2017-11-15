@@ -5,12 +5,13 @@ type Review {
   reviewdate: String
   stars: Int
   reviewtext: String
+  user: User
 }
 `;
 
 export const queries = `
 allReviews: [Review]!
-fetchReview(appid: Int!): Review
+fetchReview(appid: Int!): [Review!]
 `;
 
 export const mutations = `

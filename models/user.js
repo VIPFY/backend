@@ -27,7 +27,7 @@ export default (sequelize, { STRING, BOOLEAN, INTEGER, ENUM, DATE }) => {
     },
     title: STRING,
     sex: STRING("m", "w", "t"),
-    //birthday: DATE,
+    birthday: DATE,
     recoveryemail: STRING,
     mobilenumber: STRING,
     telefonnumber: STRING,

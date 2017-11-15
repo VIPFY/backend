@@ -9,7 +9,7 @@ type AppImage {
 
 export const queries = `
 allAppImages: [AppImage]!
-fetchAppImage(appid: Int!): AppImage
+fetchAppImages(appid: Int!): [AppImage!]
 `;
 
 export const mutations = `

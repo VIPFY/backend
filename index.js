@@ -2,10 +2,9 @@ import express from "express";
 import bodyParser from "body-parser";
 import { graphiqlExpress, graphqlExpress } from "graphql-server-express";
 import { makeExecutableSchema } from "graphql-tools";
-//Install if problems occur
 import cors from "cors";
 import jwt from "jsonwebtoken";
-
+//To create the GraphQl functions
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import models from "./models";
@@ -19,26 +18,29 @@ const schema = makeExecutableSchema({
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// const addUser = async req => {
-//   const token = req.headers.authorization;
-//   try {
-//     const { user } = await jwt.verify(token, SECRET);
-//     req.user = user;
-//   } catch (err) {
-//     console.log(err);
-//   }
-//   req.next();
-// };
+// Middleware to authenticate the user. If the user sends the authorization token
+// he receives after a successful login, everything will be fine.
+// Otherwise an error that an JSON-Webtoken is required will be thrown.
+const authMiddleware = async req => {
+  const token = req.headers.authorization;
+  try {
+    const { user } = await jwt.verify(token, SECRET);
+    req.user = user;
+  } catch (err) {
+    console.log(err);
+  }
+  req.next();
+};
+app.use(authMiddleware);
 
-// enable cors
+// Enable cors
 const corsOptions = {
   origin: "http://localhost:3000",
   credentials: true // <-- REQUIRED backend setting
 };
 app.use(cors(corsOptions));
 
-//app.use(addUser);
-
+//Enable to Graphiql Interface
 app.use(
   "/graphiql",
   graphiqlExpress({
@@ -62,6 +64,6 @@ app.use(
 models.sequelize.sync().then(() =>
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    console.log(`Go to localhost:${PORT}/graphiql for the Interface`);
+    console.log(`Go to http://localhost:${PORT}/graphiql for the Interface`);
   })
 );
