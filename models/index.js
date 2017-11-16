@@ -8,11 +8,15 @@ const sequelize = new Sequelize(
   {
     dialect: "postgres", //Which database is used
     host: "localhost", //The host used
-    port: "5432"
+    port: "5432",
+    define: {
+      timestamps: false
+    }
   }
 );
 
-//Load the definitions
+//The mapping here will be used in the resolver to access the model.
+//For example models.User
 const db = {
   User: sequelize.import("./user"),
   App: sequelize.import("./app"),

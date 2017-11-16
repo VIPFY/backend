@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import models from "./models";
-import { SECRET } from "./login-data";
+import { SECRET, SECRETTWO } from "./login-data";
 
 const schema = makeExecutableSchema({
   typeDefs,
@@ -21,19 +21,19 @@ const PORT = process.env.PORT || 4000;
 // Middleware to authenticate the user. If the user sends the authorization token
 // he receives after a successful login, everything will be fine.
 // Otherwise an error that an JSON-Webtoken is required will be thrown.
-const authMiddleware = async req => {
-  const token = req.headers.authorization;
-  try {
-    const { user } = await jwt.verify(token, SECRET);
-    req.user = user;
-  } catch (err) {
-    console.log(err);
-  }
-  req.next();
-};
-app.use(authMiddleware);
+// const authMiddleware = async req => {
+//   const token = req.headers.authorization;
+//   try {
+//     const { user } = await jwt.verify(token, SECRET);
+//     req.user = user;
+//   } catch (err) {
+//     console.log(err);
+//   }
+//   req.next();
+// };
+// app.use(authMiddleware);
 
-// Enable cors
+// Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
   origin: "http://localhost:3000",
   credentials: true // <-- REQUIRED backend setting
@@ -55,8 +55,9 @@ app.use(
     schema,
     context: {
       models,
+      user: req.user,
       SECRET,
-      user: req.user
+      SECRETTWO
     }
   }))
 );

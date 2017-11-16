@@ -33,6 +33,19 @@ type User {
   riskvalue: Int
   newsletter: Boolean
 }
+
+type RegisterResponse {
+  ok: Boolean!
+  user: User
+}
+
+type LoginResponse {
+  ok: Boolean!
+  token: String
+  refreshToken: String
+  user: User
+  error: String
+}
 `;
 
 export const queries = `
@@ -44,9 +57,9 @@ user: User
 
 export const mutations = `
 updateUser(firstname: String!, newFirstname: String!): [Int!]!
-deleteUser(email: String!): Int!
-signUp(email: String!, password: String!): User!
-signIn(email: String!, password: String!): String!
+deleteUser(id: Int!): String!
+signUp(email: String!, password: String!): RegisterResponse!
+signIn(email: String!, password: String!): LoginResponse!
 signOut: User!
 `;
 //login will pass back a JSON Web token for authentication

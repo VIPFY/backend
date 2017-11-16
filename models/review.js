@@ -1,21 +1,17 @@
 export default (sequelize, { TEXT, INTEGER, DATE }) => {
-  const Review = sequelize.define(
-    "review",
-    {
-      reviewdate: {
-        type: DATE,
-        allowNull: false
-      },
-      stars: {
-        type: INTEGER
-      },
-      reviewtext: {
-        type: TEXT,
-        primaryKey: true
-      }
+  const Review = sequelize.define("review", {
+    reviewdate: {
+      type: DATE,
+      allowNull: false
     },
-    { timestamps: false }
-  );
+    stars: {
+      type: INTEGER
+    },
+    reviewtext: {
+      type: TEXT,
+      primaryKey: true
+    }
+  });
 
   Review.associate = models => {
     Review.belongsTo(models.User, { foreignKey: "userid" });

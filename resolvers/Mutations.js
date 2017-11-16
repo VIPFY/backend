@@ -1,53 +1,39 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import _ from "lodash";
+import { tryLogin } from "../services/auth";
 
 export default {
   updateUser: (parent, { firstname, newFirstName }, { models }) =>
     models.User.update({ firstname: newFirstName }, { where: { firstname } }),
 
-  deleteUser: (parent, args, { models }) =>
-    models.User.destroy({ where: args }),
+  deleteUser: async (parent, { id }, { models }) => {
+    await models.User.destroy({ where: { id } });
+    return "User was deleted";
+  },
 
-  signUp: async (parent, args, { models }) => {
-    const user = args;
-    const email = args.email;
-
+  signUp: async (parent, { email, password }, { models }) => {
     //Check whether the email is already in use
     const emailInUse = await models.User.findOne({ where: { email } });
     if (emailInUse) throw new Error("Email already in use!");
 
-    user.password = await bcrypt.hash(user.password, 12);
-    return models.User.create(user);
+    try {
+      const passwordHash = await bcrypt.hash(password, 12);
+      const user = await models.User.create({ email, password: passwordHash });
+
+      return {
+        ok: true,
+        user
+      };
+    } catch (err) {
+      return {
+        ok: false
+      };
+    }
   },
 
-  signIn: async (parent, { email, password }, { models, SECRET }) => {
-    const user = await models.User.findOne({ where: { email } });
-
-    if (!user) {
-      throw new Error("Couldn't find an user with that email");
-    }
-
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      throw new Error("Incorrect password");
-    }
-
-    // token = '12083098123414aslkjdasldf.asdhfaskjdh12982u793.asdlfjlaskdj10283491'
-    // verify: needs secret | use me for authentication
-    // decode: no secret | use me on the client side
-    const token = jwt.sign(
-      {
-        user: _.pick(user, ["id", "email"])
-      },
-      SECRET,
-      {
-        expiresIn: "1y"
-      }
-    );
-
-    return token;
-  },
+  signIn: (parent, { email, password }, { models, SECRET, SECRETTWO }) =>
+    tryLogin(email, password, models, SECRET, SECRETTWO),
 
   signOut: (parent, args, req) => {
     const { user } = req;
