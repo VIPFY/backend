@@ -9,6 +9,7 @@ import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import models from "./models";
 import { SECRET, SECRETTWO } from "./login-data";
+import { refreshTokens } from "./services/auth";
 
 const schema = makeExecutableSchema({
   typeDefs,
@@ -20,18 +21,35 @@ const PORT = process.env.PORT || 4000;
 
 // Middleware to authenticate the user. If the user sends the authorization token
 // he receives after a successful login, everything will be fine.
-// Otherwise an error that an JSON-Webtoken is required will be thrown.
-// const authMiddleware = async req => {
-//   const token = req.headers.authorization;
-//   try {
-//     const { user } = await jwt.verify(token, SECRET);
-//     req.user = user;
-//   } catch (err) {
-//     console.log(err);
-//   }
-//   req.next();
-// };
-// app.use(authMiddleware);
+// Otherwise an error, that a JSON-Webtoken is required, will be thrown.
+const authMiddleware = async (req, res, next) => {
+  const token = req.headers["x-token"];
+  if (token) {
+    try {
+      const { user } = jwt.verify(token, SECRET);
+      req.user = user;
+    } catch (err) {
+      //If the token has expired, we use the refreshToken to assign new ones
+      const refreshToken = req.headers["x-refresh-token"];
+      const newTokens = await refreshTokens(
+        token,
+        refreshToken,
+        models,
+        SECRET,
+        SECRETTWO
+      );
+
+      if (newTokens.token && newTokens.refreshToken) {
+        res.set("Access-Control-Expose-Headers", "x-token, x-refresh-token");
+        res.set("x-token", newTokens.token);
+        res.set("x-refresh-token", newTokens.refreshToken);
+      }
+      req.user = newTokens.user;
+    }
+  }
+  next();
+};
+app.use(authMiddleware);
 
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {

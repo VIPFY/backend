@@ -2,15 +2,20 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import _ from "lodash";
 import { tryLogin } from "../services/auth";
+import { requiresAuth } from "../helpers/permissions";
 
 export default {
-  updateUser: (parent, { firstname, newFirstName }, { models }) =>
-    models.User.update({ firstname: newFirstName }, { where: { firstname } }),
+  updateUser: requiresAuth.createResolver(
+    (parent, { firstname, newFirstName }, { models }) =>
+      models.User.update({ firstname: newFirstName }, { where: { firstname } })
+  ),
 
-  deleteUser: async (parent, { id }, { models }) => {
-    await models.User.destroy({ where: { id } });
-    return "User was deleted";
-  },
+  deleteUser: requiresAuth.createResolver(
+    async (parent, { id }, { models }) => {
+      await models.User.destroy({ where: { id } });
+      return "User was deleted";
+    }
+  ),
 
   signUp: async (parent, { email, password }, { models }) => {
     //Check whether the email is already in use
