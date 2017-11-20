@@ -12,10 +12,10 @@ export default (sequelize, { STRING, BOOLEAN, INTEGER, ENUM, DATE }) => {
       allowNull: false
     },
     password: STRING,
-    // userstatus: {
-    //   type: ENUM("toverify", "normal", "banned", "onlynews"),
-    //   defaultValue: "toverify"
-    // },
+    userstatus: {
+      type: ENUM("toverify", "normal", "banned", "onlynews"),
+      defaultValue: "toverify"
+    },
     firstname: {
       type: STRING
     },

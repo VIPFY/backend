@@ -8,6 +8,7 @@
 // userstatus(status: USER_STATUS)
 
 export const types = `
+# An user needs an unique email and will be given an auto-generated id
 type User {
   id: Int!
   email: String!
@@ -16,6 +17,7 @@ type User {
   firstname: String
   middlename: String
   lastname: String
+  userstatus: String
   title: String
   sex: String
   recoveryemail: String
@@ -34,11 +36,14 @@ type User {
   newsletter: Boolean
 }
 
+# If the registration was successful, a boolean will be given back
 type RegisterResponse {
   ok: Boolean!
   user: User
+  error: String
 }
 
+# The user receives tokens upon a successful login
 type LoginResponse {
   ok: Boolean!
   token: String
@@ -58,8 +63,11 @@ user: User
 export const mutations = `
 updateUser(firstname: String!, newFirstname: String!): [Int!]!
 deleteUser(id: Int!): String!
-signUp(email: String!, password: String!): RegisterResponse!
+# Only an email is required for the signup
+signUp(email: String!, newsletter: Boolean!): RegisterResponse!
+# The user will be passed back a JSON Web token for authentication
 signIn(email: String!, password: String!): LoginResponse!
 signOut: User!
+# After confirming the email, an user has to set a password
+signUpConfirm(email: String!, password: String!): RegisterResponse!
 `;
-//login will pass back a JSON Web token for authentication
