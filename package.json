@@ -4,12 +4,13 @@
   "description": "A GraphQL server backend for Vipfy",
   "main": "index.js",
   "scripts": {
-    "test": "nodemon --exec babel-node login-data.js",
+    "test": "nodemon --exec babel-node helpers/test.js",
     "start": "nodemon --exec babel-node index.js"
   },
   "author": "Gh05d",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.17.1",
     "bcrypt": "^1.0.3",
     "body-parser": "^1.17.2",
     "express": "^4.15.3",

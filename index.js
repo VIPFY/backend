@@ -11,6 +11,7 @@ import models from "./models";
 import { SECRET, SECRETTWO } from "./login-data";
 import { refreshTokens } from "./services/auth";
 
+const request = require("request");
 const schema = makeExecutableSchema({
   typeDefs,
   resolvers
@@ -21,7 +22,6 @@ const PORT = process.env.PORT || 4000;
 
 // Middleware to authenticate the user. If the user sends the authorization token
 // he receives after a successful login, everything will be fine.
-// Otherwise an error, that a JSON-Webtoken is required, will be thrown.
 const authMiddleware = async (req, res, next) => {
   const token = req.headers["x-token"];
   if (token) {
