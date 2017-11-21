@@ -63,8 +63,7 @@ export default {
       );
 
       return {
-        ok: true,
-        user: emailExists
+        ok: true
       };
     } catch (err) {
       return {
@@ -76,6 +75,34 @@ export default {
 
   signIn: (parent, { email, password }, { models, SECRET, SECRETTWO }) =>
     tryLogin(email, password, models, SECRET, SECRETTWO),
+
+  forgotPassword: async (parent, { email }, { models }) => {
+    const emailExists = await models.User.findOne({ where: { email } });
+    if (!emailExists)
+      return {
+        ok: false,
+        error: "Email doesn't exist!"
+      };
+
+    try {
+      mailjet(email);
+      //Exchange this for a new solution when a proper mailjet template exists
+      const activate = await models.User.update(
+        { userstatus: "toverify" },
+        { where: { email } }
+      );
+
+      return {
+        ok: true,
+        email
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        error: err
+      };
+    }
+  },
 
   signOut: (parent, args, req) => {
     const { user } = req;

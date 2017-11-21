@@ -39,8 +39,8 @@ type User {
 # If the registration was successful, a boolean will be given back
 type RegisterResponse {
   ok: Boolean!
-  user: User
   error: String
+  email: String
 }
 
 # The user receives tokens upon a successful login
@@ -70,4 +70,6 @@ signIn(email: String!, password: String!): LoginResponse!
 signOut: User!
 # After confirming the email, an user has to set a password
 signUpConfirm(email: String!, password: String!): RegisterResponse!
+# Send the user a new link for sign up
+forgotPassword(email: String!): RegisterResponse!
 `;
