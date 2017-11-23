@@ -6,3 +6,7 @@ export const MAILJET_SECRET = "0552bafc1751d7dd4f565f6d131e96e1";
 export const WEEBLY_KEY = "6guugiwqell17r926t4zhsp0bsnioub9";
 export const WEEBLY_SECRET =
   "hrc94t3pv8iiz15onm13v68206elzw65l41n6gid5jk4jeji9dlnua7x9dvsyanf";
+export const SHOPIFY_KEY = "46f15947580b445d421eebdd9efdb9ff";
+export const SHOPIFY_SECRET = "28e82c873127143c39fd301901017d42";
+export const DD24_KEY = "vipfy";
+export const DD24_SECRET = "ImSureMyDegreeWillTotallyHelpMeWithThis";

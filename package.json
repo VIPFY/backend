@@ -19,7 +19,9 @@
     "jsonwebtoken": "^8.1.0",
     "node-mailjet": "^3.2.1",
     "pg": "^7.4.0",
-    "sequelize": "^4.1.0"
+    "querystring": "^0.2.0",
+    "sequelize": "^4.1.0",
+    "soap": "^0.23.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

@@ -24,6 +24,12 @@ export default {
   fetchUser: requiresAuth.createResolver((parent, { id }, { models }) =>
     models.User.findById(id)
   ),
+  fetchUserByPassword: async (parent, { password }, { models }) => {
+    const user = await models.User.findOne({
+      where: { password, userstatus: "toverify" }
+    });
+    return user.dataValues.email;
+  },
   fetchApp: (parent, { name }, { models }) =>
     models.App.findOne({
       where: {

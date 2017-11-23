@@ -51,6 +51,7 @@ type LoginResponse {
   user: User
   error: String
 }
+
 `;
 
 export const queries = `
@@ -58,6 +59,7 @@ allUsers: [User!]!
 fetchUser(id: Int!): User!
 me: User
 user: User
+fetchUserByPassword(password: String!): String!
 `;
 
 export const mutations = `

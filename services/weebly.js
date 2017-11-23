@@ -8,7 +8,9 @@ export default async (callType, endpoint, requestData) => {
   // The endpoint URL (for example, user/234256/loginLink)
   // Any request data (for example, { 'plan_id': 34 }).
   // (Don't include data in the hash if the request doesn't require it)
-  const requestString = `${callType}\n${endpoint}\n${requestData}`;
+  const jsonRequestData = JSON.stringify(requestData);
+  const requestString = await `${callType}\n${endpoint}\n${jsonRequestData}`;
+  console.log(requestString);
   const requestHash = await Utility.generateHmac(requestString, WEEBLY_SECRET);
   console.log(requestHash);
   const options = {
@@ -26,7 +28,7 @@ export default async (callType, endpoint, requestData) => {
     // }
   };
 
-  const response = axios(options).catch(err => {
+  const response = await axios(options).catch(err => {
     console.log(`Error ${err.response.status}: ${err.response.statusText}`);
     console.log(err.response.headers);
   });

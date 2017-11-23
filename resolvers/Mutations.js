@@ -27,12 +27,18 @@ export default {
       //A password musst be created because otherwise the not null rule of the
       //database is violated
       const passwordHash = await bcrypt.hash(email, 5);
+
+      //Change the given hash to improve security
+      const start = _.random(3, 8);
+      const newHash = passwordHash.replace("/", 2).substr(start);
+
       const user = await models.User.create({
         email,
         newsletter,
-        password: passwordHash
+        password: newHash
       });
-      mailjet(user.email);
+
+      mailjet(user.email, newHash);
       return {
         ok: true,
         user
@@ -84,13 +90,18 @@ export default {
         error: "Email doesn't exist!"
       };
 
+    //Change the given hash to improve security
+    const start = _.random(3, 8);
+    const newHash = await emailExists.dataValues.password
+      .replace("/", 2)
+      .substr(start);
+
+    models.User.update({ password: newHash }, { where: { email } });
+
     try {
-      mailjet(email);
+      mailjet(email, newHash);
       //Exchange this for a new solution when a proper mailjet template exists
-      const activate = await models.User.update(
-        { userstatus: "toverify" },
-        { where: { email } }
-      );
+      models.User.update({ userstatus: "toverify" }, { where: { email } });
 
       return {
         ok: true,

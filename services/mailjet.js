@@ -1,6 +1,6 @@
 import { MAILJET_KEY, MAILJET_SECRET } from "../login-data";
 
-export default email => {
+export default (email, hash) => {
   const Mailjet = require("node-mailjet").connect(
     /*process.env.MJ_APIKEY_PUBLIC,
 	process.env.MJ_APIKEY_PRIVATE*/
@@ -8,8 +8,7 @@ export default email => {
     MAILJET_SECRET
   );
 
-  const con_link = `https://vipfy-148316.appspot.com/signup/${email}`;
-  console.log(con_link);
+  const con_link = `https://vipfy-148316.appspot.com/signup/${hash}`;
   const options = {
     FromEmail: "office@vipfy.com",
     FromName: "Vipfy Office",
