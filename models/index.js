@@ -20,9 +20,13 @@ const sequelize = new Sequelize(
 const db = {
   User: sequelize.import("./user"),
   App: sequelize.import("./app"),
+  Company: sequelize.import("./company"),
+  Department: sequelize.import("./department"),
+  Employee: sequelize.import("./employee"),
   Developer: sequelize.import("./developer"),
   Review: sequelize.import("./review"),
-  AppImage: sequelize.import("./appimage")
+  AppImage: sequelize.import("./appimage"),
+  UserRight: sequelize.import("./userright")
 };
 
 Object.keys(db).forEach(modelName => {

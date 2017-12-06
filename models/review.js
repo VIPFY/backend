@@ -7,10 +7,7 @@ export default (sequelize, { TEXT, INTEGER, DATE }) => {
     stars: {
       type: INTEGER
     },
-    reviewtext: {
-      type: TEXT,
-      primaryKey: true
-    }
+    reviewtext: TEXT
   });
 
   Review.associate = models => {

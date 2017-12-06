@@ -1,7 +1,7 @@
 import soap from "soap";
 import { DD24_KEY, DD24_SECRET } from "../login-data";
 
-const apiWSDL = "https://api-ote-2.domaindiscount24.com:4424/?wsdl";
+const apiWSDL = "https://api-ote-2.domaindiscount24.net:4424/?wsdl";
 const args = {
   reseller: DD24_KEY,
   password: DD24_SECRET
@@ -24,6 +24,8 @@ const test = "http://www.webservicex.com/globalweather.asmx?WSDL";
 //   });
 
 soap.createClient(apiWSDL, (err, client) => {
+  if (err) console.log(err);
+
   client.Ping(args, (err, res) => {
     if (err) console.log(err);
     console.log("Result:", res);

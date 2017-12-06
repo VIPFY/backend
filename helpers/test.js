@@ -1,4 +1,6 @@
 import test from "../services/weebly";
+import Utility from "./createHmac";
+import { WEEBLY_KEY, WEEBLY_SECRET } from "../login-data";
 
 const queryString = JSON.stringify({
   email: "test@vipfy.com",
@@ -6,4 +8,4 @@ const queryString = JSON.stringify({
   test_mode: "true"
 });
 
-test("GET", "/account", "");
+test("GET", "account", "");
