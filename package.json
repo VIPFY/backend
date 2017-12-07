@@ -19,6 +19,7 @@
     "jsonwebtoken": "^8.1.0",
     "node-mailjet": "^3.2.1",
     "pg": "^7.4.0",
+    "pipedrive": "^3.0.2",
     "querystring": "^0.2.0",
     "sequelize": "^4.1.0",
     "soap": "^0.23.0"

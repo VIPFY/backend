@@ -64,8 +64,8 @@ export default {
         appid
       }
     }),
-  fetchUserRight: (parent, { userid }, { models }) =>
-    models.UserRight.findOne({
+  fetchUserRights: (parent, { userid }, { models }) =>
+    models.UserRight.findAll({
       where: { userid }
     })
 };

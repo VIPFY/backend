@@ -10,6 +10,8 @@ type UserRight {
 `;
 
 export const queries = `
+# Shows all User rights
 allUserRights: [UserRight!]!
-fetchUserRight(userid: Int!): UserRight!
+# Shows all the rights an user has
+fetchUserRights(userid: Int!): [UserRight!]
 `;
