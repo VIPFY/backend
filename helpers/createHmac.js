@@ -22,9 +22,10 @@ Utility.validateHmac = function(hmac, compareString, key) {
  * @returns {*}
  */
 Utility.generateHmac = function(string, key) {
+  console.log(`String: ${string}`);
   let crypt = crypto.createHmac("sha256", new Buffer(key, "utf-8"));
   crypt.update(string);
-  return crypt.digest("hex");
+  return crypt.digest("base64");
 };
 
 export default Utility;

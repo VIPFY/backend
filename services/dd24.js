@@ -1,34 +1,30 @@
 import soap from "soap";
 import { DD24_KEY, DD24_SECRET } from "../login-data";
+import _ from "lodash";
 
-const apiWSDL = "https://api-ote-2.domaindiscount24.net:4424/?wsdl";
-const args = {
-  reseller: DD24_KEY,
-  password: DD24_SECRET
+const apiWSDL = "https://api-ote-2.domaindiscount24.com:4424/?wsdl";
+const auth = {
+  params: {
+    reseller: DD24_KEY,
+    password: DD24_SECRET
+  }
 };
 
-const arg = { name: "Germany" };
-const test = "http://www.webservicex.com/globalweather.asmx?WSDL";
-// soap
-//   .createClientAsync(test)
-//   .then(client => {
-//     client.describe();
-//     return client.GetCitiesByCountry(arg);
-//   })
-//   .then(res => {
-//     console.log(res);
-//   })
-//   .catch(err => {
-//     console.log(err);
-//     client.describe();
-//   });
-
-soap.createClient(apiWSDL, (err, client) => {
-  if (err) console.log(err);
-
-  client.Ping(args, (err, res) => {
-    if (err) console.log(err);
-    console.log("Result:", res);
-    client.describe();
-  });
-});
+export default async (command, parameter) => {
+  const args = _.merge({ params: parameter }, auth);
+  // Eleminate copying mistakes
+  console.log(args);
+  const properCommand = command + "Async";
+  const result = await soap
+    .createClientAsync(apiWSDL)
+    .then(client => {
+      return client[properCommand](args)
+        .then(res => {
+          console.log(res[command + "Result"]);
+          return res[command + "Result"];
+        })
+        .catch(err => console.log(`Error: ${err}`));
+    })
+    .catch(err => console.log(err));
+  return result;
+};

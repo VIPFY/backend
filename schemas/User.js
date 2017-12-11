@@ -30,7 +30,7 @@ type User {
   addressstreet: String
   addressnumber: String
   profilepicture: String
-  lastactive: String,
+  lastactive: String
   lastsecret: String
   riskvalue: Int
   newsletter: Boolean
@@ -52,6 +52,34 @@ type LoginResponse {
   error: String
 }
 
+# The props which can be send to the DD24 Api
+input dd24 {
+  domain: String
+  alternative: Int
+  cid: String
+  period: Int
+  extension: [String]
+  rr: [String]
+  nameserver: [String]
+  ttl: Int
+  renewalmode: String
+  transferlock: Boolean
+  whoisprivacy: Boolean
+  title: String
+  firstname: String
+  lastname: String
+  organization: String
+  street: String
+  zip: String
+  city: String
+  state: String
+  country: String
+  email: String
+  phone: String
+  fax: String
+  language: String
+  vatid: String
+}
 `;
 
 export const queries = `
@@ -69,9 +97,9 @@ deleteUser(id: Int!): String!
 signUp(email: String!, newsletter: Boolean!): RegisterResponse!
 # The user will be passed back a JSON Web token for authentication
 signIn(email: String!, password: String!): LoginResponse!
-signOut: User!
 # After confirming the email, an user has to set a password
 signUpConfirm(email: String!, password: String!): RegisterResponse!
 # Send the user a new link for sign up
 forgotPassword(email: String!): RegisterResponse!
+domainStuff(command: String!, params: dd24): String
 `;

@@ -14,15 +14,15 @@ export default async (callType, endpoint, requestData) => {
       : `${callType}\n${endpoint}\n${JSON.stringify(requestData)}`;
 
   console.log(requestString);
-
   const requestHash = await Utility.generateHmac(requestString, WEEBLY_SECRET);
   console.log(requestHash);
+
   const vString = Utility.validateHmac(
     requestHash,
     requestString,
     WEEBLY_SECRET
   );
-  console.log(vString);
+
   const options = {
     method: callType,
     url: `${endpoint}`,
@@ -31,18 +31,14 @@ export default async (callType, endpoint, requestData) => {
       "Content-type": "application/json",
       "X-Public-Key": WEEBLY_KEY,
       "X-Signed-Request-Hash": requestHash
-    }
-    // data: {
-    //   email: "test@test.com",
-    //   language: "en",
-    //   test_mode: "true"
-    // }
+    },
+    data: requestData
   };
 
-  const response = await axios(options).catch(err => {
-    if (err) {
-      console.log(`Error ${err.response.status}: ${err.response.statusText}`);
-      console.log("Headers:", err.response.headers);
-    } else console.log(response);
-  });
+  axios(options)
+    .then(res => console.log(res))
+    .catch(err => {
+      console.log(`Error: ${err.response.status}`);
+      console.log(err.response.statusText);
+    });
 };

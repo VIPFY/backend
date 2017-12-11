@@ -1,20 +1,19 @@
-import test from "../services/weebly";
-import Utility from "./createHmac";
-import { WEEBLY_KEY, WEEBLY_SECRET } from "../login-data";
-
-// const queryString = JSON.stringify({
+// import test from "../services/weebly";
+//
+// const queryString = {
 //   email: "test@vipfy.com",
 //   language: "en",
 //   test_mode: "true"
-// });
+// };
 //
-// test("GET", "account", "");
+// test("POST", "user", queryString);
 
-import {
-  fetchOrganization,
-  deleteOrganization,
-  createSubscription
-} from "../services/pipedrive";
+// ===========================================================================
+// import {
+//   fetchOrganization,
+//   deleteOrganization,
+//   createSubscription
+// } from "../services/pipedrive";
 
 // const testCompany = {
 //   initiator: {
@@ -40,3 +39,36 @@ import {
 // }
 //
 // createSubscription(testCompany);
+//=============================================================================
+import dd24Api from "../services/dd24";
+
+const test = {
+  domain: "vipfy.it"
+};
+
+//checkDomain(test);
+dd24Api("CheckDomain", test);
+// queryDomainExtensions(test);
+// addDomain(test);
+
+// ============================================================================
+// import axios from "axios";
+// import { SHOPIFY_KEY, SHOPIFY_SECRET } from "../login-data";
+//
+// const config = {
+//   method: "get",
+//   url: `https://${SHOPIFY_KEY}:${
+//     SHOPIFY_SECRET
+//   }@vipfy-test.myshopify.com/admin/products.json`
+//   // data: {
+//   //   product: {
+//   //     title: "App6",
+//   //     vendor: "User1",
+//   //     product_type: "App"
+//   //   }
+//   // }
+// };
+//
+// axios(config)
+//   .then(res => console.log(res.data.products))
+//   .catch(err => console.log(err.response.data));

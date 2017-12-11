@@ -4,6 +4,7 @@ import _ from "lodash";
 import { tryLogin } from "../services/auth";
 import { requiresAuth } from "../helpers/permissions";
 import mailjet from "../services/mailjet";
+import dd24Api from "../services/dd24";
 
 export default {
   updateUser: requiresAuth.createResolver(
@@ -114,10 +115,8 @@ export default {
       };
     }
   },
-
-  signOut: (parent, args, req) => {
-    const { user } = req;
-    // req.logout();
-    return user;
+  domainStuff: async (parent, { command, params }, { models }) => {
+    const result = await dd24Api(command, params);
+    return result.description;
   }
 };

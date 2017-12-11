@@ -11,5 +11,5 @@ export const WEEBLY_SECRET =
 export const SHOPIFY_KEY = "46f15947580b445d421eebdd9efdb9ff";
 export const SHOPIFY_SECRET = "28e82c873127143c39fd301901017d42";
 export const DD24_KEY = "vipfy";
-export const DD24_SECRET = "ImSureMyDegreeWillTotallyHelpMeWithThis";
+export const DD24_SECRET = "ImSureMyDegreeWillTotallyHelpMeWithThis>.<";
 export const PIPEDRIVE_KEY = "dd54a293b57549a06a3a9e935bed17b20880389c";
