@@ -117,6 +117,7 @@ export default {
   },
   domainStuff: async (parent, { command, params }, { models }) => {
     const result = await dd24Api(command, params);
-    return result.description;
+    console.log(result);
+    return result;
   }
 };

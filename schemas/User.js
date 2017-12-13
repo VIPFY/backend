@@ -1,12 +1,3 @@
-// enum USER_STATUS {
-//   toverify,
-//   normal,
-//   banned,
-//   onlynews
-// }
-
-// userstatus(status: USER_STATUS)
-
 export const types = `
 # An user needs an unique email and will be given an auto-generated id
 type User {
@@ -34,6 +25,15 @@ type User {
   lastsecret: String
   riskvalue: Int
   newsletter: Boolean
+  userstatus: USER_STATUS
+}
+
+# An user must have one of these stati
+enum USER_STATUS {
+  toverify,
+  normal,
+  banned,
+  onlynews
 }
 
 # If the registration was successful, a boolean will be given back
@@ -50,35 +50,6 @@ type LoginResponse {
   refreshToken: String
   user: User
   error: String
-}
-
-# The props which can be send to the DD24 Api
-input dd24 {
-  domain: String
-  alternative: Int
-  cid: String
-  period: Int
-  extension: [String]
-  rr: [String]
-  nameserver: [String]
-  ttl: Int
-  renewalmode: String
-  transferlock: Boolean
-  whoisprivacy: Boolean
-  title: String
-  firstname: String
-  lastname: String
-  organization: String
-  street: String
-  zip: String
-  city: String
-  state: String
-  country: String
-  email: String
-  phone: String
-  fax: String
-  language: String
-  vatid: String
 }
 `;
 
@@ -101,5 +72,4 @@ signIn(email: String!, password: String!): LoginResponse!
 signUpConfirm(email: String!, password: String!): RegisterResponse!
 # Send the user a new link for sign up
 forgotPassword(email: String!): RegisterResponse!
-domainStuff(command: String!, params: dd24): String
 `;
