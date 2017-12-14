@@ -30,9 +30,9 @@ export default async (callType, endpoint, requestData) => {
     headers: {
       "Content-type": "application/json",
       "X-Public-Key": WEEBLY_KEY,
-      "X-Signed-Request-Hash": requestHash
+      "X-Signed-Request-Hash": "cJ9QYRqgusjiVAYsyS9Rp6R/z/jXBBBqf/WgY0tsmPM=" //requestHash
     },
-    data: requestData
+    data: JSON.stringify(requestData)
   };
 
   axios(options)
@@ -40,5 +40,6 @@ export default async (callType, endpoint, requestData) => {
     .catch(err => {
       console.log(`Error: ${err.response.status}`);
       console.log(err.response.statusText);
+      console.log(err);
     });
 };

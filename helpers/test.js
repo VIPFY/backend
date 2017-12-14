@@ -1,12 +1,12 @@
-// import test from "../services/weebly";
-//
-// const queryString = {
-//   email: "test@vipfy.com",
-//   language: "en",
-//   test_mode: "true"
-// };
-//
-// test("POST", "user", queryString);
+import test from "../services/weebly";
+
+const queryString = {
+  email: "test@vipfy.com",
+  language: "en",
+  test_mode: "true"
+};
+
+test("POST", "user", queryString);
 
 // ===========================================================================
 // import {
@@ -40,18 +40,6 @@
 //
 // createSubscription(testCompany);
 //=============================================================================
-import dd24Api from "../services/dd24";
-
-const test = {
-  domain: "vipfy.it"
-};
-
-//checkDomain(test);
-dd24Api("CheckDomain", test);
-// queryDomainExtensions(test);
-// addDomain(test);
-
-// ============================================================================
 // import axios from "axios";
 // import { SHOPIFY_KEY, SHOPIFY_SECRET } from "../login-data";
 //

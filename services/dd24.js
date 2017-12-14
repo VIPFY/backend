@@ -11,7 +11,8 @@ const auth = {
 };
 
 export default async (command, parameter) => {
-  const args = _.merge({ params: parameter }, auth);
+  // Copy bad inside good, otherwise => End of days!
+  const args = _.merge(auth, { params: parameter });
   // Eleminate copying mistakes
   const properCommand = command + "Async";
   const result = await soap
