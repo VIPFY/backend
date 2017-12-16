@@ -92,7 +92,6 @@ input rrInput {
 # Extensions to be send to the API
 input extensionInput {
   x_de_accept_trustee_tac: Int
-
 }
 `;
 

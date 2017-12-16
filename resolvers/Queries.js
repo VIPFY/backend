@@ -64,8 +64,12 @@ export default {
         appid
       }
     }),
-  fetchUserRights: (parent, { userid }, { models }) =>
-    models.UserRight.findAll({
+  fetchUserRights: (parent, { userid }, { models }) => {
+    return models.UserRight.findAll({
       where: { userid }
-    })
+    });
+  },
+  fetchPlans: (parent, { appid }, { models }) => {
+    return models.Plan.findAll({ where: { appid } });
+  }
 };

@@ -115,9 +115,11 @@ export default {
       };
     }
   },
-  domainStuff: async (parent, { command, params }, { models }) => {
-    const result = await dd24Api(command, params);
-    console.log(result);
-    return result;
-  }
+  domainStuff: requiresAuth.createResolver(
+    async (parent, { command, params }, { models }) => {
+      const result = await dd24Api(command, params);
+      console.log(result);
+      return result;
+    }
+  )
 };

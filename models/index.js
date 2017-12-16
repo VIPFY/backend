@@ -26,7 +26,8 @@ const db = {
   Developer: sequelize.import("./developer"),
   Review: sequelize.import("./review"),
   AppImage: sequelize.import("./appimage"),
-  UserRight: sequelize.import("./userright")
+  UserRight: sequelize.import("./userright"),
+  Plan: sequelize.import("./plan")
 };
 
 Object.keys(db).forEach(modelName => {
