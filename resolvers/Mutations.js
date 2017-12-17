@@ -115,11 +115,9 @@ export default {
       };
     }
   },
-  domainStuff: requiresAuth.createResolver(
-    async (parent, { command, params }, { models }) => {
-      const result = await dd24Api(command, params);
-      console.log(result);
-      return result;
-    }
-  )
+  domainCommands: async (parent, { command, params }, { models }) => {
+    const result = await dd24Api(command, params);
+    console.log(result);
+    return result;
+  }
 };

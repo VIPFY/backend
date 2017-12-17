@@ -4,7 +4,7 @@ type dd24Response {
   code: Int!
   description: String!
   availability: Int
-  alternative: String
+  alternative: [String]
   extension: String
   realtime: Int
   cid: String
@@ -25,6 +25,8 @@ type dd24Response {
   subclass: String
   object: String
   objecttype: String
+  onetimepassword: String
+  loginuri: String
 }
 
 # Data of a specific event
@@ -37,7 +39,7 @@ type eventResponse {
 input dd24 {
   domain: String
   rr: [rrInput]
-  alternative: Int
+  alternative: String
   cid: String
   period: Int
   extensions: extensionInput
@@ -101,5 +103,5 @@ export const queries = `
 
 export const mutations = `
 # Command has to be written like this: CheckDomain, params should be an Object
-domainStuff(command: String!, params: dd24): dd24Response!
+domainCommands(command: String!, params: dd24): dd24Response!
 `;
