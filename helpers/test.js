@@ -1,9 +1,7 @@
 import test from "../services/weebly";
 
 const queryString = {
-  email: "test@vipfy.com",
-  language: "en",
-  test_mode: "true"
+  email: "jf@vipfy.com"
 };
 
 test("POST", "user", queryString);

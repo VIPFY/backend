@@ -16,6 +16,7 @@ type Plan {
 
 export const queries = `
 fetchPlans(appid: Int!): [Plan]!
+fetchPrice(appid: Int!): Plan!
 `;
 
 export const mutations = ``;

@@ -25,7 +25,7 @@ Utility.generateHmac = function(string, key) {
   console.log(`String: ${string}`);
   let crypt = crypto.createHmac("sha256", new Buffer(key, "utf-8"));
   crypt.update(string);
-  return crypt.digest("base64");
+  return new Buffer(crypt.digest("hex")).toString("base64");
 };
 
 export default Utility;

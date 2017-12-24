@@ -71,5 +71,8 @@ export default {
   },
   fetchPlans: (parent, { appid }, { models }) => {
     return models.Plan.findAll({ where: { appid } });
+  },
+  fetchPrice: (parent, { appid }, { models }) => {
+    return models.Plan.findOne({ where: { appid } });
   }
 };
