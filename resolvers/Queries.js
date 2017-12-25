@@ -19,16 +19,24 @@ export default {
   }),
   allApps: (parent, args, { models }) => models.App.findAll(),
   allCompanies: (parent, args, { models }) => models.Company.findAll(),
-  allDepartments: (parent, args, { models }) => models.Department.findAll(),
-  allEmployees: (parent, args, { models }) => models.Employee.findAll(),
+  allDepartments: requiresAuth.createResolver((parent, args, { models }) =>
+    models.Department.findAll()
+  ),
+  allEmployees: requiresAuth.createResolver((parent, args, { models }) =>
+    models.Employee.findAll()
+  ),
   allDevelopers: (parent, args, { models }) => models.Developer.findAll(),
-  fetchDepartmentsByCompanyId: (parent, { companyId }, { models }) =>
-    models.Department.findAll({
-      where: { companyid: companyId }
-    }),
+  fetchDepartmentsByCompanyId: requiresAuth.createResolver(
+    (parent, { companyId }, { models }) =>
+      models.Department.findAll({
+        where: { companyid: companyId }
+      })
+  ),
   allReviews: (parent, args, { models }) => models.Review.findAll(),
   allAppImages: (parent, args, { models }) => models.AppImage.findAll(),
-  allUserRights: (parent, args, { models }) => models.UserRight.findAll(),
+  allUserRights: requiresAuth.createResolver((parent, args, { models }) =>
+    models.UserRight.findAll()
+  ),
   fetchUser: requiresAuth.createResolver((parent, { id }, { models }) =>
     models.User.findById(id)
   ),
@@ -48,10 +56,11 @@ export default {
   fetchCompany: (parent, { id }, { models }) => models.Company.findById(id),
   fetchDepartment: (parent, { departmentId }, { models }) =>
     models.Department.findById(departmentId),
-  fetchEmployee: (parent, { userId }, { models }) =>
+  fetchEmployee: requiresAuth.createResolver((parent, { userId }, { models }) =>
     models.Employee.findOne({
       where: { userid: userId }
-    }),
+    })
+  ),
   fetchReview: (parent, args, { models }) =>
     models.Review.findAll({
       where: {
@@ -64,11 +73,13 @@ export default {
         appid
       }
     }),
-  fetchUserRights: (parent, { userid }, { models }) => {
-    return models.UserRight.findAll({
-      where: { userid }
-    });
-  },
+  fetchUserRights: requiresAuth.createResolver(
+    (parent, { userid }, { models }) => {
+      return models.UserRight.findAll({
+        where: { userid }
+      });
+    }
+  ),
   fetchPlans: (parent, { appid }, { models }) => {
     return models.Plan.findAll({ where: { appid } });
   },

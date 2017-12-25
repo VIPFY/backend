@@ -115,9 +115,18 @@ export default {
       };
     }
   },
-  domainCommands: async (parent, { command, params }, { models }) => {
-    const result = await dd24Api(command, params);
-    console.log(result);
-    return result;
+
+  domainCommands: async (parent, { command, params, agb }, { models }) => {
+    if (command != "AddDomain" || (command = "AddDomain" && agb)) {
+      const result = await dd24Api(command, params);
+      console.log(result);
+      return result;
+    } else {
+      return {
+        error: "AGB's not accepted!",
+        code: 600,
+        description: ""
+      };
+    }
   }
 };

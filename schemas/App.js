@@ -5,6 +5,7 @@ type App {
   applogo: String
   description: String
   developerid: Int!
+  modaltype: Int
 }
 `;
 

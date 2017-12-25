@@ -15,6 +15,9 @@ export default (sequelize, { INTEGER, STRING }) => {
     },
     description: {
       type: STRING
+    },
+    modaltype: {
+      type: INTEGER
     }
   });
 

@@ -27,6 +27,7 @@ type dd24Response {
   objecttype: String
   onetimepassword: String
   loginuri: String
+  error: String
 }
 
 # Data of a specific event
