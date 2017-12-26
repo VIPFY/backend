@@ -1,11 +1,5 @@
 export default (sequelize, { STRING, INTEGER }) => {
   const Company = sequelize.define("company", {
-    id: {
-      type: INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-      unique: true
-    },
     name: STRING,
     companylogo: STRING,
     addresscountry: STRING,

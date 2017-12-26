@@ -1,11 +1,5 @@
 export default (sequelize, { STRING, INTEGER }) => {
   const Plan = sequelize.define("plan", {
-    id: {
-      type: INTEGER,
-      unique: true,
-      primaryKey: true,
-      autoIncrement: true
-    },
     description: STRING,
     renewalplan: STRING,
     period: INTEGER,

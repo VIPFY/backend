@@ -74,16 +74,26 @@ export default {
       }
     }),
   fetchUserRights: requiresAuth.createResolver(
-    (parent, { userid }, { models }) => {
-      return models.UserRight.findAll({
+    (parent, { userid }, { models }) =>
+      models.UserRight.findAll({
         where: { userid }
-      });
-    }
+      })
   ),
-  fetchPlans: (parent, { appid }, { models }) => {
-    return models.Plan.findAll({ where: { appid } });
-  },
-  fetchPrice: (parent, { appid }, { models }) => {
-    return models.Plan.findOne({ where: { appid } });
+  fetchPlans: (parent, { appid }, { models }) =>
+    models.Plan.findAll({ where: { appid } }),
+  fetchPrice: (parent, { appid }, { models }) =>
+    models.Plan.findOne({ where: { appid } }),
+
+  // Notifcation Queries
+  fetchSentNotifications: (parent, { userid }, { models }) =>
+    models.Notification.findAll({ where: { fromuser: userid } }),
+
+  fetchReceivedNotifications: (parent, { userid, sender }, { models }) => {
+    if (sender == "User") {
+      console.log(sender);
+      return models.Notification.findAll({ where: { touser: userid } });
+    } else if (sender == "App") {
+      return models.AppNotification.findAll({ where: { touser: userid } });
+    }
   }
 };

@@ -1,23 +1,19 @@
 export default (sequelize, { INTEGER, STRING }) => {
   const Developer = sequelize.define("developer", {
-    id: {
-      type: INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-      unique: true
-    },
-    name: {
-      type: STRING
-    },
+    name: STRING,
     website: {
-      type: STRING
+      type: STRING,
+      validate: {
+        isUrl: true
+      }
     },
     legalwebsite: {
-      type: STRING
+      type: STRING,
+      validate: {
+        isUrl: true
+      }
     },
-    bankaccount: {
-      type: STRING
-    }
+    bankaccount: STRING
   });
 
   return Developer;

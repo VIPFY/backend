@@ -128,5 +128,35 @@ export default {
         description: ""
       };
     }
+  },
+
+  setDeleteStatus: async (parent, { id }, { models }) => {
+    const deleted = await models.Notification.update(
+      { deleted: true },
+      { where: { id } }
+    );
+
+    return "Set on delete";
+  },
+
+  setSenderDeleteStatus: async (parent, { id }, { models }) => {
+    const deleted = models.Notification.update(
+      { senderdeleted: true },
+      { where: { id } }
+    );
+
+    return "Set on delete";
+  },
+
+  setReadtime: async (parent, { id }, { models }) => {
+    const read = await models.Notification.findById(id);
+
+    if (!read.readtime) {
+      const now = Date.now();
+      await models.Notification.update({ readtime: now }, { where: { id } });
+      return now;
+    } else {
+      return "Message already read";
+    }
   }
 };

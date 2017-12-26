@@ -10,6 +10,8 @@ import * as Employee from "./Employee";
 import * as UserRight from "./UserRight";
 import * as DD24 from "./DD24";
 import * as Plan from "./Plan";
+import * as Notification from "./Notification";
+import * as AppNotification from "./AppNotification";
 
 //Create Arrays to store the data from every schema
 const types = [];
@@ -29,7 +31,9 @@ const schemas = [
   UserRight,
   Err,
   DD24,
-  Plan
+  Plan,
+  Notification,
+  AppNotification
 ];
 
 //Push the value into the corresponding Array to export it

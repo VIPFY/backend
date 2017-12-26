@@ -4,7 +4,7 @@ type User {
   id: Int!
   email: String!
   createdAt: String!
-  updatedAt: String!
+  updatedAt: String
   firstname: String
   middlename: String
   lastname: String
@@ -55,7 +55,7 @@ type LoginResponse {
 
 export const queries = `
 allUsers: [User!]!
-fetchUser(id: Int!): User!
+fetchUser(id: Int!): User
 me: User
 user: User
 fetchUserByPassword(password: String!): String!

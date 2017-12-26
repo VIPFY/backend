@@ -1,14 +1,21 @@
-import { findUser, findApp } from "./CommonResolvers";
+import {
+  findUser,
+  findApp,
+  findUserNotification,
+  findAppNotification
+} from "./CommonResolvers";
 import Query from "./Queries";
 import Mutation from "./Mutations";
 
 const resolvers = {};
 
+resolvers.Query = Query;
+resolvers.Mutation = Mutation;
 resolvers.Employee = findUser;
 resolvers.Plan = findApp;
 resolvers.Review = findUser;
 resolvers.UserRight = findUser;
-resolvers.Query = Query;
-resolvers.Mutation = Mutation;
+resolvers.Notification = findUserNotification;
+resolvers.AppNotification = findAppNotification;
 
 export default resolvers;

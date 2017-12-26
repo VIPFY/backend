@@ -86,9 +86,12 @@ app.get("/", (req, res) =>
 );
 
 //Sync our database and run the app afterwards
-models.sequelize.sync().then(() =>
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Go to http://localhost:${PORT}/graphiql for the Interface`);
-  })
-);
+models.sequelize
+  .sync()
+  .then(() =>
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Go to http://localhost:${PORT}/graphiql for the Interface`);
+    })
+  )
+  .catch(err => console.log(err));

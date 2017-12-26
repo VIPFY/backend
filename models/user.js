@@ -1,15 +1,12 @@
 export default (sequelize, { STRING, BOOLEAN, INTEGER, ENUM, DATE }) => {
   const User = sequelize.define("user", {
-    id: {
-      type: INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-      unique: true
-    },
     email: {
       type: STRING,
       unique: true,
-      allowNull: false
+      allowNull: false,
+      validate: {
+        isEmail: true
+      }
     },
     password: STRING,
     userstatus: {
@@ -26,7 +23,7 @@ export default (sequelize, { STRING, BOOLEAN, INTEGER, ENUM, DATE }) => {
       type: STRING
     },
     title: STRING,
-    sex: STRING("m", "w", "t"),
+    sex: ENUM("m", "w", "t"),
     birthday: DATE,
     recoveryemail: STRING,
     mobilenumber: STRING,
