@@ -15,3 +15,9 @@ export const findAppNotification = {
   touser: ({ touser }, args, { models }) => models.User.findById(touser),
   fromapp: ({ fromapp }, args, { models }) => models.App.findById(fromapp)
 };
+
+export const findMessages = {
+  fromapp: ({ fromapp }, args, { models }) => models.App.findById(fromapp),
+  fromuser: ({ fromuser }, args, { models }) => models.User.findById(fromuser)
+};
+

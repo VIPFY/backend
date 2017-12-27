@@ -2,7 +2,8 @@ import {
   findUser,
   findApp,
   findUserNotification,
-  findAppNotification
+  findAppNotification,
+  findMessages
 } from "./CommonResolvers";
 import Query from "./Queries";
 import Mutation from "./Mutations";
@@ -17,5 +18,6 @@ resolvers.Review = findUser;
 resolvers.UserRight = findUser;
 resolvers.Notification = findUserNotification;
 resolvers.AppNotification = findAppNotification;
+resolvers.Message = findMessages;
 
 export default resolvers;

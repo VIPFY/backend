@@ -1,4 +1,5 @@
 import { requiresAuth } from "../helpers/permissions";
+import _ from "lodash";
 
 export default {
   allUsers: requiresAuth.createResolver((parent, args, { models }) =>
@@ -90,10 +91,24 @@ export default {
 
   fetchReceivedNotifications: (parent, { userid, sender }, { models }) => {
     if (sender == "User") {
-      console.log(sender);
       return models.Notification.findAll({ where: { touser: userid } });
     } else if (sender == "App") {
       return models.AppNotification.findAll({ where: { touser: userid } });
     }
+  },
+
+  fetchMessages: async (parent, { id }, { models }) => {
+    const users = await models.Notification.findAll({
+      where: { touser: id }
+    });
+    const apps = await models.AppNotification.findAll({
+      where: { touser: id }
+    });
+
+    const result = [];
+    users.map(user => result.push(user));
+    apps.map(app => result.push(app));
+
+    return result;
   }
 };

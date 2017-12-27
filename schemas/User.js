@@ -44,32 +44,44 @@ type RegisterResponse {
 }
 
 # The user receives tokens upon a successful login
-type LoginResponse {
-  ok: Boolean!
-  token: String
-  refreshToken: String
-  user: User
-  error: String
+  type LoginResponse {
+    ok: Boolean!
+    token: String
+    refreshToken: String
+    user: User
+    error: String
 }
+
+# The messages an User receives from Apps and other Users
+ type Message {
+   # An Integer
+   type: Int!
+   # The sender of the message
+   fromuser: User
+   fromapp: App
+   sendtime: String!
+   message: String!
+ }
 `;
 
 export const queries = `
-allUsers: [User!]!
-fetchUser(id: Int!): User
-me: User
-user: User
-fetchUserByPassword(password: String!): String!
+  allUsers: [User!]!
+  fetchUser(id: Int!): User
+  me: User
+  user: User
+  fetchUserByPassword(password: String!): String!
+  fetchMessages(id: Int!): [Message]
 `;
 
 export const mutations = `
-updateUser(firstname: String!, newFirstname: String!): [Int!]!
-deleteUser(id: Int!): String!
-# Only an email is required for the signup
-signUp(email: String!, newsletter: Boolean!): RegisterResponse!
-# The user will be passed back a JSON Web token for authentication
-signIn(email: String!, password: String!): LoginResponse!
-# After confirming the email, an user has to set a password
-signUpConfirm(email: String!, password: String!): RegisterResponse!
-# Send the user a new link for sign up
-forgotPassword(email: String!): RegisterResponse!
+  updateUser(firstname: String!, newFirstname: String!): [Int!]!
+  deleteUser(id: Int!): String!
+  # Only an email is required for the signup
+  signUp(email: String!, newsletter: Boolean!): RegisterResponse!
+  # The user will be passed back a JSON Web token for authentication
+  signIn(email: String!, password: String!): LoginResponse!
+  # After confirming the email, an user has to set a password
+  signUpConfirm(email: String!, password: String!): RegisterResponse!
+  # Send the user a new link for sign up
+  forgotPassword(email: String!): RegisterResponse!
 `;
