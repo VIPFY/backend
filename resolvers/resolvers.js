@@ -1,23 +1,23 @@
+import Query from "./Queries";
+import Mutation from "./Mutations";
 import {
   findUser,
   findApp,
-  findUserNotification,
-  findAppNotification,
-  findMessages
-} from "./CommonResolvers";
-import Query from "./Queries";
-import Mutation from "./Mutations";
+  implementMessage,
+  findNotification,
+  implementDate
+} from "./CustomResolvers";
 
-const resolvers = {};
-
-resolvers.Query = Query;
-resolvers.Mutation = Mutation;
-resolvers.Employee = findUser;
-resolvers.Plan = findApp;
-resolvers.Review = findUser;
-resolvers.UserRight = findUser;
-resolvers.Notification = findUserNotification;
-resolvers.AppNotification = findAppNotification;
-resolvers.Message = findMessages;
-
-export default resolvers;
+export default {
+  Query,
+  Mutation,
+  Employee: findUser,
+  Plan: findApp,
+  Review: findUser,
+  UserRight: findUser,
+  Notification: findNotification("Notification"),
+  AppNotification: findNotification("AppNotification"),
+  Message: implementMessage,
+  Date: implementDate,
+  LoginResponse: findUser
+};

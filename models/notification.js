@@ -3,7 +3,6 @@ export default (sequelize, { TEXT, INTEGER, DATE, NOW, BOOLEAN }) => {
     type: INTEGER,
     sendtime: {
       type: DATE,
-      allowNull: false,
       defaulValue: NOW
     },
     readtime: DATE,
@@ -15,7 +14,10 @@ export default (sequelize, { TEXT, INTEGER, DATE, NOW, BOOLEAN }) => {
       type: BOOLEAN,
       defaultValue: false
     },
-    message: TEXT
+    message: {
+      type: TEXT,
+      allowNull: false
+    }
   });
 
   Notification.associate = models => {

@@ -130,33 +130,98 @@ export default {
     }
   },
 
-  setDeleteStatus: async (parent, { id }, { models }) => {
-    const deleted = await models.Notification.update(
-      { deleted: true },
-      { where: { id } }
-    );
+  setDeleteStatus: requiresAuth.createResolver(
+    async (parent, { id, model, type }, { models }) => {
+      const messageExists = await models[model].findById(id);
+      if (messageExists) {
+        try {
+          const deleted = await models[model].update(
+            { [type]: true },
+            { where: { id } }
+          );
+          return {
+            ok: true
+          };
+        } catch (err) {
+          return {
+            ok: false,
+            error: err.message
+          };
+        }
+      } else {
+        return {
+          ok: false,
+          error: "Message doesn't exist!"
+        };
+      }
+    }
+  ),
 
-    return "Set on delete";
-  },
+  setReadtime: requiresAuth.createResolver(
+    async (parent, { id, model }, { models }) => {
+      try {
+        const read = await models[model].findById(id);
 
-  setSenderDeleteStatus: async (parent, { id }, { models }) => {
-    const deleted = models.Notification.update(
-      { senderdeleted: true },
-      { where: { id } }
-    );
+        if (!read.readtime) {
+          const now = Date.now();
+          await models[model].update({ readtime: now }, { where: { id } });
+          return {
+            ok: true,
+            message: now
+          };
+        } else {
+          return {
+            ok: false,
+            error: "Message already read"
+          };
+        }
+      } catch (err) {
+        return {
+          ok: false,
+          error: err.message
+        };
+      }
+    }
+  ),
 
-    return "Set on delete";
-  },
+  sendMessage: async (parent, { fromuser, touser, message }, { models }) => {
+    const sender = await models.User.findById(fromuser);
+    const receiver = await models.User.findById(touser);
 
-  setReadtime: async (parent, { id }, { models }) => {
-    const read = await models.Notification.findById(id);
+    if (sender.id == receiver.id) {
+      return {
+        ok: false,
+        error: "Sender and Receiver can't be the same User!"
+      };
+    } else if (!sender || !receiver) {
+      return {
+        ok: false,
+        error: "User doesn't exist!"
+      };
+    } else if (message && sender && receiver) {
+      try {
+        const save = await models.Notification.create({
+          fromuser,
+          touser,
+          type: 1,
+          message
+        });
 
-    if (!read.readtime) {
-      const now = Date.now();
-      await models.Notification.update({ readtime: now }, { where: { id } });
-      return now;
+        return {
+          ok: true,
+          message
+        };
+      } catch (err) {
+        return {
+          ok: false,
+          error: err.message
+        };
+      }
     } else {
-      return "Message already read";
+      return {
+        ok: false,
+        error: "Empty Message!"
+      };
     }
   }
 };

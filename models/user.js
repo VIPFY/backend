@@ -13,15 +13,9 @@ export default (sequelize, { STRING, BOOLEAN, INTEGER, ENUM, DATE }) => {
       type: ENUM("toverify", "normal", "banned", "onlynews"),
       defaultValue: "toverify"
     },
-    firstname: {
-      type: STRING
-    },
-    middlename: {
-      type: STRING
-    },
-    lastname: {
-      type: STRING
-    },
+    firstname: STRING,
+    middlename: STRING,
+    lastname: STRING,
     title: STRING,
     sex: ENUM("m", "w", "t"),
     birthday: DATE,
@@ -34,7 +28,7 @@ export default (sequelize, { STRING, BOOLEAN, INTEGER, ENUM, DATE }) => {
     addressstreet: STRING,
     addressnumber: STRING,
     profilepicture: STRING,
-    // lastactive: DATE,
+    lastactive: DATE,
     lastsecret: STRING,
     riskvalue: INTEGER,
     newsletter: {
