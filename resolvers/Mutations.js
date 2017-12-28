@@ -184,44 +184,46 @@ export default {
     }
   ),
 
-  sendMessage: async (parent, { fromuser, touser, message }, { models }) => {
-    const sender = await models.User.findById(fromuser);
-    const receiver = await models.User.findById(touser);
+  sendMessage: requiresAuth.createResolver(
+    async (parent, { fromuser, touser, message }, { models }) => {
+      const sender = await models.User.findById(fromuser);
+      const receiver = await models.User.findById(touser);
 
-    if (sender.id == receiver.id) {
-      return {
-        ok: false,
-        error: "Sender and Receiver can't be the same User!"
-      };
-    } else if (!sender || !receiver) {
-      return {
-        ok: false,
-        error: "User doesn't exist!"
-      };
-    } else if (message && sender && receiver) {
-      try {
-        const save = await models.Notification.create({
-          fromuser,
-          touser,
-          type: 1,
-          message
-        });
-
-        return {
-          ok: true,
-          message
-        };
-      } catch (err) {
+      if (sender.id == receiver.id) {
         return {
           ok: false,
-          error: err.message
+          error: "Sender and Receiver can't be the same User!"
+        };
+      } else if (!sender || !receiver) {
+        return {
+          ok: false,
+          error: "User doesn't exist!"
+        };
+      } else if (message && sender && receiver) {
+        try {
+          const save = await models.Notification.create({
+            fromuser,
+            touser,
+            type: 1,
+            message
+          });
+
+          return {
+            ok: true,
+            message
+          };
+        } catch (err) {
+          return {
+            ok: false,
+            error: err.message
+          };
+        }
+      } else {
+        return {
+          ok: false,
+          error: "Empty Message!"
         };
       }
-    } else {
-      return {
-        ok: false,
-        error: "Empty Message!"
-      };
     }
-  }
+  )
 };
