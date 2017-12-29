@@ -1,11 +1,17 @@
-export default (sequelize, { TEXT, INTEGER, DATE }) => {
+export default (sequelize, { TEXT, INTEGER, DATE, NOW }) => {
   const Review = sequelize.define("review", {
     reviewdate: {
       type: DATE,
-      allowNull: false
+      defaultValue: NOW
     },
     stars: {
-      type: INTEGER
+      type: INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+      validate: {
+        min: 1,
+        max: 5
+      }
     },
     reviewtext: TEXT,
     answerto: INTEGER

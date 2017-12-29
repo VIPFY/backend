@@ -1,11 +1,17 @@
-export default (sequelize, { TEXT, INTEGER, DATE, NOW, BOOLEAN }) => {
-  const ReviewHelpful = sequelize.define("reviewhelpful", {
-    helpfuldate: {
-      type: DATE,
-      defaulValue: NOW
+export default (sequelize, { DATE, NOW, BOOLEAN }) => {
+  const ReviewHelpful = sequelize.define(
+    "reviewhelpful",
+    {
+      helpfuldate: {
+        type: DATE,
+        defaultValue: NOW
+      },
+      balance: BOOLEAN
     },
-    balance: BOOLEAN
-  });
+    {
+      freezeTableName: true
+    }
+  );
 
   ReviewHelpful.associate = models => {
     ReviewHelpful.belongsTo(models.User, { foreignKey: "userid" });
