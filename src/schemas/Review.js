@@ -27,6 +27,6 @@ export const mutations = `
   writeReview(userid: Int!, appid: Int!, stars: Int!, text: String): Response!
 
 # Rate a review
-  rateReview(reviewid: Int!, userid: Int!, balance: Boolean!): Response!
+  rateReview(reviewid: Int!, userid: Int!, balance: Int!): Response!
 
 `;

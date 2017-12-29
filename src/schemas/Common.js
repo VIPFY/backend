@@ -18,7 +18,7 @@ export const types = `
     ok: Boolean!
     token: String
     refreshToken: String
-    user: User!
+    user: User
     error: String
   }
 

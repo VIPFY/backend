@@ -1,4 +1,4 @@
-export default (sequelize, { DATE, NOW, BOOLEAN }) => {
+export default (sequelize, { DATE, NOW, INTEGER }) => {
   const ReviewHelpful = sequelize.define(
     "reviewhelpful",
     {
@@ -6,7 +6,13 @@ export default (sequelize, { DATE, NOW, BOOLEAN }) => {
         type: DATE,
         defaultValue: NOW
       },
-      balance: BOOLEAN
+      balance: {
+        type: INTEGER,
+        validate: {
+          min: 0,
+          max: 2
+        }
+      }
     },
     {
       freezeTableName: true
