@@ -3,9 +3,7 @@ import { SHOPIFY_KEY, SHOPIFY_SECRET } from "../login-data";
 
 const config = {
   method: "get",
-  url: `https://${SHOPIFY_KEY}:${
-    SHOPIFY_SECRET
-  }@vipfy-test.myshopify.com/admin/products.json`
+  url: `https://${SHOPIFY_KEY}:${SHOPIFY_SECRET}@vipfy-test.myshopify.com/admin/products.json`
   // data: {
   //   product: {
   //     title: "App6",
@@ -15,12 +13,11 @@ const config = {
   // }
 };
 
-createCompany() => {
-  
+createCompany = () => {
   axios(config)
     .then(res => console.log(res.data))
     .catch(err => console.log(err.response.data));
-}
+};
 
 axios(config)
   .then(res => console.log(res.data))

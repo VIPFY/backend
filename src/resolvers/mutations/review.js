@@ -95,7 +95,7 @@ export default {
         );
         return {
           ok: true,
-          message: "Rating changed"
+          message: `Rating changed to ${balance}`
         };
       } catch (err) {
         return {
