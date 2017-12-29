@@ -42,6 +42,5 @@ export default {
   Notification: findNotification("Notification"),
   AppNotification: findNotification("AppNotification"),
   Message: implementMessage,
-  Date: implementDate,
-  LoginResponse: findUser
+  Date: implementDate
 };
