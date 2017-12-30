@@ -1,5 +1,6 @@
 import { requiresAuth } from "../../helpers/permissions";
 import { Op } from "sequelize";
+import _ from "lodash";
 
 export default {
   fetchMessages: requiresAuth.createResolver(
@@ -45,4 +46,3 @@ export default {
     }
   )
 };
-

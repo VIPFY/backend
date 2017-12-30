@@ -1,4 +1,4 @@
-export default (sequelize, { DATE, NOW, INTEGER }) => {
+export default (sequelize, { DATE, NOW, INTEGER, TEXT }) => {
   const ReviewHelpful = sequelize.define(
     "reviewhelpful",
     {
@@ -12,7 +12,8 @@ export default (sequelize, { DATE, NOW, INTEGER }) => {
           min: 0,
           max: 2
         }
-      }
+      },
+      comment: TEXT
     },
     {
       freezeTableName: true
