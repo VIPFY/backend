@@ -22,7 +22,7 @@ export default {
           where: {
             touser: id,
             deleted: false,
-            readtime: { [Op.eq]: null }
+            readtime: { [Op.not]: null }
           },
           order: [["sendtime", "DESC"]]
         });
@@ -40,7 +40,7 @@ export default {
           where: {
             touser: id,
             deleted: false,
-            readtime: { isNull: true }
+            readtime: { [Op.eq]: true }
           },
           order: [["sendtime", "DESC"]]
         });
