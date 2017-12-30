@@ -7,7 +7,7 @@ export const types = `
     developerid: Int!
     modaltype: Int
     versionnumber: String
-    updatedate: String
+    updatedate: Date
     teaserdescription: String
     ownpage: String
     supportphone: String

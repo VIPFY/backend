@@ -18,7 +18,7 @@ export const types = `
     sendtime: Date!
     touser: User!
     message: String!
-    readtime: String
+    readtime: Date
     deleted: Boolean
     senderdeleted: Boolean
   }
@@ -31,7 +31,7 @@ export const types = `
     touser: User!
     sendtime: Date!
     message: String!
-    readtime: String
+    readtime: Date
     deleted: Boolean
     senderdeleted: Boolean
   }
@@ -44,7 +44,7 @@ export const types = `
     touser: User!
     sendtime: Date!
     message: String!
-    readtime: String
+    readtime: Date
     deleted: Boolean
     senderdeleted: Boolean
   }
