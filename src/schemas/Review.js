@@ -1,11 +1,12 @@
 export const types = `
   type Review {
-    userid: Int!
+    userid: Int
+    user: User
     appid: Int!
+    app: App
     reviewdate: String
     stars: Int
     reviewtext: String
-    user: User
     answerto: Int
   }
 

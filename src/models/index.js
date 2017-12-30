@@ -30,7 +30,9 @@ const db = {
   Plan: sequelize.import("./plan"),
   Notification: sequelize.import("./notification"),
   AppNotification: sequelize.import("./appnotification"),
-  ReviewHelpful: sequelize.import("./reviewhelpful")
+  ReviewHelpful: sequelize.import("./reviewhelpful"),
+  Speak: sequelize.import("./speak"),
+  UserBill: sequelize.import("./userbill")
 };
 
 Object.keys(db).forEach(modelName => {

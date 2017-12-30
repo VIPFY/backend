@@ -45,5 +45,9 @@ export default {
   fetchUserRights: requiresAuth.createResolver(
     (parent, { userid }, { models }) =>
       models.UserRight.findAll({ where: { userid } })
+  ),
+
+  fetchUserBills: requiresAuth.createResolver((parent, args, { models }) =>
+    models.UserBill.findAll()
   )
 };

@@ -1,9 +1,13 @@
-export const findUser = {
-  user: ({ userid }, args, { models }) => models.User.findById(userid)
-};
+export const find = data => {
+  const searches = {};
 
-export const findApp = {
-  app: ({ appid }, args, { models }) => models.App.findById(appid)
+  data.map(search => {
+    let id = search.toLowerCase() + "id";
+    searches[search.toLowerCase()] = ({ id }, args, { models }) =>
+      models[search].findById(id);
+  });
+
+  return searches;
 };
 
 export const findNotification = model => {

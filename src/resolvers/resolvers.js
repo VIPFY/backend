@@ -10,8 +10,7 @@ import userMutations from "./mutations/user";
 import reviewMutations from "./mutations/review";
 
 import {
-  findUser,
-  findApp,
+  find,
   implementMessage,
   findNotification,
   implementDate
@@ -35,12 +34,15 @@ const Mutation = Object.assign(
 export default {
   Query,
   Mutation,
-  Employee: findUser,
-  Plan: findApp,
-  Review: findUser,
-  UserRight: findUser,
+  Employee: find(["User", "Company", "Department"]),
+  Plan: find(["App"]),
+  Review: find(["User", "App"]),
+  UserRight: find(["User"]),
   Notification: findNotification("Notification"),
   AppNotification: findNotification("AppNotification"),
+  Department: find(["Company"]),
   Message: implementMessage,
-  Date: implementDate
+  Date: implementDate,
+  Speak: find(["User"]),
+  UserBill: find(["User", "Plan"])
 };

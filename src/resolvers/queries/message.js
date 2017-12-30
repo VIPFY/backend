@@ -8,7 +8,7 @@ export default {
       let users;
       let apps;
 
-      if (read) {
+      if (read === true) {
         users = await models.Notification.findAll({
           where: {
             touser: id,
@@ -22,7 +22,25 @@ export default {
           where: {
             touser: id,
             deleted: false,
-            readtime: { [Op.not]: null }
+            readtime: { [Op.eq]: null }
+          },
+          order: [["sendtime", "DESC"]]
+        });
+      } else if (read === false) {
+        users = await models.Notification.findAll({
+          where: {
+            touser: id,
+            deleted: false,
+            readtime: { [Op.eq]: null }
+          },
+          order: [["sendtime", "DESC"]]
+        });
+
+        apps = await models.AppNotification.findAll({
+          where: {
+            touser: id,
+            deleted: false,
+            readtime: { isNull: true }
           },
           order: [["sendtime", "DESC"]]
         });

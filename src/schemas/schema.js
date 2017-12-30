@@ -2,9 +2,9 @@ import * as User from "./User";
 import * as App from "./App";
 import * as Review from "./Review";
 import * as Company from "./Company";
-import * as DD24 from "./DD24";
 import * as Message from "./Message";
 import * as Common from "./Common";
+import * as DD24 from "./DD24";
 
 //Create Arrays to store the data from every schema
 const types = [];

@@ -6,6 +6,12 @@ export const types = `
     description: String
     developerid: Int!
     modaltype: Int
+    versionnumber: String
+    updatedate: String
+    teaserdescription: String
+    ownpage: String
+    supportphone: String
+    supportwebsite: String
   }
 
   type AppImage {
@@ -28,14 +34,22 @@ export const types = `
   type Plan {
     id: Int!
     appid: Int!
+    app: App!
     description: String
-    renewalplan: String
+    renewalplan: Int
     period: Int
     numlicences: Int
-    price: String
+    price: Float
     currency: String
     name: String
-    app: App!
+    activefrom: String
+    activeuntil: String
+    promo: Int
+    promovipfy: Float
+    promodeveloper: Float
+    promoname: String
+    changeafter: Int
+    changeplan: Int
   }
 `;
 

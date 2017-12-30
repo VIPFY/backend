@@ -1,11 +1,11 @@
-export default (sequelize, { TEXT, INTEGER, DATE, NOW }) => {
+export default (sequelize, { TEXT, SMALLINT, DATE, NOW }) => {
   const Review = sequelize.define("review", {
     reviewdate: {
       type: DATE,
       defaultValue: NOW
     },
     stars: {
-      type: INTEGER,
+      type: SMALLINT,
       allowNull: false,
       defaultValue: 1,
       validate: {
@@ -13,13 +13,13 @@ export default (sequelize, { TEXT, INTEGER, DATE, NOW }) => {
         max: 5
       }
     },
-    reviewtext: TEXT,
-    answerto: INTEGER
+    reviewtext: TEXT
   });
 
   Review.associate = models => {
     Review.belongsTo(models.User, { foreignKey: "userid" });
     Review.belongsTo(models.App, { foreignKey: "appid" });
+    Review.belongsTo(models.Review, { foreignKey: "answerto" });
   };
 
   return Review;

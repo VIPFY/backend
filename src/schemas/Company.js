@@ -9,13 +9,15 @@ export const types = `
     addresscity: String
     addressstreet: String
     addressnumber: Int
+    family: Boolean
   }
 
 # A department is a part of a company and is identified by an unique id
   type Department{
-    companyid: Int!
-    departmentid: Int!
+    id: Int!
     name: String
+    companyid: Int
+    company: Company
     addresscountry: String
     addresscity: String
     addressstate: String
@@ -28,7 +30,7 @@ export const queries = `
   allCompanies: [Company!]!
   fetchCompany(id: Int!): Company!
   allDepartments: [Department!]!
-  fetchDepartment(departmentId: Int!): Department!
+  fetchDepartment(id: Int!): Department!
   fetchDepartmentsByCompanyId(companyId: Int!): [Department!]
 `;
 

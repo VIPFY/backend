@@ -2,18 +2,16 @@ export const types = `
 # An user needs an unique email and will be given an auto-generated id
   type User {
     id: Int!
-    email: String!
-    createdAt: String
-    updatedAt: String
-    lastactive: String
     firstname: String
     middlename: String
     lastname: String
-    userstatus: String
+    position: String
+    email: String!
     title: String
     sex: SEX
-    recoveryemail: String
+    userstatus: USER_STATUS
     birthday: String
+    recoveryemail: String
     mobilenumber: String
     telefonnumber: String
     addresscountry: String
@@ -22,30 +20,60 @@ export const types = `
     addressstreet: String
     addressnumber: String
     profilepicture: String
+    lastactive: String
     lastsecret: String
     riskvalue: Int
     newsletter: Boolean
-    userstatus: USER_STATUS
+    referall: Int
+    cobranded: Int
+    resetoption: Int
+    createdAt: String
+    updatedAt: String
   }
 
 # An Employee is an user who belongs to at least one company
   type Employee {
+    userid: Int!
+    user: User
     companyid: Int!
+    company: Company
     departmentid: Int!
+    department: Department
     begindate: String
     enddate: String
     position: String
-    user: User
-    userid: Int!
   }
 
 # Every user has a set of rights which handles his access to different parts of Vipfy
   type UserRight {
-    companyid: Int!
-    departmentid: Int!
-    userid: Int!
+    companyid: Company
+    departmentid: Department
     userright: Int!
-    user: User!
+    userid: Int
+    user: User
+  }
+
+# Languages of an user
+  type Speak {
+    userid: Int,
+    user: User
+    language: [String]
+    preferred: Boolean
+  }
+
+# Bills of an user
+  type UserBill {
+    userid: Int
+    user: User
+    date: String
+    billpos: Int
+    textpos: String
+    price: Float
+    currency: String
+    planid: Int
+    plan: Plan
+    orgcurrency: String
+    exchangerate: Float
   }
 `;
 
@@ -63,6 +91,8 @@ export const queries = `
 
   # Shows all the rights an user has
   fetchUserRights(userid: Int!): [UserRight!]
+
+  fetchUserBills: [UserBill]
 `;
 
 export const mutations = `

@@ -16,7 +16,6 @@ export default {
 
   fetchCompany: (parent, { id }, { models }) => models.Company.findById(id),
 
-  fetchDepartment: (parent, { departmentId }, { models }) =>
-    models.Department.findById(departmentId)
+  fetchDepartment: (parent, { id }, { models }) =>
+    models.Department.findById(id)
 };
-

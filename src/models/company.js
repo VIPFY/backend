@@ -1,4 +1,4 @@
-export default (sequelize, { STRING, INTEGER }) => {
+export default (sequelize, { STRING, INTEGER, BOOLEAN }) => {
   const Company = sequelize.define("company", {
     name: STRING,
     companylogo: STRING,
@@ -6,11 +6,12 @@ export default (sequelize, { STRING, INTEGER }) => {
     addressstate: STRING,
     addresscity: STRING,
     addressstreet: STRING,
-    addressnumber: INTEGER
+    addressnumber: INTEGER,
+    family: {
+      type: BOOLEAN,
+      defaultValue: false
+    }
   });
 
   return Company;
 };
-
-//id |name|companylogo| addresscountry |
-//addressstate  |addresscity|addressstreet  | addressnumber
