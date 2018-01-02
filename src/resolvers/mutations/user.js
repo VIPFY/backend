@@ -64,7 +64,11 @@ export default {
     }
   },
 
-  signUpConfirm: async (parent, { email, password }, { models }) => {
+  signUpConfirm: async (
+    parent,
+    { email, password },
+    { models, SECRET, SECRETTWO }
+  ) => {
     const emailExists = await models.User.findOne({ where: { email } });
     if (!emailExists) return { ok: false, error: "Email not found!" };
 
