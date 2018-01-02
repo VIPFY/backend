@@ -41,7 +41,7 @@ export default {
         newsletter,
         password: newHash
       });
-      console.log(SECRET, SECRETTWO);
+
       mailjet(user.email, newHash);
       const refreshSecret = user.password + SECRETTWO;
 
@@ -81,8 +81,18 @@ export default {
         { where: { email } }
       );
 
+      const refreshSecret = passwordHash + SECRETTWO;
+
+      const [token, refreshToken] = await createTokens(
+        isVerified,
+        SECRET,
+        refreshSecret
+      );
+
       return {
-        ok: true
+        ok: true,
+        token,
+        refreshToken
       };
     } catch (err) {
       return {
