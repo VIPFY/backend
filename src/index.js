@@ -14,7 +14,8 @@ import { refreshTokens } from "./services/auth";
 const request = require("request");
 const schema = makeExecutableSchema({
   typeDefs,
-  resolvers
+  resolvers,
+  logger: { log: e => console.log(e) }
 });
 
 const app = express();
@@ -58,14 +59,6 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-//Enable to Graphiql Interface
-app.use(
-  "/graphiql",
-  graphiqlExpress({
-    endpointURL: "/graphql"
-  })
-);
-
 app.use(
   "/graphql",
   bodyParser.json(),
@@ -78,6 +71,14 @@ app.use(
       SECRETTWO
     }
   }))
+);
+
+//Enable to Graphiql Interface
+app.use(
+  "/graphiql",
+  graphiqlExpress({
+    endpointURL: "/graphql"
+  })
 );
 
 //The home route is currently empty

@@ -100,7 +100,7 @@ export const mutations = `
   deleteUser(id: Int!): String!
 
   # Only an email is required for the signup
-  signUp(email: String!, newsletter: Boolean!): RegisterResponse!
+  signUp(email: String!, newsletter: Boolean): RegisterResponse!
 
   # The user will be passed back a JSON Web token for authentication
   signIn(email: String!, password: String!): LoginResponse!

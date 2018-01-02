@@ -1,8 +1,9 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { tryLogin } from "../../services/auth";
+import { tryLogin, createTokens } from "../../services/auth";
 import { requiresAuth } from "../../helpers/permissions";
 import mailjet from "../../services/mailjet";
+import _ from "lodash";
 
 export default {
   updateUser: requiresAuth.createResolver(
@@ -17,7 +18,11 @@ export default {
     }
   ),
 
-  signUp: async (parent, { email, newsletter }, { models }) => {
+  signUp: async (
+    parent,
+    { email, newsletter },
+    { models, SECRET, SECRETTWO }
+  ) => {
     //Check whether the email is already in use
     const emailInUse = await models.User.findOne({ where: { email } });
     if (emailInUse) throw new Error("Email already in use!");
@@ -36,16 +41,25 @@ export default {
         newsletter,
         password: newHash
       });
-
+      console.log(SECRET, SECRETTWO);
       mailjet(user.email, newHash);
+      const refreshSecret = user.password + SECRETTWO;
+
+      const [token, refreshToken] = await createTokens(
+        user,
+        SECRET,
+        refreshSecret
+      );
       return {
         ok: true,
+        token,
+        refreshToken,
         user
       };
     } catch (err) {
-      console.log(err);
       return {
-        ok: false
+        ok: false,
+        error: err
       };
     }
   },
