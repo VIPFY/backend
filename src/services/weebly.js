@@ -12,33 +12,33 @@ export default async (callType, endpoint, requestData) => {
     requestData
   )}`;
 
-  console.log(requestString);
   const requestHash = await Utility.generateHmac(requestString, WEEBLY_SECRET);
-  console.log(requestHash);
-
   const vString = Utility.validateHmac(
     requestHash,
     requestString,
     WEEBLY_SECRET
   );
 
-  const options = {
-    method: callType,
-    url: `${endpoint}`,
-    baseURL: "https://api.weeblycloud.com/",
-    headers: {
-      "Content-type": "application/json",
-      "X-Public-Key": WEEBLY_KEY,
-      "X-Signed-Request-Hash": requestHash
-    },
-    data: JSON.stringify(requestData)
-  };
+  if (vString) {
+    const options = {
+      method: callType,
+      url: `${endpoint}`,
+      baseURL: "https://api.weeblycloud.com/",
+      headers: {
+        "Content-type": "application/json",
+        "X-Public-Key": WEEBLY_KEY,
+        "X-Signed-Request-Hash": requestHash
+      },
+      data: JSON.stringify(requestData)
+    };
 
-  axios(options)
-    .then(res => console.log(res))
-    .catch(err => {
-      console.log(`Error: ${err.response.status}`);
-      console.log(err.response.statusText);
-      //console.log(err);
-    });
+    axios(options)
+      .then(res => console.log(res.status, res.statusText, res.data))
+      .catch(err => {
+        console.log(`Error: ${err.response.status}`);
+        console.log(err.response.statusText);
+      });
+  } else {
+    console.log("String could not be verified!");
+  }
 };

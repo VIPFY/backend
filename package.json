@@ -6,18 +6,19 @@
   "scripts": {
     "serve": "node dist/index.js",
     "build": "babel src -d dist",
-    "test": "nodemon --exec babel-node helpers/test.js",
+    "test": "nodemon --exec babel-node src/helpers/test.js",
     "start": "nodemon --exec babel-node src/index.js"
   },
   "author": "Gh05d",
   "license": "ISC",
   "dependencies": {
+    "apollo-server-express": "^1.3.2",
     "axios": "^0.17.1",
     "babel-runtime": "^6.26.0",
     "bcrypt": "^1.0.3",
     "body-parser": "^1.17.2",
     "express": "^4.15.3",
-    "graphql-server-express": "^0.8.0",
+    "graphql-subscriptions": "^0.5.6",
     "graphql-tools": "^1.0.0",
     "jsonwebtoken": "^8.1.0",
     "lodash": "^4.17.4",
@@ -26,7 +27,8 @@
     "pipedrive": "^3.0.2",
     "querystring": "^0.2.0",
     "sequelize": "^4.1.0",
-    "soap": "^0.23.0"
+    "soap": "^0.23.0",
+    "subscriptions-transport-ws": "^0.9.4"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -37,6 +39,6 @@
     "eslint": "^4.0.0",
     "eslint-config-airbnb-base": "^11.2.0",
     "eslint-plugin-import": "^2.3.0",
-    "graphql": "^0.10.1"
+    "graphql": "^0.10.5"
   }
 }

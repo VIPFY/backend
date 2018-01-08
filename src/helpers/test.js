@@ -1,10 +1,27 @@
 import test from "../services/weebly";
 
+// Required:
+//
+//     brand_name
+//     brand_url
+//     admin_name
+//     admin_email
+//
+// Optional:
+//
+//     portal_domain
+//     test_mode. If no value supplied, defaults to true.
+
 const queryString = {
-  email: "jf@vipfy.com"
+  brand_name: "New Reseller",
+  brand_url: "www.newreseller.com",
+  admin_name: "John Doe",
+  admin_email: "johndoe@email.com",
+  portal_domain: "www.weeblycloud.com",
+  ecommerce: false
 };
 
-test("POST", "user", queryString);
+test("POST", "subaccount", queryString);
 
 // ===========================================================================
 // import {
