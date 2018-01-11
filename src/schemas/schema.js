@@ -10,6 +10,7 @@ import * as DD24 from "./DD24";
 const types = [];
 const queries = [];
 const mutations = [];
+const subscriptions = [];
 
 //Enter every schema into this array to map over it's data
 const schemas = [User, App, Company, Review, DD24, Message, Common];
@@ -19,6 +20,7 @@ schemas.forEach(schema => {
   types.push(schema.types);
   queries.push(schema.queries);
   mutations.push(schema.mutations);
+  subscriptions.push(schema.subscriptions);
 });
 
 export default `
@@ -30,5 +32,9 @@ export default `
 
   type Mutation {
     ${mutations.join("\n")}
+  }
+
+  type Subscription {
+    ${subscriptions.join("\n")}
   }
 `;

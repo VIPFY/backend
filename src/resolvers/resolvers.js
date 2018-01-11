@@ -9,6 +9,8 @@ import messageMutations from "./mutations/message";
 import userMutations from "./mutations/user";
 import reviewMutations from "./mutations/review";
 
+import Subscription from "./subscriptions";
+
 import {
   find,
   implementMessage,
@@ -34,6 +36,7 @@ const Mutation = Object.assign(
 export default {
   Query,
   Mutation,
+  Subscription,
   Employee: find(["User", "Company", "Department"]),
   Plan: find(["App"]),
   Review: find(["User", "App"]),

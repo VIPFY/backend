@@ -1,4 +1,5 @@
 import { requiresAuth } from "../../helpers/permissions";
+import { NEW_MESSAGE, pubsub } from "../../constants";
 
 export default {
   setDeleteStatus: requiresAuth.createResolver(
@@ -55,46 +56,49 @@ export default {
     }
   ),
 
-  sendMessage: requiresAuth.createResolver(
-    async (parent, { fromuser, touser, message }, { models }) => {
-      const sender = await models.User.findById(fromuser);
-      const receiver = await models.User.findById(touser);
+  sendMessage: async (parent, { fromuser, touser, message }, { models }) => {
+    const sender = await models.User.findById(fromuser);
+    const receiver = await models.User.findById(touser);
 
-      if (!sender || !receiver) {
-        return {
-          ok: false,
-          error: "User doesn't exist!"
-        };
-      } else if (sender.id == receiver.id) {
-        return {
-          ok: false,
-          error: "Sender and Receiver can't be the same User!"
-        };
-      } else if (message && sender && receiver) {
-        try {
-          const save = await models.Notification.create({
-            fromuser,
-            touser,
-            type: 1,
-            message
-          });
+    if (!sender || !receiver) {
+      return {
+        ok: false,
+        error: "User doesn't exist!"
+      };
+    } else if (sender.id == receiver.id) {
+      return {
+        ok: false,
+        error: "Sender and Receiver can't be the same User!"
+      };
+    } else if (message && sender && receiver) {
+      try {
+        const save = await models.Notification.create({
+          fromuser,
+          touser,
+          type: 1,
+          message
+        });
 
-          return {
-            ok: true,
-            message
-          };
-        } catch (err) {
-          return {
-            ok: false,
-            error: err.message
-          };
-        }
-      } else {
+        pubsub.publish(NEW_MESSAGE, {
+          userId: receiver.id,
+          newMessage: message
+        });
+
+        return {
+          ok: true,
+          message
+        };
+      } catch (err) {
         return {
           ok: false,
-          error: "Empty Message!"
+          error: err.message
         };
       }
+    } else {
+      return {
+        ok: false,
+        error: "Empty Message!"
+      };
     }
-  )
+  }
 };

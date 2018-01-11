@@ -65,3 +65,7 @@ export const mutations = `
 # Send a message to another user
   sendMessage(fromuser: Int!, touser: Int!, message: String!): Response!
 `;
+
+export const subscriptions = `
+  newMessage(toUser: Int!): Response!
+`;
