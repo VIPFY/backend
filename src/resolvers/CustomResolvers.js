@@ -3,8 +3,9 @@ export const find = data => {
 
   data.map(search => {
     let id = search.toLowerCase() + "id";
-    searches[search.toLowerCase()] = ({ id }, args, { models }) =>
-      models[search].findById(id);
+    searches[search.toLowerCase()] = (parent, args, { models }) => {
+      return models[search].findById(parent.dataValues[id]);
+    };
   });
 
   return searches;
