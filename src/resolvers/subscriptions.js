@@ -5,7 +5,11 @@ export default {
   newMessage: {
     subscribe: withFilter(
       () => pubsub.asyncIterator(NEW_MESSAGE),
-      (payload, args) => payload.userId === args.toUser
+      (payload, args) => {
+        if (payload) {
+          return payload.userId === args.toUser;
+        }
+      }
     )
   }
 };

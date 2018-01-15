@@ -37,7 +37,20 @@ export const types = `
   }
 
   type AppNotification implements Message {
-    fromapp: App
+    fromapp: App!
+    id: Int!
+    # An Integer
+    type: Int!
+    touser: User!
+    sendtime: Date!
+    message: String!
+    readtime: Date
+    deleted: Boolean
+    senderdeleted: Boolean
+  }
+
+  type MessageSubscription implements Message {
+    fromuser: User!
     id: Int!
     # An Integer
     type: Int!
@@ -67,5 +80,5 @@ export const mutations = `
 `;
 
 export const subscriptions = `
-  newMessage(toUser: Int!): Response!
+  newMessage(toUser: Int!): Message!
 `;

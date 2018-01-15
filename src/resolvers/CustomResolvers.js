@@ -1,32 +1,10 @@
-export const find = data => {
-  const searches = {};
-
-  data.map(search => {
-    let id = search.toLowerCase() + "id";
-    searches[search.toLowerCase()] = (parent, args, { models }) => {
-      return models[search].findById(parent.dataValues[id]);
-    };
-  });
-
-  return searches;
-};
-
-export const findNotification = model => {
-  const searcher = {
-    touser: ({ touser }, args, { models }) => models.User.findById(touser)
-  };
-  model == "Notification"
-    ? (searcher.fromuser = ({ fromuser }, args, { models }) =>
-        models.User.findById(fromuser))
-    : (searcher.fromapp = ({ fromapp }, args, { models }) =>
-        models.App.findById(fromapp));
-
-  return searcher;
-};
-
 // Necessary to implement interfaces
 export const implementMessage = {
   __resolveType(obj, context, info) {
+    if (info.parentType == "Subscription") {
+      return "MessageSubscription";
+    }
+
     if (obj.fromuser) {
       return "Notification";
     }
@@ -54,4 +32,31 @@ export const implementDate = {
     }
     return null;
   }
+};
+
+export const find = data => {
+  const searches = {};
+
+  data.map(search => {
+    let id = search.toLowerCase() + "id";
+    searches[search.toLowerCase()] = (parent, args, { models }) => {
+      return models[search].findById(parent.dataValues[id]);
+    };
+  });
+
+  return searches;
+};
+
+export const findNotification = model => {
+  let searcher = {
+    touser: ({ touser }, args, { models }) => models.User.findById(touser)
+  };
+
+  model == "Notification"
+    ? (searcher.fromuser = ({ dataValues }, args, { models }) =>
+        models.User.findById(dataValues.fromuser))
+    : (searcher.fromapp = ({ fromapp }, args, { models }) =>
+        models.App.findById(fromapp));
+
+  return searcher;
 };

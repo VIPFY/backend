@@ -37,6 +37,8 @@ export default {
   Query,
   Mutation,
   Subscription,
+  Message: implementMessage,
+  Date: implementDate,
   Employee: find(["User", "Company", "Department"]),
   Plan: find(["App"]),
   Review: find(["User", "App"]),
@@ -44,8 +46,6 @@ export default {
   Notification: findNotification("Notification"),
   AppNotification: findNotification("AppNotification"),
   Department: find(["Company"]),
-  Message: implementMessage,
-  Date: implementDate,
   Speak: find(["User"]),
   UserBill: find(["User", "Plan"])
 };
