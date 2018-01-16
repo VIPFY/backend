@@ -13,16 +13,16 @@ import resolvers from "./resolvers/resolvers";
 import models from "./models";
 import { SECRET, SECRETTWO } from "./login-data";
 import { refreshTokens } from "./services/auth";
+import { PORT } from "./constants";
 
 const request = require("request");
-const schema = makeExecutableSchema({
+export const schema = makeExecutableSchema({
   typeDefs,
   resolvers,
   logger: { log: e => console.log(e) }
 });
 
 const app = express();
-const PORT = process.env.PORT || 4000;
 
 // Middleware to authenticate the user. If the user sends the authorization token
 // he receives after a successful login, everything will be fine.
@@ -111,4 +111,5 @@ models.sequelize
       );
     })
   )
+  .then(() => models.sequelize.close())
   .catch(err => console.log(err));

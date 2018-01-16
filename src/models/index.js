@@ -2,7 +2,7 @@ import Sequelize from "sequelize";
 import { POSTGRESLOGIN } from "../login-data";
 
 const sequelize = new Sequelize(
-  "postgres", //Name of the database
+  process.env.TEST_DB || "postgres", //Name of the database
   "postgres", //Username
   POSTGRESLOGIN, //Password
   {

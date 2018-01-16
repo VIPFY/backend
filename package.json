@@ -6,8 +6,10 @@
   "scripts": {
     "serve": "node dist/index.js",
     "build": "babel src -d dist",
-    "test": "nodemon --exec babel-node src/helpers/test.js",
-    "start": "nodemon --exec babel-node src/index.js"
+    "start": "nodemon --exec babel-node src/index.js",
+    "test": "jest",
+    "test-server": "TEST_DB=testserver babel-node src/index.js",
+    "play": "nodemon --exec babel-node src/helpers/play.js"
   },
   "author": "Gh05d",
   "license": "ISC",
@@ -32,13 +34,18 @@
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
+    "babel-jest": "^22.1.0",
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-stage-3": "^6.24.1",
     "cors": "^2.8.4",
     "eslint": "^4.0.0",
+    "eslint-config-airbnb": "^16.1.0",
     "eslint-config-airbnb-base": "^11.2.0",
     "eslint-plugin-import": "^2.3.0",
-    "graphql": "^0.10.5"
+    "eslint-plugin-jsx-a11y": "^6.0.3",
+    "eslint-plugin-react": "^7.5.1",
+    "graphql": "^0.10.5",
+    "jest": "^22.1.1"
   }
 }
