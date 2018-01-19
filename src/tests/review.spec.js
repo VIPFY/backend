@@ -1,24 +1,26 @@
-import models from "../models/index";
-import { executeQuery } from "./helper";
+import { executeQuery, testDefault } from "./helper";
+import { dummyReviewSimple, dummyReview } from "./dummies";
+import { allReviews, fetchReview } from "./queries";
 
-const dummy = {
-  appid: expect.any(Number)
-};
-
-const allReviews = `
-  query {
-    allReviews {
-      appid
-    }
+const tests = [
+  {
+    description: "allReviews should fetch all Reviews",
+    operation: allReviews,
+    name: "allReviews",
+    dummy: dummyReviewSimple,
+    arrayTest: true
+  },
+  {
+    description:
+      "fetchReview should fetch all Reviews which belong to a specific app",
+    operation: fetchReview,
+    name: "fetchReview",
+    dummy: dummyReview,
+    args: {
+      appid: 1
+    },
+    arrayTest: true
   }
-`;
+];
 
-describe("Query ", () => {
-  test("allReviews should fetch all Reviews", async () => {
-    const result = await executeQuery(allReviews, {}, { models });
-    const { data, errors } = result;
-
-    expect(errors).toBeUndefined();
-    expect(data.allReviews).toContainEqual(expect.objectContaining(dummy));
-  });
-});
+describe("Query ", () => tests.map(test => testDefault(test)));

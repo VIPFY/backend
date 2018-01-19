@@ -6,7 +6,6 @@ export default {
   ),
 
   me: requiresAuth.createResolver((parent, args, { models, user }) => {
-    console.log(user);
     if (user) {
       // they are logged in
       return models.User.findOne({

@@ -1,34 +1,40 @@
 import models from "../models/index";
-import { executeQuery, user } from "./helper";
+import { executeQuery, testDefault, testAuthentication, user } from "./helper";
+import { dummyUser } from "./dummies";
+import { allUsers, me, fetchUser } from "./queries";
 
-const dummy = {
-  email: expect.any(String)
-};
-
-const allUsers = `
-  query {
-    allUsers {
-      id
-      email
-      userstatus
+const tests = [
+  {
+    description: "allUsers should fetch all users",
+    operation: allUsers,
+    name: "allUsers",
+    dummy: dummyUser,
+    arrayTest: true
+  },
+  {
+    description: "fetchUser should return the user with the given id",
+    operation: fetchUser,
+    name: "fetchUser",
+    dummy: user,
+    args: {
+      id: user.id
     }
   }
-`;
+];
 
 describe("Query ", () => {
-  test("allUsers should fetch all users", async () => {
-    const result = await executeQuery(allUsers, {}, { models, user });
+  tests.map(test => {
+    testDefault(test);
+    testAuthentication(test);
+  });
+
+  testAuthentication({ operation: me, name: "me" });
+
+  test("me should return the logged-in user", async () => {
+    const result = await executeQuery(me, {}, { models, user });
     const { data, errors } = result;
 
     expect(errors).toBeUndefined();
-    expect(data.allUsers).toContainEqual(expect.objectContaining(dummy));
-  });
-
-  test("allUsers should throw an error when the user is not authenticated", async () => {
-    const result = await executeQuery(allUsers, {}, { models });
-    const { data, errors } = result;
-
-    expect(errors).toEqual(expect.anything());
-    expect(data).toBeNull();
+    expect(data.me).toEqual(user);
   });
 });

@@ -1,26 +1,15 @@
-import models from "../models/index";
-import { executeQuery } from "./helper";
+import { executeQuery, testDefault } from "./helper";
+import { dummyCompany } from "./dummies";
+import { allCompanies } from "./queries";
 
-const dummy = {
-  id: expect.any(Number),
-  name: expect.any(String)
-};
-
-const allCompanies = `
-  query {
-    allCompanies {
-      name
-      id
-    }
+const tests = [
+  {
+    description: "allCompanies should fetch all companies",
+    operation: allCompanies,
+    name: "allCompanies",
+    dummy: dummyCompany,
+    arrayTest: true
   }
-`;
+];
 
-describe("Query ", () => {
-  test("allCompanies should fetch all companies", async () => {
-    const result = await executeQuery(allCompanies, {}, { models });
-    const { data, errors } = result;
-
-    expect(errors).toBeUndefined();
-    expect(data.allCompanies).toContainEqual(expect.objectContaining(dummy));
-  });
-});
+describe("Query ", () => tests.map(test => testDefault(test)));

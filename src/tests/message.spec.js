@@ -1,42 +1,24 @@
 import models from "../models/index";
-import { executeQuery, user } from "./helper";
+import { executeQuery, user, testDefault, testAuthentication } from "./helper";
+import { dummyMessage } from "./dummies";
+import { fetchMessages } from "./queries";
 
-const dummy = {
-  id: expect.any(Number),
-  type: expect.any(Number),
-  sendtime: expect.any(Number),
-  message: expect.any(String)
-};
-
-const fetchMessages = `
-  query FetchMessages($id: Int!){
-    fetchMessages(id: $id) {
-      id
-      type
-      sendtime
-      message
-    }
+const tests = [
+  {
+    description: "fetchMessages should fetch all messages for an user",
+    operation: fetchMessages,
+    name: "fetchMessages",
+    dummy: dummyMessage,
+    args: {
+      id: 72
+    },
+    arrayTest: true
   }
-`;
+];
 
 describe("Query ", () => {
-  test("fetchMessages should fetch all messages for an user", async () => {
-    const result = await executeQuery(
-      fetchMessages,
-      { id: 72 },
-      { models, user }
-    );
-    const { data, errors } = result;
-
-    expect(errors).toBeUndefined();
-    expect(data.fetchMessages).toContainEqual(expect.objectContaining(dummy));
-  });
-
-  test("fetchMessages should throw an error when the user is not authenticated", async () => {
-    const result = await executeQuery(fetchMessages, { id: 69 }, { models });
-    const { data, errors } = result;
-
-    expect(errors).toEqual(expect.anything());
-    expect(data.fetchMessages).toBeNull();
+  tests.map(test => {
+    testDefault(test);
+    testAuthentication(test);
   });
 });

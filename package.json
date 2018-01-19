@@ -6,8 +6,8 @@
   "scripts": {
     "serve": "node dist/index.js",
     "build": "babel src -d dist",
-    "start": "nodemon --exec babel-node src/index.js",
-    "test": "jest",
+    "start": "LOGGING=true nodemon --exec babel-node src/index.js",
+    "test": "jest --verbose",
     "test-server": "TEST_DB=testserver babel-node src/index.js",
     "play": "nodemon --exec babel-node src/helpers/play.js"
   },

@@ -1,32 +1,57 @@
-import models from "../models/index";
-import { executeQuery } from "./helper";
+import { executeQuery, testDefault } from "./helper";
+import { dummyApp, dummyAppImage, dummyDeveloper } from "./dummies";
+import {
+  allApps,
+  allAppImages,
+  fetchApp,
+  fetchAppImages,
+  fetchDeveloper
+} from "./queries";
 
-const allApps = `
-query {
-  allApps {
-    id
-    name
-    developerid
-    description
-    applogo
+const tests = [
+  {
+    description: "allApps should fetch all available Apps",
+    operation: allApps,
+    name: "allApps",
+    dummy: dummyApp,
+    arrayTest: true
+  },
+  {
+    description: "allAppImages should return all Links to Images",
+    operation: allAppImages,
+    name: "allAppImages",
+    dummy: dummyAppImage,
+    arrayTest: true
+  },
+  {
+    description: "fetchApp should fetch an App when given a correct name",
+    operation: fetchApp,
+    name: "fetchApp",
+    dummy: dummyApp,
+    args: {
+      name: "Weebly"
+    }
+  },
+  {
+    description:
+      "fetchAppImages should return all Links to Images associated with an App",
+    operation: fetchAppImages,
+    name: "fetchAppImages",
+    dummy: dummyAppImage,
+    args: {
+      appid: 1
+    },
+    arrayTest: true
+  },
+  {
+    description: "fetchDeveloper should return the developer with the given id",
+    operation: fetchDeveloper,
+    name: "fetchDeveloper",
+    args: {
+      developerid: 1
+    },
+    dummy: dummyDeveloper
   }
-}
-`;
+];
 
-const dummy = {
-  id: expect.any(Number),
-  name: expect.any(String),
-  developerid: expect.any(Number),
-  description: expect.any(String),
-  applogo: expect.stringMatching(/[\w]+\.[a-zA-z]{3,4}/)
-};
-
-describe("Query", () => {
-  test("allApps should fetch all available Apps", async () => {
-    const result = await executeQuery(allApps, {}, { models });
-    const { data, errors } = result;
-
-    expect(errors).toBeUndefined();
-    expect(data.allApps).toContainEqual(expect.objectContaining(dummy));
-  });
-});
+describe("Query", () => tests.map(test => testDefault(test)));

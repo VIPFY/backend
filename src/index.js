@@ -95,8 +95,12 @@ models.sequelize
   .sync()
   .then(() =>
     server.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Go to http://localhost:${PORT}/graphiql for the Interface`);
+      if (process.env.LOGGING) {
+        console.log(`Server running on port ${PORT}`);
+        console.log(
+          `Go to http://localhost:${PORT}/graphiql for the Interface`
+        );
+      }
 
       new SubscriptionServer(
         {
@@ -111,5 +115,4 @@ models.sequelize
       );
     })
   )
-  .then(() => models.sequelize.close())
   .catch(err => console.log(err));
