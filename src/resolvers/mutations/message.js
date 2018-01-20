@@ -85,7 +85,7 @@ export default {
             fromuser: sender.dataValues,
             touser: receiver.dataValues
           };
-          console.log(newMessage);
+
           pubsub.publish(NEW_MESSAGE, {
             userId: receiver.id,
             newMessage

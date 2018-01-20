@@ -19,7 +19,7 @@ const request = require("request");
 export const schema = makeExecutableSchema({
   typeDefs,
   resolvers,
-  logger: { log: e => console.log(e) }
+  logger: process.env.LOGGING ? { log: e => console.log(e) } : ""
 });
 
 const app = express();

@@ -94,10 +94,10 @@ export const tryLogin = async (email, password, models, SECRET, SECRETTWO) => {
     SECRET,
     refreshTokenSecret
   );
-  console.log(user);
+
   return {
     ok: true,
-    user: user,
+    user,
     token,
     refreshToken
   };

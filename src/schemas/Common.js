@@ -10,8 +10,8 @@ export const types = `
   type RegisterResponse {
     ok: Boolean!
     error: String
-    token: String!
-    refreshToken: String!
+    token: String
+    refreshToken: String
   }
 
 # The user receives tokens upon a successful login

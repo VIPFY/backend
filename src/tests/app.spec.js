@@ -39,7 +39,7 @@ const tests = [
     name: "fetchAppImages",
     dummy: dummyAppImage,
     args: {
-      appid: 1
+      appid: 2
     },
     arrayTest: true
   },

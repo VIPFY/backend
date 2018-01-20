@@ -25,7 +25,12 @@ export default {
   ) => {
     //Check whether the email is already in use
     const emailInUse = await models.User.findOne({ where: { email } });
-    if (emailInUse) throw new Error("Email already in use!");
+    if (emailInUse) {
+      return {
+        ok: false,
+        error: "Email already in use!"
+      };
+    }
 
     try {
       //A password musst be created because otherwise the not null rule of the
@@ -34,7 +39,7 @@ export default {
 
       //Change the given hash to improve security
       const start = _.random(3, 8);
-      const newHash = passwordHash.replace("/", 2).substr(start);
+      const newHash = await passwordHash.replace("/", 2).substr(start);
 
       const user = await models.User.create({
         email,
@@ -42,7 +47,10 @@ export default {
         password: newHash
       });
 
-      mailjet(user.email, newHash);
+      // Don't send emails when testing the database!
+      if (process.env.USER == "postgres") {
+        mailjet(email, newHash);
+      }
       const refreshSecret = user.password + SECRETTWO;
 
       const [token, refreshToken] = await createTokens(
@@ -53,13 +61,12 @@ export default {
       return {
         ok: true,
         token,
-        refreshToken,
-        user
+        refreshToken
       };
     } catch (err) {
       return {
         ok: false,
-        error: err
+        error: err.message
       };
     }
   },
@@ -126,7 +133,10 @@ export default {
     models.User.update({ password: newHash }, { where: { email } });
 
     try {
-      mailjet(email, newHash);
+      // Don't send emails when testing the database!
+      if (process.env.USER == "postgres") {
+        mailjet(email, newHash);
+      }
       //Exchange this for a new solution when a proper mailjet template exists
       models.User.update({ userstatus: "toverify" }, { where: { email } });
 
@@ -137,7 +147,7 @@ export default {
     } catch (err) {
       return {
         ok: false,
-        error: err
+        error: err.message
       };
     }
   }

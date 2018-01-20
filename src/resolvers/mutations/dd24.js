@@ -4,15 +4,22 @@ import { requiresAuth } from "../../helpers/permissions";
 export default {
   domainCommands: requiresAuth.createResolver(
     async (parent, { command, params, agb }, { models }) => {
-      if (command != "AddDomain" || (command = "AddDomain" && agb)) {
-        const result = await dd24Api(command, params);
-        console.log(result);
-        return result;
-      } else {
+      try {
+        if (command != "AddDomain" || (command == "AddDomain" && agb)) {
+          const result = await dd24Api(command, params);
+          console.log(result);
+          return result;
+        } else {
+          return {
+            error: "AGB's not accepted!",
+            code: 600,
+            description: ""
+          };
+        }
+      } catch (err) {
         return {
-          error: "AGB's not accepted!",
-          code: 600,
-          description: ""
+          code: 404,
+          error: err.message
         };
       }
     }

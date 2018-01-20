@@ -12,12 +12,12 @@ const isTrueSet = process.env.LOGGING == "true";
 
 const sequelize = new Sequelize(
   process.env.TEST_DB || "postgres", //Name of the database
-  "postgres", //Username
-  POSTGRESLOGIN, //Password
+  process.env.USER, //Username
+  process.env.PW || POSTGRESLOGIN, //Password
   {
     dialect: "postgres", //Which database is used
     host: "localhost", //The host used
-    port: "5432",
+    port: process.env.PORT_DB,
     define: {
       timestamps: false
     },

@@ -4,10 +4,11 @@
 import { graphql } from "graphql";
 import { schema } from "../index";
 import models from "../models/index";
+import { random } from "lodash";
 
 // Object to inject into context to test whether an user is logged-in
 export const user = {
-  id: 69,
+  id: 1,
   email: expect.any(String)
 };
 

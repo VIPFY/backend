@@ -5,7 +5,6 @@ export const fetchMessages = `
     fetchMessages(id: $id) {
       id
       type
-      sendtime
       message
     }
   }

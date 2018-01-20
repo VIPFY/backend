@@ -17,7 +17,7 @@ const tests = [
     name: "fetchReview",
     dummy: dummyReview,
     args: {
-      appid: 1
+      appid: 2
     },
     arrayTest: true
   }

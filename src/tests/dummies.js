@@ -44,6 +44,41 @@ export const dummyCompany = {
 export const dummyMessage = {
   id: expect.any(Number),
   type: expect.any(Number),
-  sendtime: expect.any(Number),
   message: expect.any(String)
+};
+
+export const dummyMessageResponseSuccess = {
+  error: null,
+  ok: true,
+  message: expect.anything()
+};
+
+export const dummyMessageResponseFailure = {
+  error: expect.any(String),
+  ok: false,
+  message: null
+};
+
+export const dummyRegisterResponse = {
+  error: null,
+  ok: true,
+  token: expect.any(String),
+  refreshToken: expect.any(String)
+};
+
+export const dummyRegisterResponseFailure = {
+  error: expect.any(String),
+  ok: false,
+  token: null,
+  refreshToken: null
+};
+
+export const dummySigninResponse = {
+  error: null,
+  ok: true,
+  user: {
+    id: expect.any(Number)
+  },
+  token: expect.any(String),
+  refreshToken: expect.any(String)
 };
