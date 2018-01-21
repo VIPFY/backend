@@ -19,7 +19,7 @@ const request = require("request");
 export const schema = makeExecutableSchema({
   typeDefs,
   resolvers,
-  logger: process.env.LOGGING ? { log: e => console.log(e) } : ""
+  logger: process.env.LOGGING ? { log: e => console.log(e) } : false
 });
 
 const app = express();
@@ -91,28 +91,31 @@ app.get("/", (req, res) =>
 
 //Sync our database and run the app afterwards
 const server = createServer(app);
-models.sequelize
-  .sync()
-  .then(() =>
-    server.listen(PORT, () => {
-      if (process.env.LOGGING) {
-        console.log(`Server running on port ${PORT}`);
-        console.log(
-          `Go to http://localhost:${PORT}/graphiql for the Interface`
-        );
-      }
-
-      new SubscriptionServer(
-        {
-          execute,
-          subscribe,
-          schema
-        },
-        {
-          server,
-          path: "/subscriptions"
-        }
-      );
-    })
-  )
-  .catch(err => console.log(err));
+models.sequelize.sync();
+// .then(() =>
+//   server.listen(PORT, () => {
+//     if (process.env.LOGGING) {
+//       console.log(`Server running on port ${PORT}`);
+//       console.log(
+//         `Go to http://localhost:${PORT}/graphiql for the Interface`
+//       );
+//     }
+//
+//     new SubscriptionServer(
+//       {
+//         execute,
+//         subscribe,
+//         schema
+//       },
+//       {
+//         server,
+//         path: "/subscriptions"
+//       }
+//     );
+//   })
+// )
+// .catch(err => {
+//   console.log(err);
+//   server.listen(PORT + 1);
+//   return;
+// });

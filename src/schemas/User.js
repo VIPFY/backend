@@ -109,5 +109,5 @@ export const mutations = `
   signUpConfirm(email: String!, password: String!): RegisterResponse!
 
   # Send the user a new link for sign up
-  forgotPassword(email: String!): RegisterResponse!
+  forgotPassword(email: String!): ForgotPwResponse!
 `;

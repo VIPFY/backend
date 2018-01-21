@@ -1,14 +1,19 @@
 import models from "../models/index";
 import { executeQuery, testDefault, testAuthentication, user } from "./helper";
 import {
+  dummyEmail,
   dummyUser,
   dummyRegisterResponse,
   dummyRegisterResponseFailure,
-  dummySigninResponse
+  dummySignInResponse,
+  dummySignInResponseFailure,
+  dummyForgotPwResponse,
+  dummyForgotPwResponseFailure
 } from "./dummies";
 import { allUsers, me, fetchUser } from "./queries";
-import { signUp, signUpConfirm, signIn } from "./mutations";
+import { signUp, signUpConfirm, signIn, forgotPassword } from "./mutations";
 import { internet, random } from "faker";
+import { SECRET, SECRETTWO } from "../login-data";
 
 const testQueries = [
   {
@@ -79,9 +84,9 @@ const testMutations = [
       "signIn should return a token so that the user can be authenticated",
     operation: signIn,
     name: "signIn",
-    dummy: dummySigninResponse,
+    dummy: dummySignInResponse,
     args: {
-      email: "testuser@vipfy.com",
+      email: "Beth_Kunde24@gmail.com",
       password: "test"
     }
   },
@@ -90,7 +95,7 @@ const testMutations = [
       "signIn should throw an error if the email is not in the database",
     operation: signIn,
     name: "signIn",
-    dummy: dummyRegisterResponseFailure,
+    dummy: dummySignInResponseFailure,
     args: {
       email: internet.email(),
       password: "test"
@@ -100,15 +105,34 @@ const testMutations = [
     description: "signIn should throw an error if the password is incorrect",
     operation: signIn,
     name: "signIn",
-    dummy: dummyRegisterResponseFailure,
+    dummy: dummySignInResponseFailure,
     args: {
-      email: "testuser@vipfy.com",
+      email: dummyEmail,
       password: "2354234"
+    }
+  },
+  {
+    description: "forgotPassword should send the user a new signUp email",
+    operation: forgotPassword,
+    name: "forgotPassword",
+    dummy: dummyForgotPwResponse,
+    args: {
+      email: dummyEmail
+    }
+  },
+  {
+    description:
+      "forgotPassword should return an error if the email is not in the database",
+    operation: forgotPassword,
+    name: "forgotPassword",
+    dummy: dummyForgotPwResponseFailure,
+    args: {
+      email: internet.email()
     }
   }
 ];
 
-describe("Query ", () => {
+describe("Query", () => {
   const unnecessaryTests = [];
   testQueries.map(test => {
     testDefault(test);
@@ -125,13 +149,47 @@ describe("Query ", () => {
     const result = await executeQuery(me, {}, { models, user });
     const { data, errors } = result;
 
-    expect(errors).toBeUndefined();
-    expect(data.me).toEqual(user);
+    await expect(errors).toBeUndefined();
+    await expect(data.me).toEqual(user);
   });
 });
 
-describe("Mutation ", () => {
+describe("Mutation", () => {
   testMutations.map(test => {
     testDefault(test);
+  });
+});
+
+describe("This workflow", () => {
+  test("should signUp an user, confirm him and then log him in", async () => {
+    const email = internet.email();
+    const password = random.word();
+
+    const signUpUser = await executeQuery(
+      signUp,
+      { email },
+      { models, SECRET, SECRETTWO }
+    );
+
+    await expect(signUpUser.errors).toBeUndefined();
+    await expect(signUpUser.data.signUp).toEqual(dummyRegisterResponse);
+
+    const ConfirmUser = await executeQuery(
+      signUpConfirm,
+      { email, password },
+      { models, SECRET, SECRETTWO }
+    );
+
+    await expect(ConfirmUser.errors).toBeUndefined();
+    await expect(ConfirmUser.data.signUpConfirm).toEqual(dummyRegisterResponse);
+
+    const requestNewPassword = await executeQuery(
+      signIn,
+      { email, password },
+      { models, SECRET, SECRETTWO }
+    );
+
+    await expect(requestNewPassword.errors).toBeUndefined();
+    await expect(requestNewPassword.data.signIn).toEqual(dummySignInResponse);
   });
 });

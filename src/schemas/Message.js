@@ -70,13 +70,13 @@ export const queries = `
 
 export const mutations = `
 # The time an user opened a message
-  setReadtime(id: Int!, model: MESSAGE_MODEL!): Response!
+  setReadtime(id: Int!, model: MESSAGE_MODEL!): MessageResponse!
 
 # Sender or Receiver can delete a message here
   setDeleteStatus(id: Int!, model: MESSAGE_MODEL!, type: MESSAGE_COLUMN!): Response!
 
 # Send a message to another user
-  sendMessage(fromuser: Int!, touser: Int!, message: String!): Response!
+  sendMessage(fromuser: Int!, touser: Int!, message: String!): MessageResponse!
 `;
 
 export const subscriptions = `

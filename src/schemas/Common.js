@@ -2,7 +2,22 @@ export const types = `
 # The basic Response
   type Response {
     ok: Boolean!
+    error: String
+  }
+
+# Contains the changed rating
+  type ReviewResponse {
+    ok: Boolean!
+    error: String
+    balance: Int
+    id: Int
+  }
+
+# Contains the id of the Message
+  type MessageResponse {
+    ok: Boolean!
     message: String
+    id: Int
     error: String
   }
 
@@ -22,6 +37,13 @@ export const types = `
     user: User
     error: String
   }
+
+# The user gets the email where the new auth is send back
+ type ForgotPwResponse {
+   ok: Boolean!
+   error: String
+   email: String
+ }
 
 # This three sexes are possible
   enum SEX {

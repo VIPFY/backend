@@ -5,10 +5,11 @@ import { graphql } from "graphql";
 import { schema } from "../index";
 import models from "../models/index";
 import { random } from "lodash";
+import { SECRET, SECRETTWO } from "../login-data";
 
 // Object to inject into context to test whether an user is logged-in
 export const user = {
-  id: 1,
+  id: random(1, 60),
   email: expect.any(String)
 };
 
@@ -27,28 +28,35 @@ export function testDefault({
   args
 }) {
   return test(description, async () => {
-    const result = await executeQuery(operation, args, { models, user });
+    expect.assertions(2);
+    const result = await executeQuery(operation, args, {
+      models,
+      user,
+      SECRET,
+      SECRETTWO
+    });
     const { data, errors } = result;
 
-    expect(errors).toBeUndefined();
+    await expect(errors).toBeUndefined();
     if (arrayTest) {
-      expect(data[name]).toContainEqual(expect.objectContaining(dummy));
+      await expect(data[name]).toContainEqual(expect.objectContaining(dummy));
     } else {
-      expect(data[name]).toEqual(dummy);
+      await expect(data[name]).toEqual(dummy);
     }
   });
 }
 
 export function testAuthentication({ operation, name, args, arrayTest }) {
-  return test(`${name} should throw an error when the user is not authenticated`, async () => {
+  return test(`${name} should throw an error if the user is not authenticated`, async () => {
+    expect.assertions(2);
     const result = await executeQuery(operation, args, { models });
     const { data, errors } = result;
 
-    expect(errors).toEqual(expect.anything());
+    await expect(errors).toEqual(expect.anything());
     if (data) {
-      expect(data[name]).toBeNull();
+      await expect(data[name]).toBeNull();
     } else {
-      expect(data).toBeNull();
+      await expect(data).toBeNull();
     }
   });
 }

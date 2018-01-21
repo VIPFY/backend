@@ -52,7 +52,6 @@ export default {
         mailjet(email, newHash);
       }
       const refreshSecret = user.password + SECRETTWO;
-
       const [token, refreshToken] = await createTokens(
         user,
         SECRET,

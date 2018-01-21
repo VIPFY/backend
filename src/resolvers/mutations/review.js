@@ -26,7 +26,7 @@ export default {
           });
           return {
             ok: true,
-            message: text
+            id: review.id
           };
         } catch (err) {
           return {
@@ -38,71 +38,73 @@ export default {
     }
   ),
 
-  rateReview: async (parent, { reviewid, userid, balance }, { models }) => {
-    const commenter = await models.User.findById(userid);
-    const review = await models.Review.findById(reviewid);
-    const changeRating = await models.ReviewHelpful.findOne({
-      where: {
-        reviewid,
-        userid
-      }
-    });
-
-    if (!review) {
-      return {
-        ok: false,
-        error: "Review doesn't exist!"
-      };
-    } else if (!commenter) {
-      return {
-        ok: false,
-        error: "User doesn't exist!"
-      };
-    } else if (!changeRating) {
-      try {
-        const rate = await models.ReviewHelpful.create({
-          balance,
+  rateReview: requiresAuth.createResolver(
+    async (parent, { reviewid, userid, balance }, { models }) => {
+      const commenter = await models.User.findById(userid);
+      const review = await models.Review.findById(reviewid);
+      const changeRating = await models.ReviewHelpful.findOne({
+        where: {
           reviewid,
           userid
-        });
+        }
+      });
 
-        return {
-          ok: true,
-          message: "Review rated"
-        };
-      } catch (err) {
+      if (!review) {
         return {
           ok: false,
-          error: err.message
+          error: "Review doesn't exist!"
         };
-      }
-    } else {
-      if (changeRating.balance == balance) {
+      } else if (!commenter) {
         return {
           ok: false,
-          error: `This is the same value: ${balance}`
+          error: "User doesn't exist!"
         };
-      }
-      try {
-        const changing = await models.ReviewHelpful.update(
-          { balance },
-          {
-            where: {
-              userid,
-              reviewid
+      } else if (!changeRating) {
+        try {
+          const rate = await models.ReviewHelpful.create({
+            balance,
+            reviewid,
+            userid
+          });
+
+          return {
+            ok: true,
+            balance
+          };
+        } catch (err) {
+          return {
+            ok: false,
+            error: err.message
+          };
+        }
+      } else {
+        if (changeRating.balance == balance) {
+          return {
+            ok: false,
+            error: `This is the same value: ${balance}`
+          };
+        }
+        try {
+          const changing = await models.ReviewHelpful.update(
+            { balance },
+            {
+              where: {
+                userid,
+                reviewid
+              }
             }
-          }
-        );
-        return {
-          ok: true,
-          message: `Rating changed to ${balance}`
-        };
-      } catch (err) {
-        return {
-          ok: false,
-          error: err.message
-        };
+          );
+          return {
+            ok: true,
+            balance
+          };
+        } catch (err) {
+          return {
+            ok: false,
+            error: err.message
+          };
+        }
       }
     }
-  }
+  )
 };

@@ -39,6 +39,7 @@ export default {
           await models[model].update({ readtime: now }, { where: { id } });
           return {
             ok: true,
+            id,
             message: now
           };
         } else {
@@ -93,6 +94,7 @@ export default {
 
           return {
             ok: true,
+            id: newMessage.id,
             message
           };
         } catch (err) {

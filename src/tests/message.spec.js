@@ -1,14 +1,17 @@
 import models from "../models/index";
-import { user, testDefault, testAuthentication } from "./helper";
+import { user, executeQuery, testDefault, testAuthentication } from "./helper";
 import {
   dummyMessage,
+  dummyResponse,
+  dummyResponseFailure,
   dummyMessageResponseSuccess,
   dummyMessageResponseFailure
 } from "./dummies";
 import { fetchMessages } from "./queries";
-import { sendMessage } from "./mutations";
+import { sendMessage, setDeleteStatus, setReadtime } from "./mutations";
 import { lorem } from "faker";
 import { random } from "lodash";
+import { SECRET, SECRETTWO } from "../login-data";
 
 const testQueries = [
   {
@@ -31,7 +34,7 @@ const testMutations = [
     dummy: dummyMessageResponseSuccess,
     args: {
       fromuser: random(1, 30),
-      touser: random(1, 30),
+      touser: random(31, 70),
       message: lorem.sentence()
     }
   },
@@ -65,14 +68,37 @@ const testMutations = [
     name: "sendMessage",
     dummy: dummyMessageResponseFailure,
     args: {
-      fromuser: random(0, 16),
-      touser: random(0, 16),
+      fromuser: random(0, 66),
+      touser: random(0, 66),
       message: ""
+    }
+  },
+  {
+    description:
+      "setDeleteStatus should throw an error if the message doesn't exist",
+    operation: setDeleteStatus,
+    name: "setDeleteStatus",
+    dummy: dummyResponseFailure,
+    args: {
+      id: 99999,
+      model: "Notification",
+      type: "deleted"
+    }
+  },
+  {
+    description:
+      "setReadtime should throw an error, if the message was already read",
+    operation: setReadtime,
+    name: "setReadtime",
+    dummy: dummyMessageResponseFailure,
+    args: {
+      id: 6,
+      model: "Notification"
     }
   }
 ];
 
-describe("Query ", () => {
+describe("Query", () => {
   const unnecessaryTests = [];
   testQueries.map(test => {
     testDefault(test);
@@ -84,7 +110,7 @@ describe("Query ", () => {
   });
 });
 
-describe("Mutation ", () => {
+describe("Mutation", () => {
   const unnecessaryTests = [];
   testMutations.map(test => {
     testDefault(test);
@@ -93,5 +119,56 @@ describe("Mutation ", () => {
       testAuthentication(test);
     }
     unnecessaryTests.push(test.name);
+  });
+});
+
+describe("This workflow", () => {
+  test("should send a message from user to user, read it and delete it.", async () => {
+    const sender = random(1, 30);
+    const receiver = random(31, 70);
+    const message = lorem.sentence();
+    const model = "Notification";
+
+    const sendTheMessage = await executeQuery(
+      sendMessage,
+      {
+        fromuser: sender,
+        touser: receiver,
+        message
+      },
+      { models, user, SECRET, SECRETTWO }
+    );
+
+    await expect(sendTheMessage.errors).toBeUndefined();
+    await expect(sendTheMessage.data.sendMessage).toEqual(
+      dummyMessageResponseSuccess
+    );
+
+    const readTheMessage = await executeQuery(
+      setReadtime,
+      {
+        id: sendTheMessage.data.sendMessage.id,
+        model
+      },
+      { models, user, SECRET, SECRETTWO }
+    );
+
+    await expect(readTheMessage.errors).toBeUndefined();
+    await expect(readTheMessage.data.setReadtime).toEqual(
+      dummyMessageResponseSuccess
+    );
+
+    const deleteTheMessage = await executeQuery(
+      setDeleteStatus,
+      {
+        id: sendTheMessage.data.sendMessage.id,
+        model,
+        type: "deleted"
+      },
+      { models, user, SECRET, SECRETTWO }
+    );
+
+    await expect(deleteTheMessage.errors).toBeUndefined();
+    await expect(deleteTheMessage.data.setDeleteStatus).toEqual(dummyResponse);
   });
 });

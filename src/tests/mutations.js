@@ -3,7 +3,28 @@ export const sendMessage = `
     sendMessage(fromuser: $fromuser, touser: $touser, message: $message) {
       ok
       error
+      id
       message
+    }
+  }
+`;
+
+export const setDeleteStatus = `
+  mutation SetDeleteStatus($id: Int!, $model: MESSAGE_MODEL!, $type: MESSAGE_COLUMN!) {
+    setDeleteStatus(id: $id, model: $model, type: $type) {
+      ok
+      error
+    }
+  }
+`;
+
+export const setReadtime = `
+  mutation SetReadtime($id: Int!, $model: MESSAGE_MODEL!) {
+    setReadtime(id: $id, model: $model) {
+      ok
+      id
+      message
+      error
     }
   }
 `;
@@ -40,6 +61,37 @@ export const signIn = `
       }
       token
       refreshToken
+    }
+  }
+`;
+
+export const forgotPassword = `
+  mutation ForgotPassword($email: String!) {
+    forgotPassword(email: $email) {
+      ok
+      error
+      email
+    }
+  }
+`;
+
+export const writeReview = `
+  mutation WriteReview($userid: Int!, $appid: Int!, $stars: Int!, $text: String) {
+    writeReview(userid: $userid, appid: $appid, stars: $stars, text: $text) {
+      error
+      ok
+      id
+    }
+  }
+`;
+
+export const rateReview = `
+  mutation RateReview($reviewid: Int!, $userid: Int!, $balance: Int!) {
+    rateReview(reviewid: $reviewid, userid: $userid, balance: $balance) {
+      ok
+      error
+      balance
+      id
     }
   }
 `;

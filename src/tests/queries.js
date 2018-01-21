@@ -1,5 +1,3 @@
-// This file contains all the queries which will be tested
-
 export const fetchMessages = `
   query FetchMessages($id: Int!){
     fetchMessages(id: $id) {

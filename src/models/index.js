@@ -7,9 +7,6 @@ components and exports everything as one big object.
 import Sequelize from "sequelize";
 import { POSTGRESLOGIN } from "../login-data";
 
-// Disable showing sql queries when testing the database
-const isTrueSet = process.env.LOGGING == "true";
-
 const sequelize = new Sequelize(
   process.env.TEST_DB || "postgres", //Name of the database
   process.env.USER, //Username
@@ -21,7 +18,7 @@ const sequelize = new Sequelize(
     define: {
       timestamps: false
     },
-    logging: isTrueSet
+    logging: process.env.LOGGING ? true : false
   }
 );
 
