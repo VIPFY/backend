@@ -86,7 +86,7 @@ app.use(
 
 //The home route is currently empty
 app.get("/", (req, res) =>
-  res.send(`Go to http://localhost:${PORT}/graphiql for the Interface`)
+  res.send(`Go to https://localhost:${PORT}/graphiql for the Interface`)
 );
 
 //Sync our database and run the app afterwards
@@ -97,7 +97,7 @@ models.sequelize.sync()
     if (process.env.LOGGING) {
       console.log(`Server running on port ${PORT}`);
       console.log(
-        `Go to http://localhost:${PORT}/graphiql for the Interface`
+        `Go to https://localhost:${PORT}/graphiql for the Interface`
       );
     }
 
