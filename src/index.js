@@ -17,8 +17,8 @@ import { PORT } from "./constants";
 const fs = require('fs'); 
 
 const https_options = {
-  key: fs.readFileSync('/etc/letsencrypt/live/vipfy.com/fullchain.pem'),
-  cert: fs.readFileSync('/etc/letsencrypt/live/vipfy.com/privkey.pem')
+  key: fs.readFileSync('/etc/letsencrypt/live/vipfy.com/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/vipfy.com/cert.pem')
 };
 
 const request = require("request");
