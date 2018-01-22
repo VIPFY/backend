@@ -13,8 +13,8 @@ const sequelize = new Sequelize(
   process.env.PW || POSTGRESLOGIN, //Password
   {
     dialect: "postgres", //Which database is used
-    host: "localhost", //The host used
-    port: process.env.PORT_DB,
+    host: process.env.IP_DB || "localhost", //The host used
+    port: process.env.PORT_DB || 5432,
     define: {
       timestamps: false
     },
