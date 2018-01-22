@@ -57,7 +57,7 @@ app.use(authMiddleware);
 
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: true,
   credentials: true // <-- REQUIRED backend setting
 };
 app.use(cors(corsOptions));
