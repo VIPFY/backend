@@ -14,6 +14,12 @@ import models from "./models";
 import { SECRET, SECRETTWO } from "./login-data";
 import { refreshTokens } from "./services/auth";
 import { PORT } from "./constants";
+const fs = require('fs'); 
+
+const https_options = {
+  key: fs.readFileSync('etc/letsencrypt/live/vipfy.com/fullchain.pem'),
+  cert: fs.readFileSync('etc/letsencrypt/live/vipfy.com/privkey.pem')
+};
 
 const request = require("request");
 export const schema = makeExecutableSchema({
@@ -90,7 +96,7 @@ app.get("/", (req, res) =>
 );
 
 //Sync our database and run the app afterwards
-const server = createServer(app);
+const server = createServer(https_options, app);
 models.sequelize.sync()
 .then(() =>
   server.listen(PORT, () => {
