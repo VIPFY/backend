@@ -7,10 +7,9 @@ export const sendEmail = (email, hash) => {
   const options = {
     FromEmail: "office@vipfy.com",
     FromName: "Vipfy Office",
-    "MJ-TemplateID": "197442",
+    "MJ-TemplateID": "298815",
     "MJ-TemplateLanguage": "true",
-    Recipients: [{ Email: email }],
-    Vars: { confirmation_link: con_link }
+    Recipients: [{ Email: email }]
   };
 
   Mailjet.post("send")

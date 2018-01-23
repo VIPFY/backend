@@ -6,15 +6,16 @@ components and exports everything as one big object.
 
 import Sequelize from "sequelize";
 import { POSTGRESLOGIN } from "../login-data";
-
+console.log(process.env.IP_DB)
+console.log("IP TEST")
 const sequelize = new Sequelize(
   process.env.TEST_DB || "postgres", //Name of the database
   process.env.USER, //Username
   process.env.PW || POSTGRESLOGIN, //Password
   {
     dialect: "postgres", //Which database is used
-    host: "localhost", //The host used
-    port: process.env.PORT_DB,
+    host: process.env.IP_DB || "localhost", //The host used
+    port: process.env.PORT_DB || 5432,
     define: {
       timestamps: false
     },

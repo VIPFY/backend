@@ -2,7 +2,7 @@ import express from "express";
 import bodyParser from "body-parser";
 import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
 import { makeExecutableSchema } from "graphql-tools";
-import { createServer } from "http";
+import { createServer } from "https";
 import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
 import cors from "cors";
@@ -14,6 +14,12 @@ import models from "./models";
 import { SECRET, SECRETTWO } from "./login-data";
 import { refreshTokens } from "./services/auth";
 import { PORT } from "./constants";
+const fs = require("fs");
+
+const https_options = {
+  key: fs.readFileSync("/etc/letsencrypt/live/vipfy.com/privkey.pem"),
+  cert: fs.readFileSync("/etc/letsencrypt/live/vipfy.com/cert.pem")
+};
 
 const request = require("request");
 export const schema = makeExecutableSchema({
@@ -57,7 +63,7 @@ app.use(authMiddleware);
 
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: true,
   credentials: true // <-- REQUIRED backend setting
 };
 app.use(cors(corsOptions));
@@ -86,11 +92,11 @@ app.use(
 
 //The home route is currently empty
 app.get("/", (req, res) =>
-  res.send(`Go to http://localhost:${PORT}/graphiql for the Interface`)
+  res.send(`Go to https://localhost:${PORT}/graphiql for the Interface`)
 );
 
 //Sync our database and run the app afterwards
-const server = createServer(app);
+const server = createServer(https_options, app);
 models.sequelize
   .sync()
   .then(() =>
@@ -98,7 +104,7 @@ models.sequelize
       if (process.env.LOGGING) {
         console.log(`Server running on port ${PORT}`);
         console.log(
-          `Go to http://localhost:${PORT}/graphiql for the Interface`
+          `Go to https://localhost:${PORT}/graphiql for the Interface`
         );
       }
 
