@@ -9,9 +9,14 @@ exports.default = function (sequelize, _ref) {
       BOOLEAN = _ref.BOOLEAN,
       INTEGER = _ref.INTEGER,
       ENUM = _ref.ENUM,
-      DATE = _ref.DATE;
+      DATE = _ref.DATE,
+      NOW = _ref.NOW;
 
   var User = sequelize.define("user", {
+    firstname: STRING,
+    middlename: STRING,
+    lastname: STRING,
+    position: STRING,
     email: {
       type: STRING,
       unique: true,
@@ -21,15 +26,12 @@ exports.default = function (sequelize, _ref) {
       }
     },
     password: STRING,
+    title: STRING,
+    sex: ENUM("m", "w", "t"),
     userstatus: {
       type: ENUM("toverify", "normal", "banned", "onlynews"),
       defaultValue: "toverify"
     },
-    firstname: STRING,
-    middlename: STRING,
-    lastname: STRING,
-    title: STRING,
-    sex: ENUM("m", "w", "t"),
     birthday: DATE,
     recoveryemail: STRING,
     mobilenumber: STRING,
@@ -46,6 +48,26 @@ exports.default = function (sequelize, _ref) {
     newsletter: {
       type: BOOLEAN,
       defaultValue: false
+    },
+    referall: {
+      type: INTEGER,
+      defaultValue: 0
+    },
+    cobranded: {
+      type: INTEGER,
+      defaultValue: 0
+    },
+    resetoption: {
+      type: INTEGER,
+      defaultValue: 0
+    },
+    createdAt: {
+      type: DATE,
+      defaultValue: NOW
+    },
+    updatedAt: {
+      type: DATE,
+      defaultValue: NOW
     }
   });
 

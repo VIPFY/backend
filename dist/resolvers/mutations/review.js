@@ -75,7 +75,7 @@ exports.default = {
               review = _context.sent;
               return _context.abrupt("return", {
                 ok: true,
-                message: text
+                id: review.id
               });
 
             case 21:
@@ -99,7 +99,7 @@ exports.default = {
     };
   }()),
 
-  rateReview: function () {
+  rateReview: _permissions.requiresAuth.createResolver(function () {
     var _ref4 = (0, _asyncToGenerator3.default)( /*#__PURE__*/_regenerator2.default.mark(function _callee2(parent, _ref5, _ref6) {
       var reviewid = _ref5.reviewid,
           userid = _ref5.userid,
@@ -170,7 +170,7 @@ exports.default = {
               rate = _context2.sent;
               return _context2.abrupt("return", {
                 ok: true,
-                message: "Review rated"
+                balance: balance
               });
 
             case 25:
@@ -210,7 +210,7 @@ exports.default = {
               changing = _context2.sent;
               return _context2.abrupt("return", {
                 ok: true,
-                message: "Rating changed"
+                balance: balance
               });
 
             case 39:
@@ -229,8 +229,8 @@ exports.default = {
       }, _callee2, undefined, [[18, 25], [32, 39]]);
     }));
 
-    return function rateReview(_x4, _x5, _x6) {
+    return function (_x4, _x5, _x6) {
       return _ref4.apply(this, arguments);
     };
-  }()
+  }())
 };

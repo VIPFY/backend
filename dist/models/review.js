@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", {
 
 exports.default = function (sequelize, _ref) {
   var TEXT = _ref.TEXT,
-      INTEGER = _ref.INTEGER,
+      SMALLINT = _ref.SMALLINT,
       DATE = _ref.DATE,
       NOW = _ref.NOW;
 
@@ -16,7 +16,7 @@ exports.default = function (sequelize, _ref) {
       defaultValue: NOW
     },
     stars: {
-      type: INTEGER,
+      type: SMALLINT,
       allowNull: false,
       defaultValue: 1,
       validate: {
@@ -24,13 +24,13 @@ exports.default = function (sequelize, _ref) {
         max: 5
       }
     },
-    reviewtext: TEXT,
-    answerto: INTEGER
+    reviewtext: TEXT
   });
 
   Review.associate = function (models) {
     Review.belongsTo(models.User, { foreignKey: "userid" });
     Review.belongsTo(models.App, { foreignKey: "appid" });
+    Review.belongsTo(models.Review, { foreignKey: "answerto" });
   };
 
   return Review;

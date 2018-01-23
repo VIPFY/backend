@@ -20,6 +20,10 @@ var _permissions = require("../../helpers/permissions");
 
 var _sequelize = require("sequelize");
 
+var _lodash = require("lodash");
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 exports.default = {
@@ -36,7 +40,7 @@ exports.default = {
               users = void 0;
               apps = void 0;
 
-              if (!read) {
+              if (!(read === true)) {
                 _context.next = 11;
                 break;
               }
@@ -65,28 +69,61 @@ exports.default = {
 
             case 8:
               apps = _context.sent;
-              _context.next = 17;
+              _context.next = 26;
               break;
 
             case 11:
-              _context.next = 13;
+              if (!(read === false)) {
+                _context.next = 20;
+                break;
+              }
+
+              _context.next = 14;
+              return models.Notification.findAll({
+                where: {
+                  touser: id,
+                  deleted: false,
+                  readtime: (0, _defineProperty3.default)({}, _sequelize.Op.eq, null)
+                },
+                order: [["sendtime", "DESC"]]
+              });
+
+            case 14:
+              users = _context.sent;
+              _context.next = 17;
+              return models.AppNotification.findAll({
+                where: {
+                  touser: id,
+                  deleted: false,
+                  readtime: (0, _defineProperty3.default)({}, _sequelize.Op.eq, null)
+                },
+                order: [["sendtime", "DESC"]]
+              });
+
+            case 17:
+              apps = _context.sent;
+              _context.next = 26;
+              break;
+
+            case 20:
+              _context.next = 22;
               return models.Notification.findAll({
                 where: { touser: id, deleted: false },
                 order: [["sendtime", "DESC"]]
               });
 
-            case 13:
+            case 22:
               users = _context.sent;
-              _context.next = 16;
+              _context.next = 25;
               return models.AppNotification.findAll({
                 where: { touser: id, deleted: false },
                 order: [["sendtime", "DESC"]]
               });
 
-            case 16:
+            case 25:
               apps = _context.sent;
 
-            case 17:
+            case 26:
               result = [];
 
               users.map(function (user) {
@@ -96,9 +133,9 @@ exports.default = {
                 return result.push(app);
               });
 
-              return _context.abrupt("return", _.orderBy(result, "sendtime", "desc"));
+              return _context.abrupt("return", _lodash2.default.orderBy(result, "sendtime", "desc"));
 
-            case 21:
+            case 30:
             case "end":
               return _context.stop();
           }

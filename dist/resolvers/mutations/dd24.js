@@ -32,33 +32,47 @@ exports.default = {
         while (1) {
           switch (_context.prev = _context.next) {
             case 0:
-              if (!(command != "AddDomain" || (command = "AddDomain" && agb))) {
-                _context.next = 8;
+              _context.prev = 0;
+
+              if (!(command != "AddDomain" || command == "AddDomain" && agb)) {
+                _context.next = 9;
                 break;
               }
 
-              _context.next = 3;
+              _context.next = 4;
               return (0, _dd2.default)(command, params);
 
-            case 3:
+            case 4:
               result = _context.sent;
 
               console.log(result);
               return _context.abrupt("return", result);
 
-            case 8:
+            case 9:
               return _context.abrupt("return", {
                 error: "AGB's not accepted!",
                 code: 600,
                 description: ""
               });
 
-            case 9:
+            case 10:
+              _context.next = 15;
+              break;
+
+            case 12:
+              _context.prev = 12;
+              _context.t0 = _context["catch"](0);
+              return _context.abrupt("return", {
+                code: 404,
+                error: _context.t0.message
+              });
+
+            case 15:
             case "end":
               return _context.stop();
           }
         }
-      }, _callee, undefined);
+      }, _callee, undefined, [[0, 12]]);
     }));
 
     return function (_x, _x2, _x3) {

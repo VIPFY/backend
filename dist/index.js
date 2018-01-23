@@ -1,5 +1,10 @@
 "use strict";
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.schema = undefined;
+
 var _regenerator = require("babel-runtime/regenerator");
 
 var _regenerator2 = _interopRequireDefault(_regenerator);
@@ -16,9 +21,15 @@ var _bodyParser = require("body-parser");
 
 var _bodyParser2 = _interopRequireDefault(_bodyParser);
 
-var _graphqlServerExpress = require("graphql-server-express");
+var _apolloServerExpress = require("apollo-server-express");
 
 var _graphqlTools = require("graphql-tools");
+
+var _http = require("http");
+
+var _graphql = require("graphql");
+
+var _subscriptionsTransportWs = require("subscriptions-transport-ws");
 
 var _cors = require("cors");
 
@@ -44,18 +55,21 @@ var _loginData = require("./login-data");
 
 var _auth = require("./services/auth");
 
+var _constants = require("./constants");
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var request = require("request");
 //To create the GraphQl functions
-
-var schema = (0, _graphqlTools.makeExecutableSchema)({
+var request = require("request");
+var schema = exports.schema = (0, _graphqlTools.makeExecutableSchema)({
   typeDefs: _schema2.default,
-  resolvers: _resolvers2.default
+  resolvers: _resolvers2.default,
+  logger: process.env.LOGGING ? { log: function log(e) {
+      return console.log(e);
+    } } : false
 });
 
 var app = (0, _express2.default)();
-var PORT = process.env.PORT || 4000;
 
 // Middleware to authenticate the user. If the user sends the authorization token
 // he receives after a successful login, everything will be fine.
@@ -125,12 +139,7 @@ var corsOptions = {
 };
 app.use((0, _cors2.default)(corsOptions));
 
-//Enable to Graphiql Interface
-app.use("/graphiql", (0, _graphqlServerExpress.graphiqlExpress)({
-  endpointURL: "/graphql"
-}));
-
-app.use("/graphql", _bodyParser2.default.json(), (0, _graphqlServerExpress.graphqlExpress)(function (req) {
+app.use("/graphql", _bodyParser2.default.json(), (0, _apolloServerExpress.graphqlExpress)(function (req) {
   return {
     schema: schema,
     context: {
@@ -142,17 +151,36 @@ app.use("/graphql", _bodyParser2.default.json(), (0, _graphqlServerExpress.graph
   };
 }));
 
+//Enable to Graphiql Interface
+app.use("/graphiql", (0, _apolloServerExpress.graphiqlExpress)({
+  endpointURL: "/graphql"
+}));
+
 //The home route is currently empty
 app.get("/", function (req, res) {
-  return res.send("Go to http://localhost:" + PORT + "/graphiql for the Interface");
+  return res.send("Go to http://localhost:" + _constants.PORT + "/graphiql for the Interface");
 });
 
 //Sync our database and run the app afterwards
+var server = (0, _http.createServer)(app);
 _models2.default.sequelize.sync().then(function () {
-  return app.listen(PORT, function () {
-    console.log("Server running on port " + PORT);
-    console.log("Go to http://localhost:" + PORT + "/graphiql for the Interface");
+  return server.listen(_constants.PORT, function () {
+    if (process.env.LOGGING) {
+      console.log("Server running on port " + _constants.PORT);
+      console.log("Go to http://localhost:" + _constants.PORT + "/graphiql for the Interface");
+    }
+
+    new _subscriptionsTransportWs.SubscriptionServer({
+      execute: _graphql.execute,
+      subscribe: _graphql.subscribe,
+      schema: schema
+    }, {
+      server: server,
+      path: "/subscriptions"
+    });
   });
 }).catch(function (err) {
-  return console.log(err);
+  console.log(err);
+  server.listen(_constants.PORT + 1);
+  return;
 });

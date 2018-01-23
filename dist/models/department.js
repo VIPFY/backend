@@ -9,12 +9,6 @@ exports.default = function (sequelize, _ref) {
       INTEGER = _ref.INTEGER;
 
   var Department = sequelize.define("department", {
-    departmentid: {
-      type: INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-      unique: true
-    },
     name: STRING,
     addresscountry: STRING,
     addressstate: STRING,
@@ -26,5 +20,6 @@ exports.default = function (sequelize, _ref) {
   Department.associate = function (models) {
     Department.belongsTo(models.Company, { foreignKey: "companyid" });
   };
+
   return Department;
 };

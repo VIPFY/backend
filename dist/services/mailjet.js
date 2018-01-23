@@ -7,10 +7,7 @@ Object.defineProperty(exports, "__esModule", {
 var _loginData = require("../login-data");
 
 exports.default = function (email, hash) {
-  var Mailjet = require("node-mailjet").connect(
-  /*process.env.MJ_APIKEY_PUBLIC,
-  process.env.MJ_APIKEY_PRIVATE*/
-  _loginData.MAILJET_KEY, _loginData.MAILJET_SECRET);
+  var Mailjet = require("node-mailjet").connect(_loginData.MAILJET_KEY, _loginData.MAILJET_SECRET);
 
   var con_link = "https://vipfy-148316.appspot.com/signup/" + hash;
   var options = {

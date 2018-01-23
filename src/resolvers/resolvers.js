@@ -8,6 +8,7 @@ import dd24Mutations from "./mutations/dd24";
 import messageMutations from "./mutations/message";
 import userMutations from "./mutations/user";
 import reviewMutations from "./mutations/review";
+import commonMutations from "./mutations/common";
 
 import Subscription from "./subscriptions";
 
@@ -30,7 +31,8 @@ const Mutation = Object.assign(
   dd24Mutations,
   messageMutations,
   userMutations,
-  reviewMutations
+  reviewMutations,
+  commonMutations
 );
 
 export default {

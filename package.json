@@ -4,7 +4,7 @@
   "description": "A GraphQL server backend for Vipfy",
   "main": "index.js",
   "scripts": {
-    "serve": "node dist/index.js",
+    "serve": "PORT_DB=5432 USER=postgres node dist/index.js",
     "build": "babel src -d dist",
     "start":
       "LOGGING=true PORT_DB=5432 USER=postgres nodemon --exec babel-node src/index.js",

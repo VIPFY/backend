@@ -6,7 +6,8 @@ Object.defineProperty(exports, "__esModule", {
 
 exports.default = function (sequelize, _ref) {
   var STRING = _ref.STRING,
-      INTEGER = _ref.INTEGER;
+      INTEGER = _ref.INTEGER,
+      BOOLEAN = _ref.BOOLEAN;
 
   var Company = sequelize.define("company", {
     name: STRING,
@@ -15,11 +16,12 @@ exports.default = function (sequelize, _ref) {
     addressstate: STRING,
     addresscity: STRING,
     addressstreet: STRING,
-    addressnumber: INTEGER
+    addressnumber: INTEGER,
+    family: {
+      type: BOOLEAN,
+      defaultValue: false
+    }
   });
 
   return Company;
 };
-
-//id |name|companylogo| addresscountry |
-//addressstate  |addresscity|addressstreet  | addressnumber

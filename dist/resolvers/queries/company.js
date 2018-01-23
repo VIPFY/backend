@@ -32,8 +32,8 @@ exports.default = {
   },
 
   fetchDepartment: function fetchDepartment(parent, _ref7, _ref8) {
-    var departmentId = _ref7.departmentId;
+    var id = _ref7.id;
     var models = _ref8.models;
-    return models.Department.findById(departmentId);
+    return models.Department.findById(id);
   }
 };

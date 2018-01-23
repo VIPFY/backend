@@ -7,14 +7,22 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = function (sequelize, _ref) {
   var DATE = _ref.DATE,
       NOW = _ref.NOW,
-      BOOLEAN = _ref.BOOLEAN;
+      INTEGER = _ref.INTEGER,
+      TEXT = _ref.TEXT;
 
   var ReviewHelpful = sequelize.define("reviewhelpful", {
     helpfuldate: {
       type: DATE,
       defaultValue: NOW
     },
-    balance: BOOLEAN
+    balance: {
+      type: INTEGER,
+      validate: {
+        min: 0,
+        max: 2
+      }
+    },
+    comment: TEXT
   }, {
     freezeTableName: true
   });

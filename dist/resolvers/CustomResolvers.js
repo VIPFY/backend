@@ -3,46 +3,13 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-var findUser = exports.findUser = {
-  user: function user(_ref, args, _ref2) {
-    var userid = _ref.userid;
-    var models = _ref2.models;
-    return models.User.findById(userid);
-  }
-};
-
-var findApp = exports.findApp = {
-  app: function app(_ref3, args, _ref4) {
-    var appid = _ref3.appid;
-    var models = _ref4.models;
-    return models.App.findById(appid);
-  }
-};
-
-var findNotification = exports.findNotification = function findNotification(model) {
-  var searcher = {
-    touser: function touser(_ref5, args, _ref6) {
-      var _touser = _ref5.touser;
-      var models = _ref6.models;
-      return models.User.findById(_touser);
-    }
-  };
-  model == "Notification" ? searcher.fromuser = function (_ref7, args, _ref8) {
-    var fromuser = _ref7.fromuser;
-    var models = _ref8.models;
-    return models.User.findById(fromuser);
-  } : searcher.fromapp = function (_ref9, args, _ref10) {
-    var fromapp = _ref9.fromapp;
-    var models = _ref10.models;
-    return models.App.findById(fromapp);
-  };
-
-  return searcher;
-};
-
 // Necessary to implement interfaces
 var implementMessage = exports.implementMessage = {
   __resolveType: function __resolveType(obj, context, info) {
+    if (info.parentType == "Subscription") {
+      return "MessageSubscription";
+    }
+
     if (obj.fromuser) {
       return "Notification";
     }
@@ -70,4 +37,41 @@ var implementDate = exports.implementDate = {
     }
     return null;
   }
+};
+
+var find = exports.find = function find(data) {
+  var searches = {};
+
+  data.map(function (search) {
+    var id = search.toLowerCase() + "id";
+    searches[search.toLowerCase()] = function (parent, args, _ref) {
+      var models = _ref.models;
+
+      return models[search].findById(parent.dataValues[id]);
+    };
+  });
+
+  return searches;
+};
+
+var findNotification = exports.findNotification = function findNotification(model) {
+  var searcher = {
+    touser: function touser(_ref2, args, _ref3) {
+      var _touser = _ref2.touser;
+      var models = _ref3.models;
+      return models.User.findById(_touser);
+    }
+  };
+
+  model == "Notification" ? searcher.fromuser = function (_ref4, args, _ref5) {
+    var dataValues = _ref4.dataValues;
+    var models = _ref5.models;
+    return models.User.findById(dataValues.fromuser);
+  } : searcher.fromapp = function (_ref6, args, _ref7) {
+    var fromapp = _ref6.fromapp;
+    var models = _ref7.models;
+    return models.App.findById(fromapp);
+  };
+
+  return searcher;
 };

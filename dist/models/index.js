@@ -16,16 +16,23 @@ var _loginData = require("../login-data");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var sequelize = new _sequelize2.default("postgres", //Name of the database
-"postgres", //Username
-_loginData.POSTGRESLOGIN, //Password
+/*
+This component establishes the connection to our database, loads all defined
+models, adds mapping to the models so that they can be accessed in the other
+components and exports everything as one big object.
+*/
+
+var sequelize = new _sequelize2.default(process.env.TEST_DB || "postgres", //Name of the database
+process.env.USER, //Username
+process.env.PW || _loginData.POSTGRESLOGIN, //Password
 {
   dialect: "postgres", //Which database is used
   host: "localhost", //The host used
-  port: "5432",
+  port: process.env.PORT_DB,
   define: {
     timestamps: false
-  }
+  },
+  logging: process.env.LOGGING ? true : false
 });
 
 //The mapping here will be used in the resolver to access the model.
@@ -43,7 +50,9 @@ var db = {
   Plan: sequelize.import("./plan"),
   Notification: sequelize.import("./notification"),
   AppNotification: sequelize.import("./appnotification"),
-  ReviewHelpful: sequelize.import("./reviewhelpful")
+  ReviewHelpful: sequelize.import("./reviewhelpful"),
+  Speak: sequelize.import("./speak"),
+  UserBill: sequelize.import("./userbill")
 };
 
 (0, _keys2.default)(db).forEach(function (modelName) {

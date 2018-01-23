@@ -4,6 +4,10 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _extends2 = require("babel-runtime/helpers/extends");
+
+var _extends3 = _interopRequireDefault(_extends2);
+
 var _regenerator = require("babel-runtime/regenerator");
 
 var _regenerator2 = _interopRequireDefault(_regenerator);
@@ -17,6 +21,8 @@ var _asyncToGenerator2 = require("babel-runtime/helpers/asyncToGenerator");
 var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
 
 var _permissions = require("../../helpers/permissions");
+
+var _constants = require("../../constants");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -113,6 +119,7 @@ exports.default = {
             case 8:
               return _context2.abrupt("return", {
                 ok: true,
+                id: id,
                 message: now
               });
 
@@ -153,7 +160,7 @@ exports.default = {
           touser = _ref8.touser,
           message = _ref8.message;
       var models = _ref9.models;
-      var sender, receiver, save;
+      var sender, receiver, save, newMessage;
       return _regenerator2.default.wrap(function _callee3$(_context3) {
         while (1) {
           switch (_context3.prev = _context3.next) {
@@ -192,7 +199,7 @@ exports.default = {
 
             case 14:
               if (!(message && sender && receiver)) {
-                _context3.next = 27;
+                _context3.next = 29;
                 break;
               }
 
@@ -207,35 +214,47 @@ exports.default = {
 
             case 18:
               save = _context3.sent;
+              newMessage = (0, _extends3.default)({}, save.dataValues, {
+                fromuser: sender.dataValues,
+                touser: receiver.dataValues
+              });
+
+
+              _constants.pubsub.publish(_constants.NEW_MESSAGE, {
+                userId: receiver.id,
+                newMessage: newMessage
+              });
+
               return _context3.abrupt("return", {
                 ok: true,
+                id: newMessage.id,
                 message: message
               });
 
-            case 22:
-              _context3.prev = 22;
+            case 24:
+              _context3.prev = 24;
               _context3.t0 = _context3["catch"](15);
               return _context3.abrupt("return", {
                 ok: false,
                 error: _context3.t0.message
               });
 
-            case 25:
-              _context3.next = 28;
+            case 27:
+              _context3.next = 30;
               break;
 
-            case 27:
+            case 29:
               return _context3.abrupt("return", {
                 ok: false,
                 error: "Empty Message!"
               });
 
-            case 28:
+            case 30:
             case "end":
               return _context3.stop();
           }
         }
-      }, _callee3, undefined, [[15, 22]]);
+      }, _callee3, undefined, [[15, 24]]);
     }));
 
     return function (_x7, _x8, _x9) {

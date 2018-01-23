@@ -44,6 +44,10 @@ var _review3 = require("./mutations/review");
 
 var _review4 = _interopRequireDefault(_review3);
 
+var _subscriptions = require("./subscriptions");
+
+var _subscriptions2 = _interopRequireDefault(_subscriptions);
+
 var _CustomResolvers = require("./CustomResolvers");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -55,13 +59,16 @@ var Mutation = (0, _assign2.default)(_dd2.default, _message4.default, _user4.def
 exports.default = {
   Query: Query,
   Mutation: Mutation,
-  Employee: _CustomResolvers.findUser,
-  Plan: _CustomResolvers.findApp,
-  Review: _CustomResolvers.findUser,
-  UserRight: _CustomResolvers.findUser,
-  Notification: (0, _CustomResolvers.findNotification)("Notification"),
-  AppNotification: (0, _CustomResolvers.findNotification)("AppNotification"),
+  Subscription: _subscriptions2.default,
   Message: _CustomResolvers.implementMessage,
   Date: _CustomResolvers.implementDate,
-  LoginResponse: _CustomResolvers.findUser
+  Employee: (0, _CustomResolvers.find)(["User", "Company", "Department"]),
+  Plan: (0, _CustomResolvers.find)(["App"]),
+  Review: (0, _CustomResolvers.find)(["User", "App"]),
+  UserRight: (0, _CustomResolvers.find)(["User"]),
+  Notification: (0, _CustomResolvers.findNotification)("Notification"),
+  AppNotification: (0, _CustomResolvers.findNotification)("AppNotification"),
+  Department: (0, _CustomResolvers.find)(["Company"]),
+  Speak: (0, _CustomResolvers.find)(["User"]),
+  UserBill: (0, _CustomResolvers.find)(["User", "Plan"])
 };

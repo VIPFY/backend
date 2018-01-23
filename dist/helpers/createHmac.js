@@ -31,7 +31,6 @@ Utility.validateHmac = function (hmac, compareString, key) {
  * @returns {*}
  */
 Utility.generateHmac = function (string, key) {
-  console.log("String: " + string);
   var crypt = _crypto2.default.createHmac("sha256", new Buffer(key, "utf-8"));
   crypt.update(string);
   return new Buffer(crypt.digest("hex")).toString("base64");

@@ -26,7 +26,6 @@ exports.default = {
     var models = _ref2.models,
         user = _ref2.user;
 
-    console.log(user);
     if (user) {
       // they are logged in
       return models.User.findOne({
@@ -96,5 +95,10 @@ exports.default = {
     var userid = _ref12.userid;
     var models = _ref13.models;
     return models.UserRight.findAll({ where: { userid: userid } });
+  }),
+
+  fetchUserBills: _permissions.requiresAuth.createResolver(function (parent, args, _ref14) {
+    var models = _ref14.models;
+    return models.UserBill.findAll();
   })
 };

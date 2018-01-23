@@ -1,4 +1,4 @@
-import test from "../services/weebly";
+import { test, createRequestHash } from "../services/weebly";
 
 // Required:
 //
@@ -13,15 +13,11 @@ import test from "../services/weebly";
 //     test_mode. If no value supplied, defaults to true.
 
 const queryString = {
-  brand_name: "New Reseller",
-  brand_url: "www.newreseller.com",
-  admin_name: "John Doe",
-  admin_email: "johndoe@email.com",
-  portal_domain: "www.weeblycloud.com",
-  ecommerce: false
+  test_mode: true,
+  email: "vipfy-test-user@vipfy.com"
 };
 
-test("POST", "subaccount", queryString);
+createRequestHash("POST", "user", queryString).then(doIt => console.log(doIt));
 
 // ===========================================================================
 // import {
