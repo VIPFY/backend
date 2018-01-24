@@ -4,7 +4,7 @@ import { sendEmailToVipfy } from "../../services/mailjet";
 
 export default {
   newContactEmail: async (parent, args, { models }) => {
-    if (process.env.USER == "postgres") {
+    if (process.env.ENVIRONMENT != "testing") {
       try {
         const messageSent = await sendEmailToVipfy(args);
 

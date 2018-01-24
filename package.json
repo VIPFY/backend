@@ -4,15 +4,11 @@
   "description": "A GraphQL server backend for Vipfy",
   "main": "index.js",
   "scripts": {
-    "serve":
-      "IP_DB=35.195.191.90 PORT_DB=5432 USER=postgres node dist/index.js",
+    "serve": "ENVIRONMENT=production node dist/index.js",
     "build": "babel src -d dist",
-    "start":
-      "LOGGING=true PORT_DB=5432 USER=postgres DEV=true nodemon --exec babel-node src/index.js",
-    "test":
-      "PORT=4001 TEST_DB=test_database PORT_DB=5433 USER=vipfy_test_user PW=test jest --verbose",
-    "test-server":
-      "TEST_DB=test_database PORT_DB=5433 USER=vipfy_test_user PW=test PORT=4001 babel-node src/index.js",
+    "start": "ENVIRONMENT=development nodemon --exec babel-node src/index.js",
+    "test": "ENVIRONMENT=testing jest --verbose",
+    "test-server": "ENVIRONMENT=testing babel-node src/index.js",
     "play": "nodemon --exec babel-node src/helpers/play.js"
   },
   "author": "Gh05d",
@@ -23,6 +19,7 @@
     "babel-runtime": "^6.26.0",
     "bcrypt": "^1.0.3",
     "body-parser": "^1.17.2",
+    "dotenv": "^4.0.0",
     "express": "^4.15.3",
     "graphql-subscriptions": "^0.5.6",
     "graphql-tools": "^1.0.0",

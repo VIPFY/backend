@@ -2,19 +2,26 @@
 This component establishes the connection to our database, loads all defined
 models, adds mapping to the models so that they can be accessed in the other
 components and exports everything as one big object.
+
+dotenv must be the first package loaded and launched, because it loads the
+environment variables.
 */
 
 import Sequelize from "sequelize";
 import { POSTGRESLOGIN } from "../login-data";
+import { selectEnv } from "../helpers/selectEnv";
+import dotenv from "dotenv";
+
+dotenv.config({ path: selectEnv(process.env.ENVIRONMENT) });
 
 const sequelize = new Sequelize(
-  process.env.TEST_DB || "postgres", //Name of the database
-  process.env.USER, //Username
-  process.env.PW || POSTGRESLOGIN, //Password
+  process.env.DB_NAME || "postgres", //Name of the database
+  process.env.DB_USER || "postgres", //Username
+  process.env.DB_PW, //Password
   {
     dialect: "postgres", //Which database is used
-    host: process.env.IP_DB || "localhost", //The host used
-    port: process.env.PORT_DB || 5432,
+    host: process.env.DB_IP || "localhost", //The host used
+    port: process.env.DB_PORT || 5432,
     define: {
       timestamps: false
     },

@@ -1,27 +1,35 @@
+/*
+This is the main component which has the server. It imports all models,
+resolvers, creates the schema with them, defines middleware for the app and
+establishes the connection to the database before starting the server
+*/
+
 import express from "express";
 import bodyParser from "body-parser";
-import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
-import { makeExecutableSchema } from "graphql-tools";
 import https from "https";
 import http from "http";
-import { execute, subscribe } from "graphql";
-import { SubscriptionServer } from "subscriptions-transport-ws";
 import cors from "cors";
 import jwt from "jsonwebtoken";
+import fs from "fs";
+import { SECRET, SECRETTWO } from "./login-data";
+import { refreshTokens } from "./services/auth";
+
 //To create the GraphQl functions
+import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
+import { makeExecutableSchema } from "graphql-tools";
+import { execute, subscribe } from "graphql";
+import { SubscriptionServer } from "subscriptions-transport-ws";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import models from "./models";
-import { SECRET, SECRETTWO } from "./login-data";
-import { refreshTokens } from "./services/auth";
-import { PORT } from "./constants";
-import fs from "fs";
 
 const app = express();
-const secure = process.env.DEV ? "" : "s";
+const ENVIRONMENT = process.env.ENVIRONMENT;
+const secure = ENVIRONMENT == "production" ? "s" : "";
+const PORT = process.env.PORT || 4000;
 let server;
 // We don't need certificates and https for development
-if (!process.env.DEV) {
+if (ENVIRONMENT == "production") {
   const https_options = {
     key: fs.readFileSync("/etc/letsencrypt/live/vipfy.com/privkey.pem"),
     cert: fs.readFileSync("/etc/letsencrypt/live/vipfy.com/cert.pem")
@@ -129,6 +137,5 @@ models.sequelize
   )
   .catch(err => {
     console.log(err);
-    server.listen(PORT + 1);
-    return;
+    exit();
   });

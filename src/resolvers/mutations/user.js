@@ -47,7 +47,7 @@ export default {
         });
 
         // Don't send emails when testing the database!
-        if (process.env.USER == "postgres") {
+        if (process.env.ENVIRONMENT != "testing") {
           sendEmail(email, newHash);
         }
         const refreshSecret = user.password + SECRETTWO;
@@ -133,7 +133,7 @@ export default {
 
     try {
       // Don't send emails when testing the database!
-      if (process.env.USER == "postgres") {
+      if (process.env.ENVIRONMENT != "testing") {
         sendEmail(email, newHash);
       }
       //Exchange this for a new solution when a proper mailjet template exists
