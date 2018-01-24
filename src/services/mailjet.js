@@ -24,13 +24,18 @@ export const sendEmail = (email, hash) => {
 };
 
 export const sendEmailToVipfy = data => {
+  console.log(data)
   const options = {
-    FromEmail: data.email,
-    FromName: data.name,
-    "MJ-TemplateID": "197442",
+    FromEmail: "office@vipfy.com",
+    FromName: "Vipfy Office",
+    "MJ-TemplateID": "299321",
     "MJ-TemplateLanguage": "true",
     Recipients: [{ Email: "office@vipfy.com" }],
-    Vars: { confirmation_link: data.message }
+    Vars: {
+      fromname: data.name,
+      fromemail: data.email,
+      fromphone: data.phone,
+      contactmessage: data.message }
   };
 
   Mailjet.post("send")
