@@ -1,5 +1,11 @@
 import models from "../models/index";
-import { user, executeQuery, testDefault, testAuthentication } from "./helper";
+import {
+  user,
+  executeQuery,
+  testDefault,
+  testAuthentication,
+  handleTestDatabase
+} from "./helper";
 import {
   dummyMessage,
   dummyResponse,
@@ -12,6 +18,8 @@ import { sendMessage, setDeleteStatus, setReadtime } from "./mutations";
 import { lorem } from "faker";
 import { random } from "lodash";
 import { SECRET, SECRETTWO } from "../login-data";
+
+handleTestDatabase();
 
 const testQueries = [
   {

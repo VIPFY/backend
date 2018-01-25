@@ -3,8 +3,9 @@ import { requiresAuth } from "../../helpers/permissions";
 export default {
   writeReview: requiresAuth.createResolver(
     async (parent, { userid, appid, stars, text }, { models }) => {
-      const app = await models.App.findById(appid);
-      const user = await models.User.findById(userid);
+      const p1 = models.App.findById(appid);
+      const p2 = models.User.findById(userid);
+      const [app, user] = await Promise.all([p1, p2]);
 
       if (!app || !user) {
         return {
@@ -40,14 +41,15 @@ export default {
 
   rateReview: requiresAuth.createResolver(
     async (parent, { reviewid, userid, balance }, { models }) => {
-      const commenter = await models.User.findById(userid);
-      const review = await models.Review.findById(reviewid);
-      const changeRating = await models.ReviewHelpful.findOne({
+      const p1 = models.User.findById(userid);
+      const p2 = models.Review.findById(reviewid);
+      const p3 = models.ReviewHelpful.findOne({
         where: {
           reviewid,
           userid
         }
       });
+      const [commenter, review, changeRating] = await Promise.all([p1, p2, p3]);
 
       if (!review) {
         return {

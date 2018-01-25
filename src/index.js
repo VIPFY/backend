@@ -111,31 +111,33 @@ app.get("/", (req, res) =>
   res.send(`Go to http${secure}://localhost:${PORT}/graphiql for the Interface`)
 );
 
-models.sequelize
-  .sync()
-  .then(() =>
-    server.listen(PORT, () => {
-      if (process.env.LOGGING) {
-        console.log(`Server running on port ${PORT}`);
-        console.log(
-          `Go to http${secure}://localhost:${PORT}/graphiql for the Interface`
-        );
-      }
-
-      new SubscriptionServer(
-        {
-          execute,
-          subscribe,
-          schema
-        },
-        {
-          server,
-          path: "/subscriptions"
+if (ENVIRONMENT != "testing") {
+  models.sequelize
+    .sync()
+    .then(() =>
+      server.listen(PORT, () => {
+        if (process.env.LOGGING) {
+          console.log(`Server running on port ${PORT}`);
+          console.log(
+            `Go to http${secure}://localhost:${PORT}/graphiql for the Interface`
+          );
         }
-      );
-    })
-  )
-  .catch(err => {
-    console.log(err);
-    exit();
-  });
+
+        new SubscriptionServer(
+          {
+            execute,
+            subscribe,
+            schema
+          },
+          {
+            server,
+            path: "/subscriptions"
+          }
+        );
+      })
+    )
+    .catch(err => {
+      console.log(err);
+      server.close();
+    });
+}

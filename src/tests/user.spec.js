@@ -1,5 +1,11 @@
 import models from "../models/index";
-import { executeQuery, testDefault, testAuthentication, user } from "./helper";
+import {
+  executeQuery,
+  testDefault,
+  testAuthentication,
+  user,
+  handleTestDatabase
+} from "./helper";
 import {
   dummyEmail,
   dummyUser,
@@ -14,6 +20,8 @@ import { allUsers, me, fetchUser } from "./queries";
 import { signUp, signUpConfirm, signIn, forgotPassword } from "./mutations";
 import { internet, random } from "faker";
 import { SECRET, SECRETTWO } from "../login-data";
+
+handleTestDatabase();
 
 const testQueries = [
   {

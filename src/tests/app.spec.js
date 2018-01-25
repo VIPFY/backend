@@ -1,4 +1,4 @@
-import { executeQuery, testDefault } from "./helper";
+import { executeQuery, testDefault, handleTestDatabase } from "./helper";
 import { dummyApp, dummyAppImage, dummyDeveloper } from "./dummies";
 import {
   allApps,
@@ -7,6 +7,8 @@ import {
   fetchAppImages,
   fetchDeveloper
 } from "./queries";
+
+handleTestDatabase();
 
 const tests = [
   {

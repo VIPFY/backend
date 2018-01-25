@@ -1,11 +1,17 @@
-// This file contains the helper function which will be used for testing as
-// well as various dummies to compare the output of the function
+/*
+This file contains helper functions which will be used for testing as well
+as a function which establishes and ends a connection to our database for testing.
+*/
 
 import { graphql } from "graphql";
 import { schema } from "../index";
 import models from "../models/index";
 import { random } from "lodash";
 import { SECRET, SECRETTWO } from "../login-data";
+import testDatabase from "../models/index";
+import express from "express";
+
+const app = express();
 
 // Object to inject into context to test whether an user is logged-in
 export const user = {
@@ -59,4 +65,11 @@ export function testAuthentication({ operation, name, args, arrayTest }) {
       await expect(data).toBeNull();
     }
   });
+}
+
+export function handleTestDatabase() {
+  beforeAll(() => {
+    testDatabase.sequelize.sync().then(() => app.listen(0));
+  });
+  afterAll(() => testDatabase.sequelize.close());
 }
