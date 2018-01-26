@@ -1,1 +1,0 @@
-{"dependencies":[],"generated":{"js":"module.exports = {\r\n  \"url\": \"api.mailjet.com\",\r\n  \"version\": \"v3\",\r\n  \"output\": \"json\",\r\n  \"perform_api_call\": true,\r\n  \"secured\": true\r\n}\r\n;"},"hash":"23caaaac69678ae1469f22488798303f","cacheData":{}}
