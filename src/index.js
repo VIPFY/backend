@@ -88,7 +88,7 @@ if (ENVIRONMENT != "production") {
 else
 {
   const corsOptions = {
-    origin: "https://vipfy.com:3000",
+    origin: "https://vipfy.com",
     credentials: true // <-- REQUIRED backend setting
   };
   app.use(cors(corsOptions));
