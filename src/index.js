@@ -85,6 +85,14 @@ if (ENVIRONMENT != "production") {
   };
   app.use(cors(corsOptions));
 }
+else
+{
+  const corsOptions = {
+    origin: "https://vipfy.com:3000",
+    credentials: true // <-- REQUIRED backend setting
+  };
+  app.use(cors(corsOptions));
+}
 
 app.use(
   "/graphql",
