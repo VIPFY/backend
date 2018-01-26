@@ -77,35 +77,41 @@ const authMiddleware = async (req, res, next) => {
 };
 app.use(authMiddleware);
 
-// Enable our Frontend running on localhost:3000 to access the Backend
-const corsOptions = {
-  origin: true,
-  credentials: true // <-- REQUIRED backend setting
-};
-// app.use(cors(corsOptions));
+if (ENVIRONMENT != "production") {
+  // Enable our Frontend running on localhost:3000 to access the Backend
+  const corsOptions = {
+    origin: "http://localhost:3000",
+    credentials: true // <-- REQUIRED backend setting
+  };
+  app.use(cors(corsOptions));
+}
 
 app.use(
   "/graphql",
   bodyParser.json(),
-  graphqlExpress(req => ({
-    schema,
-    context: {
-      models,
-      user: req.user,
-      SECRET,
-      SECRETTWO
-    }
-  }))
-);
-
-//Enable to Graphiql Interface
-app.use(
-  "/graphiql",
-  graphiqlExpress({
-    endpointURL: "/graphql"
+  graphqlExpress(req => {
+    return {
+      schema,
+      context: {
+        models,
+        user: ENVIRONMENT == "development" ? { id: 3 } : req.user,
+        SECRET,
+        SECRETTWO
+      }
+    };
   })
 );
 
+//Enable to Graphiql Interface
+if (ENVIRONMENT != "production") {
+  app.use(
+    "/graphiql",
+    graphiqlExpress({
+      endpointURL: "/graphql",
+      subscriptionsEndpoint: `ws://localhost:${PORT}/subscriptions`
+    })
+  );
+}
 //The home route is currently empty
 app.get("/", (req, res) =>
   res.send(`Go to http${secure}://localhost:${PORT}/graphiql for the Interface`)
@@ -127,7 +133,25 @@ if (ENVIRONMENT != "testing") {
           {
             execute,
             subscribe,
-            schema
+            schema,
+            onConnect: async ({ token, refreshToken }, webSocket) => {
+              if (token && refreshToken) {
+                try {
+                  const { user } = jwt.verify(token, SECRET);
+                  return { models, user };
+                } catch (err) {
+                  const newTokens = await refreshTokens(
+                    token,
+                    refreshToken,
+                    models,
+                    SECRET,
+                    SECRETTWO
+                  );
+                  return { models, user: newTokens.user };
+                }
+              }
+              return {};
+            }
           },
           {
             server,

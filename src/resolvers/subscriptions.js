@@ -4,7 +4,12 @@ import { NEW_MESSAGE, pubsub } from "../constants";
 export default {
   newMessage: {
     subscribe: withFilter(
-      () => pubsub.asyncIterator(NEW_MESSAGE),
+      (parent, args, { models, user }) => {
+        if (!user || !user.id) {
+          throw new Error("Not authenticated!");
+        }
+        return pubsub.asyncIterator(NEW_MESSAGE);
+      },
       (payload, args) => {
         if (payload) {
           return payload.userId === args.toUser;

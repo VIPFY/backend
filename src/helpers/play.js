@@ -1,4 +1,4 @@
-import { test, createRequestHash } from "../services/weebly";
+import { createWeeblyUser, createRequestHash } from "../services/weebly";
 
 // Required:
 //
@@ -12,13 +12,9 @@ import { test, createRequestHash } from "../services/weebly";
 //     portal_domain
 //     test_mode. If no value supplied, defaults to true.
 
-const queryString = {
-  test_mode: true,
-  email: "vipfy-test-user@vipfy.com"
-};
+const email = "testUser12@vipfy.com";
 
-createRequestHash("POST", "user", queryString).then(doIt => console.log(doIt));
-
+createWeeblyUser(email);
 // ===========================================================================
 // import {
 //   fetchOrganization,

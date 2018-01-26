@@ -1,4 +1,9 @@
-//Higher order component
+/*
+This file contains a Higher Order Component which can be used to create
+Authentication logic. The base function lets you stack several permissions,
+they just have to wrapped around the component which shall be protected.
+*/
+
 const createResolver = resolver => {
   const baseResolver = resolver;
   baseResolver.createResolver = childResolver => {
@@ -12,11 +17,18 @@ const createResolver = resolver => {
 };
 
 //Check whether the user is authenticated
-export const requiresAuth = createResolver((parent, args, { user }) => {
-  if (!user || !user.id) {
-    throw new Error("Not authenticated!");
+export const requiresAuth = createResolver(
+  async (parent, args, { models, user }) => {
+    try {
+      const userExists = await models.User.findById(user.id);
+      if (!user || !user.id || !userExists) {
+        throw new Error("Not authenticated!");
+      }
+    } catch (err) {
+      throw new Error("Not authenticated!");
+    }
   }
-});
+);
 
 //These functions can be nested. Here it checks first whether an user
 //is authenticated and then if he has admin status.
