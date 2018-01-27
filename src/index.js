@@ -96,7 +96,8 @@ app.use(
         user: ENVIRONMENT == "development" ? { id: 3 } : req.user,
         SECRET,
         SECRETTWO
-      }
+      },
+      debug: ENVIRONMENT == "development" ? true : false
     };
   })
 );
