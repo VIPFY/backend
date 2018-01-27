@@ -7,8 +7,8 @@ export default {
       (parent, args, { modell, user }, data) => {
         if (!user || !user.id) {
           throw new Error("Not authenticated!");
-          return pubsub.asyncIterator(NEW_MESSAGE);
         }
+        return pubsub.asyncIterator(NEW_MESSAGE);
       },
       (payload, args) => {
         if (payload) {
