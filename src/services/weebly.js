@@ -11,7 +11,21 @@ import { WEEBLY_KEY, WEEBLY_SECRET } from "../login-data";
 import Utility from "../helpers/createHmac";
 import axios from "axios";
 
-export const createRequestHash = async (callType, endpoint, requestData) => {
+function createOptions(method, endpoint, requestHash, requestData) {
+  return {
+    method,
+    url: `${endpoint}`,
+    baseURL: "https://api.weeblycloud.com/",
+    headers: {
+      "Content-type": "application/json",
+      "X-Public-Key": WEEBLY_KEY,
+      "X-Signed-Request-Hash": requestHash
+    },
+    data: JSON.stringify(requestData)
+  };
+}
+
+async function createRequestHash(callType, endpoint, requestData) {
   // The request string consists of:
   // Type of call (for example POST or PUT)
   // The endpoint URL (for example, user/234256/loginLink)
@@ -31,66 +45,16 @@ export const createRequestHash = async (callType, endpoint, requestData) => {
   } catch (err) {
     return err;
   }
-};
+}
 
-export const createWeeblyUser = async email => {
-  const requestData = {
-    language: "en",
-    test_mode: true,
-    email
-  };
-
+export default async (method, endpoint, requestData) => {
   try {
-    const requestHash = await createRequestHash("POST", "user", requestData);
-    const options = {
-      method: "POST",
-      url: "user",
-      baseURL: "https://api.weeblycloud.com/",
-      headers: {
-        "Content-type": "application/json",
-        "X-Public-Key": WEEBLY_KEY,
-        "X-Signed-Request-Hash": requestHash
-      },
-      data: JSON.stringify(requestData)
-    };
+    const requestHash = await createRequestHash(method, endpoint, requestData);
+    const options = createOptions(method, endpoint, requestHash, requestData);
+    const res = await axios(options);
 
-    axios(options)
-      .then(res => res.data.user)
-      .catch(err => err.response.statusText);
+    return res.data;
   } catch (err) {
-    return err;
-  }
-};
-
-export const createWeeblySite = async site => {};
-
-export const test = async (callType, endpoint, requestData) => {
-  try {
-    const requestHash = await createRequestHash(
-      callType,
-      endpoint,
-      requestData
-    );
-
-    const options = {
-      method: callType,
-      url: `${endpoint}`,
-      baseURL: "https://api.weeblycloud.com/",
-      headers: {
-        "Content-type": "application/json",
-        "X-Public-Key": WEEBLY_KEY,
-        "X-Signed-Request-Hash": requestHash
-      },
-      data: JSON.stringify(requestData)
-    };
-
-    axios(options)
-      .then(res => console.log(res.status, res.statusText, res.data))
-      .catch(err => {
-        console.log(`Error: ${err.response.status}`);
-        console.log(err.response.statusText);
-      });
-  } catch (err) {
-    console.log(err);
+    return err.response.data.error.message;
   }
 };

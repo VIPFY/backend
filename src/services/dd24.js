@@ -15,9 +15,8 @@ export default async (command, parameter) => {
   const args = _.merge(auth, { params: parameter });
   // Eleminate copying mistakes
   const properCommand = command + "Async";
-  const result = await soap
-    .createClientAsync(apiWSDL)
-    .then(client => {
+  try {
+    const result = await soap.createClientAsync(apiWSDL).then(client => {
       return client[properCommand](args)
         .then(res => {
           console.log(res[command + "Result"]);
@@ -27,8 +26,10 @@ export default async (command, parameter) => {
           console.log(err);
           return err;
         });
-    })
-    .catch(err => console.log(err));
+    });
 
-  return result;
+    return result;
+  } catch (err) {
+    return err;
+  }
 };

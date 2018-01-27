@@ -4,11 +4,12 @@ import companyQueries from "./queries/company";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
 
-import dd24Mutations from "./mutations/dd24";
 import messageMutations from "./mutations/message";
 import userMutations from "./mutations/user";
 import reviewMutations from "./mutations/review";
 import commonMutations from "./mutations/common";
+import dd24Mutations from "./mutations/dd24";
+import weeblyMutations from "./mutations/weebly";
 
 import Subscription from "./subscriptions";
 
@@ -28,11 +29,12 @@ const Query = Object.assign(
 );
 
 const Mutation = Object.assign(
-  dd24Mutations,
   messageMutations,
   userMutations,
   reviewMutations,
-  commonMutations
+  commonMutations,
+  dd24Mutations,
+  weeblyMutations
 );
 
 export default {
