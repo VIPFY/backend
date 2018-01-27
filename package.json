@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "serve": "ENVIRONMENT=production node dist/index.js",
-    "build": "babel src -d dist",
+    "build": "rm -r dist && babel src -d dist --ignore 'tests'",
     "start": "ENVIRONMENT=development nodemon --exec babel-node src/index.js",
-    "test": "ENVIRONMENT=testing jest --verbose",
-    "play": "nodemon --exec babel-node src/helpers/play.js"
+    "test": "ENVIRONMENT=testing jest --verbose --no-cache",
+    "play": "babel-node src/helpers/play.js"
   },
   "author": "Gh05d",
   "license": "ISC",

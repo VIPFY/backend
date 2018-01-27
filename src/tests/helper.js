@@ -69,7 +69,7 @@ export function testAuthentication({ operation, name, args, arrayTest }) {
 
 export function handleTestDatabase() {
   beforeAll(() => {
-    testDatabase.sequelize.sync().then(() => app.listen(0));
+    testDatabase.sequelize.sync().then(() => app.listen(null));
   });
   afterAll(() => testDatabase.sequelize.close());
 }

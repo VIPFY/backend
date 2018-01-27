@@ -77,22 +77,13 @@ const authMiddleware = async (req, res, next) => {
 };
 app.use(authMiddleware);
 
-if (ENVIRONMENT != "production") {
-  // Enable our Frontend running on localhost:3000 to access the Backend
-  const corsOptions = {
-    origin: "http://localhost:3000",
-    credentials: true // <-- REQUIRED backend setting
-  };
-  app.use(cors(corsOptions));
-}
-else
-{
-  const corsOptions = {
-    origin: "https://vipfy.com",
-    credentials: true // <-- REQUIRED backend setting
-  };
-  app.use(cors(corsOptions));
-}
+// Enable our Frontend running on localhost:3000 to access the Backend
+const corsOptions = {
+  origin:
+    ENVIRONMENT == "production" ? "https://vipfy.com" : "http://localhost:3000",
+  credentials: true // <-- REQUIRED backend setting
+};
+app.use(cors(corsOptions));
 
 app.use(
   "/graphql",
