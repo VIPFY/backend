@@ -3,7 +3,7 @@ import { requiresAuth } from "../../helpers/permissions";
 
 export default {
   weeblyCreateLoginLink: requiresAuth.createResolver(
-    async (parent, { email, domain, plan, agb }, models) => {
+    async (parent, { email, domain, plan, agb }, { models }) => {
       if (agb) {
         const method = "POST";
         let endpoint = "user";
@@ -21,7 +21,7 @@ export default {
         } catch (err) {
           return {
             ok: false,
-            error: err.message
+            error: `The email ${email} is already in use at Weebly!`
           };
         }
 

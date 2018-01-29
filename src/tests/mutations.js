@@ -95,3 +95,13 @@ export const rateReview = `
     }
   }
 `;
+
+export const weeblyCreateLoginLink = `
+  mutation WeeblyCommands($email: String!, $agb: Boolean!, $plan: Int!, $domain: String!) {
+    weeblyCreateLoginLink(email: $email, agb: $agb, plan: $plan, domain: $domain) {
+      loginLink
+      ok
+      error
+    }
+  }
+`;

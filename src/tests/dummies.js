@@ -178,3 +178,15 @@ export const dummyForgotPwResponseFailure = {
   error: expect.any(String),
   email: null
 };
+
+export const dummyWeeblyResponse = {
+  ok: true,
+  error: null,
+  loginLink: expect.any(String)
+};
+
+export const dummyWeeblyResponseFailure = {
+  ok: false,
+  error: expect.any(String),
+  loginLink: null
+};

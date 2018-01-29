@@ -1,10 +1,4 @@
-import {
-  executeQuery,
-  testDefault,
-  testAuthentication,
-  user,
-  handleTestDatabase
-} from "./helper";
+import { executeQuery, testDefault, testAuthentication, user } from "./helper";
 import {
   dummyReviewSimpleResponse,
   dummyReviewResponse,
@@ -25,8 +19,6 @@ import { SECRET, SECRETTWO } from "../login-data";
 import _ from "lodash";
 import { lorem } from "faker";
 import models from "../models";
-
-handleTestDatabase();
 
 const testQueries = [
   {

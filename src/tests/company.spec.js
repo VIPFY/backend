@@ -1,8 +1,6 @@
-import { executeQuery, testDefault, handleTestDatabase } from "./helper";
+import { executeQuery, testDefault } from "./helper";
 import { dummyCompany } from "./dummies";
 import { allCompanies } from "./queries";
-
-handleTestDatabase();
 
 const tests = [
   {

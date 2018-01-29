@@ -67,6 +67,20 @@ export function testAuthentication({ operation, name, args, arrayTest }) {
   });
 }
 
+export function testAgb({ operation, name, args, dummy }) {
+  return test(`${name} should reject the operation if the abg's are not accepted`, async () => {
+    const result = await executeQuery(operation, args, {
+      models,
+      user,
+      SECRET,
+      SECRETTWO
+    });
+    const { data } = result;
+
+    await expect(data[name]).toMatchObject(dummy);
+  });
+}
+
 export function handleTestDatabase() {
   beforeAll(() => {
     testDatabase.sequelize.sync().then(() => app.listen(null));
