@@ -9,7 +9,7 @@ pipelines:
         script: # Modify the commands below to build your repository.
           - apt-get update
           - apt-get install -y postgresql
-          - PGPASSWORD=test psql -h 127.0.0.1 -U vipfy_test_user -d test_database -f dump_db.sql
+          - PGPASSWORD=test psql -h 127.0.0.1 -U vipfy_test_user -d test_database -f  vipfy_test_dump.sql
           - npm install
           - npm run test app.spec.js
           - npm run test company.spec.js
