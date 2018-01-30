@@ -3,15 +3,20 @@ image: node:6.9.4
 pipelines:
   default:
     - step:
-        max-time: 5
+        max-time: 5  #minutes
         caches:
           - node
-        script: # Modify the commands below to build your repository.
+        script:
+          #load test database
           - apt-get update
-          - apt-get install -y postgresql
+          - apt-get install -y postgresql  #only need this to get psql
           - PGPASSWORD=test psql -h 127.0.0.1 -U vipfy_test_user -d test_database -f  vipfy_test_dump.sql
+          
+          #install dependencies
           - npm install
-          - npm install lodash
+          - npm install lodash #TODO: fix package.json so we don't need this line
+          
+          #run tests
           - npm run test app.spec.js
           - npm run test company.spec.js
           - npm run test message.spec.js
