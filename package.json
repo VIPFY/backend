@@ -9,7 +9,7 @@
     "serve": "ENVIRONMENT=production node dist/index.js",
     "build": "rm -r dist && babel src -d dist --ignore 'tests'",
     "start": "ENVIRONMENT=development nodemon --exec babel-node src/index.js",
-    "test": "ENVIRONMENT=testing jest --verbose --no-cache",
+    "test": "ENVIRONMENT=testing jest --verbose --no-cache --forceExit",
     "play": "babel-node src/helpers/play.js"
   },
   "jest": { "testEnvironment": "node" },

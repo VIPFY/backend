@@ -1,0 +1,29 @@
+image: node:6.9.4
+
+pipelines:
+  default:
+    - step:
+        max-time: 5
+        caches:
+          - node
+        script: # Modify the commands below to build your repository.
+          - apt-get update
+          - apt-get install -y postgresql
+          - PGPASSWORD=test psql -h 127.0.0.1 -U vipfy_test_user -d test_database -f dump_db.sql
+          - npm install
+          - npm run test app.spec.js
+          - npm run test company.spec.js
+          - npm run test message.spec.js
+          - npm run test review.spec.js
+          - npm run test user.spec.js
+        services: 
+          - postgres
+          
+definitions: 
+  services: 
+    postgres: 
+      image: postgres 
+      environment: 
+        POSTGRES_DB: 'test_database' 
+        POSTGRES_USER: 'vipfy_test_user'
+        POSTGRES_PASSWORD: 'test'
