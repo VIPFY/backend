@@ -5,14 +5,12 @@ export default {
     models.User.findAll()
   ),
 
-  me: requiresAuth.createResolver((parent, args, { models, user }) => {
+  me: requiresAuth.createResolver(async (parent, args, { models, user }) => {
     if (user) {
       // they are logged in
-      return models.User.findOne({
-        where: {
-          id: user.id
-        }
-      });
+      const me = await models.User.findById(user.id);
+
+      return me.dataValues;
     }
     // not logged in user
     return null;

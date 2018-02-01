@@ -80,13 +80,14 @@ export const types = `
 export const queries = `
   allUsers: [User!]!
   fetchUser(id: Int!): User
+  # Returns the logged-in user. Used for Authentication.
   me: User
   fetchUserByPassword(password: String!): String!
 
   allEmployees: [Employee]
   fetchEmployee(userId: Int!): Employee!
 
-  # Shows all User rights
+  # Shows all user rights
   allUserRights: [UserRight!]!
 
   # Shows all the rights an user has

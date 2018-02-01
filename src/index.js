@@ -50,27 +50,33 @@ export const schema = makeExecutableSchema({
 // he receives after a successful login, everything will be fine.
 const authMiddleware = async (req, res, next) => {
   const token = req.headers["x-token"];
+  console.log("HEADER: ", req.headers["x-token"]);
   if (token) {
     try {
-      const { user } = jwt.verify(token, SECRET);
+      const { user } = await jwt.verify(token, SECRET);
       req.user = user;
     } catch (err) {
-      //If the token has expired, we use the refreshToken to assign new ones
-      const refreshToken = req.headers["x-refresh-token"];
-      const newTokens = await refreshTokens(
-        token,
-        refreshToken,
-        models,
-        SECRET,
-        SECRETTWO
-      );
+      if (err.name == "TokenExpiredError") {
+        //If the token has expired, we use the refreshToken to assign new ones
+        const refreshToken = req.headers["x-refresh-token"];
+        const newTokens = await refreshTokens(
+          token,
+          refreshToken,
+          models,
+          SECRET,
+          SECRETTWO
+        );
 
-      if (newTokens.token && newTokens.refreshToken) {
-        res.set("Access-Control-Expose-Headers", "x-token, x-refresh-token");
-        res.set("x-token", newTokens.token);
-        res.set("x-refresh-token", newTokens.refreshToken);
+        if (newTokens.token && newTokens.refreshToken) {
+          res.set("Access-Control-Expose-Headers", "x-token, x-refresh-token");
+          res.set("x-token", newTokens.token);
+          res.set("x-refresh-token", newTokens.refreshToken);
+        }
+        req.user = newTokens.user;
+      } else {
+        console.log(err.name);
+        req.headers["x-token"] = false;
       }
-      req.user = newTokens.user;
     }
   }
   next();
@@ -89,11 +95,13 @@ app.use(
   "/graphql",
   bodyParser.json(),
   graphqlExpress(req => {
+    const token = req.headers["x-token"];
     return {
       schema,
       context: {
         models,
-        user: ENVIRONMENT == "development" ? { id: 3 } : req.user,
+        token,
+        user: req.user,
         SECRET,
         SECRETTWO
       },

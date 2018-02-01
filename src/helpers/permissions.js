@@ -17,18 +17,11 @@ const createResolver = resolver => {
 };
 
 //Check whether the user is authenticated
-export const requiresAuth = createResolver(
-  async (parent, args, { models, user }) => {
-    try {
-      const userExists = await models.User.findById(user.id);
-      if (!user || !user.id || !userExists) {
-        throw new Error("Not authenticated!");
-      }
-    } catch (err) {
-      throw new Error("Not authenticated!");
-    }
+export const requiresAuth = createResolver(async (parent, args, { token }) => {
+  if (!token) {
+    throw new Error("Not authenticated!");
   }
-);
+});
 
 //These functions can be nested. Here it checks first whether an user
 //is authenticated and then if he has admin status.
