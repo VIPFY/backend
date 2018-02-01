@@ -12,7 +12,9 @@
     "test": "ENVIRONMENT=testing jest --verbose --no-cache --forceExit",
     "play": "babel-node src/helpers/play.js"
   },
-  "jest": { "testEnvironment": "node" },
+  "jest": {
+    "testEnvironment": "node"
+  },
   "dependencies": {
     "apollo-server-express": "^1.3.2",
     "axios": "^0.17.1",
