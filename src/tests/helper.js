@@ -13,11 +13,14 @@ import express from "express";
 
 const app = express();
 
-// Object to inject into context to test whether an user is logged-in
+// Objects to inject into context to test whether an user is logged-in
 export const user = {
-  id: random(1, 60),
+  id: random(1, 90),
   email: expect.any(String)
 };
+
+export const token =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjo2N30sImlhdCI6MTUxNzQ5Nzc5MSwiZXhwIjoxNTE3NTQwOTkxfQ.ys2oSIgznGLv8mOXtIdpdAP-mnVFPFFw4nzWq2n_g1w";
 
 // Helper function to test Queries
 export const executeQuery = (query, args = {}, context = {}) => {
@@ -38,6 +41,7 @@ export function testDefault({
     const result = await executeQuery(operation, args, {
       models,
       user,
+      token,
       SECRET,
       SECRETTWO
     });
@@ -72,6 +76,7 @@ export function testAgb({ operation, name, args, dummy }) {
     const result = await executeQuery(operation, args, {
       models,
       user,
+      token,
       SECRET,
       SECRETTWO
     });

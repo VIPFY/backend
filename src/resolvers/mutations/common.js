@@ -11,8 +11,8 @@ export default {
         return {
           ok: true
         };
-      } catch (error) {
-        return { error };
+      } catch (err) {
+        throw new Error(err.message);
       }
     }
   }

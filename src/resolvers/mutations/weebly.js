@@ -19,10 +19,7 @@ export default {
           const res = await weeblyApi(method, endpoint, requestData);
           userId = res.user.user_id;
         } catch (err) {
-          return {
-            ok: false,
-            error: `The email ${email} is already in use at Weebly!`
-          };
+          throw new Error(`The email ${email} is already in use at Weebly!`);
         }
 
         endpoint = `user/${userId}/site`;
@@ -31,10 +28,7 @@ export default {
           const res = await weeblyApi(method, endpoint, requestData);
           siteId = res.site.site_id;
         } catch (err) {
-          return {
-            ok: false,
-            error: err.message
-          };
+          throw new Error(err.message);
         }
 
         endpoint = `user/${userId}/site/${siteId}/loginLink`;
@@ -46,16 +40,10 @@ export default {
             loginLink: res.link
           };
         } catch (err) {
-          return {
-            ok: false,
-            error: err.message
-          };
+          throw new Error(err.message);
         }
       } else {
-        return {
-          ok: false,
-          error: "AGB's not accepted!"
-        };
+        throw new Error("AGB's not accepted!");
       }
     }
   )

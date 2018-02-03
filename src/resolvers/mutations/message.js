@@ -1,5 +1,6 @@
 import { requiresAuth } from "../../helpers/permissions";
 import { NEW_MESSAGE, pubsub } from "../../constants";
+import { decode } from "jsonwebtoken";
 
 export default {
   setDeleteStatus: requiresAuth.createResolver(
@@ -15,16 +16,10 @@ export default {
             ok: true
           };
         } catch (err) {
-          return {
-            ok: false,
-            error: err.message
-          };
+          throw new Error(err.message);
         }
       } else {
-        return {
-          ok: false,
-          error: "Message doesn't exist!"
-        };
+        throw new Error("Message doesn't exist!");
       }
     }
   ),
@@ -43,40 +38,29 @@ export default {
             message: now
           };
         } else {
-          return {
-            ok: false,
-            error: "Message already read"
-          };
+          throw new Error("Message already read");
         }
       } catch (err) {
-        return {
-          ok: false,
-          error: err.message
-        };
+        throw new Error(err.message);
       }
     }
   ),
 
   sendMessage: requiresAuth.createResolver(
-    async (parent, { fromuser, touser, message }, { models }) => {
-      const p1 = models.User.findById(fromuser);
+    async (parent, { touser, message }, { models, token }) => {
+      const { user: { id } } = decode(token);
+      const p1 = models.User.findById(id);
       const p2 = models.User.findById(touser);
       const [sender, receiver] = await Promise.all([p1, p2]);
 
       if (!sender || !receiver) {
-        return {
-          ok: false,
-          error: "User doesn't exist!"
-        };
+        throw new Error("User doesn't exist!");
       } else if (sender.id == receiver.id) {
-        return {
-          ok: false,
-          error: "Sender and Receiver can't be the same User!"
-        };
+        throw new Error("Sender and Receiver can't be the same User!");
       } else if (message && sender && receiver) {
         try {
           const save = await models.Notification.create({
-            fromuser,
+            fromuser: id,
             touser,
             type: 1,
             message
@@ -89,7 +73,7 @@ export default {
           };
 
           pubsub.publish(NEW_MESSAGE, {
-            userId: receiver.id,
+            userId: receiver.dataValues.id,
             newMessage
           });
 
@@ -99,16 +83,10 @@ export default {
             message
           };
         } catch (err) {
-          return {
-            ok: false,
-            error: err.message
-          };
+          throw new Error(err.message);
         }
       } else {
-        return {
-          ok: false,
-          error: "Empty Message!"
-        };
+        throw new Error("Empty Message!");
       }
     }
   )

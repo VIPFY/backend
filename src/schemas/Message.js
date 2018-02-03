@@ -65,7 +65,7 @@ export const types = `
 
 export const queries = `
 # All messages an user received - either from apps or other users
-  fetchMessages(id: Int!, read: Boolean): [Message]
+  fetchMessages(read: Boolean, type: MESSAGE_MODEL): [Message]
 `;
 
 export const mutations = `
@@ -76,9 +76,9 @@ export const mutations = `
   setDeleteStatus(id: Int!, model: MESSAGE_MODEL!, type: MESSAGE_COLUMN!): Response!
 
 # Send a message to another user
-  sendMessage(fromuser: Int!, touser: Int!, message: String!): MessageResponse!
+  sendMessage(touser: Int!, message: String!): MessageResponse!
 `;
 
 export const subscriptions = `
-  newMessage(toUser: Int!): Message!
+  newMessage: Message!
 `;

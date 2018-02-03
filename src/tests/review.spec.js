@@ -1,4 +1,10 @@
-import { executeQuery, testDefault, testAuthentication, user } from "./helper";
+import {
+  executeQuery,
+  testDefault,
+  testAuthentication,
+  user,
+  token
+} from "./helper";
 import {
   dummyReviewSimpleResponse,
   dummyReviewResponse,
@@ -121,7 +127,7 @@ describe("This workflow", () => {
     const createAppReview = await executeQuery(
       writeReview,
       { userid: _.random(1, 99), appid, stars, test },
-      { models, user, SECRET, SECRETTWO }
+      { models, user, SECRET, SECRETTWO, token }
     );
 
     await expect(createAppReview.errors).toBeUndefined();
@@ -136,7 +142,7 @@ describe("This workflow", () => {
         userid: rater,
         balance: 1
       },
-      { models, user, SECRET, SECRETTWO }
+      { models, user, SECRET, SECRETTWO, token }
     );
 
     await expect(rateNewReview.errors).toBeUndefined();
@@ -151,7 +157,7 @@ describe("This workflow", () => {
         reviewid: createAppReview.data.writeReview.id,
         balance: 1
       },
-      { models, user, SECRET, SECRETTWO }
+      { models, user, SECRET, SECRETTWO, token }
     );
 
     await expect(rateReviewAgainFail.errors).toBeUndefined();
@@ -166,7 +172,7 @@ describe("This workflow", () => {
         reviewid: createAppReview.data.writeReview.id,
         balance: 2
       },
-      { models, user, SECRET, SECRETTWO }
+      { models, user, SECRET, SECRETTWO, token }
     );
 
     await expect(rateReviewAgain.errors).toBeUndefined();

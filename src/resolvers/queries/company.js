@@ -16,6 +16,7 @@ export default {
 
   fetchCompany: (parent, { id }, { models }) => models.Company.findById(id),
 
-  fetchDepartment: (parent, { id }, { models }) =>
+  fetchDepartment: requiresAuth.createResolver((parent, { id }, { models }) =>
     models.Department.findById(id)
+  )
 };

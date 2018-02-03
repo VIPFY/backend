@@ -1,5 +1,11 @@
 import models from "../models/index";
-import { executeQuery, testDefault, testAuthentication, user } from "./helper";
+import {
+  executeQuery,
+  testDefault,
+  testAuthentication,
+  user,
+  token
+} from "./helper";
 import {
   dummyEmail,
   dummyUser,
@@ -146,7 +152,7 @@ describe("Query", () => {
   testAuthentication({ operation: me, name: "me" });
 
   test("me should return the logged-in user", async () => {
-    const result = await executeQuery(me, {}, { models, user });
+    const result = await executeQuery(me, {}, { models, user, token });
     const { data, errors } = result;
 
     await expect(errors).toBeUndefined();
@@ -168,7 +174,7 @@ describe("This workflow", () => {
     const signUpUser = await executeQuery(
       signUp,
       { email },
-      { models, SECRET, SECRETTWO }
+      { models, SECRET, SECRETTWO, token }
     );
 
     await expect(signUpUser.errors).toBeUndefined();
@@ -177,7 +183,7 @@ describe("This workflow", () => {
     const ConfirmUser = await executeQuery(
       signUpConfirm,
       { email, password },
-      { models, SECRET, SECRETTWO }
+      { models, SECRET, SECRETTWO, token }
     );
 
     await expect(ConfirmUser.errors).toBeUndefined();
@@ -186,7 +192,7 @@ describe("This workflow", () => {
     const requestNewPassword = await executeQuery(
       signIn,
       { email, password },
-      { models, SECRET, SECRETTWO }
+      { models, SECRET, SECRETTWO, token }
     );
 
     await expect(requestNewPassword.errors).toBeUndefined();

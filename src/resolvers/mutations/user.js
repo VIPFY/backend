@@ -7,12 +7,19 @@ import _ from "lodash";
 
 export default {
   updateUser: requiresAuth.createResolver(
-    (parent, { firstname, newFirstName }, { models }) =>
-      models.User.update({ firstname: newFirstName }, { where: { firstname } })
+    (parent, { firstname, newFirstName }, { models, token }) => {
+      const { user: { id } } = jwt.decode(token);
+      return models.User.update(
+        { firstname: newFirstName },
+        { where: { firstname } }
+      );
+    }
   ),
 
   deleteUser: requiresAuth.createResolver(
-    async (parent, { id }, { models }) => {
+    async (parent, args, { models, token }) => {
+      const { user: { id } } = jwt.decode(token);
+
       await models.User.destroy({ where: { id } });
       return "User was deleted";
     }
@@ -26,10 +33,7 @@ export default {
     //Check whether the email is already in use
     const emailInUse = await models.User.findOne({ where: { email } });
     if (emailInUse) {
-      return {
-        ok: false,
-        error: "Email already in use!"
-      };
+      throw new Error("Email already in use!");
     } else {
       try {
         //A password musst be created because otherwise the not null rule of the
@@ -62,10 +66,7 @@ export default {
           refreshToken
         };
       } catch (err) {
-        return {
-          ok: false,
-          error: err.message
-        };
+        throw new Error(err.message);
       }
     }
   },
@@ -105,10 +106,7 @@ export default {
         refreshToken
       };
     } catch (err) {
-      return {
-        ok: false,
-        error: "Couldn't activate user!"
-      };
+      throw new Error("Couldn't activate user!");
     }
   },
 
@@ -117,11 +115,9 @@ export default {
 
   forgotPassword: async (parent, { email }, { models }) => {
     const emailExists = await models.User.findOne({ where: { email } });
-    if (!emailExists)
-      return {
-        ok: false,
-        error: "Email doesn't exist!"
-      };
+    if (!emailExists) {
+      throw new Error("Email doesn't exist!");
+    }
 
     //Change the given hash to improve security
     const start = _.random(3, 8);
@@ -144,10 +140,7 @@ export default {
         email
       };
     } catch (err) {
-      return {
-        ok: false,
-        error: err.message
-      };
+      throw new Error(err.message);
     }
   }
 };

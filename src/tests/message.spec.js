@@ -1,5 +1,11 @@
 import models from "../models/index";
-import { user, executeQuery, testDefault, testAuthentication } from "./helper";
+import {
+  user,
+  executeQuery,
+  testDefault,
+  testAuthentication,
+  token
+} from "./helper";
 import {
   dummyMessage,
   dummyResponse,
@@ -136,7 +142,7 @@ describe("This workflow", () => {
         touser: receiver,
         message
       },
-      { models, user, SECRET, SECRETTWO }
+      { models, user, SECRET, SECRETTWO, token }
     );
 
     await expect(sendTheMessage.errors).toBeUndefined();
@@ -150,7 +156,7 @@ describe("This workflow", () => {
         id: sendTheMessage.data.sendMessage.id,
         model
       },
-      { models, user, SECRET, SECRETTWO }
+      { models, user, SECRET, SECRETTWO, token }
     );
 
     await expect(readTheMessage.errors).toBeUndefined();
@@ -165,7 +171,7 @@ describe("This workflow", () => {
         model,
         type: "deleted"
       },
-      { models, user, SECRET, SECRETTWO }
+      { models, user, SECRET, SECRETTWO, token }
     );
 
     await expect(deleteTheMessage.errors).toBeUndefined();

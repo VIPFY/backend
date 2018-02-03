@@ -50,7 +50,6 @@ export const schema = makeExecutableSchema({
 // he receives after a successful login, everything will be fine.
 const authMiddleware = async (req, res, next) => {
   const token = req.headers["x-token"];
-  console.log("HEADER: ", req.headers["x-token"]);
   if (token) {
     try {
       const { user } = await jwt.verify(token, SECRET);
@@ -101,6 +100,8 @@ app.use(
       context: {
         models,
         token,
+        // token:
+        //   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjo3NH0sImlhdCI6MTUxNzY3MzE5NiwiZXhwIjoxNTE3NzE2Mzk2fQ.5Tlsrg6F9UuwcKYZu21JFqVlEPhRKJZVsWXwuJlVgs4",
         user: req.user,
         SECRET,
         SECRETTWO
@@ -146,16 +147,18 @@ if (ENVIRONMENT != "testing") {
               if (token && refreshToken) {
                 try {
                   const { user } = jwt.verify(token, SECRET);
-                  return { models, user };
+                  return { models, token };
                 } catch (err) {
-                  const newTokens = await refreshTokens(
-                    token,
-                    refreshToken,
-                    models,
-                    SECRET,
-                    SECRETTWO
-                  );
-                  return { models, user: newTokens.user };
+                  if (err.name == "TokenExpiredError") {
+                    const newTokens = await refreshTokens(
+                      token,
+                      refreshToken,
+                      models,
+                      SECRET,
+                      SECRETTWO
+                    );
+                    return { models, token: newTokens.token };
+                  } else return {};
                 }
               }
               return {};

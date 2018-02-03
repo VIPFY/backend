@@ -8,23 +8,27 @@ export default {
   me: requiresAuth.createResolver(async (parent, args, { models, user }) => {
     if (user) {
       // they are logged in
-      const me = await models.User.findById(user.id);
+      try {
+        const me = await models.User.findById(user.id);
 
-      return me.dataValues;
+        return me.dataValues;
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    } else {
+      throw new Error("Not Authenticated!");
     }
-    // not logged in user
-    return null;
   }),
 
-  fetchUser: requiresAuth.createResolver((parent, { id }, { models }) =>
-    models.User.findById(id)
-  ),
-
   fetchUserByPassword: async (parent, { password }, { models }) => {
-    const user = await models.User.findOne({
-      where: { password, userstatus: "toverify" }
-    });
-    return user.dataValues.email;
+    try {
+      const user = await models.User.findOne({
+        where: { password, userstatus: "toverify" }
+      });
+      return user.dataValues.email;
+    } catch ({ message }) {
+      throw new Error(message);
+    }
   },
 
   allEmployees: requiresAuth.createResolver((parent, args, { models }) =>

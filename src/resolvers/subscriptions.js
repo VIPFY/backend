@@ -1,18 +1,22 @@
 import { withFilter } from "graphql-subscriptions";
 import { NEW_MESSAGE, pubsub } from "../constants";
+import { decode } from "jsonwebtoken";
 
 export default {
   newMessage: {
     subscribe: withFilter(
-      (parent, args, { modell, user }, data) => {
+      (parent, args, { token }, data) => {
+        const { user } = decode(token);
         if (!user || !user.id) {
           throw new Error("Not authenticated!");
         }
         return pubsub.asyncIterator(NEW_MESSAGE);
       },
-      (payload, args) => {
+      (payload, args, { token }) => {
         if (payload) {
-          return payload.userId === args.toUser;
+          const { user: { id } } = decode(token);
+
+          return payload.userId === id;
         }
       }
     )

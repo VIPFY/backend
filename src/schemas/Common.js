@@ -2,13 +2,11 @@ export const types = `
 # The basic Response
   type Response {
     ok: Boolean!
-    error: String
   }
 
 # Contains the changed rating
   type ReviewResponse {
     ok: Boolean!
-    error: String
     balance: Int
     id: Int
   }
@@ -18,13 +16,11 @@ export const types = `
     ok: Boolean!
     message: String
     id: Int
-    error: String
   }
 
 # If the registration was successful, a boolean will be given back
   type RegisterResponse {
     ok: Boolean!
-    error: String
     token: String
     refreshToken: String
   }
@@ -35,13 +31,11 @@ export const types = `
     token: String
     refreshToken: String
     user: User
-    error: String
   }
 
 # The user gets the email where the new auth is send back
  type ForgotPwResponse {
    ok: Boolean!
-   error: String
    email: String
  }
 

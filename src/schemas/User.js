@@ -79,7 +79,6 @@ export const types = `
 
 export const queries = `
   allUsers: [User!]!
-  fetchUser(id: Int!): User
   # Returns the logged-in user. Used for Authentication.
   me: User
   fetchUserByPassword(password: String!): String!
@@ -98,7 +97,7 @@ export const queries = `
 
 export const mutations = `
   updateUser(firstname: String!, newFirstname: String!): [Int!]!
-  deleteUser(id: Int!): String!
+  deleteUser: String!
 
   # Only an email is required for the signup
   signUp(email: String!, newsletter: Boolean): RegisterResponse!

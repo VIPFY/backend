@@ -1,28 +1,24 @@
 import { requiresAuth } from "../../helpers/permissions";
+import jwt from "jsonwebtoken";
 
 export default {
   writeReview: requiresAuth.createResolver(
-    async (parent, { userid, appid, stars, text }, { models }) => {
+    async (parent, { appid, stars, text }, { models, token }) => {
+      const { user: { id } } = jwt.decode(token);
       const p1 = models.App.findById(appid);
-      const p2 = models.User.findById(userid);
+      const p2 = models.User.findById(id);
       const [app, user] = await Promise.all([p1, p2]);
 
       if (!app || !user) {
-        return {
-          ok: false,
-          error: "App or User doesn't exist!"
-        };
+        throw new Error("App or User doesn't exist!");
       } else if (stars > 5 || stars < 1) {
-        return {
-          ok: false,
-          error: "Rating must be between 1 and 5 stars!"
-        };
+        throw new Error("Rating must be between 1 and 5 stars!");
       } else {
         try {
           const review = await models.Review.create({
             stars,
             reviewtext: text,
-            userid,
+            userid: id,
             appid
           });
           return {
@@ -30,43 +26,36 @@ export default {
             id: review.id
           };
         } catch (err) {
-          return {
-            ok: false,
-            error: err.message
-          };
+          throw new Error(err.message);
         }
       }
     }
   ),
 
   rateReview: requiresAuth.createResolver(
-    async (parent, { reviewid, userid, balance }, { models }) => {
-      const p1 = models.User.findById(userid);
+    async (parent, { reviewid, balance }, { models, token }) => {
+      const { user: { id } } = jwt.decode(token);
+
+      const p1 = models.User.findById(id);
       const p2 = models.Review.findById(reviewid);
       const p3 = models.ReviewHelpful.findOne({
         where: {
           reviewid,
-          userid
+          userid: id
         }
       });
       const [commenter, review, changeRating] = await Promise.all([p1, p2, p3]);
 
       if (!review) {
-        return {
-          ok: false,
-          error: "Review doesn't exist!"
-        };
+        throw new Error("Review doesn't exist!");
       } else if (!commenter) {
-        return {
-          ok: false,
-          error: "User doesn't exist!"
-        };
+        throw new Error("User doesn't exist!");
       } else if (!changeRating) {
         try {
           const rate = await models.ReviewHelpful.create({
             balance,
             reviewid,
-            userid
+            userid: id
           });
 
           return {
@@ -74,24 +63,18 @@ export default {
             balance
           };
         } catch (err) {
-          return {
-            ok: false,
-            error: err.message
-          };
+          throw new Error(err.message);
         }
       } else {
         if (changeRating.balance == balance) {
-          return {
-            ok: false,
-            error: `This is the same value: ${balance}`
-          };
+          throw new Error(`This is the same value: ${balance}`);
         }
         try {
           const changing = await models.ReviewHelpful.update(
             { balance },
             {
               where: {
-                userid,
+                userid: id,
                 reviewid
               }
             }
@@ -101,10 +84,7 @@ export default {
             balance
           };
         } catch (err) {
-          return {
-            ok: false,
-            error: err.message
-          };
+          throw new Error(err.message);
         }
       }
     }

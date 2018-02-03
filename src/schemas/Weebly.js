@@ -2,7 +2,6 @@ export const types = `
   # Response from Weebly
   type WeeblyResponse {
     ok: Boolean!
-    error: String
     loginLink: String
   }
 `;
