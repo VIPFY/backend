@@ -1,6 +1,6 @@
 export const fetchMessages = `
-  query FetchMessages($id: Int!){
-    fetchMessages(id: $id) {
+  query FetchMessages{
+    fetchMessages {
       id
       type
       message
@@ -21,15 +21,6 @@ export const allUsers = `
 export const me = `
   query {
     me {
-      id
-      email
-    }
-  }
-`;
-
-export const fetchUser = `
-  query FetchUser($id: Int!){
-    fetchUser(id: $id) {
       id
       email
     }

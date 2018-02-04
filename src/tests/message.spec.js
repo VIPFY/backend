@@ -1,17 +1,9 @@
 import models from "../models/index";
-import {
-  user,
-  executeQuery,
-  testDefault,
-  testAuthentication,
-  token
-} from "./helper";
+import { executeQuery, testDefault, testAuthentication, token } from "./helper";
 import {
   dummyMessage,
   dummyResponse,
-  dummyResponseFailure,
-  dummyMessageResponseSuccess,
-  dummyMessageResponseFailure
+  dummyMessageResponseSuccess
 } from "./dummies";
 import { fetchMessages } from "./queries";
 import { sendMessage, setDeleteStatus, setReadtime } from "./mutations";
@@ -25,9 +17,6 @@ const testQueries = [
     operation: fetchMessages,
     name: "fetchMessages",
     dummy: dummyMessage,
-    args: {
-      id: 2
-    },
     arrayTest: true
   }
 ];
@@ -39,7 +28,6 @@ const testMutations = [
     name: "sendMessage",
     dummy: dummyMessageResponseSuccess,
     args: {
-      fromuser: random(1, 30),
       touser: random(31, 70),
       message: lorem.sentence()
     }
@@ -49,58 +37,55 @@ const testMutations = [
       "sendMessage should throw an error if sender and receiver have the same id",
     operation: sendMessage,
     name: "sendMessage",
-    dummy: dummyMessageResponseFailure,
     args: {
-      fromuser: 1,
-      touser: 1,
+      touser: 67,
       message: lorem.sentence()
-    }
+    },
+    errorTest: true
   },
   {
     description:
       "sendMessage should throw an error if the receiver doesn't exist",
     operation: sendMessage,
     name: "sendMessage",
-    dummy: dummyMessageResponseFailure,
     args: {
-      fromuser: 1,
       touser: 99999,
       message: lorem.sentence()
-    }
+    },
+    errorTest: true
   },
   {
     description: "sendMessage should throw an error if the message is empty",
     operation: sendMessage,
     name: "sendMessage",
-    dummy: dummyMessageResponseFailure,
     args: {
-      fromuser: random(0, 66),
       touser: random(0, 66),
       message: ""
-    }
+    },
+    errorTest: true
   },
   {
     description:
       "setDeleteStatus should throw an error if the message doesn't exist",
     operation: setDeleteStatus,
     name: "setDeleteStatus",
-    dummy: dummyResponseFailure,
     args: {
       id: 99999,
       model: "Notification",
       type: "deleted"
-    }
+    },
+    errorTest: true
   },
   {
     description:
       "setReadtime should throw an error, if the message was already read",
     operation: setReadtime,
     name: "setReadtime",
-    dummy: dummyMessageResponseFailure,
     args: {
       id: 6,
       model: "Notification"
-    }
+    },
+    errorTest: true
   }
 ];
 
@@ -130,19 +115,17 @@ describe("Mutation", () => {
 
 describe("This workflow", () => {
   test("should send a message from user to user, read it and delete it.", async () => {
-    const sender = random(1, 30);
-    const receiver = random(31, 70);
+    const receiver = random(1, 65);
     const message = lorem.sentence();
     const model = "Notification";
 
     const sendTheMessage = await executeQuery(
       sendMessage,
       {
-        fromuser: sender,
         touser: receiver,
         message
       },
-      { models, user, SECRET, SECRETTWO, token }
+      { models, SECRET, SECRETTWO, token }
     );
 
     await expect(sendTheMessage.errors).toBeUndefined();
@@ -156,7 +139,7 @@ describe("This workflow", () => {
         id: sendTheMessage.data.sendMessage.id,
         model
       },
-      { models, user, SECRET, SECRETTWO, token }
+      { models, SECRET, SECRETTWO, token }
     );
 
     await expect(readTheMessage.errors).toBeUndefined();
@@ -171,7 +154,7 @@ describe("This workflow", () => {
         model,
         type: "deleted"
       },
-      { models, user, SECRET, SECRETTWO, token }
+      { models, SECRET, SECRETTWO, token }
     );
 
     await expect(deleteTheMessage.errors).toBeUndefined();

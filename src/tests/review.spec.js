@@ -1,23 +1,12 @@
-import {
-  executeQuery,
-  testDefault,
-  testAuthentication,
-  user,
-  token
-} from "./helper";
+import { executeQuery, testDefault, testAuthentication, token } from "./helper";
 import {
   dummyReviewSimpleResponse,
   dummyReviewResponse,
-  dummyResponse,
-  dummyResponseFailure,
   dummyRateReviewResponse,
-  dummyRateReviewResponseFailure,
   dummyWriteReviewResponse,
-  dummyWriteReviewResponseFailure,
   dummyReview,
   dummyReviewFail,
-  dummyReviewFail2,
-  dummyReviewFail3
+  dummyReviewFail2
 } from "./dummies";
 import { allReviews, fetchReview } from "./queries";
 import { writeReview, rateReview } from "./mutations";
@@ -60,46 +49,26 @@ const testMutations = [
       "writeReview should return an error when the rating is higher than 5 or lower then 1",
     operation: writeReview,
     name: "writeReview",
-    dummy: dummyWriteReviewResponseFailure,
-    args: dummyReviewFail
+    args: dummyReviewFail,
+    errorTest: true
   },
   {
     description:
       "writeReview should return an error when the app doesn't exist",
     operation: writeReview,
     name: "writeReview",
-    dummy: dummyWriteReviewResponseFailure,
-    args: dummyReviewFail2
-  },
-  {
-    description:
-      "writeReview should return an error when the user doesn't exist",
-    operation: writeReview,
-    name: "writeReview",
-    dummy: dummyWriteReviewResponseFailure,
-    args: dummyReviewFail3
-  },
-  {
-    description: "rateReview should throw an error if the user doesn't exist",
-    operation: rateReview,
-    name: "rateReview",
-    dummy: dummyRateReviewResponseFailure,
-    args: {
-      reviewid: 1,
-      userid: 100000,
-      balance: 1
-    }
+    args: dummyReviewFail2,
+    errorTest: true
   },
   {
     description: "rateReview should throw an error if the review doesn't exist",
     operation: rateReview,
     name: "rateReview",
-    dummy: dummyRateReviewResponseFailure,
     args: {
       reviewid: 100000,
-      userid: 3,
       balance: 1
-    }
+    },
+    errorTest: true
   }
 ];
 
@@ -126,8 +95,8 @@ describe("This workflow", () => {
 
     const createAppReview = await executeQuery(
       writeReview,
-      { userid: _.random(1, 99), appid, stars, test },
-      { models, user, SECRET, SECRETTWO, token }
+      { appid, stars, test },
+      { models, SECRET, SECRETTWO, token }
     );
 
     await expect(createAppReview.errors).toBeUndefined();
@@ -139,10 +108,9 @@ describe("This workflow", () => {
       rateReview,
       {
         reviewid: createAppReview.data.writeReview.id,
-        userid: rater,
         balance: 1
       },
-      { models, user, SECRET, SECRETTWO, token }
+      { models, SECRET, SECRETTWO, token }
     );
 
     await expect(rateNewReview.errors).toBeUndefined();
@@ -153,26 +121,22 @@ describe("This workflow", () => {
     const rateReviewAgainFail = await executeQuery(
       rateReview,
       {
-        userid: rater,
         reviewid: createAppReview.data.writeReview.id,
         balance: 1
       },
-      { models, user, SECRET, SECRETTWO, token }
+      { models, SECRET, SECRETTWO, token }
     );
 
-    await expect(rateReviewAgainFail.errors).toBeUndefined();
-    await expect(rateReviewAgainFail.data.rateReview).toEqual(
-      dummyRateReviewResponseFailure
-    );
+    await expect(rateReviewAgainFail.errors).toBeDefined();
+    await expect(rateReviewAgainFail.data).toBe(null);
 
     const rateReviewAgain = await executeQuery(
       rateReview,
       {
-        userid: rater,
         reviewid: createAppReview.data.writeReview.id,
         balance: 2
       },
-      { models, user, SECRET, SECRETTWO, token }
+      { models, SECRET, SECRETTWO, token }
     );
 
     await expect(rateReviewAgain.errors).toBeUndefined();

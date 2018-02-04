@@ -77,12 +77,12 @@ export default {
     { models, SECRET, SECRETTWO }
   ) => {
     const emailExists = await models.User.findOne({ where: { email } });
-    if (!emailExists) return { ok: false, error: "Email not found!" };
+    if (!emailExists) throw new Error("Email not found!");
 
     const isVerified = await models.User.findOne({
       where: { email, userstatus: "normal" }
     });
-    if (isVerified) return { ok: false, error: "User already verified!" };
+    if (isVerified) throw new Error("User already verified!");
 
     try {
       const passwordHash = await bcrypt.hash(password, 12);

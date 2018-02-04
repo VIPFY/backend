@@ -3,14 +3,8 @@ This file tests specific calls to Weebly's API as well as our Graphql Mutation.
 The mutation consists of three consequtive tests, which will be tested seperatly
 as well as successively.
 */
-import {
-  executeQuery,
-  user,
-  testDefault,
-  testAuthentication,
-  testAgb
-} from "./helper";
-import { dummyWeeblyResponse, dummyWeeblyResponseFailure } from "./dummies";
+import { executeQuery, testDefault, testAuthentication } from "./helper";
+import { dummyWeeblyResponse } from "./dummies";
 import weeblyApi from "../services/weebly";
 import { weeblyCreateLoginLink } from "./mutations";
 import { internet } from "faker";
@@ -64,33 +58,34 @@ const tests = [
   }
 ];
 
-const testWeeblyMutation = {
-  description:
-    "weeblyCreateLoginLink should create a new Weebly user, a site for him, and return a loginLink",
-  operation: weeblyCreateLoginLink,
-  name: "weeblyCreateLoginLink",
-  dummy: dummyWeeblyResponse,
-  args: {
-    email: internet.email(),
-    domain: internet.domainName(),
-    plan: 1,
-    agb: true
+const testMutations = [
+  {
+    description:
+      "weeblyCreateLoginLink should create a new Weebly user, a site for him, and return a loginLink",
+    operation: weeblyCreateLoginLink,
+    name: "weeblyCreateLoginLink",
+    dummy: dummyWeeblyResponse,
+    args: {
+      email: internet.email(),
+      domain: internet.domainName(),
+      plan: 1,
+      agb: true
+    }
+  },
+  {
+    description:
+      "weeblyCreateLoginLink should throw an error if the Agb's are not accepted",
+    operation: weeblyCreateLoginLink,
+    name: "weeblyCreateLoginLink",
+    args: {
+      email: internet.email(),
+      domain: internet.domainName(),
+      plan: 1,
+      agb: false
+    },
+    errorTest: true
   }
-};
-
-const testAgbFalse = {
-  description:
-    "weeblyCreateLoginLink should create a new Weebly user, a site for him, and return a loginLink",
-  operation: weeblyCreateLoginLink,
-  name: "weeblyCreateLoginLink",
-  dummy: dummyWeeblyResponseFailure,
-  args: {
-    email: internet.email(),
-    domain: internet.domainName(),
-    plan: 1,
-    agb: false
-  }
-};
+];
 
 function testWeeblyApi({ endpoint, args, res, description }) {
   return test(description, async () => {
@@ -107,7 +102,6 @@ describe("This command ", () => {
 });
 
 describe("Mutation ", () => {
-  testDefault(testWeeblyMutation);
-  testAuthentication(testWeeblyMutation);
-  testAgb(testAgbFalse);
+  testMutations.map(test => testDefault(test));
+  testAuthentication(testMutations[0]);
 });

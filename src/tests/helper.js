@@ -15,7 +15,7 @@ const app = express();
 
 // Objects to inject into context to test whether an user is logged-in
 export const user = {
-  id: random(1, 90),
+  id: 67,
   email: expect.any(String)
 };
 
@@ -34,7 +34,8 @@ export function testDefault({
   dummy,
   name,
   arrayTest,
-  args
+  args,
+  errorTest
 }) {
   return test(description, async () => {
     expect.assertions(2);
@@ -47,11 +48,16 @@ export function testDefault({
     });
     const { data, errors } = result;
 
-    await expect(errors).toBeUndefined();
-    if (arrayTest) {
-      await expect(data[name]).toContainEqual(expect.objectContaining(dummy));
+    if (errorTest) {
+      await expect(errors).toBeDefined();
+      await expect(data).toBe(null);
     } else {
-      await expect(data[name]).toEqual(dummy);
+      await expect(errors).toBeUndefined();
+      if (arrayTest) {
+        await expect(data[name]).toContainEqual(expect.objectContaining(dummy));
+      } else {
+        await expect(data[name]).toEqual(dummy);
+      }
     }
   });
 }
@@ -68,21 +74,6 @@ export function testAuthentication({ operation, name, args, arrayTest }) {
     } else {
       await expect(data).toBeNull();
     }
-  });
-}
-
-export function testAgb({ operation, name, args, dummy }) {
-  return test(`${name} should reject the operation if the abg's are not accepted`, async () => {
-    const result = await executeQuery(operation, args, {
-      models,
-      user,
-      token,
-      SECRET,
-      SECRETTWO
-    });
-    const { data } = result;
-
-    await expect(data[name]).toMatchObject(dummy);
   });
 }
 

@@ -1,8 +1,7 @@
 export const sendMessage = `
-  mutation SendMessage($fromuser: Int!, $touser: Int!, $message: String!) {
-    sendMessage(fromuser: $fromuser, touser: $touser, message: $message) {
+  mutation SendMessage($touser: Int!, $message: String!) {
+    sendMessage(touser: $touser, message: $message) {
       ok
-      error
       id
       message
     }
@@ -13,7 +12,6 @@ export const setDeleteStatus = `
   mutation SetDeleteStatus($id: Int!, $model: MESSAGE_MODEL!, $type: MESSAGE_COLUMN!) {
     setDeleteStatus(id: $id, model: $model, type: $type) {
       ok
-      error
     }
   }
 `;
@@ -24,7 +22,6 @@ export const setReadtime = `
       ok
       id
       message
-      error
     }
   }
 `;
@@ -35,7 +32,6 @@ export const signUp = `
       ok
       token
       refreshToken
-      error
     }
   }
 `;
@@ -44,7 +40,6 @@ export const signUpConfirm = `
   mutation SignUpConfirm($email: String!, $password: String!) {
     signUpConfirm(email: $email, password: $password) {
       ok
-      error
       token
       refreshToken
     }
@@ -55,7 +50,6 @@ export const signIn = `
   mutation SignIn($email: String!, $password: String!) {
     signIn(email: $email, password: $password) {
       ok
-      error
       user {
         id
       }
@@ -69,16 +63,14 @@ export const forgotPassword = `
   mutation ForgotPassword($email: String!) {
     forgotPassword(email: $email) {
       ok
-      error
       email
     }
   }
 `;
 
 export const writeReview = `
-  mutation WriteReview($userid: Int!, $appid: Int!, $stars: Int!, $text: String) {
-    writeReview(userid: $userid, appid: $appid, stars: $stars, text: $text) {
-      error
+  mutation WriteReview($appid: Int!, $stars: Int!, $text: String) {
+    writeReview(appid: $appid, stars: $stars, text: $text) {
       ok
       id
     }
@@ -86,10 +78,9 @@ export const writeReview = `
 `;
 
 export const rateReview = `
-  mutation RateReview($reviewid: Int!, $userid: Int!, $balance: Int!) {
-    rateReview(reviewid: $reviewid, userid: $userid, balance: $balance) {
+  mutation RateReview($reviewid: Int!, $balance: Int!) {
+    rateReview(reviewid: $reviewid, balance: $balance) {
       ok
-      error
       balance
       id
     }
@@ -101,7 +92,6 @@ export const weeblyCreateLoginLink = `
     weeblyCreateLoginLink(email: $email, agb: $agb, plan: $plan, domain: $domain) {
       loginLink
       ok
-      error
     }
   }
 `;

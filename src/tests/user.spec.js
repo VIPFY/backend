@@ -10,11 +10,8 @@ import {
   dummyEmail,
   dummyUser,
   dummyRegisterResponse,
-  dummyRegisterResponseFailure,
   dummySignInResponse,
-  dummySignInResponseFailure,
-  dummyForgotPwResponse,
-  dummyForgotPwResponseFailure
+  dummyForgotPwResponse
 } from "./dummies";
 import { allUsers, me, fetchUser } from "./queries";
 import { signUp, signUpConfirm, signIn, forgotPassword } from "./mutations";
@@ -28,15 +25,6 @@ const testQueries = [
     name: "allUsers",
     dummy: dummyUser,
     arrayTest: true
-  },
-  {
-    description: "fetchUser should return the user with the given id",
-    operation: fetchUser,
-    name: "fetchUser",
-    dummy: user,
-    args: {
-      id: user.id
-    }
   }
 ];
 
@@ -57,33 +45,33 @@ const testMutations = [
       "signUp should throw an error if the email is already in the database",
     operation: signUp,
     name: "signUp",
-    dummy: dummyRegisterResponseFailure,
     args: {
       email: "newtestuser@vipfy.com",
       newsletter: random.boolean()
-    }
+    },
+    errorTest: true
   },
   {
     description:
       "signUpConfirm should throw an error if the email is not in the database",
     operation: signUpConfirm,
     name: "signUpConfirm",
-    dummy: dummyRegisterResponseFailure,
     args: {
       email: internet.email(),
       password: random.word()
-    }
+    },
+    errorTest: true
   },
   {
     description:
       "signUpConfirm should throw an error if the user is already verified",
     operation: signUpConfirm,
     name: "signUpConfirm",
-    dummy: dummyRegisterResponseFailure,
     args: {
       email: "newtestuser@vipfy.com",
       password: random.word()
-    }
+    },
+    errorTest: true
   },
   {
     description:
@@ -101,21 +89,21 @@ const testMutations = [
       "signIn should throw an error if the email is not in the database",
     operation: signIn,
     name: "signIn",
-    dummy: dummySignInResponseFailure,
     args: {
-      email: internet.email(),
+      email: "hellokittymegauser@doesnotexist.de",
       password: "test"
-    }
+    },
+    errorTest: true
   },
   {
     description: "signIn should throw an error if the password is incorrect",
     operation: signIn,
     name: "signIn",
-    dummy: dummySignInResponseFailure,
     args: {
       email: dummyEmail,
       password: "2354234"
-    }
+    },
+    errorTest: true
   },
   {
     description: "forgotPassword should send the user a new signUp email",
@@ -131,10 +119,10 @@ const testMutations = [
       "forgotPassword should return an error if the email is not in the database",
     operation: forgotPassword,
     name: "forgotPassword",
-    dummy: dummyForgotPwResponseFailure,
     args: {
       email: internet.email()
-    }
+    },
+    errorTest: true
   }
 ];
 

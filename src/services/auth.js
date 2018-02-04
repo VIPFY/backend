@@ -73,20 +73,10 @@ export const refreshTokens = async (
 
 export const tryLogin = async (email, password, models, SECRET, SECRETTWO) => {
   const user = await models.User.findOne({ where: { email }, raw: true });
-  if (!user) {
-    return {
-      ok: false,
-      error: "Sorry, but we couldn't find your email."
-    };
-  }
+  if (!user) throw new Error("Sorry, but we couldn't find your email.");
 
   const valid = await bcrypt.compare(password, user.password);
-  if (!valid) {
-    return {
-      ok: false,
-      error: "Incorrect password!"
-    };
-  }
+  if (!valid) throw new Error("Incorrect password!");
 
   const refreshTokenSecret = user.password + SECRETTWO;
   const [token, refreshToken] = await createTokens(
