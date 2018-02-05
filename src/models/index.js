@@ -5,30 +5,30 @@ components and exports everything as one big object.
 */
 
 import Sequelize from "sequelize";
+import dotenv from "dotenv";
 import { POSTGRESLOGIN } from "../login-data";
 import { selectEnv } from "../helpers/selectEnv";
-import dotenv from "dotenv";
 // dotenv must be the first package loaded and launched, because it loads the
 // environment variables.
 dotenv.config({ path: selectEnv(process.env.ENVIRONMENT) });
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME || "postgres", //Name of the database
-  process.env.DB_USER || "postgres", //Username
-  process.env.DB_PW || POSTGRESLOGIN, //Password
+  process.env.DB_NAME || "postgres", // Name of the database
+  process.env.DB_USER || "postgres", // Username
+  process.env.DB_PW || POSTGRESLOGIN, // Password
   {
-    dialect: "postgres", //Which database is used
-    host: process.env.DB_IP || "localhost", //The host used
+    dialect: "postgres", // Which database is used
+    host: process.env.DB_IP || "localhost", // The host used
     port: process.env.DB_PORT || 5432,
     define: {
       timestamps: false
     },
-    logging: process.env.LOGGING ? true : false
+    logging: !!process.env.LOGGING
   }
 );
 
-//The mapping here will be used in the resolver to access the model.
-//For example models.User
+// The mapping here will be used in the resolver to access the model.
+// For example models.User
 const db = {
   User: sequelize.import("./user"),
   App: sequelize.import("./app"),

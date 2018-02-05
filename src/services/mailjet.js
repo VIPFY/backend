@@ -2,8 +2,7 @@ import { MAILJET_KEY, MAILJET_SECRET } from "../login-data";
 
 const Mailjet = require("node-mailjet").connect(MAILJET_KEY, MAILJET_SECRET);
 
-export const sendEmail = (email, hash) => {
-  const con_link = `https://vipfy-148316.appspot.com/signup/${hash}`;
+export const sendEmail = email => {
   const options = {
     FromEmail: "office@vipfy.com",
     FromName: "Vipfy Office",
@@ -24,7 +23,7 @@ export const sendEmail = (email, hash) => {
 };
 
 export const sendEmailToVipfy = data => {
-  console.log(data)
+  console.log(data);
   const options = {
     FromEmail: "office@vipfy.com",
     FromName: "Vipfy Office",
@@ -35,7 +34,8 @@ export const sendEmailToVipfy = data => {
       fromname: data.name,
       fromemail: data.email,
       fromphone: data.phone,
-      contactmessage: data.message }
+      contactmessage: data.message
+    }
   };
 
   Mailjet.post("send")
@@ -45,8 +45,6 @@ export const sendEmailToVipfy = data => {
       return true;
     })
     .catch(err => {
-      console.log(err.statusCode);
-      console.log(err.message);
-      return err.message;
+      throw new Error(err.message);
     });
 };

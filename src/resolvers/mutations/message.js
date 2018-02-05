@@ -1,50 +1,43 @@
+import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 import { NEW_MESSAGE, pubsub } from "../../constants";
-import { decode } from "jsonwebtoken";
 
+/* eslint-disable no-unused-vars */
 export default {
-  setDeleteStatus: requiresAuth.createResolver(
-    async (parent, { id, model, type }, { models }) => {
-      const messageExists = await models[model].findById(id);
-      if (messageExists) {
-        try {
-          const deleted = await models[model].update(
-            { [type]: true },
-            { where: { id } }
-          );
-          return {
-            ok: true
-          };
-        } catch (err) {
-          throw new Error(err.message);
-        }
-      } else {
-        throw new Error("Message doesn't exist!");
-      }
-    }
-  ),
-
-  setReadtime: requiresAuth.createResolver(
-    async (parent, { id, model }, { models }) => {
+  setDeleteStatus: requiresAuth.createResolver(async (parent, { id, model, type }, { models }) => {
+    const messageExists = await models[model].findById(id);
+    if (messageExists) {
       try {
-        const read = await models[model].findById(id);
-
-        if (!read.readtime) {
-          const now = Date.now();
-          await models[model].update({ readtime: now }, { where: { id } });
-          return {
-            ok: true,
-            id,
-            message: now
-          };
-        } else {
-          throw new Error("Message already read");
-        }
+        const deleted = await models[model].update({ [type]: true }, { where: { id } });
+        return {
+          ok: true
+        };
       } catch (err) {
         throw new Error(err.message);
       }
+    } else {
+      throw new Error("Message doesn't exist!");
     }
-  ),
+  }),
+
+  setReadtime: requiresAuth.createResolver(async (parent, { id, model }, { models }) => {
+    try {
+      const read = await models[model].findById(id);
+
+      if (!read.readtime) {
+        const now = Date.now();
+        await models[model].update({ readtime: now }, { where: { id } });
+        return {
+          ok: true,
+          id,
+          message: now
+        };
+      }
+      throw new Error("Message already read");
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
 
   sendMessage: requiresAuth.createResolver(
     async (parent, { touser, message }, { models, token }) => {

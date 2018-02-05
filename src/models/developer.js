@@ -1,19 +1,19 @@
-export default (sequelize, { INTEGER, STRING }) => {
+export default (sequelize, { STRING }) => {
   const Developer = sequelize.define("developer", {
     name: STRING,
     website: {
       type: STRING,
       validate: {
-        isUrl: true
-      }
+        isUrl: true,
+      },
     },
     legalwebsite: {
       type: STRING,
       validate: {
-        isUrl: true
-      }
+        isUrl: true,
+      },
     },
-    bankaccount: STRING
+    bankaccount: STRING,
   });
 
   return Developer;

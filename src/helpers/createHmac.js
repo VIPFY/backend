@@ -1,7 +1,6 @@
-"use strict";
 import crypto from "crypto";
 
-let Utility = {};
+const Utility = {};
 
 /**
  * Helper function to validate Hmac
@@ -10,8 +9,8 @@ let Utility = {};
  * @param key
  * @returns {boolean}
  */
-Utility.validateHmac = function(hmac, compareString, key) {
-  let digest = this.generateHmac(compareString, key);
+Utility.validateHmac = function (hmac, compareString, key) {
+  const digest = this.generateHmac(compareString, key);
   return digest == hmac;
 };
 
@@ -21,8 +20,8 @@ Utility.validateHmac = function(hmac, compareString, key) {
  * @param key
  * @returns {*}
  */
-Utility.generateHmac = function(string, key) {
-  let crypt = crypto.createHmac("sha256", new Buffer(key, "utf-8"));
+Utility.generateHmac = function (string, key) {
+  const crypt = crypto.createHmac("sha256", new Buffer(key, "utf-8"));
   crypt.update(string);
   return new Buffer(crypt.digest("hex")).toString("base64");
 };

@@ -1,5 +1,7 @@
-import { requiresAuth } from "../../helpers/permissions";
 import jwt from "jsonwebtoken";
+import { requiresAuth } from "../../helpers/permissions";
+
+/* eslint-disable no-unused-vars */
 
 export default {
   writeReview: requiresAuth.createResolver(

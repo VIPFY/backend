@@ -1,15 +1,13 @@
-import models from "../models/index";
-import { executeQuery, testDefault, testAuthentication, token } from "./helper";
-import {
-  dummyMessage,
-  dummyResponse,
-  dummyMessageResponseSuccess
-} from "./dummies";
-import { fetchMessages } from "./queries";
-import { sendMessage, setDeleteStatus, setReadtime } from "./mutations";
 import { lorem } from "faker";
 import { random } from "lodash";
+import models from "../models/index";
+import { executeQuery, testDefault, testAuthentication, token } from "./helper";
+import { dummyMessage, dummyResponse, dummyMessageResponseSuccess } from "./dummies";
+import { fetchMessages } from "./queries";
+import { sendMessage, setDeleteStatus, setReadtime } from "./mutations";
 import { SECRET, SECRETTWO } from "../login-data";
+
+/* eslint-disable array-callback-return */
 
 const testQueries = [
   {
@@ -33,8 +31,7 @@ const testMutations = [
     }
   },
   {
-    description:
-      "sendMessage should throw an error if sender and receiver have the same id",
+    description: "sendMessage should throw an error if sender and receiver have the same id",
     operation: sendMessage,
     name: "sendMessage",
     args: {
@@ -44,8 +41,7 @@ const testMutations = [
     errorTest: true
   },
   {
-    description:
-      "sendMessage should throw an error if the receiver doesn't exist",
+    description: "sendMessage should throw an error if the receiver doesn't exist",
     operation: sendMessage,
     name: "sendMessage",
     args: {
@@ -65,8 +61,7 @@ const testMutations = [
     errorTest: true
   },
   {
-    description:
-      "setDeleteStatus should throw an error if the message doesn't exist",
+    description: "setDeleteStatus should throw an error if the message doesn't exist",
     operation: setDeleteStatus,
     name: "setDeleteStatus",
     args: {
@@ -77,8 +72,7 @@ const testMutations = [
     errorTest: true
   },
   {
-    description:
-      "setReadtime should throw an error, if the message was already read",
+    description: "setReadtime should throw an error, if the message was already read",
     operation: setReadtime,
     name: "setReadtime",
     args: {
@@ -93,8 +87,7 @@ describe("Query", () => {
   const unnecessaryTests = [];
   testQueries.map(test => {
     testDefault(test);
-    if (unnecessaryTests.includes(test.name)) {
-    } else {
+    if (!unnecessaryTests.includes(test.name)) {
       testAuthentication(test);
     }
     unnecessaryTests.push(test.name);
@@ -105,8 +98,7 @@ describe("Mutation", () => {
   const unnecessaryTests = [];
   testMutations.map(test => {
     testDefault(test);
-    if (unnecessaryTests.includes(test.name)) {
-    } else {
+    if (!unnecessaryTests.includes(test.name)) {
       testAuthentication(test);
     }
     unnecessaryTests.push(test.name);
@@ -129,9 +121,7 @@ describe("This workflow", () => {
     );
 
     await expect(sendTheMessage.errors).toBeUndefined();
-    await expect(sendTheMessage.data.sendMessage).toEqual(
-      dummyMessageResponseSuccess
-    );
+    await expect(sendTheMessage.data.sendMessage).toEqual(dummyMessageResponseSuccess);
 
     const readTheMessage = await executeQuery(
       setReadtime,
@@ -143,9 +133,7 @@ describe("This workflow", () => {
     );
 
     await expect(readTheMessage.errors).toBeUndefined();
-    await expect(readTheMessage.data.setReadtime).toEqual(
-      dummyMessageResponseSuccess
-    );
+    await expect(readTheMessage.data.setReadtime).toEqual(dummyMessageResponseSuccess);
 
     const deleteTheMessage = await executeQuery(
       setDeleteStatus,

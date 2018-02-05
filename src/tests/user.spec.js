@@ -1,11 +1,6 @@
+import { internet, random } from "faker";
 import models from "../models/index";
-import {
-  executeQuery,
-  testDefault,
-  testAuthentication,
-  user,
-  token
-} from "./helper";
+import { executeQuery, testDefault, testAuthentication, user, token } from "./helper";
 import {
   dummyEmail,
   dummyUser,
@@ -13,10 +8,11 @@ import {
   dummySignInResponse,
   dummyForgotPwResponse
 } from "./dummies";
-import { allUsers, me, fetchUser } from "./queries";
+import { allUsers, me } from "./queries";
 import { signUp, signUpConfirm, signIn, forgotPassword } from "./mutations";
-import { internet, random } from "faker";
 import { SECRET, SECRETTWO } from "../login-data";
+
+/* eslint-disable array-callback-return, no-undef */
 
 const testQueries = [
   {
@@ -30,8 +26,7 @@ const testQueries = [
 
 const testMutations = [
   {
-    description:
-      "signUp should enter an user into the database and return a token",
+    description: "signUp should enter an user into the database and return a token",
     operation: signUp,
     name: "signUp",
     dummy: dummyRegisterResponse,
@@ -41,8 +36,7 @@ const testMutations = [
     }
   },
   {
-    description:
-      "signUp should throw an error if the email is already in the database",
+    description: "signUp should throw an error if the email is already in the database",
     operation: signUp,
     name: "signUp",
     args: {
@@ -52,8 +46,7 @@ const testMutations = [
     errorTest: true
   },
   {
-    description:
-      "signUpConfirm should throw an error if the email is not in the database",
+    description: "signUpConfirm should throw an error if the email is not in the database",
     operation: signUpConfirm,
     name: "signUpConfirm",
     args: {
@@ -63,8 +56,7 @@ const testMutations = [
     errorTest: true
   },
   {
-    description:
-      "signUpConfirm should throw an error if the user is already verified",
+    description: "signUpConfirm should throw an error if the user is already verified",
     operation: signUpConfirm,
     name: "signUpConfirm",
     args: {
@@ -74,8 +66,7 @@ const testMutations = [
     errorTest: true
   },
   {
-    description:
-      "signIn should return a token so that the user can be authenticated",
+    description: "signIn should return a token so that the user can be authenticated",
     operation: signIn,
     name: "signIn",
     dummy: dummySignInResponse,
@@ -85,8 +76,7 @@ const testMutations = [
     }
   },
   {
-    description:
-      "signIn should throw an error if the email is not in the database",
+    description: "signIn should throw an error if the email is not in the database",
     operation: signIn,
     name: "signIn",
     args: {
@@ -115,8 +105,7 @@ const testMutations = [
     }
   },
   {
-    description:
-      "forgotPassword should return an error if the email is not in the database",
+    description: "forgotPassword should return an error if the email is not in the database",
     operation: forgotPassword,
     name: "forgotPassword",
     args: {
@@ -130,8 +119,7 @@ describe("Query", () => {
   const unnecessaryTests = [];
   testQueries.map(test => {
     testDefault(test);
-    if (unnecessaryTests.includes(test.name)) {
-    } else {
+    if (!unnecessaryTests.includes(test.name)) {
       testAuthentication(test);
     }
     unnecessaryTests.push(test.name);
@@ -159,11 +147,7 @@ describe("This workflow", () => {
     const email = internet.email();
     const password = random.word();
 
-    const signUpUser = await executeQuery(
-      signUp,
-      { email },
-      { models, SECRET, SECRETTWO, token }
-    );
+    const signUpUser = await executeQuery(signUp, { email }, { models, SECRET, SECRETTWO, token });
 
     await expect(signUpUser.errors).toBeUndefined();
     await expect(signUpUser.data.signUp).toEqual(dummyRegisterResponse);

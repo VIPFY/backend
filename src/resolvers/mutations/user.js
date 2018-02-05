@@ -1,47 +1,38 @@
+import { random } from "lodash";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { tryLogin, createTokens } from "../../services/auth";
 import { requiresAuth } from "../../helpers/permissions";
 import { sendEmail } from "../../services/mailjet";
-import _ from "lodash";
+
+/* eslint-disable no-unused-vars */
 
 export default {
-  updateUser: requiresAuth.createResolver(
-    (parent, { firstname, newFirstName }, { models, token }) => {
-      const { user: { id } } = jwt.decode(token);
-      return models.User.update(
-        { firstname: newFirstName },
-        { where: { firstname } }
-      );
-    }
-  ),
+  updateUser: requiresAuth.createResolver((parent, { newFirstName }, { models, token }) => {
+    const { user: { id } } = jwt.decode(token);
+    return models.User.update({ firstname: newFirstName }, { where: { id } });
+  }),
 
-  deleteUser: requiresAuth.createResolver(
-    async (parent, args, { models, token }) => {
-      const { user: { id } } = jwt.decode(token);
+  deleteUser: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    const { user: { id } } = jwt.decode(token);
 
-      await models.User.destroy({ where: { id } });
-      return "User was deleted";
-    }
-  ),
+    await models.User.destroy({ where: { id } });
+    return "User was deleted";
+  }),
 
-  signUp: async (
-    parent,
-    { email, newsletter },
-    { models, SECRET, SECRETTWO }
-  ) => {
-    //Check whether the email is already in use
+  signUp: async (parent, { email, newsletter }, { models, SECRET, SECRETTWO }) => {
+    // Check whether the email is already in use
     const emailInUse = await models.User.findOne({ where: { email } });
     if (emailInUse) {
       throw new Error("Email already in use!");
     } else {
       try {
-        //A password musst be created because otherwise the not null rule of the
-        //database is violated
+        // A password musst be created because otherwise the not null rule of the
+        // database is violated
         const passwordHash = await bcrypt.hash(email, 5);
 
-        //Change the given hash to improve security
-        const start = _.random(3, 8);
+        // Change the given hash to improve security
+        const start = random(3, 8);
         const newHash = await passwordHash.replace("/", 2).substr(start);
 
         const user = await models.User.create({
@@ -55,11 +46,7 @@ export default {
           sendEmail(email, newHash);
         }
         const refreshSecret = user.password + SECRETTWO;
-        const [token, refreshToken] = await createTokens(
-          user,
-          SECRET,
-          refreshSecret
-        );
+        const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);
         return {
           ok: true,
           token,
@@ -71,11 +58,7 @@ export default {
     }
   },
 
-  signUpConfirm: async (
-    parent,
-    { email, password },
-    { models, SECRET, SECRETTWO }
-  ) => {
+  signUpConfirm: async (parent, { email, password }, { models, SECRET, SECRETTWO }) => {
     const emailExists = await models.User.findOne({ where: { email } });
     if (!emailExists) throw new Error("Email not found!");
 
@@ -94,11 +77,7 @@ export default {
 
       const refreshSecret = passwordHash + SECRETTWO;
 
-      const [token, refreshToken] = await createTokens(
-        isVerified,
-        SECRET,
-        refreshSecret
-      );
+      const [token, refreshToken] = await createTokens(isVerified, SECRET, refreshSecret);
 
       return {
         ok: true,
@@ -119,11 +98,9 @@ export default {
       throw new Error("Email doesn't exist!");
     }
 
-    //Change the given hash to improve security
-    const start = _.random(3, 8);
-    const newHash = await emailExists.dataValues.password
-      .replace("/", 2)
-      .substr(start);
+    // Change the given hash to improve security
+    const start = random(3, 8);
+    const newHash = await emailExists.dataValues.password.replace("/", 2).substr(start);
 
     models.User.update({ password: newHash }, { where: { email } });
 
@@ -132,7 +109,7 @@ export default {
       if (process.env.ENVIRONMENT != "testing") {
         sendEmail(email, newHash);
       }
-      //Exchange this for a new solution when a proper mailjet template exists
+      // Exchange this for a new solution when a proper mailjet template exists
       models.User.update({ userstatus: "toverify" }, { where: { email } });
 
       return {

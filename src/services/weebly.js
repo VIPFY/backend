@@ -7,9 +7,9 @@ The workflow is that we create an user (Email is needed), a site for this user,
 then a payment plan and finally generating a single sign-on link for him to
 access his account.
 */
+import axios from "axios";
 import { WEEBLY_KEY, WEEBLY_SECRET } from "../login-data";
 import Utility from "../helpers/createHmac";
-import axios from "axios";
 
 function createOptions(method, endpoint, requestHash, requestData) {
   return {
@@ -31,15 +31,10 @@ async function createRequestHash(callType, endpoint, requestData) {
   // The endpoint URL (for example, user/234256/loginLink)
   // Any request data (for example, { 'plan_id': 34 }).
   // (Don't include data in the hash if the request doesn't require it)
-  const requestString = `${callType}\n${endpoint}\n${JSON.stringify(
-    requestData
-  )}`;
+  const requestString = `${callType}\n${endpoint}\n${JSON.stringify(requestData)}`;
 
   try {
-    const requestHash = await Utility.generateHmac(
-      requestString,
-      WEEBLY_SECRET
-    );
+    const requestHash = await Utility.generateHmac(requestString, WEEBLY_SECRET);
 
     return requestHash;
   } catch (err) {

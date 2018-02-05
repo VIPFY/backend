@@ -1,4 +1,4 @@
-import { executeQuery, testDefault } from "./helper";
+import { testDefault } from "./helper";
 import { dummyCompany } from "./dummies";
 import { allCompanies } from "./queries";
 

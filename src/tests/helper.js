@@ -4,12 +4,10 @@ as a function which establishes and ends a connection to our database for testin
 */
 
 import { graphql } from "graphql";
+import express from "express";
 import { schema } from "../index";
 import models from "../models/index";
-import { random } from "lodash";
 import { SECRET, SECRETTWO } from "../login-data";
-import testDatabase from "../models/index";
-import express from "express";
 
 const app = express();
 
@@ -23,20 +21,11 @@ export const token =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjo2N30sImlhdCI6MTUxNzQ5Nzc5MSwiZXhwIjoxNTE3NTQwOTkxfQ.ys2oSIgznGLv8mOXtIdpdAP-mnVFPFFw4nzWq2n_g1w";
 
 // Helper function to test Queries
-export const executeQuery = (query, args = {}, context = {}) => {
-  return graphql(schema, query, {}, context, args);
-};
+export const executeQuery = (query, args = {}, context = {}) =>
+  graphql(schema, query, {}, context, args);
 
 // A function to test standard behaviour from queries
-export function testDefault({
-  description,
-  operation,
-  dummy,
-  name,
-  arrayTest,
-  args,
-  errorTest
-}) {
+export function testDefault({ description, operation, dummy, name, arrayTest, args, errorTest }) {
   return test(description, async () => {
     expect.assertions(2);
     const result = await executeQuery(operation, args, {
@@ -62,7 +51,7 @@ export function testDefault({
   });
 }
 
-export function testAuthentication({ operation, name, args, arrayTest }) {
+export function testAuthentication({ operation, name, args }) {
   return test(`${name} should throw an error if the user is not authenticated`, async () => {
     expect.assertions(2);
     const result = await executeQuery(operation, args, { models });
@@ -79,7 +68,7 @@ export function testAuthentication({ operation, name, args, arrayTest }) {
 
 export function handleTestDatabase() {
   beforeAll(() => {
-    testDatabase.sequelize.sync().then(() => app.listen(null));
+    models.sequelize.sync().then(() => app.listen(null));
   });
-  afterAll(() => testDatabase.sequelize.close());
+  afterAll(() => models.sequelize.close());
 }

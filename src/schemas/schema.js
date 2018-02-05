@@ -7,16 +7,16 @@ import * as Common from "./Common";
 import * as DD24 from "./DD24";
 import * as Weebly from "./Weebly";
 
-//Create Arrays to store the data from every schema
+// Create Arrays to store the data from every schema
 const types = [];
 const queries = [];
 const mutations = [];
 const subscriptions = [];
 
-//Enter every schema into this array to map over it's data
+// Enter every schema into this array to map over it's data
 const schemas = [User, App, Company, Review, DD24, Weebly, Message, Common];
 
-//Push the value into the corresponding Array to export it
+// Push the value into the corresponding Array to export it
 schemas.forEach(schema => {
   types.push(schema.types);
   queries.push(schema.queries);

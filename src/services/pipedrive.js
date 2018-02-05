@@ -1,6 +1,6 @@
+import axios from "axios";
 import { Client } from "pipedrive";
 import { PIPEDRIVE_KEY } from "../login-data";
-import axios from "axios";
 
 // Connect to Pipedrive via their custom library
 const pipedrive = new Client(PIPEDRIVE_KEY, { strictMode: true });
@@ -29,12 +29,7 @@ export const deleteOrganization = organization => {
   });
 };
 
-export const createSubscription = ({
-  initiator,
-  primaryUser,
-  company,
-  order
-}) => {
+export const createSubscription = ({ initiator, primaryUser, company, order }) => {
   const options = {
     method: "POST",
     url: "https://provisioning-api.pipedrive.com/v1/subscriptions",

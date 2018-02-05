@@ -4,9 +4,9 @@ Authentication logic. The base function lets you stack several permissions,
 they just have to wrapped around the component which shall be protected.
 */
 
-const createResolver = resolver => {
+const createResolver = (resolver) => {
   const baseResolver = resolver;
-  baseResolver.createResolver = childResolver => {
+  baseResolver.createResolver = (childResolver) => {
     const newResolver = async (parent, args, context, info) => {
       await resolver(parent, args, context, info);
       return childResolver(parent, args, context, info);
@@ -16,19 +16,17 @@ const createResolver = resolver => {
   return baseResolver;
 };
 
-//Check whether the user is authenticated
+// Check whether the user is authenticated
 export const requiresAuth = createResolver(async (parent, args, { token }) => {
   if (!token) {
     throw new Error("Not authenticated!");
   }
 });
 
-//These functions can be nested. Here it checks first whether an user
-//is authenticated and then if he has admin status.
-export const requiresAdmin = requiresAuth.createResolver(
-  (parent, args, context) => {
-    if (!context.user.isAdmin) {
-      throw new Error("Requires admin privileges");
-    }
+// These functions can be nested. Here it checks first whether an user
+// is authenticated and then if he has admin status.
+export const requiresAdmin = requiresAuth.createResolver((parent, args, context) => {
+  if (!context.user.isAdmin) {
+    throw new Error("Requires admin privileges");
   }
-);
+});

@@ -1,3 +1,5 @@
+import { random } from "lodash";
+import { lorem } from "faker";
 import { executeQuery, testDefault, testAuthentication, token } from "./helper";
 import {
   dummyReviewSimpleResponse,
@@ -11,9 +13,9 @@ import {
 import { allReviews, fetchReview } from "./queries";
 import { writeReview, rateReview } from "./mutations";
 import { SECRET, SECRETTWO } from "../login-data";
-import _ from "lodash";
-import { lorem } from "faker";
 import models from "../models";
+
+/* eslint-disable array-callback-return */
 
 const testQueries = [
   {
@@ -24,8 +26,7 @@ const testQueries = [
     arrayTest: true
   },
   {
-    description:
-      "fetchReview should fetch all Reviews which belong to a specific app",
+    description: "fetchReview should fetch all Reviews which belong to a specific app",
     operation: fetchReview,
     name: "fetchReview",
     dummy: dummyReviewResponse,
@@ -53,8 +54,7 @@ const testMutations = [
     errorTest: true
   },
   {
-    description:
-      "writeReview should return an error when the app doesn't exist",
+    description: "writeReview should return an error when the app doesn't exist",
     operation: writeReview,
     name: "writeReview",
     args: dummyReviewFail2,
@@ -89,9 +89,8 @@ describe("Mutation", () => {
 describe("This workflow", () => {
   test("should create a review, let it be rated, try to give the same rating again and change the rating", async () => {
     const appid = 2;
-    const stars = _.random(1, 5);
+    const stars = random(1, 5);
     const test = lorem.sentence();
-    const rater = _.random(0, 99);
 
     const createAppReview = await executeQuery(
       writeReview,
@@ -100,9 +99,7 @@ describe("This workflow", () => {
     );
 
     await expect(createAppReview.errors).toBeUndefined();
-    await expect(createAppReview.data.writeReview).toEqual(
-      dummyWriteReviewResponse
-    );
+    await expect(createAppReview.data.writeReview).toEqual(dummyWriteReviewResponse);
 
     const rateNewReview = await executeQuery(
       rateReview,
@@ -114,9 +111,7 @@ describe("This workflow", () => {
     );
 
     await expect(rateNewReview.errors).toBeUndefined();
-    await expect(rateNewReview.data.rateReview).toEqual(
-      dummyRateReviewResponse
-    );
+    await expect(rateNewReview.data.rateReview).toEqual(dummyRateReviewResponse);
 
     const rateReviewAgainFail = await executeQuery(
       rateReview,
@@ -140,8 +135,6 @@ describe("This workflow", () => {
     );
 
     await expect(rateReviewAgain.errors).toBeUndefined();
-    await expect(rateReviewAgain.data.rateReview).toEqual(
-      dummyRateReviewResponse
-    );
+    await expect(rateReviewAgain.data.rateReview).toEqual(dummyRateReviewResponse);
   });
 });

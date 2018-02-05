@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import { random } from "lodash";
 import { lorem } from "faker";
 

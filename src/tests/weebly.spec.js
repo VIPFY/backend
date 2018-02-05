@@ -3,12 +3,13 @@ This file tests specific calls to Weebly's API as well as our Graphql Mutation.
 The mutation consists of three consequtive tests, which will be tested seperatly
 as well as successively.
 */
-import { executeQuery, testDefault, testAuthentication } from "./helper";
+
+import { internet } from "faker";
+import { random } from "lodash";
+import { testDefault, testAuthentication } from "./helper";
 import { dummyWeeblyResponse } from "./dummies";
 import weeblyApi from "../services/weebly";
 import { weeblyCreateLoginLink } from "./mutations";
-import { internet } from "faker";
-import models from "../models/index";
 
 // Default timeout is 5s, this is not enough for the mutation weeblyCreateLoginLink
 jest.setTimeout(10000);
@@ -68,13 +69,12 @@ const testMutations = [
     args: {
       email: internet.email(),
       domain: internet.domainName(),
-      plan: 1,
+      plan: random(1, 4),
       agb: true
     }
   },
   {
-    description:
-      "weeblyCreateLoginLink should throw an error if the Agb's are not accepted",
+    description: "weeblyCreateLoginLink should throw an error if the Agb's are not accepted",
     operation: weeblyCreateLoginLink,
     name: "weeblyCreateLoginLink",
     args: {

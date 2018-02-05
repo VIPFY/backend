@@ -18,7 +18,6 @@ type dd24Response {
   ttl: Int
   rr: [rr]
   vatvalid: Int
-  reserveduntil: String
   event: [Int]
   parameter: eventResponse
   class: String

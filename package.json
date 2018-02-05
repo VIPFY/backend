@@ -9,10 +9,10 @@
     "serve": "ENVIRONMENT=production node dist/index.js",
     "build": "rm -r dist && babel src -d dist --ignore 'tests'",
     "start": "ENVIRONMENT=development nodemon --exec babel-node src/index.js",
-    "test":
-      "npm run prepare-test-db && ENVIRONMENT=testing jest --verbose --no-cache --forceExit",
+    "test": "npm run prepare-test-db && ENVIRONMENT=testing jest --verbose --no-cache --forceExit",
     "play": "babel-node src/helpers/play.js",
-    "prepare-test-db": "./prepare_vipfy_test_db.sh"
+    "prepare-test-db": "./prepare_vipfy_test_db.sh",
+    "lint": "eslint ."
   },
   "jest": {
     "testEnvironment": "node"
@@ -23,19 +23,21 @@
     "babel-runtime": "^6.26.0",
     "bcrypt": "^1.0.3",
     "body-parser": "^1.17.2",
+    "cors": "^2.8.4",
     "dotenv": "^4.0.0",
     "express": "^4.15.3",
+    "graphql": "^0.12.3",
     "graphql-subscriptions": "^0.5.6",
     "graphql-tools": "^1.0.0",
-    "jsonwebtoken": "^8.1.0",
-    "lodash": "^4.17.4",
+    "jsonwebtoken": "^8.1.1",
+    "lodash": "^4.17.5",
     "node-mailjet": "^3.2.1",
-    "pg": "^7.4.0",
+    "pg": "^7.4.1",
     "pipedrive": "^3.0.2",
     "querystring": "^0.2.0",
-    "sequelize": "^4.1.0",
+    "sequelize": "^4.32.6",
     "soap": "^0.23.0",
-    "subscriptions-transport-ws": "^0.9.4"
+    "subscriptions-transport-ws": "^0.9.5"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -43,15 +45,16 @@
     "babel-plugin-transform-runtime": "^6.23.0",
     "babel-preset-env": "^1.6.1",
     "babel-preset-stage-3": "^6.24.1",
-    "cors": "^2.8.4",
-    "eslint": "^4.0.0",
-    "eslint-config-airbnb": "^16.1.0",
-    "eslint-config-airbnb-base": "^11.2.0",
-    "eslint-plugin-import": "^2.3.0",
-    "eslint-plugin-jsx-a11y": "^6.0.3",
-    "eslint-plugin-react": "^7.5.1",
+    "eslint": "^4.17.0",
+    "eslint-config-airbnb-base": "^11.3.2",
+    "eslint-plugin-import": "^2.8.0",
     "faker": "^4.1.0",
-    "graphql": "^0.10.5",
-    "jest": "^22.1.1"
-  }
+    "jest": "^22.1.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gh05d@bitbucket.org/vipfymarketplace/vipfy-backend.git"
+  },
+  "keywords": ["graphql", "nodejs", "sequelize"],
+  "homepage": "https://bitbucket.org/vipfymarketplace/vipfy-backend#readme"
 }

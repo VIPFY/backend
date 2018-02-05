@@ -1,12 +1,6 @@
-import { executeQuery, testDefault } from "./helper";
+import { testDefault } from "./helper";
 import { dummyApp, dummyAppImage, dummyDeveloper } from "./dummies";
-import {
-  allApps,
-  allAppImages,
-  fetchApp,
-  fetchAppImages,
-  fetchDeveloper
-} from "./queries";
+import { allApps, allAppImages, fetchApp, fetchAppImages, fetchDeveloper } from "./queries";
 
 const tests = [
   {
@@ -33,8 +27,7 @@ const tests = [
     }
   },
   {
-    description:
-      "fetchAppImages should return all Links to Images associated with an App",
+    description: "fetchAppImages should return all Links to Images associated with an App",
     operation: fetchAppImages,
     name: "fetchAppImages",
     dummy: dummyAppImage,
