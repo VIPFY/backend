@@ -7,7 +7,7 @@
   "main": "index.js",
   "scripts": {
     "serve": "ENVIRONMENT=production node dist/index.js",
-    "build": "rm -r dist && babel src -d dist --ignore 'tests'",
+    "build": "rm -rf dist && babel src -d dist --ignore 'tests'",
     "start": "ENVIRONMENT=development nodemon --exec babel-node src/index.js",
     "test": "npm run prepare-test-db && ENVIRONMENT=testing jest --verbose --no-cache --forceExit",
     "play": "babel-node src/helpers/play.js",
