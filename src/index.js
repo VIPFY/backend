@@ -32,8 +32,8 @@ let server;
 // We don't need certificates and https for development
 if (ENVIRONMENT == "production") {
   const httpsOptions = {
-    key: fs.readFileSync("/etc/letsencrypt/live/vipfy.com/privkey.pem"),
-    cert: fs.readFileSync("/etc/letsencrypt/live/vipfy.com/cert.pem"),
+    key: fs.readFileSync(process.env.SSL_KEY || "/etc/letsencrypt/live/vipfy.com/privkey.pem"),
+    cert: fs.readFileSync(process.env.SSL_CERT || "/etc/letsencrypt/live/vipfy.com/cert.pem"),
   };
 
   server = https.createServer(httpsOptions, app);
