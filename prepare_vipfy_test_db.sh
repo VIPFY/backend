@@ -4,7 +4,7 @@
 export $(cat .env.test | grep -v ^# | xargs)
 
 echo dropping database
-PGPASSWORD=$DB_PW dropdb -U $DB_USER -h $DB_IP -p $DB_PORT $DB_NAME
+PGPASSWORD=$DB_PW dropdb -U $DB_USER -h $DB_IP -p $DB_PORT --if-exists $DB_NAME
 echo creating database
 PGPASSWORD=$DB_PW createdb -U $DB_USER -h $DB_IP -p $DB_PORT $DB_NAME
 
