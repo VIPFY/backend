@@ -9,7 +9,7 @@ pipelines:
         script:
           #load test database
           - apt-get update
-          - apt-get install -y postgresql  #only need this to get psql
+          - apt-get install -y time postgresql  #only need postgresql to get psql
           - PGPASSWORD=test psql -h 127.0.0.1 -U vipfy_test_user -d test_database -f  vipfy_test_dump.sql
           
           #install dependencies
