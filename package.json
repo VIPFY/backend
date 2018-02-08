@@ -55,6 +55,10 @@
     "type": "git",
     "url": "git+https://gh05d@bitbucket.org/vipfymarketplace/vipfy-backend.git"
   },
-  "keywords": ["graphql", "nodejs", "sequelize"],
+  "keywords": [
+    "graphql",
+    "nodejs",
+    "sequelize"
+  ],
   "homepage": "https://bitbucket.org/vipfymarketplace/vipfy-backend#readme"
 }
