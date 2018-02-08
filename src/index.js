@@ -33,7 +33,7 @@ let server;
 if (ENVIRONMENT == "production") {
   const httpsOptions = {
     key: fs.readFileSync("/etc/letsencrypt/live/vipfy.com/privkey.pem"),
-    cert: fs.readFileSync("/etc/letsencrypt/live/vipfy.com/cert.pem"),
+    cert: fs.readFileSync("/etc/letsencrypt/live/vipfy.com/cert.pem")
   };
 
   server = https.createServer(httpsOptions, app);
@@ -44,7 +44,7 @@ if (ENVIRONMENT == "production") {
 export const schema = makeExecutableSchema({
   typeDefs,
   resolvers,
-  logger: process.env.LOGGING ? { log: e => console.log(e) } : false,
+  logger: process.env.LOGGING ? { log: e => console.log(e) } : false
 });
 
 // Middleware to authenticate the user. If the user sends the authorization token
@@ -80,14 +80,14 @@ app.use(authMiddleware);
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
   origin: ENVIRONMENT == "production" ? "https://vipfy.com" : "http://localhost:3000",
-  credentials: true, // <-- REQUIRED backend setting
+  credentials: true // <-- REQUIRED backend setting
 };
 app.use(cors(corsOptions));
 
 app.use(
   "/graphql",
   bodyParser.json(),
-  graphqlExpress((req) => {
+  graphqlExpress(req => {
     const token = req.headers["x-token"];
     return {
       schema,
@@ -99,11 +99,11 @@ app.use(
         //   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjo3NH0sImlhdCI6MTUxNzY3MzE5NiwiZXhwIjoxNTE3NzE2Mzk2fQ.5Tlsrg6F9UuwcKYZu21JFqVlEPhRKJZVsWXwuJlVgs4",
         user: req.user,
         SECRET,
-        SECRETTWO,
+        SECRETTWO
       },
-      debug: ENVIRONMENT == "development",
+      debug: ENVIRONMENT == "development"
     };
-  }),
+  })
 );
 
 // Enable to Graphiql Interface
@@ -112,13 +112,13 @@ if (ENVIRONMENT != "production") {
     "/graphiql",
     graphiqlExpress({
       endpointURL: "/graphql",
-      subscriptionsEndpoint: `ws://localhost:${PORT}/subscriptions`,
-    }),
+      subscriptionsEndpoint: `ws://localhost:${PORT}/subscriptions`
+    })
   );
 }
 // The home route is currently empty
 app.get("/", (req, res) =>
-  res.send(`Go to http${secure}://localhost:${PORT}/graphiql for the Interface`),
+  res.send(`Go to http${secure}://localhost:${PORT}/graphiql for the Interface`)
 );
 
 if (ENVIRONMENT != "testing") {
@@ -148,7 +148,7 @@ if (ENVIRONMENT != "testing") {
                       refreshToken,
                       models,
                       SECRET,
-                      SECRETTWO,
+                      SECRETTWO
                     );
                     return { models, token: newTokens.token };
                   }
@@ -156,16 +156,16 @@ if (ENVIRONMENT != "testing") {
                 }
               }
               return {};
-            },
+            }
           },
           {
             server,
-            path: "/subscriptions",
-          },
+            path: "/subscriptions"
+          }
         );
-      }),
+      })
     )
-    .catch((err) => {
+    .catch(err => {
       console.log(err);
       server.close();
     });

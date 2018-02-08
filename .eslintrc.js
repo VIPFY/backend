@@ -1,6 +1,10 @@
 module.exports = {
   "plugins": ["import"],
   "extends": "airbnb-base",
+  env: {
+    node: true,
+    es6: true
+  },
   "rules": {
     "eqeqeq": "off",
     "func-names": "off",
