@@ -1,5 +1,6 @@
 import weeblyApi from "../../services/weebly";
 import { requiresAuth } from "../../helpers/permissions";
+import { decode } from "jsonwebtoken";
 
 export default {
   weeblyCreateLoginLink: requiresAuth.createResolver(
