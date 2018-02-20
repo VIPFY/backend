@@ -26,13 +26,7 @@ export const createTokens = async (user, secret, secret2) => {
   return [createToken, createRefreshToken];
 };
 
-export const refreshTokens = async (
-  token,
-  refreshToken,
-  models,
-  SECRET,
-  SECRETTWO
-) => {
+export const refreshTokens = async (token, refreshToken, models, SECRET, SECRETTWO) => {
   let userId = 0;
   try {
     const { user: { id } } = jwt.decode(refreshToken);
@@ -45,13 +39,13 @@ export const refreshTokens = async (
     return {};
   }
 
-  const user = await models.User.findOne({ where: { id: userId }, raw: true });
+  const user = await models.Human.findOne({ where: { id: userId }, raw: true });
 
   if (!user) {
     return {};
   }
 
-  const refreshSecret = user.password + SECRETTWO;
+  const refreshSecret = user.passwordhash + SECRETTWO;
 
   try {
     jwt.verify(refreshToken, refreshSecret);
@@ -59,11 +53,7 @@ export const refreshTokens = async (
     return {};
   }
 
-  const [newToken, newRefreshToken] = await createTokens(
-    user,
-    SECRET,
-    refreshSecret
-  );
+  const [newToken, newRefreshToken] = await createTokens(user, SECRET, refreshSecret);
   return {
     token: newToken,
     refreshToken: newRefreshToken,
@@ -72,18 +62,16 @@ export const refreshTokens = async (
 };
 
 export const tryLogin = async (email, password, models, SECRET, SECRETTWO) => {
-  const user = await models.User.findOne({ where: { email }, raw: true });
-  if (!user) throw new Error("Sorry, but we couldn't find your email.");
+  const emailExists = await models.Email.findOne({ where: { email }, raw: true });
+  if (!emailExists) throw new Error("Sorry, but we couldn't find your email.");
 
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) throw new Error("Incorrect password!");
+  const humanUnit = await models.HumanUnit.findOne({ where: { unitid: emailExists.unitid } });
+  const user = await models.Human.findOne({ where: { id: humanUnit.humanid } });
+  const valid = await bcrypt.compare(password, user.passwordhash);
+  if (!valid) throw new Error("Incorrect Password!");
 
-  const refreshTokenSecret = user.password + SECRETTWO;
-  const [token, refreshToken] = await createTokens(
-    user,
-    SECRET,
-    refreshTokenSecret
-  );
+  const refreshTokenSecret = user.passwordhash + SECRETTWO;
+  const [token, refreshToken] = await createTokens(user, SECRET, refreshTokenSecret);
 
   return {
     ok: true,

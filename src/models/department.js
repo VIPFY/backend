@@ -1,15 +1,12 @@
-export default (sequelize, { STRING, INTEGER }) => {
-  const Department = sequelize.define("department", {
-    name: STRING,
-    addresscountry: STRING,
-    addressstate: STRING,
-    addresscity: STRING,
-    addressstreet: STRING,
-    addressnumber: INTEGER
+export default (sequelize, { TEXT, JSONB }) => {
+  const Department = sequelize.define("department_data", {
+    name: TEXT,
+    legalinformation: JSONB,
+    staticdata: JSONB
   });
 
-  Department.associate = models => {
-    Department.belongsTo(models.Company, { foreignKey: "companyid" });
+  Department.associate = ({ Unit }) => {
+    Department.belongsTo(Unit, { foreignKey: "unitid" });
   };
 
   return Department;

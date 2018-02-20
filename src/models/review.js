@@ -1,5 +1,5 @@
 export default (sequelize, { TEXT, SMALLINT, DATE, NOW }) => {
-  const Review = sequelize.define("review", {
+  const Review = sequelize.define("reviews", {
     reviewdate: {
       type: DATE,
       defaultValue: NOW
@@ -17,7 +17,7 @@ export default (sequelize, { TEXT, SMALLINT, DATE, NOW }) => {
   });
 
   Review.associate = models => {
-    Review.belongsTo(models.User, { foreignKey: "userid" });
+    Review.belongsTo(models.Human, { foreignKey: "userid" });
     Review.belongsTo(models.App, { foreignKey: "appid" });
     Review.belongsTo(models.Review, { foreignKey: "answerto" });
   };

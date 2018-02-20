@@ -1,28 +1,27 @@
-export default (sequelize, { SMALLINT, STRING, TEXT, DATE }) => {
-  const App = sequelize.define("app", {
+export default (sequelize, { BOOLEAN, STRING, TEXT, JSONB, ARRAY }) => {
+  const App = sequelize.define("app_data", {
     name: {
       type: STRING,
-      unique: true
+      unique: true,
+      allowNull: false
     },
-    percentage: SMALLINT,
-    applogo: {
-      type: STRING
-    },
+    commission: JSONB,
+    logo: TEXT,
     description: TEXT,
-    modaltype: {
-      type: SMALLINT,
-      defaultValue: 0
-    },
-    updatedate: DATE,
-    versionnumber: STRING,
     teaserdescription: TEXT,
-    ownpage: STRING,
-    supportwebsite: STRING,
-    supportphone: STRING
+    website: TEXT,
+    images: ARRAY(TEXT),
+    features: JSONB,
+    options: JSONB,
+    disabled: {
+      type: BOOLEAN,
+      defaultValue: true
+    }
   });
 
-  App.associate = models => {
-    App.belongsTo(models.Developer, { foreignKey: "developerid" });
+  App.associate = ({ Unit }) => {
+    App.belongsTo(Unit, { foreignKey: "developer" });
+    App.belongsTo(Unit, { foreignKey: "supportunit" });
   };
 
   return App;

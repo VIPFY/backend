@@ -4,113 +4,125 @@ import jwt from "jsonwebtoken";
 import { tryLogin, createTokens } from "../../services/auth";
 import { requiresAuth } from "../../helpers/permissions";
 import { sendEmail } from "../../services/mailjet";
-
 /* eslint-disable no-unused-vars */
 
 export default {
   updateUser: requiresAuth.createResolver((parent, { newFirstName }, { models, token }) => {
     const { user: { id } } = jwt.decode(token);
-    return models.User.update({ firstname: newFirstName }, { where: { id } });
+    return models.Human.update({ firstname: newFirstName }, { where: { id } });
   }),
 
   deleteUser: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     const { user: { id } } = jwt.decode(token);
 
-    await models.User.destroy({ where: { id } });
+    await models.Human.destroy({ where: { id } });
     return "User was deleted";
   }),
 
   signUp: async (parent, { email, newsletter }, { models, SECRET, SECRETTWO }) => {
     // Check whether the email is already in use
-    const emailInUse = await models.User.findOne({ where: { email } });
+    const emailInUse = await models.Email.findOne({ where: { email } });
     if (emailInUse) {
       throw new Error("Email already in use!");
     } else {
-      try {
-        // A password musst be created because otherwise the not null rule of the
-        // database is violated
-        const passwordHash = await bcrypt.hash(email, 5);
+      return models.sequelize.transaction(async ta => {
+        try {
+          // A password musst be created because otherwise the not null rule of the
+          // database is violated
+          const passwordHash = await bcrypt.hash(email, 5);
 
-        // Change the given hash to improve security
-        const start = random(3, 8);
-        const newHash = await passwordHash.replace("/", 2).substr(start);
+          // Change the given hash to improve security
+          const start = random(3, 8);
+          const newHash = await passwordHash.replace("/", 2).substr(start);
 
-        const user = await models.User.create({
-          email,
-          newsletter,
-          password: newHash
-        });
+          const unit = await models.Unit.create({}, { transaction: ta });
+          const user = await models.Human.create({ passwordhash: newHash }, { transaction: ta });
 
-        // Don't send emails when testing the database!
-        if (process.env.ENVIRONMENT != "testing") {
-          sendEmail(email, newHash);
+          const p1 = models.HumanUnit.create(
+            { unitid: unit.id, humanid: user.id },
+            { transaction: ta }
+          );
+          const p2 = models.Email.create({ email, unitid: unit.id }, { transaction: ta });
+          const [human, emailAddress] = await Promise.all([p1, p2]);
+
+          if (newsletter) {
+            models.Newsletter.create({ email: emailAddress.email }, { transaction: ta });
+          }
+
+          // Don't send emails when testing the database!
+          if (process.env.ENVIRONMENT != "testing") {
+            sendEmail(email, newHash);
+          }
+          const refreshSecret = user.passwordhash + SECRETTWO;
+          const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);
+          return {
+            ok: true,
+            token,
+            refreshToken
+          };
+        } catch (err) {
+          throw new Error(err.message);
         }
-        const refreshSecret = user.password + SECRETTWO;
+      });
+    }
+  },
+
+  signUpConfirm: async (parent, { email, password }, { models, SECRET, SECRETTWO }) => {
+    const emailExists = await models.Email.findOne({ where: { email } });
+    if (!emailExists) throw new Error("Email not found!");
+
+    const isVerified = await models.Email.findOne({
+      where: { email, verified: true }
+    });
+    if (isVerified) throw new Error("User already verified!");
+
+    return models.sequelize.transaction(async ta => {
+      try {
+        const p1 = bcrypt.hash(password, 12);
+        const p2 = models.HumanUnit.findOne({ where: { unitid: emailExists.unitid } });
+        const [pw, user] = await Promise.all([p1, p2]);
+
+        const p3 = models.Human.update(
+          { passwordhash: pw },
+          { where: { id: user.humanid }, transaction: ta }
+        );
+        const p4 = models.Email.update({ verified: true }, { where: { email }, transaction: ta });
+        await Promise.all([p3, p4]);
+
+        const refreshSecret = pw + SECRETTWO;
         const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);
+
         return {
           ok: true,
           token,
           refreshToken
         };
       } catch (err) {
-        throw new Error(err.message);
+        throw new Error("Couldn't activate user!");
       }
-    }
-  },
-
-  signUpConfirm: async (parent, { email, password }, { models, SECRET, SECRETTWO }) => {
-    const emailExists = await models.User.findOne({ where: { email } });
-    if (!emailExists) throw new Error("Email not found!");
-
-    const isVerified = await models.User.findOne({
-      where: { email, userstatus: "normal" }
     });
-    if (isVerified) throw new Error("User already verified!");
-
-    try {
-      const passwordHash = await bcrypt.hash(password, 12);
-
-      const activate = await models.User.update(
-        { password: passwordHash, userstatus: "normal" },
-        { where: { email } }
-      );
-
-      const refreshSecret = passwordHash + SECRETTWO;
-
-      const [token, refreshToken] = await createTokens(isVerified, SECRET, refreshSecret);
-
-      return {
-        ok: true,
-        token,
-        refreshToken
-      };
-    } catch (err) {
-      throw new Error("Couldn't activate user!");
-    }
   },
 
   signIn: (parent, { email, password }, { models, SECRET, SECRETTWO }) =>
     tryLogin(email, password, models, SECRET, SECRETTWO),
 
   forgotPassword: async (parent, { email }, { models }) => {
-    const emailExists = await models.User.findOne({ where: { email } });
-    if (!emailExists) {
-      throw new Error("Email doesn't exist!");
-    }
-
-    // Change the given hash to improve security
-    const start = random(3, 8);
-    const newHash = await emailExists.dataValues.password.replace("/", 2).substr(start);
-
-    models.User.update({ password: newHash }, { where: { email } });
+    const emailExists = await models.Email.findOne({ where: { email } });
+    if (!emailExists) throw new Error("Email doesn't exist!");
 
     try {
+      const humanUnit = await models.HumanUnit.findOne({ where: { unitid: emailExists.unitid } });
+      const user = await models.Human.findOne({ where: { id: humanUnit.humanid } });
+      // Change the given hash to improve security
+      const start = random(3, 8);
+      const newHash = await user.dataValues.passwordhash.replace("/", 2).substr(start);
+
+      await models.Human.update({ passwordhash: newHash }, { where: { id: user.id } });
+
       // Don't send emails when testing the database!
       if (process.env.ENVIRONMENT != "testing") {
         sendEmail(email, newHash);
       }
-      // Exchange this for a new solution when a proper mailjet template exists
-      models.User.update({ userstatus: "toverify" }, { where: { email } });
 
       return {
         ok: true,

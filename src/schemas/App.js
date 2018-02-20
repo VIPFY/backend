@@ -2,66 +2,55 @@ export const types = `
   type App {
     id: Int!
     name: String!
-    applogo: String
+    commission: String
+    logo: String
     description: String
-    developerid: Int!
-    modaltype: Int
-    versionnumber: String
-    updatedate: Date
     teaserdescription: String
-    ownpage: String
-    supportphone: String
-    supportwebsite: String
-  }
-
-  type AppImage {
-    id: Int!
-    appid: Int!
-    link: String
-    sequence: Int
-  }
-
-# A Developer is the creator of an App
-  type Developer {
-    id: Int!
-    name: String!
     website: String
-    legalwebsite: String
-    bankaccount: String
+    images: [String]
+    features: Features
+    options: Options
+    disabled: Boolean!
+    developer: Unit!
+    supportunit: Unit!
   }
 
-# Payment plans from the Apps
-  type Plan {
+  type AppDetails {
     id: Int!
-    appid: Int!
-    app: App!
-    description: String
-    renewalplan: Int
-    period: Int
-    numlicences: Int
-    price: Float
-    currency: String
     name: String
-    activefrom: String
-    activeuntil: String
-    promo: Int
-    promovipfy: Float
-    promodeveloper: Float
-    promoname: String
-    changeafter: Int
-    changeplan: Int
+    commission: Commision
+    logo: String
+    description: String
+    teaserdescription: String
+    website: String
+    images: String
+    features: Features
+    options: Options
+    disabled: Boolean
+    avgstars: Float
+    cheapestprice: Float
+    cheapestpromo: Float
+    supportwebsite: Float
+    supportphone: String
+    developerwebsite: String
+    developer: Unit!
+    supportunit: Unit!
+  }
+
+  type Features {
+    a: String
+
+  }
+
+  type Commision {
+    a: String
+
   }
 `;
 
 export const queries = `
   allApps(first: Int): [App]!
   fetchApp(name: String!): App
-
-  allAppImages: [AppImage]!
-  fetchAppImages(appid: Int!): [AppImage!]
-
-  allDevelopers: [Developer]!
-  fetchDeveloper(id: Int!): Developer
 
   fetchPlans(appid: Int!): [Plan]!
   fetchPrice(appid: Int!): Plan!

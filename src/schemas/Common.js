@@ -30,7 +30,7 @@ export const types = `
     ok: Boolean!
     token: String
     refreshToken: String
-    user: User
+    user: Unit!
   }
 
 # The user gets the email where the new auth is send back
@@ -43,7 +43,7 @@ export const types = `
   enum SEX {
     m,
     w,
-    t
+    u
   }
 
 # An user must have one of these stati
@@ -56,6 +56,22 @@ export const types = `
 
 # Custom Scalar Date
   scalar Date
+
+type Newsletter {
+  email: Email!
+  activesince: String!
+  activeuntil: String
+}
+
+# Custom options for an object
+  type Options {
+    a: String
+  }
+
+  type Restrictions {
+    a: String
+
+  }
 `;
 
 export const mutations = `

@@ -1,6 +1,5 @@
 import userQueries from "./queries/user";
 import appQueries from "./queries/app";
-import companyQueries from "./queries/company";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
 
@@ -13,20 +12,9 @@ import weeblyMutations from "./mutations/weebly";
 
 import Subscription from "./subscriptions";
 
-import {
-  find,
-  implementMessage,
-  findNotification,
-  implementDate
-} from "./CustomResolvers";
+import { find, findMessage, implementDate } from "./CustomResolvers";
 
-const Query = Object.assign(
-  userQueries,
-  appQueries,
-  companyQueries,
-  messageQueries,
-  reviewQueries
-);
+const Query = Object.assign(userQueries, appQueries, messageQueries, reviewQueries);
 
 const Mutation = Object.assign(
   messageMutations,
@@ -37,19 +25,32 @@ const Mutation = Object.assign(
   weeblyMutations
 );
 
+const unit = { unitid: "Unit" };
+const app = { appid: "App" };
+const unitAndPlan = { sponsor: "Unit", planid: "Plan" };
+
 export default {
   Query,
   Mutation,
   Subscription,
-  Message: implementMessage,
   Date: implementDate,
-  Employee: find(["User", "Company", "Department"]),
-  Plan: find(["App"]),
-  Review: find(["User", "App"]),
-  UserRight: find(["User"]),
-  Notification: findNotification("Notification"),
-  AppNotification: findNotification("AppNotification"),
-  Department: find(["Company"]),
-  Speak: find(["User"]),
-  UserBill: find(["User", "Plan"])
+  Address: find(unit),
+  App: find({ developer: "Unit" }),
+  AppDetails: find({ developer: "Unit", supportunit: "Unit" }),
+  Bill: find(unit),
+  BillPosition: find({ vendor: "Unit", billid: "Bill", planid: "Plan" }),
+  BoughtPlan: find({ buyer: "Unit", buyfor: "Unit", planid: "Plan" }),
+  Department: find(unit),
+  Email: find(unit),
+  HumanUnit: find({ unitid: "Unit", humanid: "Human" }),
+  Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),
+  Message: findMessage(),
+  Newsletter: find({ email: "Email" }),
+  Phone: find(unit),
+  Plan: find(app),
+  PlansRunning: find(app),
+  Promo: find(unitAndPlan),
+  PromosRunning: find(unitAndPlan),
+  Unit: find({ parentunit: "Unit" }),
+  Website: find(unit)
 };

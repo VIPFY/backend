@@ -8,7 +8,7 @@ export default {
     async (parent, { appid, stars, text }, { models, token }) => {
       const { user: { id } } = jwt.decode(token);
       const p1 = models.App.findById(appid);
-      const p2 = models.User.findById(id);
+      const p2 = models.Human.findById(id);
       const [app, user] = await Promise.all([p1, p2]);
 
       if (!app || !user) {
@@ -38,7 +38,7 @@ export default {
     async (parent, { reviewid, balance }, { models, token }) => {
       const { user: { id } } = jwt.decode(token);
 
-      const p1 = models.User.findById(id);
+      const p1 = models.Human.findById(id);
       const p2 = models.Review.findById(reviewid);
       const p3 = models.ReviewHelpful.findOne({
         where: {

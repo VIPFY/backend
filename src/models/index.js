@@ -21,7 +21,8 @@ const sequelize = new Sequelize(
     host: process.env.DB_IP || "localhost", // The host used
     port: process.env.DB_PORT || 5432,
     define: {
-      timestamps: false
+      timestamps: false,
+      freezeTableName: true
     },
     logging: !!process.env.LOGGING
   }
@@ -30,21 +31,27 @@ const sequelize = new Sequelize(
 // The mapping here will be used in the resolver to access the model.
 // For example models.User
 const db = {
-  User: sequelize.import("./user"),
+  Address: sequelize.import("./address"),
   App: sequelize.import("./app"),
-  Company: sequelize.import("./company"),
+  AppDetails: sequelize.import("./appDetails"),
+  Bill: sequelize.import("./bill"),
+  BillPosition: sequelize.import("./billPosition"),
+  BoughtPlan: sequelize.import("./boughtPlan"),
   Department: sequelize.import("./department"),
-  Employee: sequelize.import("./employee"),
-  Developer: sequelize.import("./developer"),
-  Review: sequelize.import("./review"),
-  AppImage: sequelize.import("./appimage"),
-  UserRight: sequelize.import("./userright"),
+  Email: sequelize.import("./email"),
+  Human: sequelize.import("./human"),
+  HumanUnit: sequelize.import("./humanUnit"),
+  Licence: sequelize.import("./licence"),
+  Message: sequelize.import("./message"),
+  Newsletter: sequelize.import("./newsletter"),
+  Phone: sequelize.import("./phone"),
   Plan: sequelize.import("./plan"),
-  Notification: sequelize.import("./notification"),
-  AppNotification: sequelize.import("./appnotification"),
-  ReviewHelpful: sequelize.import("./reviewhelpful"),
-  Speak: sequelize.import("./speak"),
-  UserBill: sequelize.import("./userbill")
+  PlansRunning: sequelize.import("./plansRunning"),
+  Promo: sequelize.import("./promo"),
+  PromosRunning: sequelize.import("./promosRunning"),
+  Review: sequelize.import("./review"),
+  Unit: sequelize.import("./unit"),
+  Website: sequelize.import("./website")
 };
 
 Object.keys(db).forEach(modelName => {

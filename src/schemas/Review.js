@@ -1,10 +1,9 @@
 export const types = `
   type Review {
-    userid: Int
-    user: User
-    appid: Int!
-    app: App
-    reviewdate: String
+    id: Int!
+    userid: Human!
+    appid: App!
+    reviewdate: String!
     stars: Int
     reviewtext: String
     answerto: Int
@@ -25,8 +24,8 @@ export const queries = `
 
 export const mutations = `
 # Create a review for an app
-  writeReview(appid: Int!, stars: Int!, text: String): ReviewResponse!
+  writeReview(userid: Int!, appid: Int!, stars: Int!, text: String): ReviewResponse!
 
 # Rate a review
-  rateReview(reviewid: Int!,balance: Int!): ReviewResponse!
+  rateReview(reviewid: Int!, userid: Int!, balance: Int!): ReviewResponse!
 `;

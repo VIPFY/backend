@@ -4,29 +4,27 @@ import { NEW_MESSAGE, pubsub } from "../../constants";
 
 /* eslint-disable no-unused-vars */
 export default {
-  setDeleteStatus: requiresAuth.createResolver(async (parent, { id, model, type }, { models }) => {
-    const messageExists = await models[model].findById(id);
+  setDeleteStatus: requiresAuth.createResolver(async (parent, { id, type }, { models }) => {
+    const messageExists = await models.Message.findById(id);
     if (messageExists) {
       try {
-        const deleted = await models[model].update({ [type]: true }, { where: { id } });
+        const deleted = await models.Message.update({ [type]: true }, { where: { id } });
         return {
           ok: true
         };
       } catch (err) {
         throw new Error(err.message);
       }
-    } else {
-      throw new Error("Message doesn't exist!");
-    }
+    } else throw new Error("Message doesn't exist!");
   }),
 
-  setReadtime: requiresAuth.createResolver(async (parent, { id, model }, { models }) => {
+  setReadtime: requiresAuth.createResolver(async (parent, { id }, { models }) => {
     try {
-      const read = await models[model].findById(id);
+      const read = await models.Message.findById(id);
 
       if (!read.readtime) {
         const now = Date.now();
-        await models[model].update({ readtime: now }, { where: { id } });
+        await models.Message.update({ readtime: now }, { where: { id } });
         return {
           ok: true,
           id,
@@ -42,8 +40,8 @@ export default {
   sendMessage: requiresAuth.createResolver(
     async (parent, { touser, message }, { models, token }) => {
       const { user: { id } } = decode(token);
-      const p1 = models.User.findById(id);
-      const p2 = models.User.findById(touser);
+      const p1 = models.Human.findById(id);
+      const p2 = models.Human.findById(touser);
       const [sender, receiver] = await Promise.all([p1, p2]);
 
       if (!sender || !receiver) {
@@ -52,17 +50,17 @@ export default {
         throw new Error("Sender and Receiver can't be the same User!");
       } else if (message && sender && receiver) {
         try {
-          const save = await models.Notification.create({
-            fromuser: id,
-            touser,
+          const save = await models.Message.create({
+            sender: id,
+            receiver: touser,
             type: 1,
             message
           });
 
           const newMessage = {
             ...save.dataValues,
-            fromuser: sender.dataValues,
-            touser: receiver.dataValues
+            sender: sender.dataValues,
+            receiver: receiver.dataValues
           };
 
           pubsub.publish(NEW_MESSAGE, {
@@ -78,9 +76,7 @@ export default {
         } catch (err) {
           throw new Error(err.message);
         }
-      } else {
-        throw new Error("Empty Message!");
-      }
+      } else throw new Error("Empty Message!");
     }
   )
 };

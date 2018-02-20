@@ -1,32 +1,24 @@
-export default (
-  sequelize,
-  { STRING, INTEGER, DECIMAL, DATEONLY, SMALLINT }
-) => {
-  const Plan = sequelize.define("plan", {
-    description: STRING,
-    renewalplan: INTEGER,
-    period: INTEGER,
+export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, CHAR }) => {
+  const Plan = sequelize.define("plan_data", {
+    name: TEXT,
+    teaserdescription: TEXT,
+    features: JSONB,
+    startdate: TIME,
+    enddate: TIME,
     numlicences: INTEGER,
-    price: DECIMAL(11, 2),
+    amount: DECIMAL(10, 2),
     currency: {
-      type: STRING(3),
+      type: CHAR(3),
       validate: {
         len: [1, 3]
-      }
+      },
+      defaultValue: "USD"
     },
-    name: STRING,
-    activefrom: DATEONLY,
-    activeuntil: DATEONLY,
-    promo: SMALLINT,
-    promovipfy: DECIMAL(11, 2),
-    promodeveloper: DECIMAL(11, 2),
-    promoname: STRING,
-    changeafter: SMALLINT,
-    changeplan: INTEGER
+    options: JSONB
   });
 
-  Plan.associate = models => {
-    Plan.belongsTo(models.App, { foreignKey: "appid" });
+  Plan.associate = ({ App }) => {
+    Plan.belongsTo(App, { foreignKey: "appid" });
   };
 
   return Plan;
