@@ -52,5 +52,6 @@ export default {
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
   Unit: find({ parentunit: "Unit" }),
+  User: find(unit),
   Website: find(unit)
 };

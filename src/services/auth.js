@@ -1,11 +1,11 @@
 import jwt from "jsonwebtoken";
-import _ from "lodash";
+import { pick } from "lodash";
 import bcrypt from "bcrypt";
 
 export const createTokens = async (user, secret, secret2) => {
   const createToken = await jwt.sign(
     {
-      user: _.pick(user, ["id"])
+      user: pick(user, ["id", "unitid"])
     },
     secret,
     {
@@ -15,7 +15,7 @@ export const createTokens = async (user, secret, secret2) => {
 
   const createRefreshToken = await jwt.sign(
     {
-      user: _.pick(user, "id")
+      user: pick(user, ["id", "unitid"])
     },
     secret2,
     {
@@ -62,20 +62,19 @@ export const refreshTokens = async (token, refreshToken, models, SECRET, SECRETT
 };
 
 export const tryLogin = async (email, password, models, SECRET, SECRETTWO) => {
-  const emailExists = await models.Email.findOne({ where: { email }, raw: true });
+  const emailExists = await models.User.findOne({ where: { email }, raw: true });
   if (!emailExists) throw new Error("Sorry, but we couldn't find your email.");
 
-  const humanUnit = await models.HumanUnit.findOne({ where: { unitid: emailExists.unitid } });
-  const user = await models.Human.findOne({ where: { id: humanUnit.humanid } });
+  const user = await models.Human.findById(emailExists.id);
   const valid = await bcrypt.compare(password, user.passwordhash);
   if (!valid) throw new Error("Incorrect Password!");
 
   const refreshTokenSecret = user.passwordhash + SECRETTWO;
-  const [token, refreshToken] = await createTokens(user, SECRET, refreshTokenSecret);
+  const [token, refreshToken] = await createTokens(emailExists, SECRET, refreshTokenSecret);
 
   return {
     ok: true,
-    user,
+    user: emailExists,
     token,
     refreshToken
   };

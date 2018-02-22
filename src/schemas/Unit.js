@@ -8,7 +8,7 @@ export const types = `
     suspended: Boolean!
     profilepicture: String
     riskvalue: Int
-    createdat: String!
+    createdate: String!
     position: String
     parentunit: Unit
   }
@@ -52,11 +52,33 @@ export const types = `
     a: String
 
   }
+
+  type User {
+    id: Int!
+    firstname: String
+    middlename: String
+    lastname: String
+    title: String
+    sex: SEX
+    birthday: String
+    resetoption: Int
+    language: String
+    payingoptions: PayingOptions
+    banned: Boolean!
+    deleted: Boolean!
+    suspended: Boolean!
+    profilepicture: String
+    riskvalue: Int
+    position: String
+    email: String!
+    verified: Boolean!
+    unitid: Unit!
+  }
 `;
 
 export const queries = `
   # Returns the logged-in user. Used for Authentication.
-  me: Human
+  me: User
   fetchUserByPassword(password: String!): String!
 `;
 

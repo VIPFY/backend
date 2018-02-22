@@ -107,12 +107,11 @@ export default {
     tryLogin(email, password, models, SECRET, SECRETTWO),
 
   forgotPassword: async (parent, { email }, { models }) => {
-    const emailExists = await models.Email.findOne({ where: { email } });
+    const emailExists = await models.User.findOne({ where: { email } });
     if (!emailExists) throw new Error("Email doesn't exist!");
 
     try {
-      const humanUnit = await models.HumanUnit.findOne({ where: { unitid: emailExists.unitid } });
-      const user = await models.Human.findOne({ where: { id: humanUnit.humanid } });
+      const user = await models.Human.findOne({ where: { id: emailExists.id } });
       // Change the given hash to improve security
       const start = random(3, 8);
       const newHash = await user.dataValues.passwordhash.replace("/", 2).substr(start);

@@ -34,7 +34,7 @@ export const find = data => {
 
   Object.keys(data).map(search => {
     searches[search] = (parent, args, { models }) =>
-      models[data[search]].findById(parent.dataValues[id]);
+      models[data[search]].findById(parent.dataValues[search]);
   });
 
   return searches;

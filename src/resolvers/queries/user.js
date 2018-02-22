@@ -5,7 +5,7 @@ export default {
     if (user) {
       // they are logged in
       try {
-        const me = await models.Human.findById(user.id);
+        const me = await models.User.findById(user.id);
 
         return me.dataValues;
       } catch (err) {
@@ -18,15 +18,11 @@ export default {
 
   fetchUserByPassword: async (parent, { password }, { models }) => {
     try {
-      const { user: { dataValues: { id } } } = await models.Human.findOne({
-        where: { passwordhash: password }
+      const { user: { dataValues: { email } } } = await models.User.findOne({
+        where: { passwordhash: password, verified: false }
       });
 
-      const email = await models.Email.findOne({
-        where: { unitid: id, verified: false }
-      });
-
-      return email.dataValues.email;
+      return email;
     } catch ({ message }) {
       throw new Error(message);
     }

@@ -6,7 +6,7 @@ export default (sequelize, { JSONB, BOOLEAN, TEXT, NOW, INTEGER, TIME }) => {
     suspended: { type: BOOLEAN, defaultValue: false },
     profilepicture: TEXT,
     riskvalue: INTEGER,
-    createdat: { type: TIME, defaultValue: NOW() },
+    createdate: { type: TIME, defaultValue: NOW() },
     position: TEXT
   });
 
