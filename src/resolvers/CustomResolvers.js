@@ -42,8 +42,8 @@ export const find = data => {
 
 export const findMessage = () => {
   const searcher = {
-    sender: ({ sender }, args, { models }) => models.Unit.findById(sender),
-    receiver: ({ receiver }, args, { models }) => models.Unit.findById(receiver)
+    sender: ({ sender }, args, { models }) => models.Human.findById(sender),
+    receiver: ({ receiver }, args, { models }) => models.Human.findById(receiver)
   };
 
   return searcher;

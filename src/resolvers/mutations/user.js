@@ -1,7 +1,7 @@
 import { random } from "lodash";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { tryLogin, createTokens } from "../../services/auth";
+import { createTokens } from "../../services/auth";
 import { requiresAuth } from "../../helpers/permissions";
 import { sendEmail } from "../../services/mailjet";
 /* eslint-disable no-unused-vars */
@@ -103,8 +103,29 @@ export default {
     });
   },
 
-  signIn: (parent, { email, password }, { models, SECRET, SECRETTWO }) =>
-    tryLogin(email, password, models, SECRET, SECRETTWO),
+  signIn: async (parent, { email, password }, { models, SECRET, SECRETTWO }) => {
+    const emailExists = await models.User.findOne({ where: { email }, raw: true });
+    if (!emailExists) throw new Error("Sorry, but we couldn't find your email.");
+    console.log(emailExists.verified);
+    if (emailExists.verified == false) throw new Error("Sorry, this email isn't verified yet.");
+    if (emailExists.banned == true) throw new Error("Sorry, this account is banned!");
+    if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended.");
+    if (emailExists.deleted == true) throw new Error("Sorry, this account doesn't exist anymore.");
+
+    const user = await models.Human.findById(emailExists.id);
+    const valid = await bcrypt.compare(password, user.passwordhash);
+    if (!valid) throw new Error("Incorrect Password!");
+
+    const refreshTokenSecret = user.passwordhash + SECRETTWO;
+    const [token, refreshToken] = await createTokens(emailExists, SECRET, refreshTokenSecret);
+
+    return {
+      ok: true,
+      user: emailExists,
+      token,
+      refreshToken
+    };
+  },
 
   forgotPassword: async (parent, { email }, { models }) => {
     const emailExists = await models.User.findOne({ where: { email } });

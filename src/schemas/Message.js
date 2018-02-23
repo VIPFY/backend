@@ -8,8 +8,8 @@ export const types = `
     archivetimereceiver: String
     tag: [String]
     messagetext: String
-    sender: Unit!
-    receiver: Unit!
+    sender: Human!
+    receiver: Human!
   }
 
   enum MESSAGE_COLUMN {
