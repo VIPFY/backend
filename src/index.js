@@ -68,7 +68,7 @@ const authMiddleware = async (req, res, next) => {
         }
         req.user = newTokens.user;
       } else {
-        console.log(err.name);
+        console.log(err);
         req.headers["x-token"] = false;
       }
     }
@@ -87,8 +87,8 @@ app.use(cors(corsOptions));
 app.use(
   "/graphql",
   bodyParser.json(),
-  graphqlExpress(req => {
-    const token = req.headers["x-token"];
+  graphqlExpress(({ headers, user }) => {
+    const token = headers["x-token"];
     return {
       schema,
       context: {
@@ -97,7 +97,7 @@ app.use(
         // token:
         // eslint-disable-next-line
         //   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjo3NH0sImlhdCI6MTUxNzY3MzE5NiwiZXhwIjoxNTE3NzE2Mzk2fQ.5Tlsrg6F9UuwcKYZu21JFqVlEPhRKJZVsWXwuJlVgs4",
-        user: req.user,
+        user,
         SECRET,
         SECRETTWO
       },

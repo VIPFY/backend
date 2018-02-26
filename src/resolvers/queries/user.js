@@ -7,14 +7,11 @@ export default {
       // they are logged in
       try {
         const me = await models.User.findById(user.id);
-
         return me.dataValues;
       } catch (err) {
         throw new Error(err.message);
       }
-    } else {
-      throw new Error("Not Authenticated!");
-    }
+    } else throw new Error("Not Authenticated!");
   }),
 
   fetchUserByPassword: async (parent, { password }, { models }) => {

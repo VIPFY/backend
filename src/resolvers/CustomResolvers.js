@@ -31,7 +31,6 @@ export const implementDate = {
 
 export const find = data => {
   const searches = {};
-
   Object.keys(data).map(search => {
     searches[search] = (parent, args, { models }) =>
       models[data[search]].findById(parent.dataValues[search]);
@@ -39,3 +38,7 @@ export const find = data => {
 
   return searches;
 };
+
+export const findUnit = () => ({
+  unitid: (parent, args, { models }) => models.Unit.findById(parent.unitid)
+});

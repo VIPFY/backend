@@ -72,7 +72,7 @@ export const types = `
     position: String
     email: String!
     verified: Boolean!
-    unitid: Unit!
+    unitid: Unit
   }
 `;
 
