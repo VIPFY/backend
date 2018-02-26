@@ -4,7 +4,8 @@ export default (sequelize, { TEXT, JSONB, DOUBLE, ARRAY, BOOLEAN }) => {
       type: TEXT,
       unique: true
     },
-    commision: JSONB,
+    commission: JSONB,
+    developername: TEXT,
     logo: TEXT,
     description: TEXT,
     teaserdescription: TEXT,

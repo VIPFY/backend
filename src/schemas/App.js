@@ -18,12 +18,13 @@ export const types = `
   type AppDetails {
     id: Int!
     name: String
+    developername: String!
     commission: Commision
     logo: String
     description: String
     teaserdescription: String
     website: String
-    images: String
+    images: [String]
     features: Features
     options: Options
     disabled: Boolean
@@ -50,7 +51,7 @@ export const types = `
 
 export const queries = `
   allApps(first: Int): [App]!
-  fetchApp(name: String!): App
+  fetchApp(name: String!): AppDetails
 
   fetchPlans(appid: Int!): [Plan]!
   fetchPrice(appid: Int!): Plan!
