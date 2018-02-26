@@ -28,6 +28,7 @@ const Mutation = Object.assign(
 const unit = { unitid: "Unit" };
 const app = { appid: "App" };
 const unitAndPlan = { sponsor: "Unit", planid: "Plan" };
+const developerAndSupport = { developer: "Unit", supportunit: "Unit" };
 
 export default {
   Query,
@@ -35,8 +36,8 @@ export default {
   Subscription,
   Date: implementDate,
   Address: find(unit),
-  App: find({ developer: "Unit" }),
-  AppDetails: find({ developer: "Unit", supportunit: "Unit" }),
+  App: find(developerAndSupport),
+  AppDetails: find(developerAndSupport),
   Bill: find(unit),
   BillPosition: find({ vendor: "Unit", billid: "Bill", planid: "Plan" }),
   BoughtPlan: find({ buyer: "Unit", buyfor: "Unit", planid: "Plan" }),
