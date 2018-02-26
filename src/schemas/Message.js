@@ -4,12 +4,14 @@ export const types = `
     id: Int!
     sendtime: String!
     readtime: String
+    senderpicture: String
+    sendername: String!
     archivetimesender: String
     archivetimereceiver: String
     tag: [String]
     messagetext: String
-    sender: Human!
-    receiver: Human!
+    sender: Unit!
+    receiver: Unit!
   }
 
   enum MESSAGE_COLUMN {

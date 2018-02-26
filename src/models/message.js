@@ -1,9 +1,11 @@
-export default (sequelize, { TEXT, ARRAY, DATE, NOW }) => {
-  const Message = sequelize.define("message_data", {
+export default (sequelize, { TEXT, ARRAY, DATE, STRING, NOW }) => {
+  const Message = sequelize.define("message_view", {
     sendtime: {
       type: DATE,
       defaulValue: NOW
     },
+    senderpicture: STRING,
+    sendername: STRING,
     readtime: DATE,
     archivetimesender: DATE,
     archivetimereceiver: DATE,
@@ -14,9 +16,9 @@ export default (sequelize, { TEXT, ARRAY, DATE, NOW }) => {
     }
   });
 
-  Message.associate = ({ Human }) => {
-    Message.belongsTo(Human, { foreignKey: "sender" });
-    Message.belongsTo(Human, { foreignKey: "receiver" });
+  Message.associate = ({ Unit }) => {
+    Message.belongsTo(Unit, { foreignKey: "sender" });
+    Message.belongsTo(Unit, { foreignKey: "receiver" });
   };
 
   return Message;
