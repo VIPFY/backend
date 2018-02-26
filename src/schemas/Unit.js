@@ -80,6 +80,9 @@ export const queries = `
   # Returns the logged-in user. Used for Authentication.
   me: User
   fetchUserByPassword(password: String!): String!
+
+  # Returns all Users for messages
+  allUsers: [User]!
 `;
 
 export const mutations = `
