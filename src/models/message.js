@@ -17,7 +17,6 @@ export default (sequelize, { TEXT, ARRAY, DATE, STRING, NOW }) => {
   });
 
   Message.associate = ({ Unit }) => {
-    Message.belongsTo(Unit, { foreignKey: "sender" });
     Message.belongsTo(Unit, { foreignKey: "receiver" });
   };
 

@@ -39,12 +39,3 @@ export const find = data => {
 
   return searches;
 };
-
-export const findMessage = () => {
-  const searcher = {
-    sender: ({ sender }, args, { models }) => models.Unit.findById(sender),
-    receiver: ({ receiver }, args, { models }) => models.Unit.findById(receiver)
-  };
-
-  return searcher;
-};

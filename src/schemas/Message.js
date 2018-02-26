@@ -2,15 +2,14 @@ export const types = `
 # The messages an User receives from Apps and other Users
   type Message {
     id: Int!
-    sendtime: String!
-    readtime: String
+    sendtime: Date!
+    readtime: Date
     senderpicture: String
     sendername: String!
-    archivetimesender: String
-    archivetimereceiver: String
+    archivetimesender: Date
+    archivetimereceiver: Date
     tag: [String]
     messagetext: String
-    sender: Unit!
     receiver: Unit!
   }
 

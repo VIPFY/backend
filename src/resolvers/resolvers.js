@@ -12,7 +12,7 @@ import weeblyMutations from "./mutations/weebly";
 
 import Subscription from "./subscriptions";
 
-import { find, findMessage, implementDate } from "./CustomResolvers";
+import { find, implementDate } from "./CustomResolvers";
 
 const Query = Object.assign(userQueries, appQueries, messageQueries, reviewQueries);
 
@@ -45,7 +45,7 @@ export default {
   Email: find(unit),
   HumanUnit: find({ unitid: "Unit", humanid: "Human" }),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),
-  Message: findMessage(),
+  Message: find({ receiver: "Unit" }),
   Newsletter: find({ email: "Email" }),
   Phone: find(unit),
   Plan: find(app),
