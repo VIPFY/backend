@@ -12,7 +12,7 @@ export default {
         messages = await models.Message.findAll({
           where: {
             receiver: id,
-            deleted: false,
+            archivetimereceiver: false,
             readtime: { [Op.not]: null }
           },
           order: [["sendtime", "DESC"]]
@@ -21,14 +21,14 @@ export default {
         messages = await models.Message.findAll({
           where: {
             receiver: id,
-            deleted: false,
+            archivetimereceiver: false,
             readtime: { [Op.eq]: null }
           },
           order: [["sendtime", "DESC"]]
         });
       } else {
         messages = await models.Message.findAll({
-          where: { receiver: id, deleted: false },
+          where: { receiver: id, archivetimereceiver: false },
           order: [["sendtime", "DESC"]]
         });
       }
