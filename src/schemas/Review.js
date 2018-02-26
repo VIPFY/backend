@@ -6,7 +6,11 @@ export const types = `
     reviewdate: String!
     stars: Int
     reviewtext: String
-    answerto: Int
+    answerto: Review
+    humanid: Human!
+    counthelpful: Int,
+    countunhelpful: Int,
+    countcomment: Int,
   }
 
   type ReviewHelpful {

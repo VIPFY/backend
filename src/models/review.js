@@ -1,5 +1,5 @@
-export default (sequelize, { TEXT, SMALLINT, DATE, NOW }) => {
-  const Review = sequelize.define("reviews", {
+export default (sequelize, { TEXT, SMALLINT, INTEGER, DATE, NOW }) => {
+  const Review = sequelize.define("review_view", {
     reviewdate: {
       type: DATE,
       defaultValue: NOW
@@ -7,12 +7,15 @@ export default (sequelize, { TEXT, SMALLINT, DATE, NOW }) => {
     stars: {
       type: SMALLINT,
       allowNull: false,
-      defaultValue: 1,
+      defaultValue: 0,
       validate: {
-        min: 1,
+        min: 0,
         max: 5
       }
     },
+    counthelpful: INTEGER,
+    countunhelpful: INTEGER,
+    countcomment: INTEGER,
     reviewtext: TEXT
   });
 
@@ -20,6 +23,7 @@ export default (sequelize, { TEXT, SMALLINT, DATE, NOW }) => {
     Review.belongsTo(models.Unit, { foreignKey: "unitid" });
     Review.belongsTo(models.App, { foreignKey: "appid" });
     Review.belongsTo(models.Review, { foreignKey: "answerto" });
+    Review.belongsTo(models.Human, { foreignKey: "humanid" });
   };
 
   return Review;

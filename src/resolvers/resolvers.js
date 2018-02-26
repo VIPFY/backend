@@ -52,6 +52,7 @@ export default {
   PlansRunning: find(app),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
+  Review: find({ unitid: "Unit", appid: "App", answerto: "Review", humanid: "Human" }),
   Unit: find({ parentunit: "Unit" }),
   User: find(unit),
   Website: find(unit)
