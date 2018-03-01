@@ -2,7 +2,7 @@ export default (sequelize, { DATE, NOW, TEXT, ARRAY }) => {
   const MessageData = sequelize.define("message_data", {
     sendtime: {
       type: DATE,
-      defaulValue: NOW
+      defaultValue: NOW
     },
     readtime: DATE,
     archivetimesender: DATE,

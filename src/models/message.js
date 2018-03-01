@@ -2,7 +2,7 @@ export default (sequelize, { TEXT, ARRAY, DATE, STRING, NOW }) => {
   const Message = sequelize.define("message_view", {
     sendtime: {
       type: DATE,
-      defaulValue: NOW
+      defaultValue: NOW
     },
     senderpicture: STRING,
     sendername: STRING,

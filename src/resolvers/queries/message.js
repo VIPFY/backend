@@ -5,13 +5,13 @@ import { requiresAuth } from "../../helpers/permissions";
 export default {
   fetchMessages: requiresAuth.createResolver(async (parent, { read }, { models, token }) => {
     let messages;
-    const { user: { id } } = decode(token);
+    const { user: { id, unitid } } = decode(token);
 
     try {
       if (read === true) {
         messages = await models.Message.findAll({
           where: {
-            receiver: id,
+            receiver: unitid,
             archivetimereceiver: { [Op.eq]: null },
             readtime: { [Op.not]: null }
           },
@@ -20,7 +20,7 @@ export default {
       } else if (read === false) {
         messages = await models.Message.findAll({
           where: {
-            receiver: id,
+            receiver: unitid,
             archivetimereceiver: { [Op.eq]: null },
             readtime: { [Op.eq]: null }
           },
@@ -28,7 +28,7 @@ export default {
         });
       } else {
         messages = await models.Message.findAll({
-          where: { receiver: id, archivetimereceiver: { [Op.eq]: null } },
+          where: { receiver: unitid, archivetimereceiver: { [Op.eq]: null } },
           order: [["sendtime", "DESC"]]
         });
       }
