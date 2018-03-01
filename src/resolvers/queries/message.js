@@ -5,7 +5,7 @@ import { requiresAuth } from "../../helpers/permissions";
 export default {
   fetchMessages: requiresAuth.createResolver(async (parent, { read }, { models, token }) => {
     let messages;
-    const { user: { id, unitid } } = decode(token);
+    const { user: { unitid } } = decode(token);
 
     try {
       if (read === true) {

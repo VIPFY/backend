@@ -25,7 +25,7 @@ type Newsletter {
 
 # Custom options for an object
   type Options {
-    a: String
+    steps: [Int]
   }
 
   type Restrictions {
