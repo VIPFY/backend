@@ -17,12 +17,13 @@ export default {
         throw new Error("Rating must be between 1 and 5 stars!");
       } else {
         try {
-          const review = await models.Review.create({
+          await models.Review.upsert({
             stars,
             reviewtext: text,
             unitid,
             appid
           });
+
           return {
             ok: true
           };
