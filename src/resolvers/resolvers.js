@@ -46,6 +46,7 @@ export default {
   HumanUnit: find({ unitid: "Unit", humanid: "Human" }),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),
   Message: find({ receiver: "Unit" }),
+  MessageData: find({ sender: "Unit", receiver: "Unit" }),
   Newsletter: find({ email: "Email" }),
   Phone: find(unit),
   Plan: find(app),

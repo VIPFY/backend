@@ -1,5 +1,5 @@
 export const types = `
-# The messages an User receives from Apps and other Users
+# The messages an User receives from Apps and other Users. This is a View
   type Message {
     id: Int!
     sendtime: Date!
@@ -11,6 +11,19 @@ export const types = `
     tag: [String]
     messagetext: String
     receiver: Unit!
+  }
+
+# The original table which contains the messages
+  type MessageData {
+    id: Int!
+    sendtime: Date!
+    readtime: Date
+    archivetimesender: Date
+    archivetimereceiver: Date
+    tag: [String]
+    messagetext: String
+    receiver: Unit!
+    sender: Unit!
   }
 
   enum MESSAGE_COLUMN {
@@ -36,5 +49,5 @@ export const mutations = `
 `;
 
 export const subscriptions = `
-  newMessage: Message!
+  newMessage: MessageData!
 `;

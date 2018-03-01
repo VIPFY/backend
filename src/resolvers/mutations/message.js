@@ -5,10 +5,10 @@ import { NEW_MESSAGE, pubsub } from "../../constants";
 /* eslint-disable no-unused-vars */
 export default {
   setDeleteStatus: requiresAuth.createResolver(async (parent, { id, type }, { models }) => {
-    const messageExists = await models.Message.findById(id);
+    const messageExists = await models.MessageData.findById(id);
     if (messageExists) {
       try {
-        const deleted = await models.Message.update({ [type]: true }, { where: { id } });
+        await models.MessageData.update({ [type]: true }, { where: { id } });
         return {
           ok: true
         };
@@ -20,11 +20,11 @@ export default {
 
   setReadtime: requiresAuth.createResolver(async (parent, { id }, { models }) => {
     try {
-      const read = await models.Message.findById(id);
+      const { message: { readtime } } = await models.MessageData.findById(id);
 
-      if (!read.readtime) {
+      if (!readtime) {
         const now = Date.now();
-        await models.Message.update({ readtime: now }, { where: { id } });
+        await models.MessageData.update({ readtime: now }, { where: { id } });
         return {
           ok: true,
           id,
@@ -39,32 +39,31 @@ export default {
 
   sendMessage: requiresAuth.createResolver(
     async (parent, { touser, message }, { models, token }) => {
-      const { user: { id } } = decode(token);
-      const p1 = models.Unit.findById(id);
-      const p2 = models.Unit.findById(touser);
+      const { user: { unitid } } = decode(token);
+      const p1 = models.User.findById(unitid);
+      const p2 = models.User.findById(touser);
       const [sender, receiver] = await Promise.all([p1, p2]);
 
       if (!sender || !receiver) {
         throw new Error("User doesn't exist!");
-      } else if (sender.id == receiver.id) {
+      } else if (sender.unitid == receiver.unitid) {
         throw new Error("Sender and Receiver can't be the same User!");
       } else if (message && sender && receiver) {
         try {
-          const save = await models.Message.create({
-            sender: id,
+          const createMessage = await models.MessageData.create({
+            sender: unitid,
             receiver: touser,
-            type: 1,
-            message
+            messagetext: message
           });
 
           const newMessage = {
-            ...save.dataValues,
+            ...createMessage.dataValues,
             sender: sender.dataValues,
             receiver: receiver.dataValues
           };
 
           pubsub.publish(NEW_MESSAGE, {
-            userId: receiver.dataValues.id,
+            userId: receiver.dataValues.unitid,
             newMessage
           });
 

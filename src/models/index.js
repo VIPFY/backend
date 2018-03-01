@@ -43,6 +43,7 @@ const db = {
   HumanUnit: sequelize.import("./humanUnit"),
   Licence: sequelize.import("./licence"),
   Message: sequelize.import("./message"),
+  MessageData: sequelize.import("./messageData"),
   Newsletter: sequelize.import("./newsletter"),
   Phone: sequelize.import("./phone"),
   Plan: sequelize.import("./plan"),
