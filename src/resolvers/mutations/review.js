@@ -24,8 +24,7 @@ export default {
             appid
           });
           return {
-            ok: true,
-            id: review.id
+            ok: true
           };
         } catch (err) {
           throw new Error(err.message);
