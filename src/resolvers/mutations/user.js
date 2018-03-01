@@ -104,23 +104,23 @@ export default {
   },
 
   signIn: async (parent, { email, password }, { models, SECRET, SECRETTWO }) => {
-    const emailExists = await models.User.findOne({ where: { email }, raw: true });
+    const emailExists = await models.Login.findOne({ where: { email }, raw: true });
     if (!emailExists) throw new Error("Sorry, but we couldn't find your email.");
     if (emailExists.verified == false) throw new Error("Sorry, this email isn't verified yet.");
     if (emailExists.banned == true) throw new Error("Sorry, this account is banned!");
     if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended.");
     if (emailExists.deleted == true) throw new Error("Sorry, this account doesn't exist anymore.");
 
-    const user = await models.Human.findById(emailExists.id);
-    const valid = await bcrypt.compare(password, user.passwordhash);
+    const user = await models.User.findById(emailExists.id);
+    const valid = await bcrypt.compare(password, emailExists.passwordhash);
     if (!valid) throw new Error("Incorrect Password!");
 
-    const refreshTokenSecret = user.passwordhash + SECRETTWO;
+    const refreshTokenSecret = emailExists.passwordhash + SECRETTWO;
     const [token, refreshToken] = await createTokens(emailExists, SECRET, refreshTokenSecret);
 
     return {
       ok: true,
-      user: emailExists,
+      user,
       token,
       refreshToken
     };

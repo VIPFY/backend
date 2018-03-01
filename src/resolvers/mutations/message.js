@@ -40,8 +40,8 @@ export default {
   sendMessage: requiresAuth.createResolver(
     async (parent, { touser, message }, { models, token }) => {
       const { user: { unitid } } = decode(token);
-      const p1 = models.User.findById(unitid);
-      const p2 = models.User.findById(touser);
+      const p1 = models.User.findOne({ where: { unitid } });
+      const p2 = models.User.findOne({ where: { unitid: touser } });
       const [sender, receiver] = await Promise.all([p1, p2]);
 
       if (!sender || !receiver) {
