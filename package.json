@@ -37,6 +37,7 @@
     "querystring": "^0.2.0",
     "sequelize": "^4.32.6",
     "soap": "^0.23.0",
+    "stripe": "^5.5.0",
     "subscriptions-transport-ws": "^0.9.5"
   },
   "devDependencies": {
