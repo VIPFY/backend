@@ -7,7 +7,13 @@ export default (sequelize, { TEXT, TIME, JSONB, INTEGER, DECIMAL, CHAR }) => {
     enddate: TIME,
     numlicences: INTEGER,
     amount: DECIMAL(10, 2),
-    currency: CHAR(3),
+    currency: {
+      type: CHAR(3),
+      validate: {
+        len: [1, 3]
+      },
+      defaultValue: "USD"
+    },
     options: JSONB
   });
 

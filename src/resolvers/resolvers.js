@@ -9,6 +9,7 @@ import reviewMutations from "./mutations/review";
 import commonMutations from "./mutations/common";
 import dd24Mutations from "./mutations/dd24";
 import weeblyMutations from "./mutations/weebly";
+import billMutations from "./mutations/bill";
 
 import Subscription from "./subscriptions";
 
@@ -22,7 +23,8 @@ const Mutation = Object.assign(
   reviewMutations,
   commonMutations,
   dd24Mutations,
-  weeblyMutations
+  weeblyMutations,
+  billMutations
 );
 
 const unit = { unitid: "Unit" };

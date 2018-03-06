@@ -101,3 +101,8 @@ export const types = `
 `;
 
 export const queries = ``;
+
+export const mutations = `
+  # This creates a product which can be linked to a plan
+  createPlan(name: String, productid: String, amount: Int!): Response!
+`;
