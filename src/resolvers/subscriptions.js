@@ -7,16 +7,16 @@ export default {
     subscribe: withFilter(
       (parent, args, { token }) => {
         const { user } = decode(token);
-        if (!user || !user.id) {
+        if (!user || !user.unitid) {
           throw new Error("Not authenticated!");
         }
         return pubsub.asyncIterator(NEW_MESSAGE);
       },
       (payload, args, { token }) => {
         if (payload) {
-          const { user: { id } } = decode(token);
+          const { user: { unitid } } = decode(token);
 
-          return payload.userId === id;
+          return payload.userId === unitid;
         }
         return "";
       }

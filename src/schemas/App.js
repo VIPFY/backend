@@ -8,8 +8,8 @@ export const types = `
     teaserdescription: String
     website: String
     images: [String]
-    features: Features
-    options: Options
+    features: JSON
+    options: JSON
     disabled: Boolean!
     developer: Unit!
     supportunit: Unit!
@@ -19,14 +19,14 @@ export const types = `
     id: Int!
     name: String
     developername: String!
-    commission: Commision
+    commission: JSON
     logo: String
     description: String
     teaserdescription: String
     website: String
     images: [String]
-    features: Features
-    options: Options
+    features: JSON
+    options: JSON
     disabled: Boolean
     avgstars: Float
     cheapestprice: Float
@@ -37,21 +37,17 @@ export const types = `
     developer: Unit!
     supportunit: Unit!
   }
-
-  type Features {
-    a: String
-
-  }
-
-  type Commision {
-    a: String
-
-  }
 `;
 
 export const queries = `
+  # Returns all apps in Vipfy
   allApps(first: Int): [App]!
+
+  # Returns a specific app
   fetchApp(name: String!): AppDetails
+
+  # Returns apps where the given user has an account
+  fetchUserApps: [BoughtPlan]!
 
   fetchPlans(appid: Int!): [Plan]!
   fetchPrice(appid: Int!): Plan!

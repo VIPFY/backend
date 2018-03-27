@@ -31,13 +31,18 @@ export const types = `
 
   type Address {
     id: Int!
-    country: String,
-    address: String,
-    description: String,
-    priority: Int,
+    country: String
+    address: String
+    description: String
+    priority: Int
     tag: String
     unitid: Unit!
   }
 `;
 
 export const queries = ``;
+
+export const mutations = `
+  updateAddress(country: String, address: String, description: String): Response!
+  #updateContactData(email: String):
+`;

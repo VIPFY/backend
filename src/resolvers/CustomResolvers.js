@@ -1,6 +1,5 @@
 /* eslint-disable no-undef, array-callback-return */
 
-// Necessary to implement interfaces
 export const implementDate = {
   name: "Date",
   description: "Date custom scalar type. Returns a large integer",
@@ -18,16 +17,43 @@ export const implementDate = {
   }
 };
 
-// export const find = data => {
-//   const searches = {};
-//
-//   data.map(search => {
-//     const id = `${search.toLowerCase()}id`;
-//     searches[id] = (parent, args, { models }) => models[search].findById(parent.dataValues[id]);
-//   });
-//
-//   return searches;
-// };
+export const implementJSON = {
+  name: "JSON",
+  description:
+    "The `JSON` scalar type represents JSON values as specified by " +
+    "[ECMA-404](http://www.ecma-international.org/" +
+    "publications/files/ECMA-ST/ECMA-404.pdf).",
+  parseValue(value) {
+    return value;
+  },
+  serialize(value) {
+    return value;
+  },
+  parseLiteral(ast) {
+    switch (ast.kind) {
+      case Kind.STRING:
+      case Kind.BOOLEAN:
+        return ast.value;
+      case Kind.INT:
+      case Kind.FLOAT:
+        return parseFloat(ast.value);
+      case Kind.OBJECT: {
+        const value = Object.create(null);
+        ast.fields.forEach(field => {
+          value[field.name.value] = parseLiteral(field.value);
+        });
+
+        return value;
+      }
+      case Kind.LIST:
+        return ast.values.map(parseLiteral);
+      case Kind.NULL:
+        return null;
+      default:
+        return undefined;
+    }
+  }
+};
 
 export const find = data => {
   const searches = {};

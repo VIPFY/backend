@@ -30,7 +30,7 @@ const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
 let server;
 // We don't need certificates and https for development
-if (ENVIRONMENT == "production") {
+if (ENVIRONMENT == "productio") {
   const httpsOptions = {
     key: fs.readFileSync(process.env.SSL_KEY || "/etc/letsencrypt/live/vipfy.com/privkey.pem"),
     cert: fs.readFileSync(process.env.SSL_CERT || "/etc/letsencrypt/live/vipfy.com/cert.pem")

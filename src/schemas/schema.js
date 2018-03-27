@@ -7,7 +7,7 @@ import * as Unit from "./Unit";
 import * as Review from "./Review";
 import * as DD24 from "./DD24";
 import * as Weebly from "./Weebly";
-import * as Responses from "./Respones";
+import * as Responses from "./Responses";
 
 // Create Arrays to store the data from every schema
 const types = [];

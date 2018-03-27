@@ -1,4 +1,4 @@
-export default (sequelize, { TEXT, CHAR, INTEGER }) => {
+export default (sequelize, { TEXT, CHAR, JSONB, INTEGER }) => {
   const Address = sequelize.define("address_data", {
     country: CHAR(2),
     address: TEXT,

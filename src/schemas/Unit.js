@@ -2,7 +2,7 @@ export const types = `
 # A human needs an unique email and will be given an auto-generated id
   type Unit {
     id: Int!
-    payingoptions: PayingOptions
+    payingoptions: JSON
     banned: Boolean!
     deleted: Boolean!
     suspended: Boolean!
@@ -11,10 +11,6 @@ export const types = `
     createdate: String!
     position: String
     parentunit: Unit
-  }
-
-  type PayingOptions {
-    a: String
   }
 
   type Human {
@@ -39,18 +35,9 @@ export const types = `
   type Department {
     id: Int!
     name: String!
-    legalinformation: LegalInformation
-    staticdata: StaticData
+    legalinformation: JSON
+    staticdata: JSON
     unitid: Unit!
-  }
-
-  type LegalInformation {
-    a: String
-  }
-
-  type StaticData {
-    a: String
-
   }
 
   type User {
@@ -63,7 +50,7 @@ export const types = `
     birthday: String
     resetoption: Int
     language: String
-    payingoptions: PayingOptions
+    payingoptions: JSON
     banned: Boolean!
     deleted: Boolean!
     suspended: Boolean!
@@ -86,7 +73,7 @@ export const queries = `
 `;
 
 export const mutations = `
-  updateUser(firstname: String!, newFirstname: String!): [Int!]!
+  updateProfilePic(profilepicture: String!): Response!
   deleteUser: String!
 
   # Only an email is required for the signup

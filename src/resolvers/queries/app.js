@@ -1,3 +1,6 @@
+import { decode } from "jsonwebtoken";
+import { requiresAuth } from "../../helpers/permissions";
+
 export default {
   allApps: (parent, { first }, { models }) => {
     if (first) {
@@ -6,5 +9,16 @@ export default {
     return models.AppDetails.findAll();
   },
 
-  fetchApp: (parent, { name }, { models }) => models.AppDetails.findOne({ where: { name } })
+  fetchApp: (parent, { name }, { models }) => models.AppDetails.findOne({ where: { name } }),
+
+  fetchUserApps: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    try {
+      const { user: { unitid } } = decode(token);
+      const boughtPlans = await models.BoughtPlan.findAll({ where: { buyfor: unitid } });
+
+      return boughtPlans;
+    } catch ({ message }) {
+      throw new Error(message);
+    }
+  })
 };

@@ -1,6 +1,9 @@
-export default (sequelize, { TIME, JSONB }) => {
+export default (sequelize, { TIME, JSONB, NOW }) => {
   const BoughtPlan = sequelize.define("boughtplan_data", {
-    buytime: TIME,
+    buytime: {
+      type: TIME,
+      defaultValue: NOW
+    },
     endtime: TIME,
     key: JSONB
   });

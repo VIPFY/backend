@@ -1,19 +1,28 @@
 import { random } from "lodash";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import { decode } from "jsonwebtoken";
 import { createTokens } from "../../services/auth";
 import { requiresAuth } from "../../helpers/permissions";
 import { sendEmail } from "../../services/mailjet";
 /* eslint-disable no-unused-vars */
 
 export default {
-  updateUser: requiresAuth.createResolver((parent, { newFirstName }, { models, token }) => {
-    const { user: { id } } = jwt.decode(token);
-    return models.Human.update({ firstname: newFirstName }, { where: { id } });
-  }),
+  updateProfilePic: requiresAuth.createResolver(
+    async (parent, { profilepicture }, { models, token }) => {
+      try {
+        const { user: { unitid } } = decode(token);
+        await models.Unit.update({ profilepicture }, { where: { unitid } });
+        return {
+          ok: true
+        };
+      } catch ({ message }) {
+        throw new Error(message);
+      }
+    }
+  ),
 
   deleteUser: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    const { user: { id } } = jwt.decode(token);
+    const { user: { id } } = decode(token);
 
     await models.Human.destroy({ where: { id } });
     return "User was deleted";

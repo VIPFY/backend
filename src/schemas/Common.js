@@ -17,21 +17,14 @@ export const types = `
 # Custom Scalar Date
   scalar Date
 
+# Custom Scalar JSON
+  scalar JSON
+
 type Newsletter {
   email: Email!
   activesince: String!
   activeuntil: String
 }
-
-# Custom options for an object
-  type Options {
-    steps: [Int]
-  }
-
-  type Restrictions {
-    a: String
-
-  }
 `;
 
 export const mutations = `

@@ -10,10 +10,11 @@ import commonMutations from "./mutations/common";
 import dd24Mutations from "./mutations/dd24";
 import weeblyMutations from "./mutations/weebly";
 import billMutations from "./mutations/bill";
+import contactMutations from "./mutations/contact";
 
 import Subscription from "./subscriptions";
 
-import { find, implementDate, findUnit } from "./CustomResolvers";
+import { find, implementDate, implementJSON, findUnit } from "./CustomResolvers";
 
 const Query = Object.assign(userQueries, appQueries, messageQueries, reviewQueries);
 
@@ -24,7 +25,8 @@ const Mutation = Object.assign(
   commonMutations,
   dd24Mutations,
   weeblyMutations,
-  billMutations
+  billMutations,
+  contactMutations
 );
 
 const unit = { unitid: "Unit" };
@@ -37,6 +39,7 @@ export default {
   Mutation,
   Subscription,
   Date: implementDate,
+  JSON: implementJSON,
   Address: find(unit),
   App: find(developerAndSupport),
   AppDetails: find(developerAndSupport),

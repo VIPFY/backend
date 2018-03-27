@@ -23,13 +23,13 @@ export const types = `
     id: Int!
     name: String
     teaserdescription: String
-    features: Features
+    features: JSON
     startdate: String
     enddate: String
     numlicences: Int
     amount: Float
     currency: String
-    options: Options
+    options: JSON
     appid: App!
   }
 
@@ -38,7 +38,7 @@ export const types = `
     id: Int!
     buytime: String
     endtime: String
-    key: Key
+    key: JSON
     buyer: Unit!
     buyfor: Unit
     planid: Plan!
@@ -48,18 +48,14 @@ export const types = `
     id: Int!
     name: String
     teaserdescription: String
-    features: Features
+    features: JSON
     startdate: String
     enddate: String
     numlicences: Int
     amount: Float
     currency: String
-    options: Options
+    options: JSON
     appid: App!
-  }
-
-  type Key {
-    a: String
   }
 
   type Promo {
@@ -67,15 +63,11 @@ export const types = `
     name: String
     startdate: String
     enddate: String
-    restrictions: Restrictions
+    restrictions: JSON
     description: String
-    discount: Discount
+    discount: JSON
     planid: Plan!
     sponsor: Unit!
-  }
-
-  type Discount {
-    a: String
   }
 
   type PromosRunning {
@@ -83,16 +75,16 @@ export const types = `
     name: String
     startdate: String
     enddate: String
-    restrictions: Restrictions
+    restrictions: JSON
     description: String
-    discount: Discount
+    discount: JSON
     planid: Plan!
     sponsor: Unit!
   }
 
   type Licence {
     id: Int!
-    options: Options
+    options: JSON
     starttime: String
     endtime: String
     boughtplanid: BoughtPlan!
@@ -104,5 +96,8 @@ export const queries = ``;
 
 export const mutations = `
   # This creates a product which can be linked to a plan
-  createPlan(name: String, productid: String, amount: Int!): Response!
+  createStripePlan(name: String, productid: String, amount: Int!): Response!
+
+  # This allows the user to buy a plan
+  buyPlan(planid: Int!, amount: Int!, buyFor: Int): Response!
 `;

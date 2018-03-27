@@ -6,3 +6,4 @@ selectEnv.js
 play.js
 db.js
 old/
+dist/
