@@ -99,5 +99,5 @@ export const mutations = `
   createStripePlan(name: String, productid: String, amount: Int!): Response!
 
   # This allows the user to buy a plan
-  buyPlan(planid: Int!, amount: Int!, buyFor: Int): Response!
+  buyPlan(planid: Int!, buyFor: Int): Response!
 `;

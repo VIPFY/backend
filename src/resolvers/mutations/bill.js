@@ -26,40 +26,37 @@ export default {
     }
   }),
 
-  buyPlan: requiresAuth.createResolver(
-    async (parent, { planid, buyFor, amount }, { models, token }) => {
-      const { user: { unitid } } = decode(token);
-      const buyfor = buyFor || unitid;
+  buyPlan: requiresAuth.createResolver(async (parent, { planid, buyFor }, { models, token }) => {
+    const { user: { unitid } } = decode(token);
+    const buyfor = buyFor || unitid;
 
-      const userExists = await models.Unit.findById(buyfor);
-      if (userExists) {
-        return models.sequelize.transaction(async ta => {
-          try {
-            const boughtPlan = await models.BoughtPlan.create(
-              {
-                key: { amount },
-                buyer: unitid,
-                buyfor,
-                planid
-              },
-              { transaction: ta }
-            );
+    const userExists = await models.Unit.findById(buyfor);
+    if (userExists) {
+      return models.sequelize.transaction(async ta => {
+        try {
+          await models.BoughtPlan.create(
+            {
+              buyer: unitid,
+              buyfor,
+              planid
+            },
+            { transaction: ta }
+          );
+          //
+          // await models.Licence.create(
+          //   {
+          //     boughtplanid: boughtPlan.id,
+          //     unitid: buyfor
+          //   },
+          //   { transaction: ta }
+          // );
 
-            await models.Licence.create(
-              {
-                boughtplanid: boughtPlan.id,
-                unitid: buyfor
-              },
-              { transaction: ta }
-            );
-
-            return { ok: true };
-          } catch ({ message }) {
-            throw new Error(message);
-          }
-        });
-      }
-      throw new Error("User doesn't exist!");
+          return { ok: true };
+        } catch ({ message }) {
+          throw new Error(message);
+        }
+      });
     }
-  )
+    throw new Error("User doesn't exist!");
+  })
 };

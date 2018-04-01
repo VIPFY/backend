@@ -1,9 +1,7 @@
 import { requiresAuth } from "../../helpers/permissions";
 
 export default {
-  allUsers: requiresAuth.createResolver(async (parent, args, { models }) =>
-    models.Partner.findAll()
-  ),
+  allUsers: requiresAuth.createResolver(async (parent, args, { models }) => models.User.findAll()),
   me: requiresAuth.createResolver(async (parent, args, { models, user }) => {
     if (user) {
       // they are logged in
@@ -15,7 +13,7 @@ export default {
       }
     } else throw new Error("Not Authenticated!");
   }),
-
+  // THIS HAS TO BE CHANGED!!!
   fetchUserByPassword: async (parent, { password }, { models }) => {
     try {
       const { user: { dataValues: { email } } } = await models.User.findOne({

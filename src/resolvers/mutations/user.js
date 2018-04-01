@@ -121,6 +121,7 @@ export default {
     if (emailExists.deleted == true) throw new Error("Sorry, this account doesn't exist anymore.");
 
     const user = await models.User.findById(emailExists.id);
+    console.log({ user });
     const valid = await bcrypt.compare(password, emailExists.passwordhash);
     if (!valid) throw new Error("Incorrect Password!");
 
@@ -136,7 +137,7 @@ export default {
   },
 
   forgotPassword: async (parent, { email }, { models }) => {
-    const emailExists = await models.User.findOne({ where: { email } });
+    const emailExists = await models.LOgin.findOne({ where: { email } });
     if (!emailExists) throw new Error("Email doesn't exist!");
 
     try {

@@ -57,8 +57,7 @@ export const types = `
     profilepicture: String
     riskvalue: Int
     position: String
-    email: String!
-    verified: Boolean!
+    emails: [String!]!
     unitid: Unit
   }
 `;
