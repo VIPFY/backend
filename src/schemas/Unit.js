@@ -86,4 +86,7 @@ export const mutations = `
 
   # Send the user a new link for sign up
   forgotPassword(email: String!): ForgotPwResponse!
+
+  # Freeze the account of an user
+  freezeAccount(unitid: Int!): Response!
 `;

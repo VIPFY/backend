@@ -160,5 +160,20 @@ export default {
     } catch (err) {
       throw new Error(err.message);
     }
-  }
+  },
+
+  freezeAccount: requiresAuth.createResolver(async (parent, { unitid }, { models }) => {
+    const accountExists = await models.Unit.findById(unitid);
+
+    if (!accountExists) {
+      throw new Error("User not found!");
+    }
+
+    try {
+      await models.Unit.update({ suspended: true }, { where: { id: unitid } });
+      return { ok: true };
+    } catch ({ message }) {
+      throw new Error(message);
+    }
+  })
 };
