@@ -170,7 +170,7 @@ export default {
     }
 
     try {
-      await models.Unit.update({ suspended: true }, { where: { id: unitid } });
+      await models.Unit.update({ suspended: !accountExists.suspended }, { where: { id: unitid } });
       return { ok: true };
     } catch ({ message }) {
       throw new Error(message);

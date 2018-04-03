@@ -92,7 +92,9 @@ export const types = `
   }
 `;
 
-export const queries = ``;
+export const queries = `
+  boughtPlans(unitid: Int!): [BoughtPlan]!
+`;
 
 export const mutations = `
   # This creates a product which can be linked to a plan
