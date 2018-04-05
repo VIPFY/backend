@@ -1,5 +1,5 @@
 export default (sequelize, { TEXT, SMALLINT, DATE, NOW }) => {
-  const Review = sequelize.define("review_data", {
+  const Review = sequelize.define("review_view", {
     reviewdate: {
       type: DATE,
       defaultValue: NOW
@@ -13,6 +13,9 @@ export default (sequelize, { TEXT, SMALLINT, DATE, NOW }) => {
         max: 5
       }
     },
+    counthelpful: SMALLINT,
+    countunhelpful: SMALLINT,
+    countcomment: SMALLINT,
     reviewtext: TEXT
   });
 

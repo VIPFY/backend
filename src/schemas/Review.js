@@ -7,6 +7,9 @@ export const types = `
     stars: Int
     reviewtext: String
     answerto: Review
+    counthelpful: Int
+    countunhelpful: Int
+    countcomment: Int
   }
 
   type ReviewHelpful {
