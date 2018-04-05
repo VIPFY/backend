@@ -16,7 +16,7 @@ import contactMutations from "./mutations/contact";
 
 import Subscription from "./subscriptions";
 
-import { find, implementDate, implementJSON, findUnit } from "./CustomResolvers";
+import { find, implementDate, implementJSON } from "./CustomResolvers";
 
 const Query = Object.assign(userQueries, appQueries, messageQueries, reviewQueries, billQueries);
 

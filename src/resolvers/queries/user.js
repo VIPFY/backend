@@ -6,7 +6,7 @@ export default {
     if (user) {
       // they are logged in
       try {
-        const me = await models.User.findById(user.id);
+        const me = await models.User.findById(user.unitid);
         return me.dataValues;
       } catch (err) {
         throw new Error(err.message);

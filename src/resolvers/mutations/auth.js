@@ -94,7 +94,7 @@ export default {
     if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended!");
     if (emailExists.deleted == true) throw new Error("Sorry, this account doesn't exist anymore.");
 
-    const user = await models.User.findById(emailExists.unitid);
+    const user = await models.User.findOne({ where: { id: emailExists.unitid } });
     const valid = await bcrypt.compare(password, emailExists.passwordhash);
     if (!valid) throw new Error("Incorrect Password!");
 

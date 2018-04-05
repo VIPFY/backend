@@ -54,6 +54,7 @@ const authMiddleware = async (req, res, next) => {
   if (token) {
     try {
       const { user } = await jwt.verify(token, SECRET);
+      console.log("DAS IST DER USER", user);
       req.user = user;
     } catch (err) {
       if (err.name == "TokenExpiredError") {
