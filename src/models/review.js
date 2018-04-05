@@ -16,8 +16,8 @@ export default (sequelize, { TEXT, SMALLINT, DATE, NOW }) => {
     reviewtext: TEXT
   });
 
-  Review.associate = ({ Unit, App }) => {
-    Review.belongsTo(Unit, { foreignKey: "unitid" });
+  Review.associate = ({ User, App }) => {
+    Review.belongsTo(User, { foreignKey: "reviewer" });
     Review.belongsTo(App, { foreignKey: "appid" });
     Review.belongsTo(Review, { foreignKey: "answerto" });
   };
