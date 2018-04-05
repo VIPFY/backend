@@ -62,12 +62,12 @@ export default {
     return models.sequelize.transaction(async ta => {
       try {
         const p1 = bcrypt.hash(password, 12);
-        const p2 = models.Human.findOne({ where: { unitid: emailExists.unitid } });
+        const p2 = models.Human.findById(emailExists.unitid);
         const [pw, user] = await Promise.all([p1, p2]);
 
         const p3 = models.Human.update(
           { passwordhash: pw },
-          { where: { unitid: user.unitid }, transaction: ta }
+          { where: { unitid: user.id }, transaction: ta }
         );
         const p4 = models.Email.update({ verified: true }, { where: { email }, transaction: ta });
         await Promise.all([p3, p4]);
@@ -94,7 +94,7 @@ export default {
     if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended!");
     if (emailExists.deleted == true) throw new Error("Sorry, this account doesn't exist anymore.");
 
-    const user = await models.User.findOne({ where: { unitid: emailExists.unitid } });
+    const user = await models.User.findById(emailExists.unitid);
     const valid = await bcrypt.compare(password, emailExists.passwordhash);
     if (!valid) throw new Error("Incorrect Password!");
 
@@ -117,7 +117,7 @@ export default {
     if (emailExists.deleted == true) throw new Error("Sorry, this account doesn't exist anymore.");
 
     try {
-      const user = await models.Human.findOne({ where: { unitid: emailExists.unitid } });
+      const user = await models.Human.findById(emailExists.unitid);
       // Change the given hash to improve security
       const start = random(3, 8);
       const newHash = await user.dataValues.passwordhash.replace("/", 2).substr(start);

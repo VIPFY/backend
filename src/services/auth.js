@@ -38,7 +38,7 @@ export const refreshTokens = async (token, refreshToken, models, SECRET, SECRETT
     return {};
   }
 
-  const user = await models.Human.findOne({ where: { unitid: userId }, raw: true });
+  const user = await models.Human.findById({ where: { unitid: userId }, raw: true });
 
   if (!user) {
     return {};

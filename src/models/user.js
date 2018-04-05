@@ -1,4 +1,4 @@
-export default (sequelize, { STRING, DATE, INTEGER, ARRAY, TEXT, BOOLEAN, ENUM }) => {
+export default (sequelize, { STRING, DATE, INTEGER, JSONB, ARRAY, TEXT, BOOLEAN, ENUM }) => {
   const User = sequelize.define("users_view", {
     firstname: { type: STRING, defaultValue: "not specified yet" },
     middlename: STRING,
@@ -13,13 +13,11 @@ export default (sequelize, { STRING, DATE, INTEGER, ARRAY, TEXT, BOOLEAN, ENUM }
     suspended: { type: BOOLEAN, defaultValue: false },
     profilepicture: TEXT,
     riskvalue: INTEGER,
+    createdate: DATE,
+    payingoptions: JSONB,
     position: TEXT,
     emails: { type: ARRAY(TEXT), allowNull: false }
   });
-
-  User.associate = ({ Unit }) => User.belongsTo(Unit, { foreignKey: "unitid" });
-
-  User.removeAttribute("id");
 
   return User;
 };

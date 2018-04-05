@@ -31,6 +31,7 @@ export const types = `
   }
 
   type User {
+    id: Int!
     firstname: String
     middlename: String
     lastname: String
@@ -46,7 +47,8 @@ export const types = `
     riskvalue: Int
     position: String
     emails: [String!]!
-    unitid: Unit!
+    createdate: String
+    payingoptions: JSON
   }
 
   type Department {
