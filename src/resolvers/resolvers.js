@@ -63,6 +63,5 @@ export default {
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
   Review: find({ unitid: "Unit", appid: "App", answerto: "Review" }),
-  User: findUnit(unit),
   Website: find(unit)
 };
