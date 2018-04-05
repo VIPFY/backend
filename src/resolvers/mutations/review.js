@@ -6,9 +6,9 @@ import { requiresAuth } from "../../helpers/permissions";
 export default {
   writeReview: requiresAuth.createResolver(
     async (parent, { appid, stars, text }, { models, token }) => {
-      const { user: { id, unitid } } = jwt.decode(token);
+      const { user: { unitid } } = jwt.decode(token);
       const p1 = models.App.findById(appid);
-      const p2 = models.User.findOne({ where: { id } });
+      const p2 = models.User.findOne({ where: { unitid } });
       const [app, user] = await Promise.all([p1, p2]);
 
       if (!app || !user) {
@@ -17,7 +17,7 @@ export default {
         throw new Error("Rating must be between 1 and 5 stars!");
       } else {
         try {
-          await models.Review.upsert({
+          await models.Review.create({
             stars,
             reviewtext: text,
             unitid,
@@ -36,9 +36,9 @@ export default {
 
   rateReview: requiresAuth.createResolver(
     async (parent, { reviewid, balance }, { models, token }) => {
-      const { user: { id, unitid } } = jwt.decode(token);
+      const { user: { unitid } } = jwt.decode(token);
 
-      const p1 = models.User.findById(id);
+      const p1 = models.User.findOne({ where: { unitid } });
       const p2 = models.Review.findById(reviewid);
       const p3 = models.ReviewHelpful.findOne({
         where: {
