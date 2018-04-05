@@ -8,9 +8,9 @@ export default (sequelize, { DATE, NOW, TEXT, INTEGER }) => {
     balance: INTEGER
   });
 
-  ReviewHelpful.associate = ({ Review, User }) => {
+  ReviewHelpful.associate = ({ Review, Unit }) => {
     ReviewHelpful.belongsTo(Review, { foreignKey: "reviewid" });
-    ReviewHelpful.belongsTo(User, { foreignKey: "reviewer" });
+    ReviewHelpful.belongsTo(Unit, { foreignKey: "unitid" });
   };
 
   ReviewHelpful.removeAttribute("id");
