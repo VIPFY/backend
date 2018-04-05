@@ -31,7 +31,7 @@ export const types = `
     avgstars: Float
     cheapestprice: Float
     cheapestpromo: Float
-    supportwebsite: Float
+    supportwebsite: String
     supportphone: String
     developerwebsite: String
     developer: Unit!

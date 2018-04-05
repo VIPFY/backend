@@ -30,7 +30,13 @@ export const types = `
     amount: Float
     currency: String
     options: JSON
+    payperiod: String
+    cancelperiod: String
+    optional: Boolean!
+    gototime: String
     appid: App!
+    gotoplan: Plan
+    mainplan: Plan
   }
 
   # The plans a unit bought
@@ -40,8 +46,13 @@ export const types = `
     endtime: String
     key: JSON
     buyer: Unit!
-    buyfor: Unit
     planid: Plan!
+    predecessor: Plan
+  }
+
+  type BoughtSubplanData {
+    boughtplanid: BoughtPlan!
+    subplanid: Plan!
   }
 
   type PlansRunning {
@@ -53,7 +64,7 @@ export const types = `
     enddate: String
     numlicences: Int
     amount: Float
-    currency: String
+    currency: String!
     options: JSON
     appid: App!
   }
@@ -83,10 +94,12 @@ export const types = `
   }
 
   type Licence {
-    id: Int!
     options: JSON
     starttime: String
     endtime: String
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
     boughtplanid: BoughtPlan!
     unitid: Unit!
   }

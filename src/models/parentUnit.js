@@ -6,5 +6,7 @@ export default sequelize => {
     ParentUnit.belongsTo(Unit, { foreignKey: "childunit" });
   };
 
+  ParentUnit.removeAttribute("id");
+
   return ParentUnit;
 };

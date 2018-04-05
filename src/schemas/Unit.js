@@ -1,5 +1,4 @@
 export const types = `
-# A human needs an unique email and will be given an auto-generated id
   type Unit {
     id: Int!
     payingoptions: JSON
@@ -10,7 +9,11 @@ export const types = `
     riskvalue: Int
     createdate: String!
     position: String
-    parentunit: Unit
+  }
+
+  type ParentUnit {
+    parentunit: Unit!
+    childunit: Unit!
   }
 
   type Human {
@@ -36,7 +39,6 @@ export const types = `
     birthday: String
     resetoption: Int
     language: String
-    payingoptions: JSON
     banned: Boolean!
     deleted: Boolean!
     suspended: Boolean!
@@ -48,7 +50,6 @@ export const types = `
   }
 
   type Department {
-    id: Int!
     name: String!
     legalinformation: JSON
     staticdata: JSON

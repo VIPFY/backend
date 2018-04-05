@@ -6,5 +6,7 @@ export default sequelize => {
     BoughtSubplanData.belongsTo(Plan, { foreignKey: "subplanid" });
   };
 
+  BoughtSubplanData.removeAttribute("id");
+
   return BoughtSubplanData;
 };

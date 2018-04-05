@@ -9,7 +9,7 @@ export const types = `
     archivetimesender: Date
     archivetimereceiver: Date
     tag: [String]
-    messagetext: String
+    messagetext: String!
     receiver: Unit!
   }
 
@@ -21,7 +21,7 @@ export const types = `
     archivetimesender: Date
     archivetimereceiver: Date
     tag: [String]
-    messagetext: String
+    messagetext: String!
     receiver: Unit!
     sender: Unit!
   }

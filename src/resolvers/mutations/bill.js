@@ -26,18 +26,16 @@ export default {
     }
   }),
 
-  buyPlan: requiresAuth.createResolver(async (parent, { planid, buyFor }, { models, token }) => {
+  buyPlan: requiresAuth.createResolver(async (parent, { planid }, { models, token }) => {
     const { user: { unitid } } = decode(token);
-    const buyfor = buyFor || unitid;
 
-    const userExists = await models.Unit.findById(buyfor);
+    const userExists = await models.Unit.findById(unitid);
     if (userExists) {
       return models.sequelize.transaction(async ta => {
         try {
           await models.BoughtPlan.create(
             {
               buyer: unitid,
-              buyfor,
               planid
             },
             { transaction: ta }

@@ -7,18 +7,14 @@ export const types = `
     stars: Int
     reviewtext: String
     answerto: Review
-    humanid: Human!
-    counthelpful: Int,
-    countunhelpful: Int,
-    countcomment: Int,
   }
 
   type ReviewHelpful {
     reviewid: Review!
     unitid: Unit!
     comment: String
-    helpfuldate: String
-    balance: Boolean
+    helpfuldate: String!
+    balance: Int
   }
 `;
 

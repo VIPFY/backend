@@ -48,7 +48,7 @@ export default {
   AppDetails: find(developerAndSupport),
   Bill: find(unit),
   BillPosition: find({ vendor: "Unit", billid: "Bill", planid: "Plan" }),
-  BoughtPlan: find({ buyer: "Unit", buyfor: "Unit", planid: "Plan" }),
+  BoughtPlan: find({ buyer: "Unit", planid: "Plan" }),
   Department: find(unit),
   Email: find(unit),
   Human: find(unit),
@@ -62,8 +62,7 @@ export default {
   PlansRunning: find(app),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
-  Review: find({ unitid: "Unit", appid: "App", answerto: "Review", humanid: "Human" }),
-  Unit: find({ parentunit: "Unit" }),
+  Review: find({ unitid: "Unit", appid: "App", answerto: "Review" }),
   User: findUnit(unit),
   Website: find(unit)
 };

@@ -16,10 +16,10 @@ export default (sequelize, { TEXT, SMALLINT, DATE, NOW }) => {
     reviewtext: TEXT
   });
 
-  Review.associate = models => {
-    Review.belongsTo(models.Unit, { foreignKey: "unitid" });
-    Review.belongsTo(models.App, { foreignKey: "appid" });
-    Review.belongsTo(models.Review, { foreignKey: "answerto" });
+  Review.associate = ({ Unit, App }) => {
+    Review.belongsTo(Unit, { foreignKey: "unitid" });
+    Review.belongsTo(App, { foreignKey: "appid" });
+    Review.belongsTo(Review, { foreignKey: "answerto" });
   };
 
   return Review;
