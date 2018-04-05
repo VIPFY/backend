@@ -14,7 +14,7 @@ export const types = `
   }
 
   type Human {
-    id: Int!
+    unitid: Unit!
     firstname: String
     middlename: String
     lastname: String
@@ -27,21 +27,7 @@ export const types = `
     language: String
   }
 
-  type HumanUnit {
-    unitid: Unit!
-    humanid: Human!
-  }
-
-  type Department {
-    id: Int!
-    name: String!
-    legalinformation: JSON
-    staticdata: JSON
-    unitid: Unit!
-  }
-
   type User {
-    id: Int!
     firstname: String
     middlename: String
     lastname: String
@@ -58,7 +44,15 @@ export const types = `
     riskvalue: Int
     position: String
     emails: [String!]!
-    unitid: Unit
+    unitid: Unit!
+  }
+
+  type Department {
+    id: Int!
+    name: String!
+    legalinformation: JSON
+    staticdata: JSON
+    unitid: Unit!
   }
 `;
 

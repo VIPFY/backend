@@ -12,5 +12,9 @@ export default (sequelize, { TEXT, STRING, DATE, TIME, INTEGER, ENUM }) => {
     language: TEXT
   });
 
+  Human.associate = ({ Unit }) => Human.belongsTo(Unit, { foreignKey: "unitid" });
+
+  Human.removeAttribute("id");
+
   return Human;
 };

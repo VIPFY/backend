@@ -25,6 +25,16 @@ type Newsletter {
   activesince: String!
   activeuntil: String
 }
+
+type Log {
+  id: Int!
+  time: Date!
+  eventtype: String
+  eventdata: String
+  ip: String
+  user: User!
+  sudoer: User!
+}
 `;
 
 export const mutations = `

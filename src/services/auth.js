@@ -4,7 +4,7 @@ import { pick } from "lodash";
 export const createTokens = async (user, secret, secret2) => {
   const createToken = await jwt.sign(
     {
-      user: pick(user, ["id", "unitid"])
+      user: pick(user, ["unitid"])
     },
     secret,
     {
@@ -14,7 +14,7 @@ export const createTokens = async (user, secret, secret2) => {
 
   const createRefreshToken = await jwt.sign(
     {
-      user: pick(user, ["id", "unitid"])
+      user: pick(user, ["unitid"])
     },
     secret2,
     {
@@ -28,8 +28,8 @@ export const createTokens = async (user, secret, secret2) => {
 export const refreshTokens = async (token, refreshToken, models, SECRET, SECRETTWO) => {
   let userId = 0;
   try {
-    const { user: { id } } = jwt.decode(refreshToken);
-    userId = id;
+    const { user: { unitid } } = jwt.decode(refreshToken);
+    userId = unitid;
   } catch (err) {
     return {};
   }
@@ -38,7 +38,7 @@ export const refreshTokens = async (token, refreshToken, models, SECRET, SECRETT
     return {};
   }
 
-  const user = await models.Human.findOne({ where: { id: userId }, raw: true });
+  const user = await models.Human.findOne({ where: { unitid: userId }, raw: true });
 
   if (!user) {
     return {};

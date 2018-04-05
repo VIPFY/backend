@@ -1,17 +1,16 @@
-export default (sequelize, { STRING, TEXT, BOOLEAN }) => {
+export default (sequelize, { STRING, BOOLEAN }) => {
   const Login = sequelize.define("login_view", {
-    firstname: { type: STRING, defaultValue: "not specified yet" },
-    middlename: STRING,
-    lastname: { type: STRING, defaultValue: "not specified yet" },
-    banned: { type: BOOLEAN, defaultValue: false },
-    deleted: { type: BOOLEAN, defaultValue: false },
-    suspended: { type: BOOLEAN, defaultValue: false },
-    profilepicture: TEXT,
+    banned: BOOLEAN,
+    suspended: BOOLEAN,
+    deleted: BOOLEAN,
+    verified: BOOLEAN,
     email: STRING,
     passwordhash: STRING
   });
 
   Login.associate = ({ Unit }) => Login.belongsTo(Unit, { foreignKey: "unitid" });
+
+  Login.removeAttribute("id");
 
   return Login;
 };

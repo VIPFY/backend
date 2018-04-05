@@ -19,5 +19,7 @@ export default (sequelize, { STRING, DATE, INTEGER, ARRAY, TEXT, BOOLEAN, ENUM }
 
   User.associate = ({ Unit }) => User.belongsTo(Unit, { foreignKey: "unitid" });
 
+  User.removeAttribute("id");
+
   return User;
 };

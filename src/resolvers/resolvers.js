@@ -5,6 +5,7 @@ import reviewQueries from "./queries/review";
 import billQueries from "./queries/bill";
 
 import messageMutations from "./mutations/message";
+import authMutations from "./mutations/auth";
 import userMutations from "./mutations/user";
 import reviewMutations from "./mutations/review";
 import commonMutations from "./mutations/common";
@@ -20,6 +21,7 @@ import { find, implementDate, implementJSON, findUnit } from "./CustomResolvers"
 const Query = Object.assign(userQueries, appQueries, messageQueries, reviewQueries, billQueries);
 
 const Mutation = Object.assign(
+  authMutations,
   messageMutations,
   userMutations,
   reviewMutations,
@@ -49,8 +51,9 @@ export default {
   BoughtPlan: find({ buyer: "Unit", buyfor: "Unit", planid: "Plan" }),
   Department: find(unit),
   Email: find(unit),
-  HumanUnit: find({ unitid: "Unit", humanid: "Human" }),
+  Human: find(unit),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),
+  Log: find({ user: "User", sudoer: "User" }),
   Message: find({ receiver: "Unit" }),
   MessageData: find({ sender: "Unit", receiver: "Unit" }),
   Newsletter: find({ email: "Email" }),

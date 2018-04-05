@@ -10,9 +10,5 @@ export default (sequelize, { JSONB, BOOLEAN, TEXT, NOW, INTEGER, TIME }) => {
     position: TEXT
   });
 
-  Unit.associate = models => {
-    Unit.belongsTo(models.Unit, { foreignKey: "parentunit" });
-  };
-
   return Unit;
 };

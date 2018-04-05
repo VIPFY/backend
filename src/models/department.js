@@ -9,5 +9,7 @@ export default (sequelize, { TEXT, JSONB }) => {
     Department.belongsTo(Unit, { foreignKey: "unitid" });
   };
 
+  Department.removeAttribute("id");
+
   return Department;
 };

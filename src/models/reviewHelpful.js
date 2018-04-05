@@ -1,5 +1,5 @@
 export default (sequelize, { DATE, NOW, TEXT, INTEGER }) => {
-  const ReviewHelpful = sequelize.define("reviewhelpful", {
+  const ReviewHelpful = sequelize.define("reviewhelpful_data", {
     helpfuldate: {
       type: DATE,
       defaultValue: NOW

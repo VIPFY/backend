@@ -1,4 +1,4 @@
-export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, CHAR }) => {
+export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, CHAR, BOOLEAN }) => {
   const Plan = sequelize.define("plan_data", {
     name: TEXT,
     teaserdescription: TEXT,
@@ -14,11 +14,17 @@ export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, CHAR }) => {
       },
       defaultValue: "USD"
     },
-    options: JSONB
+    options: JSONB,
+    payperiod: TEXT,
+    cancelperiod: TEXT,
+    optional: { type: BOOLEAN, allowNull: false },
+    gototime: TEXT
   });
 
   Plan.associate = ({ App }) => {
     Plan.belongsTo(App, { foreignKey: "appid" });
+    Plan.belongsTo(Plan, { foreignKey: "gotoplan" });
+    Plan.belongsTo(Plan, { foreignKey: "mainplan" });
   };
 
   return Plan;
