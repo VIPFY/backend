@@ -40,14 +40,13 @@ export default {
   sendMessage: requiresAuth.createResolver(
     async (parent, { touser, message }, { models, token }) => {
       const { user: { unitid } } = decode(token);
-      const p1 = models.Partner.findOne({ where: { unitid } });
-      const p2 = models.Partner.findOne({ where: { unitid: touser } });
+      const p1 = models.User.findById(unitid);
+      const p2 = models.User.findById(touser);
       const [sender, receiver] = await Promise.all([p1, p2]);
 
-      console.log(receiver);
       if (!sender || !receiver) {
         throw new Error("User doesn't exist!");
-      } else if (sender.unitid == receiver.unitid) {
+      } else if (sender.id == receiver.id) {
         throw new Error("Sender and Receiver can't be the same User!");
       } else if (message && sender && receiver) {
         try {
