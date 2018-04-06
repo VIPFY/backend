@@ -38,11 +38,21 @@ export const types = `
     tag: String
     unitid: Unit!
   }
+
+  input AddressInput {
+    street: String
+    city: String
+    state: String
+    zip: String
+  }
 `;
 
-export const queries = ``;
+export const queries = `
+  fetchAddresses: [Address]!
+`;
 
 export const mutations = `
-  updateAddress(country: String, address: String, description: String): Response!
+  # Without the id parameter, a new address will be generated. Otherwise it will be updated.
+  updateAddress(id: Int, country: String, address: AddressInput, description: String, priority: Int): Response!
   #updateContactData(email: String):
 `;

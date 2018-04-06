@@ -1,7 +1,7 @@
 export const types = `
   type Review {
     id: Int!
-    unitid: User!
+    reviewer: User!
     appid: App!
     reviewdate: String!
     stars: Int
@@ -14,7 +14,7 @@ export const types = `
 
   type ReviewHelpful {
     reviewid: Review!
-    unitid: User!
+    reviewer: User!
     comment: String
     helpfuldate: String!
     balance: Int
@@ -23,7 +23,9 @@ export const types = `
 
 export const queries = `
   allReviews: [Review]!
-  fetchReview(appid: Int!): [Review!]
+  
+  # Finds all Reviews belonging to an app
+  fetchReviews(appid: Int!): [Review!]
 `;
 
 export const mutations = `

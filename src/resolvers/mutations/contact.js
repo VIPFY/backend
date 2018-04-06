@@ -5,12 +5,15 @@ export default {
   updateAddress: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
       const { user: { unitid } } = decode(token);
-      await Object.keys(args).forEach(item => {
-        models.Address.update({ [item]: args[item] }, { where: { unitid } });
-      });
-      return {
-        ok: true
-      };
+      if (!args.id) {
+        await models.Address.create({ unitid, ...args });
+
+        return { ok: true };
+      }
+
+      await models.Address.update({ ...args }, { where: { id: args.id } });
+
+      return { ok: true };
     } catch ({ message }) {
       throw new Error(message);
     }

@@ -3,6 +3,7 @@ import appQueries from "./queries/app";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
 import billQueries from "./queries/bill";
+import contactQueries from "./queries/contact";
 
 import messageMutations from "./mutations/message";
 import authMutations from "./mutations/auth";
@@ -18,7 +19,14 @@ import Subscription from "./subscriptions";
 
 import { find, implementDate, implementJSON } from "./CustomResolvers";
 
-const Query = Object.assign(userQueries, appQueries, messageQueries, reviewQueries, billQueries);
+const Query = Object.assign(
+  userQueries,
+  contactQueries,
+  appQueries,
+  messageQueries,
+  reviewQueries,
+  billQueries
+);
 
 const Mutation = Object.assign(
   authMutations,
@@ -62,6 +70,7 @@ export default {
   PlansRunning: find(app),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
-  Review: find({ unitid: "User", appid: "App", answerto: "Review" }),
+  Review: find({ reviewer: "User", appid: "App", answerto: "Review" }),
+  ReviewHelpful: find({ reviewer: "User", reviewid: "Review" }),
   Website: find(unit)
 };

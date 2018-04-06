@@ -46,7 +46,7 @@ export const types = `
     profilepicture: String
     riskvalue: Int
     position: String
-    emails: [String!]!
+    emails: JSON!
     createdate: String
     payingoptions: JSON
   }
