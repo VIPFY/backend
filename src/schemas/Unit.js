@@ -58,7 +58,7 @@ export const types = `
     unitid: Unit!
   }
 
-  type UserInput {
+  input UserInput {
     firstname: String
     middlename: String
     lastname: String
