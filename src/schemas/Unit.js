@@ -57,6 +57,16 @@ export const types = `
     staticdata: JSON
     unitid: Unit!
   }
+
+  type UserInput {
+    firstname: String
+    middlename: String
+    lastname: String
+    title: String
+    sex: SEX
+    birthday: String
+    language: String
+  }
 `;
 
 export const queries = `
@@ -70,6 +80,7 @@ export const queries = `
 
 export const mutations = `
   updateProfilePic(profilepicture: String!): Response!
+  updateUser(user: UserInput!): Human!
   deleteUser: String!
 
   # Only an email is required for the signup

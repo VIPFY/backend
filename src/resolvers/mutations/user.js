@@ -17,6 +17,18 @@ export default {
     }
   ),
 
+  updateUser: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    const { user: { unitid } } = decode(token);
+
+    try {
+      const updatedUser = await models.Human.update({ ...args }, { where: { unitid } });
+
+      return updatedUser;
+    } catch ({ message }) {
+      throw new Error(message);
+    }
+  }),
+
   deleteUser: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     const { user: { unitid } } = decode(token);
 
