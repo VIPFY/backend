@@ -30,7 +30,7 @@ const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
 let server;
 // We don't need certificates and https for development
-if (ENVIRONMENT == "productio") {
+if (ENVIRONMENT == "production") {
   const httpsOptions = {
     key: fs.readFileSync(process.env.SSL_KEY || "/etc/letsencrypt/live/vipfy.com/privkey.pem"),
     cert: fs.readFileSync(process.env.SSL_CERT || "/etc/letsencrypt/live/vipfy.com/cert.pem")
@@ -79,7 +79,7 @@ app.use(authMiddleware);
 
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
-  origin: ENVIRONMENT == "production" ? "https://vipfy.com" : "http://localhost:3000",
+  origin: ENVIRONMENT == "production" ? ["https://vipfy.com","https://www.vipfy.com","https://dev.vipfy.com"] : "http://localhost:3000",
   credentials: true // <-- REQUIRED backend setting
 };
 app.use(cors(corsOptions));
