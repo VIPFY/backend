@@ -13,6 +13,17 @@ export default {
       }
     } else throw new Error("Not Authenticated!");
   }),
+
+  fetchUser: requiresAuth.createResolver(async (parent, { id }, { models }) => {
+    try {
+      const user = await models.User.findById(id);
+
+      return user;
+    } catch ({ message }) {
+      throw new Error(message);
+    }
+  }),
+
   // THIS HAS TO BE CHANGED!!!
   fetchUserByPassword: async (parent, { password }, { models }) => {
     try {

@@ -2,7 +2,7 @@ export const types = `
 # This three sexes are possible
   enum SEX {
     m,
-    w,
+    f,
     u
   }
 

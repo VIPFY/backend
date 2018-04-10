@@ -64,7 +64,7 @@ export const types = `
     lastname: String
     title: String
     sex: SEX
-    birthday: String
+    birthday: Date
     language: String
   }
 `;
@@ -72,6 +72,8 @@ export const types = `
 export const queries = `
   # Returns the logged-in user. Used for Authentication.
   me: User
+  # Returns an user. Should only be usable by an admin
+  fetchUser(id: Int!): User!
   fetchUserByPassword(password: String!): String!
 
   # Returns all Users for messages
@@ -80,7 +82,7 @@ export const queries = `
 
 export const mutations = `
   updateProfilePic(profilepicture: String!): Response!
-  updateUser(user: UserInput!): Human!
+  updateUser(user: UserInput!, unitid: Int!): Response!
   deleteUser: String!
 
   # Only an email is required for the signup
