@@ -65,6 +65,7 @@ export const types = `
     title: String
     sex: SEX
     birthday: Date
+    position: String
     language: String
   }
 `;

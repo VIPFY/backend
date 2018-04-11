@@ -19,9 +19,14 @@ export default {
 
   updateUser: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     const { unitid, user } = args;
-    console.log({ user });
+
     try {
-      const updatedUser = await models.Human.update({ ...user }, { where: { unitid } });
+      if (user.position) {
+        await models.Unit.update({ ...user }, { where: { id: unitid } });
+
+        return { ok: true };
+      }
+      await models.Human.update({ ...user }, { where: { unitid } });
 
       return { ok: true };
     } catch ({ message }) {

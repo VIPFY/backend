@@ -40,4 +40,7 @@ type Log {
 export const mutations = `
 # Sends an email from an user to office@vipfy.com
   newContactEmail(name: String!, email: String!, phone: String, message: String): Response!
+
+# Checks whether an email already exists in our database
+  checkEmail(email: String!): Response!
 `;
