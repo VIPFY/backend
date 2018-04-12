@@ -79,7 +79,10 @@ app.use(authMiddleware);
 
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
-  origin: ENVIRONMENT == "production" ? ["https://vipfy.com","https://www.vipfy.com","https://dev.vipfy.com"] : "http://localhost:3000",
+  origin:
+    ENVIRONMENT == "production"
+      ? ["https://vipfy.com", "https://www.vipfy.com", "https://dev.vipfy.com"]
+      : "http://localhost:3000",
   credentials: true // <-- REQUIRED backend setting
 };
 app.use(cors(corsOptions));

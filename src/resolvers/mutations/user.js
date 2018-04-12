@@ -1,8 +1,36 @@
 import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
+import { createPassword } from "../../helpers/functions";
+import { sendEmail } from "../../services/mailjet";
 /* eslint-disable no-unused-vars */
 
 export default {
+  createUser: requiresAuth.createResolver(async (parent, { user }, { models }) => {
+    const { profilepicture, position, email } = user;
+
+    return models.sequelize.transaction(async ta => {
+      try {
+        const passwordhash = await createPassword(email);
+        const unit = await models.Unit.create({ profilepicture, position }, { transaction: ta });
+        const p1 = models.Human.create(
+          { unitid: unit.id, ...user, passwordhash },
+          { transaction: ta }
+        );
+        const p2 = models.Email.create({ unitid: unit.id, email }, { transaction: ta });
+        await Promise.all([p1, p2]);
+
+        // Don't send emails when testing the database!
+        if (process.env.ENVIRONMENT == "testing") {
+          sendEmail(email, passwordhash);
+        }
+
+        return { ok: true };
+      } catch ({ message }) {
+        throw new Error(message);
+      }
+    });
+  }),
+
   updateProfilePic: requiresAuth.createResolver(
     async (parent, { profilepicture }, { models, token }) => {
       try {
@@ -17,9 +45,7 @@ export default {
     }
   ),
 
-  updateUser: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    const { unitid, user } = args;
-
+  updateUser: requiresAuth.createResolver(async (parent, { unitid, user }, { models, token }) => {
     try {
       if (user.position) {
         await models.Unit.update({ ...user }, { where: { id: unitid } });

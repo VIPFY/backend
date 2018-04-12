@@ -42,5 +42,5 @@ export const mutations = `
   newContactEmail(name: String!, email: String!, phone: String, message: String): Response!
 
 # Checks whether an email already exists in our database
-  checkEmail(email: String!): Response!
+  checkEmail(email: String): Response!
 `;

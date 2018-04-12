@@ -20,6 +20,8 @@ export default {
   },
 
   checkEmail: requiresAuth.createResolver(async (parent, { email }, { models }) => {
+    if (!email) return { ok: true };
+
     try {
       const emailExists = await models.Email.findOne({ where: { email } });
 

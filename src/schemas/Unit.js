@@ -61,12 +61,14 @@ export const types = `
   input UserInput {
     firstname: String
     middlename: String
+    email: String
     lastname: String
     title: String
     sex: SEX
     birthday: Date
     position: String
     language: String
+    profilepicture: String
   }
 `;
 
@@ -82,8 +84,9 @@ export const queries = `
 `;
 
 export const mutations = `
-  updateProfilePic(profilepicture: String!): Response!
+  createUser(user: UserInput!): Response!
   updateUser(user: UserInput!, unitid: Int!): Response!
+  updateProfilePic(profilepicture: String!): Response!
   deleteUser: String!
 
   # Only an email is required for the signup

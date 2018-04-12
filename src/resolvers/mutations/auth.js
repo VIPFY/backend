@@ -2,6 +2,7 @@ import { random } from "lodash";
 import bcrypt from "bcrypt";
 import { createTokens } from "../../services/auth";
 import { sendEmail } from "../../services/mailjet";
+import { createPassword } from "../../helpers/functions";
 
 export default {
   signUp: async (parent, { email, newsletter }, { models, SECRET, SECRETTWO }) => {
@@ -12,19 +13,10 @@ export default {
     } else {
       return models.sequelize.transaction(async ta => {
         try {
-          // A password musst be created because otherwise the not null rule of the
-          // database is violated
-          const passwordHash = await bcrypt.hash(email, 5);
-
-          // Change the given hash to improve security
-          const start = random(3, 8);
-          const newHash = await passwordHash.replace("/", 2).substr(start);
+          const passwordhash = await createPassword(email);
 
           const unit = await models.Unit.create({}, { transaction: ta });
-          const p1 = models.Human.create(
-            { unitid: unit.id, passwordhash: newHash },
-            { transaction: ta }
-          );
+          const p1 = models.Human.create({ unitid: unit.id, passwordhash }, { transaction: ta });
           const p2 = models.Email.create({ email, unitid: unit.id }, { transaction: ta });
           const [user, emailAddress] = await Promise.all([p1, p2]);
 
@@ -34,7 +26,7 @@ export default {
 
           // Don't send emails when testing the database!
           if (process.env.ENVIRONMENT != "testing") {
-            sendEmail(email, newHash);
+            sendEmail(email, passwordhash);
           }
           const refreshSecret = user.passwordhash + SECRETTWO;
           const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);
@@ -43,8 +35,8 @@ export default {
             token,
             refreshToken
           };
-        } catch (err) {
-          throw new Error(err.message);
+        } catch ({ message }) {
+          throw new Error(message);
         }
       });
     }
