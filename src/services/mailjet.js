@@ -2,6 +2,17 @@ import { MAILJET_KEY, MAILJET_SECRET } from "../login-data";
 
 const Mailjet = require("node-mailjet").connect(MAILJET_KEY, MAILJET_SECRET);
 
+const sendMailjetEmail = async options => {
+  try {
+    const res = await Mailjet.post("send").request(options);
+    console.log(res.body);
+
+    return true;
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
 export const sendEmail = email => {
   const options = {
     FromEmail: "office@vipfy.com",
@@ -11,19 +22,10 @@ export const sendEmail = email => {
     Recipients: [{ Email: email }]
   };
 
-  Mailjet.post("send")
-    .request(options)
-    .then(res => {
-      console.log(res.body);
-    })
-    .catch(err => {
-      console.log(err.statusCode);
-      console.log(err.message);
-    });
+  sendMailjetEmail(options);
 };
 
 export const sendEmailToVipfy = data => {
-  console.log(data);
   const options = {
     FromEmail: "office@vipfy.com",
     FromName: "Vipfy Office",
@@ -38,13 +40,17 @@ export const sendEmailToVipfy = data => {
     }
   };
 
-  Mailjet.post("send")
-    .request(options)
-    .then(res => {
-      console.log(res.body);
-      return true;
-    })
-    .catch(err => {
-      throw new Error(err.message);
-    });
+  sendMailjetEmail(options);
+};
+
+export const sendEmailCreatedUser = Email => {
+  const options = {
+    FromEmail: "office@vipfy.com",
+    FromName: "Vipfy Office",
+    "MJ-TemplateID": "",
+    "MJ-TemplateLanguage": true,
+    Recipients: [{ Email }]
+  };
+
+  sendMailjetEmail(options);
 };

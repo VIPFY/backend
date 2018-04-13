@@ -1,11 +1,11 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 import { createPassword } from "../../helpers/functions";
 import { sendEmail } from "../../services/mailjet";
 /* eslint-disable no-unused-vars */
 
 export default {
-  createUser: requiresAuth.createResolver(async (parent, { user }, { models }) => {
+  createUser: requiresAdmin.createResolver(async (parent, { user }, { models }) => {
     const { profilepicture, position, email } = user;
 
     return models.sequelize.transaction(async ta => {
@@ -20,7 +20,7 @@ export default {
         await Promise.all([p1, p2]);
 
         // Don't send emails when testing the database!
-        if (process.env.ENVIRONMENT == "testing") {
+        if (process.env.ENVIRONMENT != "testing") {
           sendEmail(email, passwordhash);
         }
 
@@ -45,29 +45,55 @@ export default {
     }
   ),
 
-  updateUser: requiresAuth.createResolver(async (parent, { unitid, user }, { models, token }) => {
-    try {
-      if (user.position) {
-        await models.Unit.update({ ...user }, { where: { id: unitid } });
+  adminUpdateUser: requiresAdmin.createResolver(
+    async (parent, { unitid, user }, { models, token }) => {
+      try {
+        if (user.position) {
+          await models.Unit.update({ ...user }, { where: { id: unitid } });
+
+          return { ok: true };
+        }
+        await models.Human.update({ ...user }, { where: { unitid } });
 
         return { ok: true };
+      } catch ({ message }) {
+        throw new Error(message);
       }
-      await models.Human.update({ ...user }, { where: { unitid } });
-
-      return { ok: true };
-    } catch ({ message }) {
-      throw new Error(message);
     }
+  ),
+
+  deleteUser: requiresAuth.createResolver(async (parent, { unitid }, { models, token }) => {
+    const alreadyDeleted = await models.Unit.findById(unitid);
+    if (alreadyDeleted.deleted) throw new Error("User already deleted!");
+
+    return models.sequelize.transaction(async ta => {
+      try {
+        const p1 = models.Unit.update(
+          { deleted: true, profilepicture: "" },
+          { where: { id: unitid } },
+          { transaction: ta }
+        );
+        const p2 = models.Human.update(
+          { firstname: "Deleted", middlename: "", lastname: "User" },
+          { where: { unitid } },
+          { transaction: ta }
+        );
+        const p3 = models.Email.destroy({ where: { unitid } }, { transaction: ta });
+        const p4 = models.Address.update(
+          { address: { city: "deleted" }, description: "deleted" },
+          { where: { unitid } },
+          { transaction: ta }
+        );
+        await Promise.all([p1, p2, p3, p4]);
+
+        return { ok: true };
+      } catch ({ message }) {
+        throw new Error(message);
+      }
+    });
   }),
 
-  deleteUser: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    const { user: { unitid } } = decode(token);
-
-    await models.Human.destroy({ where: { unitid } });
-    return "User was deleted";
-  }),
-
-  freezeAccount: requiresAuth.createResolver(async (parent, { unitid }, { models }) => {
+  freezeAccount: requiresAdmin.createResolver(async (parent, { unitid }, { models }) => {
     const accountExists = await models.Unit.findById(unitid);
 
     if (!accountExists) {

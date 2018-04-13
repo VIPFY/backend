@@ -46,7 +46,7 @@ export const types = `
     profilepicture: String
     riskvalue: Int
     position: String
-    emails: JSON!
+    emails: JSON
     createdate: String
     payingoptions: JSON
   }
@@ -85,9 +85,9 @@ export const queries = `
 
 export const mutations = `
   createUser(user: UserInput!): Response!
-  updateUser(user: UserInput!, unitid: Int!): Response!
+  adminUpdateUser(user: UserInput!, unitid: Int!): Response!
   updateProfilePic(profilepicture: String!): Response!
-  deleteUser: String!
+  deleteUser(unitid: Int!): Response!
 
   # Only an email is required for the signup
   signUp(email: String!, newsletter: Boolean): RegisterResponse!
