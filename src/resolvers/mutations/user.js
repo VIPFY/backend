@@ -1,3 +1,4 @@
+import axios from "axios";
 import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 import { createPassword } from "../../helpers/functions";
@@ -6,8 +7,26 @@ import { sendEmail } from "../../services/mailjet";
 
 export default {
   createUser: requiresAdmin.createResolver(async (parent, { user }, { models }) => {
-    const { profilepicture, position, email } = user;
+    const { profilepicture, encodedpic, position, email } = user;
+    const bucket = "vipfy-imagestore-01";
+    const config = {
+      method: "post",
+      url: `/gcs/${bucket}/${profilepicture}`,
+      data: {
+        file: encodedpic
+      },
+      headers: {
+        "Content-Type": "text/plain;charset=UTF-8"
+      }
+    };
+    try {
+      const res = await axios.request(config);
+      console.log(res);
+    } catch (err) {
+      console.log(err);
+    }
 
+    console.log("----------->", profilepicture);
     return models.sequelize.transaction(async ta => {
       try {
         const passwordhash = await createPassword(email);

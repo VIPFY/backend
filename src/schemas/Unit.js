@@ -69,6 +69,7 @@ export const types = `
     position: String
     language: String
     profilepicture: String
+    encodedpic: String
   }
 `;
 

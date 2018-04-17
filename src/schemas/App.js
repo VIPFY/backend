@@ -37,6 +37,21 @@ export const types = `
     developer: Unit!
     supportunit: Unit!
   }
+
+  input AppInput {
+    name: String
+    commission: String
+    logo: String
+    description: String
+    teaserdescription: String
+    website: String
+    images: [String]
+    features: JSON
+    options: JSON
+    disabled: Boolean
+    developer: Int
+    supportunit: Int
+  }
 `;
 
 export const queries = `
@@ -55,5 +70,6 @@ export const queries = `
 `;
 
 export const mutations = `
-
+  createApp(app: AppInput!): Response!
+  deleteApp(id: Int!): Response!
 `;
