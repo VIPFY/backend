@@ -5,6 +5,7 @@ import reviewQueries from "./queries/review";
 import billQueries from "./queries/bill";
 import contactQueries from "./queries/contact";
 
+import appMutations from "./mutations/app";
 import messageMutations from "./mutations/message";
 import authMutations from "./mutations/auth";
 import userMutations from "./mutations/user";
@@ -29,6 +30,7 @@ const Query = Object.assign(
 );
 
 const Mutation = Object.assign(
+  appMutations,
   authMutations,
   messageMutations,
   userMutations,
@@ -58,6 +60,7 @@ export default {
   BillPosition: find({ vendor: "Unit", billid: "Bill", planid: "Plan" }),
   BoughtPlan: find({ buyer: "Unit", planid: "Plan" }),
   Department: find(unit),
+  DepartmentData: find(unit),
   Email: find(unit),
   Human: find(unit),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),

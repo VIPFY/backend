@@ -2,6 +2,12 @@ import { requiresAdmin } from "../../helpers/permissions";
 
 export default {
   createApp: requiresAdmin.createResolver(async (parent, { app }, { models }) => {
+    console.log("FIRE");
+    const developerExists = await models.Unit.findOne({
+      where: { id: app.developer, deleted: false, banned: false }
+    });
+    if (!developerExists) throw new Error("Developer doesn't exist!");
+
     try {
       await models.App.create({ ...app });
 

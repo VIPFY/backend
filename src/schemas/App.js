@@ -3,14 +3,14 @@ export const types = `
     id: Int!
     name: String!
     commission: String
-    logo: String
     description: String
     teaserdescription: String
     website: String
+    disabled: Boolean!
+    logo: String
     images: [String]
     features: JSON
     options: JSON
-    disabled: Boolean!
     developer: Unit!
     supportunit: Unit!
   }

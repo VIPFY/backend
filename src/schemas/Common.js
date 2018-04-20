@@ -35,6 +35,14 @@ type Log {
   user: User!
   sudoer: User!
 }
+
+# Necessary to upload pictures
+input Upload {
+  name: String!
+  type: String!
+  size: Int!
+  path: String!
+}
 `;
 
 export const mutations = `
@@ -43,4 +51,7 @@ export const mutations = `
 
 # Checks whether an email already exists in our database
   checkEmail(email: String): Response!
+
+# Checks whether a name of an app already exists in our database
+  checkName(name: String): Response!
 `;

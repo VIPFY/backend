@@ -1,8 +1,12 @@
-export default (sequelize, { TEXT, JSONB }) => {
-  const Department = sequelize.define("department_data", {
-    name: TEXT,
+export default (sequelize, { STRING, JSONB, BOOLEAN }) => {
+  const Department = sequelize.define("department_view", {
+    name: STRING,
     legalinformation: JSONB,
-    staticdata: JSONB
+    staticdata: JSONB,
+    profilepicture: STRING,
+    banned: BOOLEAN,
+    deleted: BOOLEAN,
+    suspended: BOOLEAN
   });
 
   Department.associate = ({ Unit }) => {

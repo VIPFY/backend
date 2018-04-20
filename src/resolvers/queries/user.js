@@ -1,4 +1,4 @@
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 
 export default {
   allUsers: requiresAuth.createResolver(async (parent, args, { models }) =>
@@ -42,5 +42,11 @@ export default {
     } catch ({ message }) {
       throw new Error(message);
     }
-  }
+  },
+
+  allDepartments: requiresAdmin.createResolver(async (parent, args, { models }) =>
+    models.Department.findAll({
+      where: { deleted: false, banned: false }
+    })
+  )
 };

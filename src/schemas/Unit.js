@@ -56,6 +56,17 @@ export const types = `
     legalinformation: JSON
     staticdata: JSON
     unitid: Unit!
+    banned: Boolean!
+    deleted: Boolean!
+    suspended: Boolean!
+    profilepicture: String
+  }
+
+  type DepartmentData {
+    name: String!
+    legalinformation: JSON
+    staticdata: JSON
+    unitid: Unit!
   }
 
   input UserInput {
@@ -69,12 +80,12 @@ export const types = `
     position: String
     language: String
     profilepicture: String
-    encodedpic: String
+    encodedpic: Upload
   }
 `;
 
 export const queries = `
-  # Returns the logged-in user. Used for Authentication.
+  # Returns the logged-in user. Used for Authentication
   me: User
   # Returns an user. Should only be usable by an admin
   fetchUser(id: Int!): User!
@@ -82,6 +93,8 @@ export const queries = `
 
   # Returns all Users for messages
   allUsers: [User]!
+
+  allDepartments: [Department]!
 `;
 
 export const mutations = `

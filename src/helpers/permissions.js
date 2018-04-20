@@ -27,6 +27,6 @@ export const requiresAuth = createResolver(async (parent, args, { token }) => {
 // is authenticated and then if he has admin status.
 export const requiresAdmin = requiresAuth.createResolver((parent, args, { token }) => {
   if (!token) {
-    throw new Error("Admin not authenticated!");
+    throw new Error("You're not an Admin!!");
   }
 });

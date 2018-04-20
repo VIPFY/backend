@@ -15,6 +15,7 @@ import fs from "fs";
 // To create the GraphQl functions
 
 import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
+import { apolloUploadExpress } from "apollo-upload-server";
 import { makeExecutableSchema } from "graphql-tools";
 import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
@@ -29,6 +30,7 @@ const ENVIRONMENT = process.env.ENVIRONMENT;
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
 let server;
+
 // We don't need certificates and https for development
 if (ENVIRONMENT == "production") {
   const httpsOptions = {
@@ -69,7 +71,8 @@ const authMiddleware = async (req, res, next) => {
         req.user = newTokens.user;
       } else {
         console.log(err);
-        req.headers["x-token"] = false;
+        req.headers["x-token"] = null;
+        req.headers["x-refresh-token"] = null;
       }
     }
   }
@@ -90,8 +93,10 @@ app.use(cors(corsOptions));
 app.use(
   "/graphql",
   bodyParser.json(),
+  // apolloUploadExpress({ uploadDir: "./" }),
   graphqlExpress(({ headers, user }) => {
     const token = headers["x-token"];
+
     return {
       schema,
       context: {
