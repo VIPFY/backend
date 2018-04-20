@@ -43,9 +43,9 @@ const Mutation = Object.assign(
 );
 
 const unit = { unitid: "Unit" };
-const app = { appid: "App" };
 const unitAndPlan = { sponsor: "Unit", planid: "Plan" };
 const developerAndSupport = { developer: "Unit", supportunit: "Unit" };
+const plans = { appid: "App", gotoplan: "Plan", mainplan: "Plan" };
 
 export default {
   Query,
@@ -69,8 +69,8 @@ export default {
   MessageData: find({ sender: "Unit", receiver: "Unit" }),
   Newsletter: find({ email: "Email" }),
   Phone: find(unit),
-  Plan: find(app),
-  PlansRunning: find(app),
+  Plan: find(plans),
+  PlansRunning: find({ appid: "App" }),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
   Review: find({ reviewer: "User", appid: "App", answerto: "Review" }),

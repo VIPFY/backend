@@ -20,9 +20,5 @@ export default {
     } catch ({ message }) {
       throw new Error(message);
     }
-  }),
-
-  fetchPlans: (parent, { appid }, { models }) => models.Plan.findAll({ where: { appid } }),
-
-  fetchPlan: (parent, { appid }, { models }) => models.Plan.findById(appid)
+  })
 };
