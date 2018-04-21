@@ -37,6 +37,7 @@ export const types = `
     appid: App!
     gotoplan: Plan
     mainplan: Plan
+    subplans: [Plan]
   }
 
   # The plans a unit bought

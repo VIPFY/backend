@@ -14,7 +14,22 @@ export default {
     }
   }),
 
-  fetchPlans: (parent, { appid }, { models }) => models.Plan.findAll({ where: { appid } }),
+  fetchPlans: async (parent, { appid }, { models }) => {
+    const allPlans = await models.Plan.findAll({ where: { appid } });
+    const mainPlans = allPlans.filter(plan => plan.mainplan == null);
+    mainPlans.forEach(mainPlan => {
+      mainPlan.subplans = [];
+    });
+    const subPlans = allPlans.filter(plan => plan.mainplan != null);
+    subPlans.forEach(subPlan => {
+      mainPlans.forEach(mainPlan => {
+        if (subPlan.mainplan == mainPlan.id) {
+          mainPlan.subplans.push(subPlan);
+        }
+      });
+    });
+    return mainPlans;
+  },
 
   fetchPlan: (parent, { appid }, { models }) => models.Plan.findById(appid)
 };
