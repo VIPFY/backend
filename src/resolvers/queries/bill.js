@@ -1,3 +1,4 @@
+import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 
 export default {
@@ -15,21 +16,59 @@ export default {
   }),
 
   fetchPlans: async (parent, { appid }, { models }) => {
-    const allPlans = await models.Plan.findAll({ where: { appid } });
-    const mainPlans = allPlans.filter(plan => plan.mainplan == null);
-    mainPlans.forEach(mainPlan => {
-      mainPlan.subplans = [];
-    });
-    const subPlans = allPlans.filter(plan => plan.mainplan != null);
-    subPlans.forEach(subPlan => {
+    try {
+      const allPlans = await models.Plan.findAll({ where: { appid } });
+      // Filter out the main plans
+      const mainPlans = allPlans.filter(plan => plan.mainplan == null);
+      // Add to each main plan a property sub plan to store them later
       mainPlans.forEach(mainPlan => {
-        if (subPlan.mainplan == mainPlan.id) {
-          mainPlan.subplans.push(subPlan);
-        }
+        // eslint-disable-next-line
+        mainPlan.subplans = [];
       });
-    });
-    return mainPlans;
+      // Filter out the sub plans
+      const subPlans = allPlans.filter(plan => plan.mainplan != null);
+      // Add the sub plans to it's main plan
+      subPlans.forEach(subPlan => {
+        mainPlans.forEach(mainPlan => {
+          if (subPlan.mainplan == mainPlan.id) {
+            mainPlan.subplans.push(subPlan);
+          }
+        });
+      });
+
+      return mainPlans;
+    } catch ({ message }) {
+      throw new Error(message);
+    }
   },
 
-  fetchPlan: (parent, { appid }, { models }) => models.Plan.findById(appid)
+  fetchPlan: (parent, { appid }, { models }) => models.Plan.findById(appid),
+
+  fetchPayers: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    const { user: { unitid } } = decode(token);
+    const payers = [];
+    const directParent = await models.ParentUnit.findOne({
+      attributes: ["parentunit"],
+      where: { childunit: unitid }
+    });
+    const findRoot = async unit => {
+      if (unit == null) {
+        return;
+      }
+      unit = null;
+      unit = await models.ParentUnit.findOne({
+        attributes: ["parentunit"],
+        where: { childunit: unitid }
+      });
+
+      if (unit != null) {
+        payers.push(unit);
+      }
+      findRoot(unit);
+    };
+
+    findRoot(directParent);
+    console.log(payers);
+    return payers;
+  })
 };

@@ -48,5 +48,15 @@ export default {
     models.Department.findAll({
       where: { deleted: false, banned: false }
     })
-  )
+  ),
+
+  fetchDepartmentSize: requiresAuth.createResolver(async (parent, { unitid }, { models }) => {
+    try {
+      const size = await models.ParentUnit.count({ where: { parentunit: unitid } });
+
+      return size;
+    } catch ({ message }) {
+      throw new Error(message);
+    }
+  })
 };

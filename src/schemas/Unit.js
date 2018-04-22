@@ -95,6 +95,9 @@ export const queries = `
   allUsers: [User]!
 
   allDepartments: [Department]!
+
+  # Returns the amount of units in a Department
+  fetchDepartmentSize(unitid: Int!): Int!
 `;
 
 export const mutations = `
