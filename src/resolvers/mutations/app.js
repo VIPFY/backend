@@ -26,5 +26,15 @@ export default {
     } catch ({ message }) {
       throw new Error(message);
     }
+  }),
+
+  toggleAppStatus: requiresAdmin.createResolver(async (parent, { id }, { models }) => {
+    try {
+      const { disabled } = await models.App.findById(id);
+      await models.App.update({ disabled: !disabled }, { where: { id } });
+      return { ok: true };
+    } catch ({ message }) {
+      throw new Error(message);
+    }
   })
 };

@@ -71,4 +71,5 @@ export const queries = `
 export const mutations = `
   createApp(app: AppInput!): Response!
   deleteApp(id: Int!): Response!
+  toggleAppStatus(id: Int!): Response!
 `;
