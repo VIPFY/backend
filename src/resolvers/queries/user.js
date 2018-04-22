@@ -14,6 +14,10 @@ export default {
       // they are logged in
       try {
         const me = await models.User.findById(user.unitid);
+        if (me.suspended) throw new Error("This User is suspended!");
+        if (me.banned) throw new Error("This User is banned!");
+        if (me.deleted) throw new Error("This User got deleted!");
+
         return me.dataValues;
       } catch (err) {
         throw new Error(err.message);
