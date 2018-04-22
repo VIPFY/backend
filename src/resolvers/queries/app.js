@@ -10,6 +10,7 @@ export default {
   },
 
   fetchApp: (parent, { name }, { models }) => models.AppDetails.findOne({ where: { name } }),
+  fetchAppById: (parent, { id }, { models }) => models.AppDetails.findById(id),
 
   fetchUserApps: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
