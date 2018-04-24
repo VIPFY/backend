@@ -42,7 +42,7 @@ export default {
     }
   },
 
-  fetchPlan: (parent, { appid }, { models }) => models.Plan.findById(appid),
+  fetchPlan: (parent, { planid }, { models }) => models.Plan.findById(planid),
 
   fetchPayers: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     const { user: { unitid } } = decode(token);
