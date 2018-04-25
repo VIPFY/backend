@@ -16,6 +16,12 @@ export const types = `
     childunit: Unit!
   }
 
+  type Right {
+    holder: User!
+    forunit: User
+    type: String!
+  }
+
   type Human {
     unitid: Unit!
     firstname: String
@@ -87,6 +93,10 @@ export const types = `
 export const queries = `
   # Returns the logged-in user. Used for Authentication
   me: User
+
+  # Checks whether the user is an admin
+  admin: User
+  
   # Returns an user. Should only be usable by an admin
   fetchUser(id: Int!): User!
   fetchUserByPassword(password: String!): String!

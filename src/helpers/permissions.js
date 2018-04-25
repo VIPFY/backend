@@ -4,6 +4,8 @@ Authentication logic. The base function lets you stack several permissions,
 they just have to wrapped around the component which shall be protected.
 */
 
+import { decode } from "jsonwebtoken";
+
 const createResolver = resolver => {
   const baseResolver = resolver;
   baseResolver.createResolver = childResolver => {
@@ -25,8 +27,16 @@ export const requiresAuth = createResolver(async (parent, args, { token }) => {
 
 // These functions can be nested. Here it checks first whether an user
 // is authenticated and then if he has admin status.
-export const requiresAdmin = requiresAuth.createResolver((parent, args, { token }) => {
-  if (!token) {
-    throw new Error("You're not an Admin!!");
+export const requiresAdmin = requiresAuth.createResolver(
+  async (parent, args, { models, token }) => {
+    const { user: { unitid } } = await decode(token);
+    try {
+      const rights = await models.Right.findOne({ where: { holder: unitid } });
+      if (!rights.type || rights.type.toLowerCase() != "admin") {
+        throw new Error("You're not an Admin!");
+      }
+    } catch (err) {
+      throw new Error("You're not an Admin!");
+    }
   }
-});
+);

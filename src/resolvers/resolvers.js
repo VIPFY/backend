@@ -75,5 +75,6 @@ export default {
   PromosRunning: find(unitAndPlan),
   Review: find({ reviewer: "User", appid: "App", answerto: "Review" }),
   ReviewHelpful: find({ reviewer: "User", reviewid: "Review" }),
+  Right: find({ holder: "User", forunit: "User" }),
   Website: find(unit)
 };

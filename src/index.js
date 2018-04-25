@@ -94,7 +94,7 @@ app.use(
   "/graphql",
   bodyParser.json(),
   // apolloUploadExpress({ uploadDir: "./" }),
-  graphqlExpress(({ headers, user }) => {
+  graphqlExpress(({ headers }) => {
     const token = headers["x-token"];
 
     return {
@@ -105,7 +105,6 @@ app.use(
         // token:
         // eslint-disable-next-line
         //   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjo3NH0sImlhdCI6MTUxNzY3MzE5NiwiZXhwIjoxNTE3NzE2Mzk2fQ.5Tlsrg6F9UuwcKYZu21JFqVlEPhRKJZVsWXwuJlVgs4",
-        user,
         SECRET,
         SECRETTWO
       },
