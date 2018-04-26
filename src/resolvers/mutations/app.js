@@ -18,6 +18,16 @@ export default {
     }
   }),
 
+  updateApp: requiresAdmin.createResolver(async (parent, { id, app }, { models }) => {
+    try {
+      await models.App.update({ ...app }, { where: { id } });
+
+      return { ok: true };
+    } catch ({ message }) {
+      throw new Error(message);
+    }
+  }),
+
   deleteApp: requiresAdmin.createResolver(async (parent, { id }, { models }) => {
     try {
       await models.App.destroy({ where: { id } });
