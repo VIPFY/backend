@@ -119,4 +119,6 @@ export const mutations = `
 
   # This allows the user to buy a plan
   buyPlan(planid: Int!, buyFor: Int): Response!
+
+  endPlan(id: Int!, enddate: String!): Response!
 `;

@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 import { createProduct, createPlan } from "../../services/stripe";
 
 export default {
@@ -17,10 +17,7 @@ export default {
 
     try {
       const plan = await createPlan(product, amount);
-      console.log({ plan });
-      return {
-        ok: true
-      };
+      return { ok: true };
     } catch ({ message }) {
       throw new Error(message);
     }
@@ -56,5 +53,15 @@ export default {
       });
     }
     throw new Error("User doesn't exist!");
+  }),
+
+  endPlan: requiresAdmin.createResolver(async (parent, { id, enddate }, { models }) => {
+    try {
+      await models.Plan.update({ enddate }, { where: { id } });
+
+      return { ok: true };
+    } catch (err) {
+      throw new Error(err.message);
+    }
   })
 };
