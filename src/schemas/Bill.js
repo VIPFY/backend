@@ -30,7 +30,7 @@ export const types = `
     amount: Float
     currency: String
     options: JSON
-    payperiod: String
+    payperiod: JSON
     cancelperiod: String
     optional: Boolean!
     gototime: String
