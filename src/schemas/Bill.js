@@ -21,7 +21,7 @@ export const types = `
 # Payment plans for the Apps
   type Plan {
     id: Int!
-    name: String
+    name: String!
     teaserdescription: String
     features: JSON
     startdate: String
@@ -38,6 +38,25 @@ export const types = `
     gotoplan: Plan
     mainplan: Plan
     subplans: [Plan]
+  }
+
+  input PlanInput {
+    name: String!
+    teaserdescription: String
+    features: JSON
+    startdate: String
+    enddate: String
+    numlicences: Int
+    amount: Float
+    currency: String
+    options: JSON
+    payperiod: JSON
+    cancelperiod: String
+    optional: Boolean!
+    gototime: String
+    appid: Int!
+    gotoplan: Int
+    mainplan: Int
   }
 
   # The plans a unit bought
@@ -117,6 +136,7 @@ export const mutations = `
   # This creates a product which can be linked to a plan
   createStripePlan(name: String, productid: String, amount: Int!): Response!
 
+  createPlan(plan: PlanInput!): Response!
   # This allows the user to buy a plan
   buyPlan(planid: Int!, buyFor: Int): Response!
 

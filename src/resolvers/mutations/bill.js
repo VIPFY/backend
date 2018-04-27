@@ -3,6 +3,16 @@ import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 import { createProduct, createPlan } from "../../services/stripe";
 
 export default {
+  createPlan: async (parent, { plan }, { models }) => {
+    try {
+      await models.Plan.create({ ...plan });
+
+      return { ok: true };
+    } catch (err) {
+      throw new Error(err);
+    }
+  },
+
   createStripePlan: requiresAuth.createResolver(async (parent, { name, productid, amount }) => {
     let product;
     if (name && !productid) {
@@ -16,7 +26,7 @@ export default {
     } else product = productid;
 
     try {
-      const plan = await createPlan(product, amount);
+      await createPlan(product, amount);
       return { ok: true };
     } catch ({ message }) {
       throw new Error(message);
