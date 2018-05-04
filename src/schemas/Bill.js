@@ -31,7 +31,7 @@ export const types = `
     currency: String
     options: JSON
     payperiod: JSON
-    cancelperiod: String
+    cancelperiod: JSON
     optional: Boolean!
     gototime: String
     appid: App!
@@ -50,8 +50,8 @@ export const types = `
     price: Float
     currency: String
     options: JSON
-    payperiod: JSON
-    cancelperiod: String
+    payperiod: Interval
+    cancelperiod: Interval
     optional: Boolean!
     gototime: String
     appid: Int!

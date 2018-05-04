@@ -17,7 +17,7 @@ export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, CHAR, BOOLEAN 
     options: JSONB,
     payperiod: TEXT,
     cancelperiod: TEXT,
-    optional: { type: BOOLEAN, allowNull: false },
+    optional: { type: BOOLEAN, defaultValue: false },
     gototime: TEXT
   });
 

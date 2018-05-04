@@ -43,6 +43,13 @@ input Upload {
   size: Int!
   path: String!
 }
+
+# Interval
+input Interval {
+  years: String,
+  months: String,
+  days: String
+}
 `;
 
 export const mutations = `
