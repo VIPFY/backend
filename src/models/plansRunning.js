@@ -6,7 +6,7 @@ export default (sequelize, { TEXT, TIME, JSONB, INTEGER, DECIMAL, CHAR }) => {
     startdate: TIME,
     enddate: TIME,
     numlicences: INTEGER,
-    amount: DECIMAL(10, 2),
+    price: DECIMAL(10, 2),
     currency: {
       type: CHAR(3),
       validate: {

@@ -27,7 +27,7 @@ export const types = `
     startdate: String
     enddate: String
     numlicences: Int
-    amount: Float
+    price: Float
     currency: String
     options: JSON
     payperiod: JSON
@@ -47,7 +47,7 @@ export const types = `
     startdate: String
     enddate: String
     numlicences: Int
-    amount: Float
+    price: Float
     currency: String
     options: JSON
     payperiod: JSON
@@ -83,7 +83,7 @@ export const types = `
     startdate: String
     enddate: String
     numlicences: Int
-    amount: Float
+    price: Float
     currency: String!
     options: JSON
     appid: App!
