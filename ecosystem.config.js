@@ -37,7 +37,6 @@ module.exports = {
       ref  : 'origin/development',
       repo : 'git@bitbucket.org:vipfymarketplace/vipfy-backend.git',
       path : '/var/www/vipfy-backend',
-      key : 'ci-dev-deploy',
       env: {
         NODE_ENV: 'production',
         ENVIRONMENT: 'production',
