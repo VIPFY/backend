@@ -48,6 +48,7 @@ input Upload {
 input Interval {
   years: String,
   months: String,
+  weeks: String,
   days: String
 }
 `;

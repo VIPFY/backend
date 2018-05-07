@@ -1,3 +1,4 @@
+import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 import { createPassword } from "../../helpers/functions";
@@ -54,9 +55,15 @@ export default {
   adminUpdateUser: requiresAdmin.createResolver(
     async (parent, { unitid, user }, { models, token }) => {
       try {
+        if (user.password) {
+          const passwordhash = await bcrypt.hash(user.password, 12);
+          await models.Human.update({ passwordhash }, { where: { unitid } });
+
+          return { ok: true };
+        }
+
         if (user.position) {
           await models.Unit.update({ ...user }, { where: { id: unitid } });
-
           return { ok: true };
         }
         await models.Human.update({ ...user }, { where: { unitid } });

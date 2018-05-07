@@ -40,7 +40,11 @@ export const types = `
 
   input AppInput {
     name: String
+    developername: String
     commission: String
+    avgstars: Float
+    supportphone: String
+    supportwebsite: String
     logo: String
     description: String
     teaserdescription: String

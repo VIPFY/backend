@@ -78,6 +78,8 @@ export const types = `
   input UserInput {
     firstname: String
     middlename: String
+    lastname: String
+    password: String
     email: String
     lastname: String
     title: String
@@ -96,7 +98,7 @@ export const queries = `
 
   # Checks whether the user is an admin
   admin: User
-  
+
   # Returns an user. Should only be usable by an admin
   fetchUser(id: Int!): User!
   fetchUserByPassword(password: String!): String!

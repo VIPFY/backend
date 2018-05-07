@@ -41,7 +41,7 @@ export const types = `
   }
 
   input PlanInput {
-    name: String!
+    name: String
     teaserdescription: String
     features: JSON
     startdate: String
@@ -52,9 +52,9 @@ export const types = `
     options: JSON
     payperiod: Interval
     cancelperiod: Interval
-    optional: Boolean!
+    optional: Boolean
     gototime: String
-    appid: Int!
+    appid: Int
     gotoplan: Int
     mainplan: Int
   }
