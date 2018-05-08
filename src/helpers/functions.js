@@ -17,3 +17,19 @@ export const createPassword = async email => {
 
   return newHash;
 };
+
+export const parentAdminCheck = async (models, user) => {
+  await models.sequelize
+    .query(
+      "Select DISTINCT (id) from department_employee_view where id not in (Select childid from department_employee_view where childid is Not null)  and employee = 22;",
+      { type: models.sequelize.QueryTypes.SELECT }
+    )
+    .then(roots => roots.map(root => user.set({ company: root.id })));
+
+  const isAdmin = await models.Right.findOne({
+    where: { holder: user.id, forunit: user.company, type: "admin" }
+  });
+  await user.set({ admin: !!isAdmin });
+
+  return user;
+};

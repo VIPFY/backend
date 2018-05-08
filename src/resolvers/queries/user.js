@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import { parentAdminCheck } from "../../helpers/functions";
 import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 
 export default {
@@ -20,8 +21,9 @@ export default {
         if (me.suspended) throw new Error("This User is suspended!");
         if (me.banned) throw new Error("This User is banned!");
         if (me.deleted) throw new Error("This User got deleted!");
+        const user = await parentAdminCheck(models, me);
 
-        return me.dataValues;
+        return user;
       } catch (err) {
         throw new Error(err.message);
       }

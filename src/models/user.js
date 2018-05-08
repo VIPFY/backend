@@ -1,4 +1,7 @@
-export default (sequelize, { STRING, DATE, DATEONLY, INTEGER, JSONB, TEXT, BOOLEAN, ENUM }) => {
+export default (
+  sequelize,
+  { STRING, DATE, DATEONLY, VIRTUAL, INTEGER, JSONB, TEXT, BOOLEAN, ENUM }
+) => {
   const User = sequelize.define("users_view", {
     firstname: { type: STRING, defaultValue: "not specified yet" },
     middlename: STRING,
@@ -16,7 +19,9 @@ export default (sequelize, { STRING, DATE, DATEONLY, INTEGER, JSONB, TEXT, BOOLE
     createdate: DATE,
     payingoptions: JSONB,
     position: TEXT,
-    emails: { type: JSONB, allowNull: false }
+    emails: { type: JSONB, allowNull: false },
+    company: VIRTUAL,
+    admin: VIRTUAL
   });
 
   return User;

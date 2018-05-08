@@ -55,6 +55,8 @@ export const types = `
     emails: JSON
     createdate: String
     payingoptions: JSON
+    company: Department
+    admin: Boolean!
   }
 
   type Department {
@@ -66,6 +68,7 @@ export const types = `
     deleted: Boolean!
     suspended: Boolean!
     profilepicture: String
+    employees: Int
   }
 
   type DepartmentData {

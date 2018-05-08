@@ -65,6 +65,7 @@ export const find = data => {
   return searches;
 };
 
-export const findUnit = () => ({
-  unitid: (parent, args, { models }) => models.Unit.findById(parent.unitid)
+export const findDepartment = () => ({
+  company: (parent, args, { models }) =>
+    models.Department.findOne({ where: { unitid: parent.company } })
 });

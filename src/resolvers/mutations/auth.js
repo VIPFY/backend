@@ -2,7 +2,7 @@ import { random } from "lodash";
 import bcrypt from "bcrypt";
 import { createTokens } from "../../services/auth";
 import { sendEmail } from "../../services/mailjet";
-import { createPassword } from "../../helpers/functions";
+import { createPassword, parentAdminCheck } from "../../helpers/functions";
 
 export default {
   signUp: async (parent, { email, newsletter }, { models, SECRET, SECRETTWO }) => {
@@ -87,19 +87,16 @@ export default {
     if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended!");
     if (emailExists.deleted == true) throw new Error("Sorry, this account doesn't exist anymore.");
 
-    const user = await models.User.findOne({ where: { id: emailExists.unitid } });
+    const basicUser = await models.User.findOne({ where: { id: emailExists.unitid } });
     const valid = await bcrypt.compare(password, emailExists.passwordhash);
     if (!valid) throw new Error(error);
 
     const refreshTokenSecret = emailExists.passwordhash + SECRETTWO;
     const [token, refreshToken] = await createTokens(emailExists, SECRET, refreshTokenSecret);
 
-    return {
-      ok: true,
-      user,
-      token,
-      refreshToken
-    };
+    const user = parentAdminCheck(models, basicUser);
+
+    return { ok: true, user, token, refreshToken };
   },
 
   forgotPassword: async (parent, { email }, { models }) => {

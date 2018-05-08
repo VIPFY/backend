@@ -18,7 +18,7 @@ import contactMutations from "./mutations/contact";
 
 import Subscription from "./subscriptions";
 
-import { find, implementDate, implementJSON } from "./CustomResolvers";
+import { find, findDepartment, implementDate, implementJSON } from "./CustomResolvers";
 
 const Query = Object.assign(
   userQueries,
@@ -76,5 +76,6 @@ export default {
   Review: find({ reviewer: "User", appid: "App", answerto: "Review" }),
   ReviewHelpful: find({ reviewer: "User", reviewid: "Review" }),
   Right: find({ holder: "User", forunit: "User" }),
+  User: findDepartment({ company: "Department" }),
   Website: find(unit)
 };
