@@ -81,6 +81,8 @@ export const types = `
     lastname: String
     password: String
     email: String
+    verified: Boolean
+    banned: Boolean
     lastname: String
     title: String
     sex: SEX

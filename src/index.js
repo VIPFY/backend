@@ -53,11 +53,13 @@ export const schema = makeExecutableSchema({
 // he receives after a successful login, everything will be fine.
 const authMiddleware = async (req, res, next) => {
   const token = req.headers["x-token"];
-  if (token) {
+  if (token != "null" && token) {
     try {
+      console.log(token);
       const { user } = await jwt.verify(token, SECRET);
       req.user = user;
     } catch (err) {
+      console.log(err);
       if (err.name == "TokenExpiredError") {
         // If the token has expired, we use the refreshToken to assign new ones
         const refreshToken = req.headers["x-refresh-token"];
@@ -70,7 +72,6 @@ const authMiddleware = async (req, res, next) => {
         }
         req.user = newTokens.user;
       } else {
-        console.log(err);
         req.headers["x-token"] = null;
         req.headers["x-refresh-token"] = null;
       }
