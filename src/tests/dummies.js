@@ -33,11 +33,34 @@ export const dummyUser = {
 };
 
 export const dummyApp = {
-  id: expect.any(Number),
-  name: expect.any(String),
-  developerid: expect.any(Number),
-  description: expect.any(String),
-  applogo: expect.stringMatching(/[\w]+\.[a-zA-z]{3,4}/)
+  id: 2,
+  name: "Weebly",
+  commission: null,
+  disabled: true,
+  description:
+    "Web-hosting service featuring a drag-and-drop website builder. Include a Shop- and Newsletter-Plugin",
+  teaserdescription:
+    "Web-hosting service featuring a drag-and-drop website builder. Include a Shop- and Newsletter-Plugin",
+  website: "https://weebly.com",
+  features: null,
+  options: null,
+  developer: {
+    id: 12
+  },
+  supportunit: {
+    id: 22
+  },
+  images: ["Weebly.jpeg", "Weebly2.png", "Weebly3.jpg", "Weebly4.png"]
+};
+
+export const dummyNewApp = {
+  name: "Vipfy Test App",
+  commission: "22",
+  teaserdescription: "This is a test description",
+  description: "This is a test.",
+  developer: "21",
+  supportunit: "15",
+  website: "www.letsgo.de"
 };
 
 export const dummyAppImage = {

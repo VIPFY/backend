@@ -55,7 +55,6 @@ const authMiddleware = async (req, res, next) => {
   const token = req.headers["x-token"];
   if (token != "null" && token) {
     try {
-      console.log(token);
       const { user } = await jwt.verify(token, SECRET);
       req.user = user;
     } catch (err) {

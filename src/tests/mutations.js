@@ -95,3 +95,27 @@ export const weeblyCreateLoginLink = `
     }
   }
 `;
+
+export const createApp = `
+  mutation CreateApp($app: AppInput!) {
+    createApp(app: $app) {
+      ok
+    }
+  }
+`;
+
+export const updateApp = `
+  mutation UpdateApp($app: AppInput!, $id: Int!) {
+    updateApp(app: $app, id: $id) {
+      ok
+    }
+  }
+`;
+
+export const toggleAppStatus = `
+  mutation ToggleAppStatus($id: Int!) {
+    toggleAppStatus(id: $id) {
+      ok
+    }
+  }
+`;

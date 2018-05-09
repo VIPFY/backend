@@ -13,12 +13,12 @@ const app = express();
 
 // Objects to inject into context to test whether an user is logged-in
 export const user = {
-  id: 67,
+  id: 7,
   email: expect.any(String)
 };
 
 export const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjo2N30sImlhdCI6MTUxNzQ5Nzc5MSwiZXhwIjoxNTE3NTQwOTkxfQ.ys2oSIgznGLv8mOXtIdpdAP-mnVFPFFw4nzWq2n_g1w";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVuaXRpZCI6IjcifSwiaWF0IjoxNTI1Nzg5Mjk5LCJleHAiOjE1MjU4MzI0OTl9.ZV4iygY3_IR4ziBHI91bNHP1sWkFSCIhRkQkN14NaYk";
 
 // Helper function to test Queries
 export const executeQuery = (query, args = {}, context = {}) =>

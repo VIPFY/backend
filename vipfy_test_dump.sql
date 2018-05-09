@@ -3,16 +3,24 @@
 --
 
 -- Dumped from database version 9.6.6
--- Dumped by pg_dump version 9.6.6
+-- Dumped by pg_dump version 9.6.8
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET row_security = off;
+
+--
+-- Name: DATABASE postgres; Type: COMMENT; Schema: -; Owner: cloudsqlsuperuser
+--
+
+COMMENT ON DATABASE postgres IS 'default administrative connection database';
+
 
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
@@ -28,26 +36,77 @@ CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
 COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
 
 
-SET search_path = public, pg_catalog;
-
 --
--- Name: enum_users_sex; Type: TYPE; Schema: public; Owner: vipfy_test_user
+-- Name: pgcrypto; Type: EXTENSION; Schema: -; Owner: 
 --
 
-CREATE TYPE enum_users_sex AS ENUM (
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION pgcrypto; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION pgcrypto IS 'cryptographic functions';
+
+
+--
+-- Name: enum_human_data_sex; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.enum_human_data_sex AS ENUM (
+    'm',
+    'w',
+    'u'
+);
+
+
+ALTER TYPE public.enum_human_data_sex OWNER TO postgres;
+
+--
+-- Name: enum_partners_view_sex; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.enum_partners_view_sex AS ENUM (
+    'm',
+    'w',
+    'u'
+);
+
+
+ALTER TYPE public.enum_partners_view_sex OWNER TO postgres;
+
+--
+-- Name: enum_user_data_sex; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.enum_user_data_sex AS ENUM (
+    'm',
+    'w',
+    'u'
+);
+
+
+ALTER TYPE public.enum_user_data_sex OWNER TO postgres;
+
+--
+-- Name: enum_users_sex; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.enum_users_sex AS ENUM (
     'm',
     'w',
     't'
 );
 
 
-ALTER TYPE enum_users_sex OWNER TO vipfy_test_user;
+ALTER TYPE public.enum_users_sex OWNER TO postgres;
 
 --
--- Name: enum_users_userStatus; Type: TYPE; Schema: public; Owner: user
+-- Name: enum_users_userStatus; Type: TYPE; Schema: public; Owner: postgres
 --
 
-CREATE TYPE "enum_users_userStatus" AS ENUM (
+CREATE TYPE public."enum_users_userStatus" AS ENUM (
     'toverify',
     'normal',
     'banned',
@@ -55,13 +114,13 @@ CREATE TYPE "enum_users_userStatus" AS ENUM (
 );
 
 
-ALTER TYPE "enum_users_userStatus" OWNER TO "user";
+ALTER TYPE public."enum_users_userStatus" OWNER TO postgres;
 
 --
--- Name: enum_users_userstatus; Type: TYPE; Schema: public; Owner: vipfy_test_user
+-- Name: enum_users_userstatus; Type: TYPE; Schema: public; Owner: postgres
 --
 
-CREATE TYPE enum_users_userstatus AS ENUM (
+CREATE TYPE public.enum_users_userstatus AS ENUM (
     'toverify',
     'normal',
     'banned',
@@ -69,24 +128,37 @@ CREATE TYPE enum_users_userstatus AS ENUM (
 );
 
 
-ALTER TYPE enum_users_userstatus OWNER TO vipfy_test_user;
+ALTER TYPE public.enum_users_userstatus OWNER TO postgres;
 
 --
--- Name: languages; Type: TYPE; Schema: public; Owner: user
+-- Name: enum_users_view_sex; Type: TYPE; Schema: public; Owner: postgres
 --
 
-CREATE TYPE languages AS ENUM (
+CREATE TYPE public.enum_users_view_sex AS ENUM (
+    'm',
+    'w',
+    'u'
+);
+
+
+ALTER TYPE public.enum_users_view_sex OWNER TO postgres;
+
+--
+-- Name: languages; Type: TYPE; Schema: public; Owner: postgres
+--
+
+CREATE TYPE public.languages AS ENUM (
     'English'
 );
 
 
-ALTER TYPE languages OWNER TO "user";
+ALTER TYPE public.languages OWNER TO postgres;
 
 --
--- Name: userstatus; Type: TYPE; Schema: public; Owner: user
+-- Name: userstatus; Type: TYPE; Schema: public; Owner: postgres
 --
 
-CREATE TYPE userstatus AS ENUM (
+CREATE TYPE public.userstatus AS ENUM (
     'toverify',
     'normal',
     'banned',
@@ -94,13 +166,13 @@ CREATE TYPE userstatus AS ENUM (
 );
 
 
-ALTER TYPE userstatus OWNER TO "user";
+ALTER TYPE public.userstatus OWNER TO postgres;
 
 --
--- Name: insert_company(character varying, integer); Type: FUNCTION; Schema: public; Owner: user
+-- Name: insert_company(character varying, integer); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
-CREATE FUNCTION insert_company(compname character varying, userid integer) RETURNS integer
+CREATE FUNCTION public.insert_company(compname character varying, userid integer) RETURNS integer
     LANGUAGE plpgsql
     AS $$
 declare
@@ -113,31 +185,50 @@ end;
 $$;
 
 
-ALTER FUNCTION public.insert_company(compname character varying, userid integer) OWNER TO "user";
+ALTER FUNCTION public.insert_company(compname character varying, userid integer) OWNER TO postgres;
+
+--
+-- Name: lowecase_right_on_insert(); Type: FUNCTION; Schema: public; Owner: postgres
+--
+
+CREATE FUNCTION public.lowecase_right_on_insert() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN        
+        NEW.type = LOWER(NEW.type);
+        RETURN NEW;
+    END;
+$$;
+
+
+ALTER FUNCTION public.lowecase_right_on_insert() OWNER TO postgres;
 
 SET default_tablespace = '';
 
 SET default_with_oids = false;
 
 --
--- Name: appimages; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: address_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE appimages (
-    id integer NOT NULL,
-    link character varying(255) NOT NULL,
-    sequence integer,
-    appid integer
+CREATE TABLE public.address_data (
+    id bigint NOT NULL,
+    unitid bigint,
+    country character(2) NOT NULL,
+    address jsonb,
+    description text,
+    priority integer DEFAULT 0 NOT NULL,
+    tag text
 );
 
 
-ALTER TABLE appimages OWNER TO vipfy_test_user;
+ALTER TABLE public.address_data OWNER TO postgres;
 
 --
--- Name: appimages_id_seq; Type: SEQUENCE; Schema: public; Owner: vipfy_test_user
+-- Name: adress_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE appimages_id_seq
+CREATE SEQUENCE public.adress_data_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -145,39 +236,150 @@ CREATE SEQUENCE appimages_id_seq
     CACHE 1;
 
 
-ALTER TABLE appimages_id_seq OWNER TO vipfy_test_user;
+ALTER TABLE public.adress_data_id_seq OWNER TO postgres;
 
 --
--- Name: appimages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: vipfy_test_user
+-- Name: adress_data_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE appimages_id_seq OWNED BY appimages.id;
+ALTER SEQUENCE public.adress_data_id_seq OWNED BY public.address_data.id;
 
 
 --
--- Name: appnotifications; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: app_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE appnotifications (
+CREATE TABLE public.app_data (
+    id bigint NOT NULL,
+    name text,
+    commission jsonb,
+    logo text,
+    description text,
+    teaserdescription text,
+    website text,
+    supportunit bigint,
+    images text[],
+    features jsonb,
+    options jsonb,
+    disabled boolean DEFAULT true NOT NULL,
+    developer bigint NOT NULL
+);
+
+
+ALTER TABLE public.app_data OWNER TO postgres;
+
+--
+-- Name: app_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.app_data_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.app_data_id_seq OWNER TO postgres;
+
+--
+-- Name: app_data_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.app_data_id_seq OWNED BY public.app_data.id;
+
+
+--
+-- Name: app_details; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.app_details (
+    id bigint,
+    name text,
+    commission jsonb,
+    logo text,
+    description text,
+    teaserdescription text,
+    website text,
+    supportunit bigint,
+    images text[],
+    features jsonb,
+    options jsonb,
+    disabled boolean,
+    developer bigint,
+    avgstars numeric,
+    cheapestprice numeric,
+    cheapestpromo numeric,
+    supportwebsite text,
+    supportphone text,
+    developername text,
+    developerwebsite text
+);
+
+ALTER TABLE ONLY public.app_details REPLICA IDENTITY NOTHING;
+
+
+ALTER TABLE public.app_details OWNER TO postgres;
+
+--
+-- Name: appimages; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.appimages (
     id integer NOT NULL,
-    type integer,
-    sendtime timestamp with time zone,
-    readtime timestamp with time zone,
+    appid integer,
+    link character varying(50),
+    sequence smallint
+);
+
+
+ALTER TABLE public.appimages OWNER TO postgres;
+
+--
+-- Name: appimages_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.appimages_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.appimages_id_seq OWNER TO postgres;
+
+--
+-- Name: appimages_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.appimages_id_seq OWNED BY public.appimages.id;
+
+
+--
+-- Name: appnotifications; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.appnotifications (
+    id integer NOT NULL,
+    type smallint,
+    touser integer,
+    fromapp integer,
+    sendtime timestamp without time zone DEFAULT now(),
+    readtime timestamp without time zone,
     deleted boolean DEFAULT false,
     senderdeleted boolean DEFAULT false,
-    message text NOT NULL,
-    touser integer,
-    fromapp integer
+    message text
 );
 
 
-ALTER TABLE appnotifications OWNER TO vipfy_test_user;
+ALTER TABLE public.appnotifications OWNER TO postgres;
 
 --
--- Name: appnotifications_id_seq; Type: SEQUENCE; Schema: public; Owner: vipfy_test_user
+-- Name: appnotifications_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE appnotifications_id_seq
+CREATE SEQUENCE public.appnotifications_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -185,43 +387,43 @@ CREATE SEQUENCE appnotifications_id_seq
     CACHE 1;
 
 
-ALTER TABLE appnotifications_id_seq OWNER TO vipfy_test_user;
+ALTER TABLE public.appnotifications_id_seq OWNER TO postgres;
 
 --
--- Name: appnotifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: vipfy_test_user
+-- Name: appnotifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE appnotifications_id_seq OWNED BY appnotifications.id;
+ALTER SEQUENCE public.appnotifications_id_seq OWNED BY public.appnotifications.id;
 
 
 --
--- Name: apps; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: apps; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE apps (
+CREATE TABLE public.apps (
     id integer NOT NULL,
-    name character varying(255),
+    developerid integer,
+    name character varying(40),
     percentage smallint,
-    applogo character varying(255),
     description text,
-    modaltype smallint DEFAULT 0,
-    updatedate timestamp with time zone,
-    versionnumber character varying(255),
+    applogo character varying(50),
+    versionnumber character varying(10),
+    updatedate date,
     teaserdescription text,
-    ownpage character varying(255),
-    supportwebsite character varying(255),
-    supportphone character varying(255),
-    developerid integer
+    ownpage character varying(50),
+    supportwebsite character varying(50),
+    supportphone character varying(20),
+    modaltype smallint DEFAULT 0
 );
 
 
-ALTER TABLE apps OWNER TO vipfy_test_user;
+ALTER TABLE public.apps OWNER TO postgres;
 
 --
--- Name: apps_id_seq; Type: SEQUENCE; Schema: public; Owner: vipfy_test_user
+-- Name: apps_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE apps_id_seq
+CREATE SEQUENCE public.apps_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -229,37 +431,37 @@ CREATE SEQUENCE apps_id_seq
     CACHE 1;
 
 
-ALTER TABLE apps_id_seq OWNER TO vipfy_test_user;
+ALTER TABLE public.apps_id_seq OWNER TO postgres;
 
 --
--- Name: apps_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: vipfy_test_user
+-- Name: apps_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE apps_id_seq OWNED BY apps.id;
+ALTER SEQUENCE public.apps_id_seq OWNED BY public.apps.id;
 
 
 --
--- Name: reviews; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: review_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE reviews (
-    id integer NOT NULL,
-    reviewdate timestamp with time zone,
-    stars smallint DEFAULT 1 NOT NULL,
+CREATE TABLE public.review_data (
+    unitid integer NOT NULL,
+    appid integer NOT NULL,
+    reviewdate timestamp without time zone DEFAULT now() NOT NULL,
+    stars smallint,
     reviewtext text,
-    userid integer,
-    appid integer,
+    id integer NOT NULL,
     answerto integer
 );
 
 
-ALTER TABLE reviews OWNER TO vipfy_test_user;
+ALTER TABLE public.review_data OWNER TO postgres;
 
 --
--- Name: apps_view; Type: VIEW; Schema: public; Owner: user
+-- Name: apps_view; Type: VIEW; Schema: public; Owner: postgres
 --
 
-CREATE VIEW apps_view AS
+CREATE VIEW public.apps_view AS
  SELECT apps.id,
     apps.developerid,
     apps.name,
@@ -275,25 +477,100 @@ CREATE VIEW apps_view AS
     apps.modaltype,
     a.avg_stars,
     a.count_stars
-   FROM (apps
-     LEFT JOIN ( SELECT reviews.appid,
-            (avg(reviews.stars))::numeric(2,1) AS avg_stars,
-            count(reviews.stars) AS count_stars
-           FROM reviews
-          WHERE ((reviews.userid, reviews.reviewdate) IN ( SELECT reviews_1.userid,
-                    max(reviews_1.reviewdate) AS max
-                   FROM reviews reviews_1
-                  GROUP BY reviews_1.userid))
-          GROUP BY reviews.appid) a ON ((apps.id = a.appid)));
+   FROM (public.apps
+     LEFT JOIN ( SELECT review_data.appid,
+            (avg(review_data.stars))::numeric(2,1) AS avg_stars,
+            count(review_data.stars) AS count_stars
+           FROM public.review_data
+          WHERE ((review_data.unitid, review_data.reviewdate) IN ( SELECT review_data_1.unitid AS userid,
+                    max(review_data_1.reviewdate) AS max
+                   FROM public.review_data review_data_1
+                  GROUP BY review_data_1.unitid))
+          GROUP BY review_data.appid) a ON ((apps.id = a.appid)));
 
 
-ALTER TABLE apps_view OWNER TO "user";
+ALTER TABLE public.apps_view OWNER TO postgres;
 
 --
--- Name: boughtcompanyplans; Type: TABLE; Schema: public; Owner: user
+-- Name: bill_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE boughtcompanyplans (
+CREATE TABLE public.bill_data (
+    id bigint NOT NULL,
+    unitid bigint NOT NULL,
+    type boolean NOT NULL,
+    billtime timestamp without time zone DEFAULT now(),
+    paytime timestamp without time zone,
+    stornotime timestamp without time zone
+);
+
+
+ALTER TABLE public.bill_data OWNER TO postgres;
+
+--
+-- Name: bill_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.bill_data_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.bill_data_id_seq OWNER TO postgres;
+
+--
+-- Name: bill_data_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.bill_data_id_seq OWNED BY public.bill_data.id;
+
+
+--
+-- Name: billposition_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.billposition_data (
+    id bigint NOT NULL,
+    billid bigint NOT NULL,
+    positiontext text,
+    amount numeric(10,2),
+    currency character(3),
+    planid bigint,
+    vendor bigint
+);
+
+
+ALTER TABLE public.billposition_data OWNER TO postgres;
+
+--
+-- Name: billposition_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.billposition_data_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.billposition_data_id_seq OWNER TO postgres;
+
+--
+-- Name: billposition_data_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.billposition_data_id_seq OWNED BY public.billposition_data.id;
+
+
+--
+-- Name: boughtcompanyplans; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.boughtcompanyplans (
     companyid integer NOT NULL,
     appid integer NOT NULL,
     planid integer NOT NULL,
@@ -306,13 +583,65 @@ CREATE TABLE boughtcompanyplans (
 );
 
 
-ALTER TABLE boughtcompanyplans OWNER TO "user";
+ALTER TABLE public.boughtcompanyplans OWNER TO postgres;
 
 --
--- Name: boughtuserplans; Type: TABLE; Schema: public; Owner: user
+-- Name: boughtplan_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE boughtuserplans (
+CREATE TABLE public.boughtplan_data (
+    id bigint NOT NULL,
+    buyer bigint NOT NULL,
+    planid bigint NOT NULL,
+    buytime timestamp without time zone DEFAULT now() NOT NULL,
+    endtime timestamp without time zone,
+    key jsonb,
+    predecessor bigint,
+    disabled boolean DEFAULT false,
+    payer bigint NOT NULL
+);
+
+
+ALTER TABLE public.boughtplan_data OWNER TO postgres;
+
+--
+-- Name: boughtplan_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.boughtplan_data_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.boughtplan_data_id_seq OWNER TO postgres;
+
+--
+-- Name: boughtplan_data_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.boughtplan_data_id_seq OWNED BY public.boughtplan_data.id;
+
+
+--
+-- Name: boughtsubplan_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.boughtsubplan_data (
+    boughtplanid bigint NOT NULL,
+    subplanid bigint NOT NULL
+);
+
+
+ALTER TABLE public.boughtsubplan_data OWNER TO postgres;
+
+--
+-- Name: boughtuserplans; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.boughtuserplans (
     userid integer NOT NULL,
     appid integer NOT NULL,
     planid integer NOT NULL,
@@ -324,32 +653,32 @@ CREATE TABLE boughtuserplans (
 );
 
 
-ALTER TABLE boughtuserplans OWNER TO "user";
+ALTER TABLE public.boughtuserplans OWNER TO postgres;
 
 --
--- Name: companies; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: companies; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE companies (
+CREATE TABLE public.companies (
     id integer NOT NULL,
-    name character varying(255),
-    companylogo character varying(255),
-    addresscountry character varying(255),
-    addressstate character varying(255),
-    addresscity character varying(255),
-    addressstreet character varying(255),
-    addressnumber integer,
+    name character varying(40),
+    companylogo character varying(50),
+    addresscountry character varying(20),
+    addressstate character varying(20),
+    addresscity character varying(20),
+    addressstreet character varying(20),
+    addressnumber smallint,
     family boolean DEFAULT false
 );
 
 
-ALTER TABLE companies OWNER TO vipfy_test_user;
+ALTER TABLE public.companies OWNER TO postgres;
 
 --
--- Name: companies_id_seq; Type: SEQUENCE; Schema: public; Owner: vipfy_test_user
+-- Name: companies_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE companies_id_seq
+CREATE SEQUENCE public.companies_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -357,20 +686,20 @@ CREATE SEQUENCE companies_id_seq
     CACHE 1;
 
 
-ALTER TABLE companies_id_seq OWNER TO vipfy_test_user;
+ALTER TABLE public.companies_id_seq OWNER TO postgres;
 
 --
--- Name: companies_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: vipfy_test_user
+-- Name: companies_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE companies_id_seq OWNED BY companies.id;
+ALTER SEQUENCE public.companies_id_seq OWNED BY public.companies.id;
 
 
 --
--- Name: companybills; Type: TABLE; Schema: public; Owner: user
+-- Name: companybills; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE companybills (
+CREATE TABLE public.companybills (
     companyid integer,
     date timestamp without time zone DEFAULT now(),
     billpos integer,
@@ -382,31 +711,168 @@ CREATE TABLE companybills (
 );
 
 
-ALTER TABLE companybills OWNER TO "user";
+ALTER TABLE public.companybills OWNER TO postgres;
 
 --
--- Name: departments; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: department_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE departments (
-    id integer NOT NULL,
-    name character varying(255),
-    addresscountry character varying(255),
-    addressstate character varying(255),
-    addresscity character varying(255),
-    addressstreet character varying(255),
-    addressnumber integer,
-    companyid integer
+CREATE TABLE public.department_data (
+    unitid bigint NOT NULL,
+    name text,
+    legalinformation jsonb,
+    staticdata jsonb
 );
 
 
-ALTER TABLE departments OWNER TO vipfy_test_user;
+ALTER TABLE public.department_data OWNER TO postgres;
 
 --
--- Name: departments_id_seq; Type: SEQUENCE; Schema: public; Owner: vipfy_test_user
+-- Name: human_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE departments_id_seq
+CREATE TABLE public.human_data (
+    unitid bigint NOT NULL,
+    firstname character varying(300) NOT NULL,
+    middlename character varying(300) DEFAULT ''::character varying NOT NULL,
+    lastname character varying(300) NOT NULL,
+    title character varying(50) DEFAULT ''::character varying NOT NULL,
+    sex character(1),
+    passwordhash text NOT NULL,
+    birthday date,
+    lastactive timestamp without time zone,
+    resetoption integer,
+    language text
+);
+
+
+ALTER TABLE public.human_data OWNER TO postgres;
+
+--
+-- Name: parentunit_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.parentunit_data (
+    parentunit bigint NOT NULL,
+    childunit bigint NOT NULL
+);
+
+
+ALTER TABLE public.parentunit_data OWNER TO postgres;
+
+--
+-- Name: department_employee_view; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.department_employee_view AS
+ WITH RECURSIVE counter(id, childid, employee) AS (
+         SELECT human_data.unitid AS id,
+            NULL::bigint AS childid,
+            human_data.unitid AS employees
+           FROM public.human_data
+        UNION ALL
+         SELECT parentunit_data.parentunit AS id,
+            counter_1.id AS childid,
+            counter_1.employee
+           FROM (public.parentunit_data
+             JOIN counter counter_1 ON ((parentunit_data.childunit = counter_1.id)))
+        )
+ SELECT counter.id,
+    counter.childid,
+    counter.employee
+   FROM counter;
+
+
+ALTER TABLE public.department_employee_view OWNER TO postgres;
+
+--
+-- Name: unit_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.unit_data (
+    id bigint NOT NULL,
+    payingoptions jsonb,
+    banned boolean DEFAULT false NOT NULL,
+    deleted boolean DEFAULT false NOT NULL,
+    suspended boolean DEFAULT false NOT NULL,
+    profilepicture text,
+    riskvalue integer,
+    createdate timestamp without time zone DEFAULT now(),
+    "position" text
+);
+
+
+ALTER TABLE public.unit_data OWNER TO postgres;
+
+--
+-- Name: department_view; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.department_view AS
+ WITH RECURSIVE counter(id, childid, employees) AS (
+         SELECT human_data.unitid AS id,
+            NULL::bigint AS childid,
+            human_data.unitid AS employees
+           FROM public.human_data
+        UNION ALL
+         SELECT parentunit_data.parentunit AS id,
+            counter.id AS childid,
+            counter.employees
+           FROM (public.parentunit_data
+             JOIN counter ON ((parentunit_data.childunit = counter.id)))
+        )
+ SELECT a.unitid,
+    a.name,
+    a.legalinformation,
+    a.staticdata,
+    a.profilepicture,
+    a.banned,
+    a.suspended,
+    a.deleted,
+    COALESCE(b.employees, (0)::bigint) AS employees
+   FROM (( SELECT department_data.unitid,
+            department_data.name,
+            department_data.legalinformation,
+            department_data.staticdata,
+            unit_data.profilepicture,
+            unit_data.banned,
+            unit_data.suspended,
+            unit_data.deleted
+           FROM public.department_data,
+            public.unit_data
+          WHERE (department_data.unitid = unit_data.id)) a
+     LEFT JOIN ( SELECT counter.id,
+            count(DISTINCT counter.employees) AS employees
+           FROM counter
+          GROUP BY counter.id
+          ORDER BY counter.id) b ON ((a.unitid = b.id)));
+
+
+ALTER TABLE public.department_view OWNER TO postgres;
+
+--
+-- Name: departments; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.departments (
+    companyid integer NOT NULL,
+    name character varying(40),
+    addresscountry character varying(20),
+    addressstate character varying(20),
+    addresscity character varying(20),
+    addressstreet character varying(20),
+    addressnumber smallint,
+    id integer NOT NULL
+);
+
+
+ALTER TABLE public.departments OWNER TO postgres;
+
+--
+-- Name: departments_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.departments_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -414,35 +880,35 @@ CREATE SEQUENCE departments_id_seq
     CACHE 1;
 
 
-ALTER TABLE departments_id_seq OWNER TO vipfy_test_user;
+ALTER TABLE public.departments_id_seq OWNER TO postgres;
 
 --
--- Name: departments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: vipfy_test_user
+-- Name: departments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE departments_id_seq OWNED BY departments.id;
+ALTER SEQUENCE public.departments_id_seq OWNED BY public.departments.id;
 
 
 --
--- Name: developers; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: developers; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE developers (
+CREATE TABLE public.developers (
     id integer NOT NULL,
-    name character varying(255),
-    website character varying(255),
-    legalwebsite character varying(255),
-    bankaccount character varying(255)
+    name character varying(40),
+    website character varying(50),
+    legalwebsite character varying(50),
+    bankaccount character varying(30)
 );
 
 
-ALTER TABLE developers OWNER TO vipfy_test_user;
+ALTER TABLE public.developers OWNER TO postgres;
 
 --
--- Name: developers_id_seq; Type: SEQUENCE; Schema: public; Owner: vipfy_test_user
+-- Name: developers_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE developers_id_seq
+CREATE SEQUENCE public.developers_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -450,55 +916,273 @@ CREATE SEQUENCE developers_id_seq
     CACHE 1;
 
 
-ALTER TABLE developers_id_seq OWNER TO vipfy_test_user;
+ALTER TABLE public.developers_id_seq OWNER TO postgres;
 
 --
--- Name: developers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: vipfy_test_user
+-- Name: developers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE developers_id_seq OWNED BY developers.id;
+ALTER SEQUENCE public.developers_id_seq OWNED BY public.developers.id;
 
 
 --
--- Name: employees; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: email_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE employees (
-    begindate timestamp with time zone,
-    enddate timestamp with time zone,
-    "position" character varying(255),
-    companyid integer,
-    departmentid integer,
-    userid integer
+CREATE TABLE public.email_data (
+    unitid bigint,
+    email text NOT NULL,
+    verified boolean DEFAULT false NOT NULL,
+    autogenerated boolean NOT NULL,
+    description text,
+    priority integer DEFAULT 0 NOT NULL,
+    tag text
 );
 
 
-ALTER TABLE employees OWNER TO vipfy_test_user;
+ALTER TABLE public.email_data OWNER TO postgres;
 
 --
--- Name: notifications; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: employees; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE notifications (
+CREATE TABLE public.employees (
+    companyid integer NOT NULL,
+    departmentid integer NOT NULL,
+    userid integer NOT NULL,
+    begindate date DEFAULT ('now'::text)::date NOT NULL,
+    enddate date,
+    "position" character varying(20)
+);
+
+
+ALTER TABLE public.employees OWNER TO postgres;
+
+--
+-- Name: human_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.human_data_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.human_data_id_seq OWNER TO postgres;
+
+--
+-- Name: human_data_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.human_data_id_seq OWNED BY public.human_data.unitid;
+
+
+--
+-- Name: licence_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.licence_data (
+    unitid bigint NOT NULL,
+    boughtplanid bigint NOT NULL,
+    options jsonb,
+    starttime timestamp without time zone DEFAULT now(),
+    endtime timestamp without time zone,
+    agreed boolean DEFAULT false,
+    disabled boolean DEFAULT false,
+    key jsonb
+);
+
+
+ALTER TABLE public.licence_data OWNER TO postgres;
+
+--
+-- Name: log_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.log_data (
+    id bigint NOT NULL,
+    "time" timestamp without time zone NOT NULL,
+    "user" bigint,
+    sudoer bigint,
+    eventtype text NOT NULL,
+    eventdata jsonb,
+    ip inet
+);
+
+
+ALTER TABLE public.log_data OWNER TO postgres;
+
+--
+-- Name: log_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.log_data_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.log_data_id_seq OWNER TO postgres;
+
+--
+-- Name: log_data_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.log_data_id_seq OWNED BY public.log_data.id;
+
+
+--
+-- Name: login_view; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.login_view AS
+ SELECT human_data.passwordhash,
+    email_data.email,
+    email_data.verified,
+    unit_data.banned,
+    unit_data.suspended,
+    email_data.unitid,
+    unit_data.deleted
+   FROM ((public.human_data
+     JOIN public.unit_data ON ((unit_data.id = human_data.unitid)))
+     JOIN public.email_data ON ((email_data.unitid = human_data.unitid)));
+
+
+ALTER TABLE public.login_view OWNER TO postgres;
+
+--
+-- Name: message_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.message_data (
+    id bigint NOT NULL,
+    receiver bigint NOT NULL,
+    sender bigint NOT NULL,
+    sendtime timestamp without time zone DEFAULT now(),
+    readtime timestamp without time zone,
+    archivetimesender timestamp without time zone,
+    archivetimereceiver timestamp without time zone,
+    messagetext text,
+    tag text[]
+);
+
+
+ALTER TABLE public.message_data OWNER TO postgres;
+
+--
+-- Name: message_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.message_data_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.message_data_id_seq OWNER TO postgres;
+
+--
+-- Name: message_data_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.message_data_id_seq OWNED BY public.message_data.id;
+
+
+--
+-- Name: users_view; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.users_view (
+    id bigint,
+    firstname character varying(300),
+    middlename character varying(300),
+    lastname character varying(300),
+    title character varying(50),
+    sex character(1),
+    birthday date,
+    resetoption integer,
+    language text,
+    profilepicture text,
+    payingoptions jsonb,
+    banned boolean,
+    deleted boolean,
+    suspended boolean,
+    riskvalue integer,
+    "position" text,
+    createdate timestamp without time zone,
+    emails json
+);
+
+ALTER TABLE ONLY public.users_view REPLICA IDENTITY NOTHING;
+
+
+ALTER TABLE public.users_view OWNER TO postgres;
+
+--
+-- Name: message_view; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.message_view AS
+ SELECT users_view.id AS receiver,
+    message_data.sendtime,
+    users_view.profilepicture AS senderpicture,
+    (((users_view.firstname)::text || ' '::text) || (users_view.lastname)::text) AS sendername,
+    message_data.readtime,
+    message_data.archivetimesender,
+    message_data.archivetimereceiver,
+    message_data.tag,
+    message_data.messagetext,
+    message_data.id
+   FROM public.message_data,
+    public.users_view
+  WHERE (users_view.id = message_data.receiver);
+
+
+ALTER TABLE public.message_view OWNER TO postgres;
+
+--
+-- Name: newsletter_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.newsletter_data (
+    email text NOT NULL,
+    activesince date DEFAULT now() NOT NULL,
+    activeuntil date
+);
+
+
+ALTER TABLE public.newsletter_data OWNER TO postgres;
+
+--
+-- Name: notifications; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.notifications (
     id integer NOT NULL,
-    type integer,
-    sendtime timestamp with time zone,
-    readtime timestamp with time zone,
+    type smallint,
+    touser integer,
+    fromuser integer,
+    sendtime timestamp without time zone DEFAULT now(),
+    readtime timestamp without time zone,
     deleted boolean DEFAULT false,
     senderdeleted boolean DEFAULT false,
-    message text NOT NULL,
-    touser integer,
-    fromuser integer
+    message text
 );
 
 
-ALTER TABLE notifications OWNER TO vipfy_test_user;
+ALTER TABLE public.notifications OWNER TO postgres;
 
 --
--- Name: notifications_id_seq; Type: SEQUENCE; Schema: public; Owner: vipfy_test_user
+-- Name: notifications_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE notifications_id_seq
+CREATE SEQUENCE public.notifications_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -506,47 +1190,112 @@ CREATE SEQUENCE notifications_id_seq
     CACHE 1;
 
 
-ALTER TABLE notifications_id_seq OWNER TO vipfy_test_user;
+ALTER TABLE public.notifications_id_seq OWNER TO postgres;
 
 --
--- Name: notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: vipfy_test_user
+-- Name: notifications_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE notifications_id_seq OWNED BY notifications.id;
+ALTER SEQUENCE public.notifications_id_seq OWNED BY public.notifications.id;
 
 
 --
--- Name: plans; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: phone_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE plans (
+CREATE TABLE public.phone_data (
+    unitid bigint,
+    number text NOT NULL,
+    verified boolean DEFAULT false NOT NULL,
+    autogenerated boolean NOT NULL,
+    description text,
+    priority integer DEFAULT 0 NOT NULL,
+    tag text
+);
+
+
+ALTER TABLE public.phone_data OWNER TO postgres;
+
+--
+-- Name: plan_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.plan_data (
+    id bigint NOT NULL,
+    name text,
+    appid bigint,
+    teaserdescription text,
+    features jsonb,
+    startdate timestamp without time zone DEFAULT now() NOT NULL,
+    enddate timestamp without time zone,
+    numlicences integer DEFAULT 1 NOT NULL,
+    price numeric(10,2),
+    currency character(3),
+    options jsonb,
+    payperiod interval,
+    cancelperiod interval,
+    gotoplan bigint,
+    optional boolean DEFAULT false,
+    mainplan bigint,
+    gototime interval
+);
+
+
+ALTER TABLE public.plan_data OWNER TO postgres;
+
+--
+-- Name: plan_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.plan_data_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.plan_data_id_seq OWNER TO postgres;
+
+--
+-- Name: plan_data_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.plan_data_id_seq OWNED BY public.plan_data.id;
+
+
+--
+-- Name: plans; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.plans (
     id integer NOT NULL,
-    description character varying(255),
+    appid integer NOT NULL,
+    description character varying(256),
     renewalplan integer,
     period integer,
     numlicences integer,
     price numeric(11,2),
-    currency character varying(3),
-    name character varying(255),
-    activefrom date,
-    activeuntil date,
+    currency character(3),
+    name character varying(30),
+    activefrom timestamp without time zone,
+    activeuntil timestamp without time zone,
     promo smallint,
     promovipfy numeric(11,2),
     promodeveloper numeric(11,2),
-    promoname character varying(255),
+    promoname character varying(30),
     changeafter smallint,
-    changeplan integer,
-    appid integer
+    changeplan integer
 );
 
 
-ALTER TABLE plans OWNER TO vipfy_test_user;
+ALTER TABLE public.plans OWNER TO postgres;
 
 --
--- Name: plans_id_seq; Type: SEQUENCE; Schema: public; Owner: vipfy_test_user
+-- Name: plans_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE plans_id_seq
+CREATE SEQUENCE public.plans_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -554,57 +1303,172 @@ CREATE SEQUENCE plans_id_seq
     CACHE 1;
 
 
-ALTER TABLE plans_id_seq OWNER TO vipfy_test_user;
+ALTER TABLE public.plans_id_seq OWNER TO postgres;
 
 --
--- Name: plans_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: vipfy_test_user
+-- Name: plans_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE plans_id_seq OWNED BY plans.id;
+ALTER SEQUENCE public.plans_id_seq OWNED BY public.plans.id;
 
 
 --
--- Name: reviewhelpful; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: plans_running; Type: VIEW; Schema: public; Owner: postgres
 --
 
-CREATE TABLE reviewhelpful (
-    helpfuldate timestamp with time zone,
-    balance integer,
+CREATE VIEW public.plans_running AS
+ SELECT plan_data.id,
+    plan_data.name,
+    plan_data.appid,
+    plan_data.teaserdescription,
+    plan_data.features,
+    plan_data.startdate,
+    plan_data.enddate,
+    plan_data.numlicences,
+    plan_data.price,
+    plan_data.currency,
+    plan_data.options
+   FROM public.plan_data
+  WHERE ((plan_data.startdate < now()) AND ((plan_data.enddate > now()) OR (plan_data.enddate IS NULL)));
+
+
+ALTER TABLE public.plans_running OWNER TO postgres;
+
+--
+-- Name: promo_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.promo_data (
+    id bigint NOT NULL,
+    name text,
+    planid bigint,
+    startdate timestamp without time zone DEFAULT now() NOT NULL,
+    enddate timestamp without time zone,
+    restrictions jsonb,
+    description text,
+    sponsor bigint,
+    discount jsonb
+);
+
+
+ALTER TABLE public.promo_data OWNER TO postgres;
+
+--
+-- Name: promo_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.promo_data_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.promo_data_id_seq OWNER TO postgres;
+
+--
+-- Name: promo_data_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.promo_data_id_seq OWNED BY public.promo_data.id;
+
+
+--
+-- Name: promos_running; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.promos_running AS
+ SELECT promo_data.id,
+    promo_data.name,
+    promo_data.planid,
+    promo_data.startdate,
+    promo_data.enddate,
+    promo_data.restrictions,
+    promo_data.description,
+    promo_data.sponsor,
+    promo_data.discount
+   FROM public.promo_data
+  WHERE ((promo_data.startdate < now()) AND ((promo_data.enddate > now()) OR (promo_data.enddate IS NULL)));
+
+
+ALTER TABLE public.promos_running OWNER TO postgres;
+
+--
+-- Name: reviewhelpful_data; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.reviewhelpful_data (
+    reviewid integer NOT NULL,
+    unitid integer NOT NULL,
+    helpfuldate timestamp without time zone DEFAULT now(),
     comment text,
-    userid integer,
-    reviewid integer
+    balance smallint
 );
 
 
-ALTER TABLE reviewhelpful OWNER TO vipfy_test_user;
+ALTER TABLE public.reviewhelpful_data OWNER TO postgres;
 
 --
--- Name: review_view; Type: VIEW; Schema: public; Owner: user
+-- Name: review_view; Type: VIEW; Schema: public; Owner: postgres
 --
 
-CREATE VIEW review_view AS
- SELECT reviews.userid,
-    reviews.appid,
-    reviews.reviewdate,
-    reviews.stars,
-    reviews.reviewtext,
-    reviews.id,
-    reviews.answerto,
-    count(*) FILTER (WHERE (reviewhelpful.balance = 1)) AS counthelpful,
-    count(*) FILTER (WHERE (reviewhelpful.balance = 2)) AS countunhelpful,
-    count(*) FILTER (WHERE (reviewhelpful.balance = 0)) AS countcomment
-   FROM (reviews
-     LEFT JOIN reviewhelpful ON ((reviews.id = reviewhelpful.reviewid)))
-  GROUP BY reviews.userid, reviews.appid, reviews.reviewdate, reviews.stars, reviews.reviewtext, reviews.id, reviews.answerto;
+CREATE VIEW public.review_view AS
+ SELECT review_data.id,
+    review_data.unitid,
+    review_data.appid,
+    review_data.reviewdate,
+    review_data.stars,
+    review_data.reviewtext,
+    review_data.answerto,
+    count(*) FILTER (WHERE (reviewhelpful_data.balance = 1)) AS counthelpful,
+    count(*) FILTER (WHERE (reviewhelpful_data.balance = 2)) AS countunhelpful,
+    count(*) FILTER (WHERE (reviewhelpful_data.balance = 0)) AS countcomment
+   FROM (public.review_data
+     LEFT JOIN public.reviewhelpful_data ON ((review_data.id = reviewhelpful_data.reviewid)))
+  GROUP BY review_data.unitid, review_data.appid, review_data.reviewdate, review_data.stars, review_data.reviewtext, review_data.id, review_data.answerto
+  ORDER BY review_data.reviewdate DESC;
 
 
-ALTER TABLE review_view OWNER TO "user";
+ALTER TABLE public.review_view OWNER TO postgres;
 
 --
--- Name: reviews_id_seq; Type: SEQUENCE; Schema: public; Owner: vipfy_test_user
+-- Name: reviewhelpful; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE reviews_id_seq
+CREATE TABLE public.reviewhelpful (
+    helpfuldate timestamp with time zone,
+    comment text,
+    balance integer,
+    reviewid integer,
+    unitid integer
+);
+
+
+ALTER TABLE public.reviewhelpful OWNER TO postgres;
+
+--
+-- Name: reviews; Type: VIEW; Schema: public; Owner: postgres
+--
+
+CREATE VIEW public.reviews AS
+ SELECT review_data.unitid AS userid,
+    review_data.appid,
+    review_data.reviewdate,
+    review_data.stars,
+    review_data.reviewtext,
+    review_data.id,
+    review_data.answerto
+   FROM public.review_data;
+
+
+ALTER TABLE public.reviews OWNER TO postgres;
+
+--
+-- Name: reviews_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.reviews_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -612,33 +1476,67 @@ CREATE SEQUENCE reviews_id_seq
     CACHE 1;
 
 
-ALTER TABLE reviews_id_seq OWNER TO vipfy_test_user;
+ALTER TABLE public.reviews_id_seq OWNER TO postgres;
 
 --
--- Name: reviews_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: vipfy_test_user
+-- Name: reviews_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE reviews_id_seq OWNED BY reviews.id;
+ALTER SEQUENCE public.reviews_id_seq OWNED BY public.review_data.id;
 
 
 --
--- Name: speaks; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: right_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE speaks (
-    language character varying(255) DEFAULT 'English'::character varying NOT NULL,
-    preferred boolean DEFAULT false,
-    userid integer
+CREATE TABLE public.right_data (
+    holder bigint,
+    forunit bigint,
+    type character varying(20)
 );
 
 
-ALTER TABLE speaks OWNER TO vipfy_test_user;
+ALTER TABLE public.right_data OWNER TO postgres;
 
 --
--- Name: usedcompanyplans; Type: TABLE; Schema: public; Owner: user
+-- Name: speaks; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE usedcompanyplans (
+CREATE TABLE public.speaks (
+    userid integer NOT NULL,
+    language public.languages DEFAULT 'English'::public.languages NOT NULL,
+    preferred boolean DEFAULT false
+);
+
+
+ALTER TABLE public.speaks OWNER TO postgres;
+
+--
+-- Name: unit_data_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.unit_data_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.unit_data_id_seq OWNER TO postgres;
+
+--
+-- Name: unit_data_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.unit_data_id_seq OWNED BY public.unit_data.id;
+
+
+--
+-- Name: usedcompanyplans; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.usedcompanyplans (
     userid integer NOT NULL,
     appid integer NOT NULL,
     planid integer NOT NULL,
@@ -650,57 +1548,58 @@ CREATE TABLE usedcompanyplans (
 );
 
 
-ALTER TABLE usedcompanyplans OWNER TO "user";
+ALTER TABLE public.usedcompanyplans OWNER TO postgres;
 
 --
--- Name: userbills; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: userbills; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE userbills (
-    date date,
-    billpos integer,
-    textpos character varying(255),
+CREATE TABLE public.userbills (
+    userid integer NOT NULL,
+    date timestamp without time zone DEFAULT now() NOT NULL,
+    billpos integer NOT NULL,
+    textpos character varying(256),
     price numeric(11,2),
-    currency character varying(3),
-    orgcurrency character varying(3),
-    exchangerate numeric(20,10),
-    userid integer,
-    planid integer
+    currency character(3),
+    appid integer,
+    planid integer,
+    orgcurrency character(3),
+    exchangerate numeric(20,10)
 );
 
 
-ALTER TABLE userbills OWNER TO vipfy_test_user;
+ALTER TABLE public.userbills OWNER TO postgres;
 
 --
--- Name: userrights; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: userrights; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE userrights (
-    userright integer NOT NULL,
-    userid integer,
-    companyid integer,
-    departmentid integer
+CREATE TABLE public.userrights (
+    userid integer NOT NULL,
+    companyid integer NOT NULL,
+    departmentid integer NOT NULL,
+    userright integer NOT NULL
 );
 
 
-ALTER TABLE userrights OWNER TO vipfy_test_user;
+ALTER TABLE public.userrights OWNER TO postgres;
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: vipfy_test_user
+-- Name: users_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE users (
+CREATE TABLE public.users_data (
     id integer NOT NULL,
     firstname character varying(255),
     middlename character varying(255),
     lastname character varying(255),
     "position" character varying(255),
     email character varying(255) NOT NULL,
-    password character varying(255),
+    password character varying(255) NOT NULL,
     title character varying(255),
-    sex enum_users_sex,
-    userstatus enum_users_userstatus DEFAULT 'toverify'::enum_users_userstatus,
-    birthday timestamp with time zone,
+    sex character(1),
+    userstatus public."enum_users_userStatus" DEFAULT 'toverify'::public."enum_users_userStatus",
+    birthday date,
     recoveryemail character varying(255),
     mobilenumber character varying(255),
     telefonnumber character varying(255),
@@ -708,7 +1607,7 @@ CREATE TABLE users (
     addressstate character varying(255),
     addresscity character varying(255),
     addressstreet character varying(255),
-    addressnumber character varying(255),
+    addressnumber character varying(10),
     profilepicture character varying(255),
     lastactive timestamp with time zone,
     lastsecret character varying(255),
@@ -717,18 +1616,57 @@ CREATE TABLE users (
     referall integer DEFAULT 0,
     cobranded integer DEFAULT 0,
     resetoption integer DEFAULT 0,
-    "createdAt" timestamp with time zone,
-    "updatedAt" timestamp with time zone
+    "createdAt" timestamp with time zone DEFAULT now() NOT NULL,
+    "updatedAt" timestamp with time zone DEFAULT now() NOT NULL
 );
 
 
-ALTER TABLE users OWNER TO vipfy_test_user;
+ALTER TABLE public.users_data OWNER TO postgres;
 
 --
--- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: vipfy_test_user
+-- Name: users; Type: VIEW; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE users_id_seq
+CREATE VIEW public.users AS
+ SELECT users_data.id,
+    users_data.firstname,
+    users_data.middlename,
+    users_data.lastname,
+    users_data."position",
+    users_data.email,
+    users_data.password,
+    users_data.title,
+    users_data.sex,
+    users_data.userstatus,
+    users_data.birthday,
+    users_data.recoveryemail,
+    users_data.mobilenumber,
+    users_data.telefonnumber,
+    users_data.addresscountry,
+    users_data.addressstate,
+    users_data.addresscity,
+    users_data.addressstreet,
+    users_data.addressnumber,
+    users_data.profilepicture,
+    users_data.lastactive,
+    users_data.lastsecret,
+    users_data.riskvalue,
+    users_data.newsletter,
+    users_data.referall,
+    users_data.cobranded,
+    users_data.resetoption,
+    users_data."createdAt",
+    users_data."updatedAt"
+   FROM public.users_data;
+
+
+ALTER TABLE public.users OWNER TO postgres;
+
+--
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.users_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -736,1836 +1674,2247 @@ CREATE SEQUENCE users_id_seq
     CACHE 1;
 
 
-ALTER TABLE users_id_seq OWNER TO vipfy_test_user;
+ALTER TABLE public.users_id_seq OWNER TO postgres;
 
 --
--- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: vipfy_test_user
+-- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE users_id_seq OWNED BY users.id;
-
-
---
--- Name: appimages id; Type: DEFAULT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY appimages ALTER COLUMN id SET DEFAULT nextval('appimages_id_seq'::regclass);
+ALTER SEQUENCE public.users_id_seq OWNED BY public.users_data.id;
 
 
 --
--- Name: appnotifications id; Type: DEFAULT; Schema: public; Owner: vipfy_test_user
+-- Name: website_data; Type: TABLE; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY appnotifications ALTER COLUMN id SET DEFAULT nextval('appnotifications_id_seq'::regclass);
+CREATE TABLE public.website_data (
+    website text NOT NULL,
+    unitid bigint,
+    tag text,
+    verified boolean DEFAULT false NOT NULL,
+    autogenerated boolean NOT NULL,
+    description text,
+    priority integer DEFAULT 0 NOT NULL
+);
 
 
---
--- Name: apps id; Type: DEFAULT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY apps ALTER COLUMN id SET DEFAULT nextval('apps_id_seq'::regclass);
-
-
---
--- Name: companies id; Type: DEFAULT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY companies ALTER COLUMN id SET DEFAULT nextval('companies_id_seq'::regclass);
-
+ALTER TABLE public.website_data OWNER TO postgres;
 
 --
--- Name: departments id; Type: DEFAULT; Schema: public; Owner: vipfy_test_user
+-- Name: address_data id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY departments ALTER COLUMN id SET DEFAULT nextval('departments_id_seq'::regclass);
+ALTER TABLE ONLY public.address_data ALTER COLUMN id SET DEFAULT nextval('public.adress_data_id_seq'::regclass);
 
 
 --
--- Name: developers id; Type: DEFAULT; Schema: public; Owner: vipfy_test_user
+-- Name: app_data id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY developers ALTER COLUMN id SET DEFAULT nextval('developers_id_seq'::regclass);
-
-
---
--- Name: notifications id; Type: DEFAULT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY notifications ALTER COLUMN id SET DEFAULT nextval('notifications_id_seq'::regclass);
+ALTER TABLE ONLY public.app_data ALTER COLUMN id SET DEFAULT nextval('public.app_data_id_seq'::regclass);
 
 
 --
--- Name: plans id; Type: DEFAULT; Schema: public; Owner: vipfy_test_user
+-- Name: appimages id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY plans ALTER COLUMN id SET DEFAULT nextval('plans_id_seq'::regclass);
-
-
---
--- Name: reviews id; Type: DEFAULT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY reviews ALTER COLUMN id SET DEFAULT nextval('reviews_id_seq'::regclass);
+ALTER TABLE ONLY public.appimages ALTER COLUMN id SET DEFAULT nextval('public.appimages_id_seq'::regclass);
 
 
 --
--- Name: users id; Type: DEFAULT; Schema: public; Owner: vipfy_test_user
+-- Name: appnotifications id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY users ALTER COLUMN id SET DEFAULT nextval('users_id_seq'::regclass);
+ALTER TABLE ONLY public.appnotifications ALTER COLUMN id SET DEFAULT nextval('public.appnotifications_id_seq'::regclass);
 
 
 --
--- Data for Name: appimages; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Name: apps id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-COPY appimages (id, link, sequence, appid) FROM stdin;
-2	Weebly.jpeg	\N	2
+ALTER TABLE ONLY public.apps ALTER COLUMN id SET DEFAULT nextval('public.apps_id_seq'::regclass);
+
+
+--
+-- Name: bill_data id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.bill_data ALTER COLUMN id SET DEFAULT nextval('public.bill_data_id_seq'::regclass);
+
+
+--
+-- Name: billposition_data id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.billposition_data ALTER COLUMN id SET DEFAULT nextval('public.billposition_data_id_seq'::regclass);
+
+
+--
+-- Name: boughtplan_data id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtplan_data ALTER COLUMN id SET DEFAULT nextval('public.boughtplan_data_id_seq'::regclass);
+
+
+--
+-- Name: companies id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.companies ALTER COLUMN id SET DEFAULT nextval('public.companies_id_seq'::regclass);
+
+
+--
+-- Name: departments id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.departments ALTER COLUMN id SET DEFAULT nextval('public.departments_id_seq'::regclass);
+
+
+--
+-- Name: developers id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.developers ALTER COLUMN id SET DEFAULT nextval('public.developers_id_seq'::regclass);
+
+
+--
+-- Name: log_data id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.log_data ALTER COLUMN id SET DEFAULT nextval('public.log_data_id_seq'::regclass);
+
+
+--
+-- Name: message_data id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.message_data ALTER COLUMN id SET DEFAULT nextval('public.message_data_id_seq'::regclass);
+
+
+--
+-- Name: notifications id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notifications ALTER COLUMN id SET DEFAULT nextval('public.notifications_id_seq'::regclass);
+
+
+--
+-- Name: plan_data id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plan_data ALTER COLUMN id SET DEFAULT nextval('public.plan_data_id_seq'::regclass);
+
+
+--
+-- Name: plans id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plans ALTER COLUMN id SET DEFAULT nextval('public.plans_id_seq'::regclass);
+
+
+--
+-- Name: promo_data id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.promo_data ALTER COLUMN id SET DEFAULT nextval('public.promo_data_id_seq'::regclass);
+
+
+--
+-- Name: review_data id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.review_data ALTER COLUMN id SET DEFAULT nextval('public.reviews_id_seq'::regclass);
+
+
+--
+-- Name: unit_data id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.unit_data ALTER COLUMN id SET DEFAULT nextval('public.unit_data_id_seq'::regclass);
+
+
+--
+-- Name: users_data id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users_data ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+
+--
+-- Data for Name: address_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.address_data (id, unitid, country, address, description, priority, tag) FROM stdin;
+3	7	NL	{"city": "Maastricht", "street": "Bluntway 12"}	Chill Place	1	\N
+4	7	NL	{"city": "Maastricht", "street": "Bluntway 12"}	Chill Place	1	\N
+5	7	DE	{"city": "Saarbrücken", "street": "Hellwigstraße 4"}	Work Place	0	\N
+6	7	DE	{"city": "Saarbrücken", "street": "Hellwigstraße 4"}	Work Place	0	\N
+7	7	EN	{"city": "London", "street": "Englishstreet 54"}	Royal Castle	0	\N
+2	7	PL	{"city": "Pilsen", "street": "Thiefstreet 2"}	Garage	0	\N
+8	7	NL	{"city": "Maastricht", "street": "High Road 12"}	Chill Place	3	\N
+9	7	TH	{"city": "Maastricht", "street": "Thai Road 12"}	Third Wife Place	1	\N
 \.
 
 
 --
--- Name: appimages_id_seq; Type: SEQUENCE SET; Schema: public; Owner: vipfy_test_user
+-- Name: adress_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('appimages_id_seq', 2, true);
+SELECT pg_catalog.setval('public.adress_data_id_seq', 9, true);
 
 
 --
--- Data for Name: appnotifications; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Data for Name: app_data; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY appnotifications (id, type, sendtime, readtime, deleted, senderdeleted, message, touser, fromapp) FROM stdin;
+COPY public.app_data (id, name, commission, logo, description, teaserdescription, website, supportunit, images, features, options, disabled, developer) FROM stdin;
+3	Slack	\N	slack.svg	Cloud-based team collaboration tool that offers persistent chat rooms (channels) organized by topic, as well as private groups and direct messaging. All content inside Slack is searchable, including files, conversations, and people	Cloud-based team collaboration tool that offers persistent chat rooms (channels) organized by topic, as well as private groups and direct messaging. All content inside Slack is searchable, including files, conversations, and people	https://slack.com	22	{Slack.png,Slack2.png,Slack3.jpg,Slack4.png}	\N	\N	t	13
+6	Moo	\N	Moo-logo.png	Premium Business Cards, Luxe Business Cards, Postcards, Stickers and more	Premium Business Cards, Luxe Business Cards, Postcards, Stickers and more	https://moo.com	22	{Moo.jpg,Moo2.jpg,Moo3.jpeg}	\N	\N	t	16
+7	Vistaprint	\N	vistaprint_2014_logo_detail.png	Printing and real-time design help	Printing and real-time design help	https://vistaprint.com	22	{Vistaprint.jpg,Vistaprint2.jpg,Vistaprint3.jpg}	\N	\N	t	17
+9	Waveapps	\N	wave.png	Create and send professional invoices, estimates and receipts in seconds. Track the status of your invoices and payments so you can know when to expect money in your bank account	Create and send professional invoices, estimates and receipts in seconds. Track the status of your invoices and payments so you can know when to expect money in your bank account	https://waveapps.com	22	{Waveapps.png,Waveapps2.jpg,Waveapps3.png,Waveapps4.jpg}	\N	\N	t	19
+10	Waveapps	\N	xero.svg	Online accounting software for your small business	Online accounting software for your small business	https://xero.com	22	{Xero.jpg,Xero2.png,Xero3.png,Xero4.png}	\N	\N	t	20
+11	DD24	\N	dd24.png	Web-hosting service featuring a drag-and-drop website builder. Include a Shop- and Newsletter-Plugin	Web-hosting service featuring a drag-and-drop website builder. Include a Shop- and Newsletter-Plugin	https://dd24.net	22	{dd24.png,dd24_2.png,dd24_3.jpg,dd24_4.jpg}	\N	\N	t	21
+8	CakeHr	\N	cake.png	Manage employee leave and time off. Detailed employee and company reports	Manage Employees better	https://cakehr.com	22	{CakeHR.png,CakeHR2.png,CakeHR3.png,CakeHR4.jpg}	\N	\N	t	18
+5	Google Apps	\N	google-apps.svg	All you need to do your best work, together in one package that works seamlessly from your computer, phone or tablet	All you need to do your best work, together in one package that works seamlessly from your computer, phone or tablet	https://gsuite.google.com	22	{Google_Apps.png,Google-Apps2.png,Google_Apps3.png,Google-Apps4.png}	\N	\N	t	15
+2	Weebly	\N	weebly.svg	Web-hosting service featuring a drag-and-drop website builder. Include a Shop- and Newsletter-Plugin	Web-hosting service featuring a drag-and-drop website builder. Include a Shop- and Newsletter-Plugin	https://weebly.com	22	{Weebly.jpeg,Weebly2.png,Weebly3.jpg,Weebly4.png}	\N	\N	t	12
+4	Pipedrive	"No commission"	pipedrive.svg	The leading sales management tool small teams love to use.	The leading sales management tool small teams love to use.	https://pipedrive.com	22	{Pipedrive.png,Pipedrive2.png,Pipedrive3.png,Pipedrive4.png}	{"name": "Test"}	{"agb": "test.html", "privacy": "privacy.html"}	t	14
 \.
 
 
 --
--- Name: appnotifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: vipfy_test_user
+-- Name: app_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('appnotifications_id_seq', 1, false);
+SELECT pg_catalog.setval('public.app_data_id_seq', 16, true);
 
 
 --
--- Data for Name: apps; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Data for Name: appimages; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY apps (id, name, percentage, applogo, description, modaltype, updatedate, versionnumber, teaserdescription, ownpage, supportwebsite, supportphone, developerid) FROM stdin;
-2	Weebly	\N	weebly.svg	Web-hosting service featuring drag-and-drop website builder.	0	\N	\N	\N	\N	\N	\N	1
+COPY public.appimages (id, appid, link, sequence) FROM stdin;
+1	1	Weebly.jpeg	\N
+2	1	Weebly2.png	\N
+3	1	Weebly3.jpg	\N
+4	1	Weebly4.png	\N
+5	2	Slack.png	\N
+6	2	Slack2.png	\N
+7	2	Slack3.jpg	\N
+8	2	Slack4.png	\N
+9	3	Pipedrive.png	\N
+10	3	Pipedrive2.png	\N
+11	3	Pipedrive3.png	\N
+12	3	Pipedrive4.png	\N
+13	4	Google_Apps.png	\N
+14	4	Google-Apps2.png	\N
+15	4	Google_Apps3.png	\N
+16	4	Google-Apps4.png	\N
+17	5	Moo.jpg	\N
+18	5	Moo2.jpg	\N
+19	5	Moo3.jpeg	\N
+20	6	Vistaprint.jpg	\N
+21	6	Vistaprint2.jpg	\N
+22	6	Vistaprint3.png	\N
+23	6	Vistaprint4.jpg	\N
+24	7	CakeHR.png	\N
+25	7	CakeHR2.png	\N
+26	7	CakeHR3.png	\N
+27	7	CakeHR4.jpg	\N
+28	8	Xero.jpg	\N
+29	8	Xero2.png	\N
+30	8	Xero3.png	\N
+31	8	Xero4.png	\N
+32	9	Waveapps.png	\N
+33	9	Waveapps2.jpg	\N
+34	9	Waveapps3.png	\N
+35	9	Waveapps4.jpg	\N
+36	11	dd24.png	\N
+37	11	dd24_2.png	\N
+38	11	dd24_3.jpg	\N
+39	11	dd24_4.jpg	\N
 \.
 
 
 --
--- Name: apps_id_seq; Type: SEQUENCE SET; Schema: public; Owner: vipfy_test_user
+-- Name: appimages_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('apps_id_seq', 2, true);
+SELECT pg_catalog.setval('public.appimages_id_seq', 39, true);
 
 
 --
--- Data for Name: boughtcompanyplans; Type: TABLE DATA; Schema: public; Owner: user
+-- Data for Name: appnotifications; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY boughtcompanyplans (companyid, appid, planid, datebought, planfinish, key, lastrenewal, numrenewal, numlicences) FROM stdin;
+COPY public.appnotifications (id, type, touser, fromapp, sendtime, readtime, deleted, senderdeleted, message) FROM stdin;
+1	1	61	4	2017-12-26 21:32:28.683334	2017-12-27 18:49:46.641	t	f	Domo Arigato, Mr. Roboto
+2	1	61	4	2017-12-28 15:17:04.068985	\N	f	f	...that was when I ruled the world.
+3	1	67	4	2017-12-31 13:32:58.75916	\N	f	f	...that was when I ruled the world.
+5	1	67	2	2017-12-31 13:33:29.747131	\N	f	f	Oh ho hoho hoho...
 \.
 
 
 --
--- Data for Name: boughtuserplans; Type: TABLE DATA; Schema: public; Owner: user
+-- Name: appnotifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-COPY boughtuserplans (userid, appid, planid, datebought, planfinish, key, lastrenewal, numrenewal) FROM stdin;
+SELECT pg_catalog.setval('public.appnotifications_id_seq', 5, true);
+
+
+--
+-- Data for Name: apps; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.apps (id, developerid, name, percentage, description, applogo, versionnumber, updatedate, teaserdescription, ownpage, supportwebsite, supportphone, modaltype) FROM stdin;
+2	2	Slack	\N	Cloud-based team collaboration tool that offers persistent chat rooms (channels) organized by topic, as well as private groups and direct messaging. All content inside Slack is searchable, including files, conversations, and people	slack.svg	\N	\N	\N	\N	\N	\N	0
+3	3	Pipedrive	\N	The leading sales management tool small teams love to use.	pipedrive.svg	\N	\N	\N	\N	\N	\N	0
+4	4	Google Apps	\N	All you need to do your best work, together in one package that works seamlessly from your computer, phone or tablet	google-apps.svg	\N	\N	\N	\N	\N	\N	0
+5	5	Moo	\N	Premium Business Cards, Luxe Business Cards, Postcards, Stickers and more	Moo-logo.png	\N	\N	\N	\N	\N	\N	0
+6	6	Vistaprint	\N	Printing and real-time design help	vistaprint_2014_logo_detail.png	\N	\N	\N	\N	\N	\N	0
+7	7	CakeHR	\N	Manage employee leave and time off. Detailed employee and company reports	cake.png	\N	\N	\N	\N	\N	\N	0
+8	8	Xero	\N	Online accounting software for your small business	xero.svg	\N	\N	\N	\N	\N	\N	0
+9	9	Waveapps	\N	Create and send professional invoices, estimates and receipts in seconds. Track the status of your invoices and payments so you can know when to expect money in your bank account	wave.png	\N	\N	\N	\N	\N	\N	0
+11	20	DD24	\N	User-friendly retail customer portal for domain registration and management	dd24.png	\N	\N	\N	\N	\N	\N	1
+1	1	Weebly	\N	Web-hosting service featuring a drag-and-drop website builder. Include a Shop- and Newsletter-Plugin	weebly.svg	\N	\N	\N	\N	\N	\N	0
 \.
 
 
 --
--- Data for Name: companies; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Name: apps_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-COPY companies (id, name, companylogo, addresscountry, addressstate, addresscity, addressstreet, addressnumber, family) FROM stdin;
-1	Motherfucking Blockchain Pros	http://lorempixel.com/640/480/business	USA	Nevada	San Francisco	Coolstreet	69	f
+SELECT pg_catalog.setval('public.apps_id_seq', 11, true);
+
+
+--
+-- Data for Name: bill_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.bill_data (id, unitid, type, billtime, paytime, stornotime) FROM stdin;
 \.
 
 
 --
--- Name: companies_id_seq; Type: SEQUENCE SET; Schema: public; Owner: vipfy_test_user
+-- Name: bill_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('companies_id_seq', 1, true);
+SELECT pg_catalog.setval('public.bill_data_id_seq', 1, false);
 
 
 --
--- Data for Name: companybills; Type: TABLE DATA; Schema: public; Owner: user
+-- Data for Name: billposition_data; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY companybills (companyid, date, billpos, textpos, price, currency, appid, planid) FROM stdin;
+COPY public.billposition_data (id, billid, positiontext, amount, currency, planid, vendor) FROM stdin;
 \.
 
 
 --
--- Data for Name: departments; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Name: billposition_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-COPY departments (id, name, addresscountry, addressstate, addresscity, addressstreet, addressnumber, companyid) FROM stdin;
+SELECT pg_catalog.setval('public.billposition_data_id_seq', 1, false);
+
+
+--
+-- Data for Name: boughtcompanyplans; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.boughtcompanyplans (companyid, appid, planid, datebought, planfinish, key, lastrenewal, numrenewal, numlicences) FROM stdin;
 \.
 
 
 --
--- Name: departments_id_seq; Type: SEQUENCE SET; Schema: public; Owner: vipfy_test_user
+-- Data for Name: boughtplan_data; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('departments_id_seq', 1, false);
+COPY public.boughtplan_data (id, buyer, planid, buytime, endtime, key, predecessor, disabled, payer) FROM stdin;
+1	7	1	2018-03-27 11:47:31.949	\N	{"amount": 10}	\N	f	7
+2	7	1	2018-03-27 11:49:01.323	\N	{"amount": 10}	\N	f	7
+3	7	2	2018-03-27 11:52:09.948	\N	{"amount": 10}	\N	f	7
+\.
 
 
 --
--- Data for Name: developers; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Name: boughtplan_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-COPY developers (id, name, website, legalwebsite, bankaccount) FROM stdin;
+SELECT pg_catalog.setval('public.boughtplan_data_id_seq', 4, true);
+
+
+--
+-- Data for Name: boughtsubplan_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.boughtsubplan_data (boughtplanid, subplanid) FROM stdin;
+\.
+
+
+--
+-- Data for Name: boughtuserplans; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.boughtuserplans (userid, appid, planid, datebought, planfinish, key, lastrenewal, numrenewal) FROM stdin;
+\.
+
+
+--
+-- Data for Name: companies; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.companies (id, name, companylogo, addresscountry, addressstate, addresscity, addressstreet, addressnumber, family) FROM stdin;
+1	Yost - Predovic	http://lorempixel.com/640/480/business	Finland	Texas	Gabrielview	Taylor Light	12952	f
+2	Kunde - Harvey	http://lorempixel.com/640/480/business	Uganda	West Virginia	Nolanhaven	Maritza Viaduct	14623	f
+3	Hoppe, Swaniawski and Steuber	http://lorempixel.com/640/480/business	Faroe Islands	New Mexico	West Jasenstad	Marks Walks	17440	f
+4	Schinner Group	http://lorempixel.com/640/480/business	Malaysia	Utah	New Emeraldtown	Colten Turnpike	3544	f
+5	Streich Group	http://lorempixel.com/640/480/business	Faroe Islands	California	Anissafurt	Brennon Ranch	20618	f
+6	Torp, Dickinson and Quitzon	http://lorempixel.com/640/480/business	Gambia	Colorado	New Enosberg	Lia Shoal	9	f
+7	Jacobs - Miller	http://lorempixel.com/640/480/business	Saint Martin	Nevada	South Rossie	Franecki Lodge	9	f
+8	Bosco Inc	http://lorempixel.com/640/480/business	Reunion	Utah	South Ellen	Efren River	2	f
+9	Shields - Hilpert	http://lorempixel.com/640/480/business	Peru	South Dakota	West Adolfo	Theodora Mall	2	f
+10	Rutherford Group	http://lorempixel.com/640/480/business	Djibouti	North Dakota	North Sandraburgh	Jamison Stream	3	f
+11	Langosh Inc	http://lorempixel.com/640/480/business	Mali	Nebraska	South Ephraimberg	Loren Passage	6	f
+12	Collier and Sons	http://lorempixel.com/640/480/business	Ireland	Massachusetts	South Dessieport	Zelma Lights	8	f
+13	Bartell Inc	http://lorempixel.com/640/480/business	Malawi	Delaware	Stantonburgh	Haley Run	6	f
+14	Mayer LLC	http://lorempixel.com/640/480/business	Burundi	Tennessee	East Gracieside	Koelpin Way	5	f
+15	Mitchell, Rice and Douglas	http://lorempixel.com/640/480/business	Senegal	Wyoming	New Travon	Fahey Plains	3	f
+17	Testcomp	\N	\N	\N	\N	\N	\N	f
+19	Testcomp2	\N	\N	\N	\N	\N	\N	f
+\.
+
+
+--
+-- Name: companies_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.companies_id_seq', 19, true);
+
+
+--
+-- Data for Name: companybills; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.companybills (companyid, date, billpos, textpos, price, currency, appid, planid) FROM stdin;
+\.
+
+
+--
+-- Data for Name: department_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.department_data (unitid, name, legalinformation, staticdata) FROM stdin;
+12	Weebly	\N	\N
+13	Slack	\N	\N
+14	Pipedrive	\N	\N
+15	Google Apps	\N	\N
+17	Vistaprint	\N	\N
+16	Moo	\N	\N
+18	CakeHr	\N	\N
+19	Wave	\N	\N
+20	Xero	\N	\N
+21	DD24	\N	\N
+25	Vipfy	\N	\N
+\.
+
+
+--
+-- Data for Name: departments; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.departments (companyid, name, addresscountry, addressstate, addresscity, addressstreet, addressnumber, id) FROM stdin;
+8	Jewelery	Argentina	Ohio	Port Cassie	Greenholt Roads	8	1
+4	Industrial	Antigua and Barbuda	Vermont	New Michelle	Ankunding Summit	1	2
+3	Garden	Republic of Korea	Nevada	Lake Kelli	Kuvalis Island	5	3
+2	Games	United Kingdom	Connecticut	East Tobyburgh	Lehner Valleys	5	4
+5	Automotive	Antigua and Barbuda	Montana	South Jacksonfort	Kuphal Stravenue	3	5
+1	Games	Cuba	Arizona	Port Jakayla	Andy Wells	6	6
+10	Electronics	Solomon Islands	New Jersey	Wilfordside	Cremin River	1	7
+1	Sports	Honduras	West Virginia	Nolanview	Marks Parkway	2	8
+3	Books	Liberia	Oregon	Abigaylemouth	Carter Trail	8	9
+9	Sports	Niger	New Hampshire	Erickport	Justyn Light	7	10
+17	Main Office	\N	\N	\N	\N	\N	11
+19	Main Office	\N	\N	\N	\N	\N	12
+\.
+
+
+--
+-- Name: departments_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.departments_id_seq', 12, true);
+
+
+--
+-- Data for Name: developers; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.developers (id, name, website, legalwebsite, bankaccount) FROM stdin;
 1	Weebly, Inc	https://weebly.com	https://www.weebly.com/de/terms-of-service	555-555-555
+2	Slack Technologies	https://slack.com	https://slack.com/terms-of-service	\N
+3	Pipedrive Inc	https://pipedrive.com	https://pipedrive.com/terms-of-service	\N
+4	Google Inc	https://gsuite.google.com	https://google.com/intl/policies/terms	\N
+5	Moo Print Limited	https://moo.com	https://www.moo.com/about/terms-conditions.html	\N
+6	Cimpress N.V.	vistaprint.com	vistaprint.com/customer-care/terms-of-use.aspx	\N
+7	HR Bakery Limited	https://cake.hr	https://cake.hr/terms-and-conditions	\N
+8	Xero Limited	https://xero.com	https://www.xero.com/about/terms/	\N
+9	Wave Accounting	https://waveapps.com	https://my.waveapps.com/terms/	\N
+10	Koelpin Inc	agustina.org	darrick.org	46235644
+11	Little Inc	kenyatta.biz	whitney.org	87417625
+12	Grimes Group	syble.net	edna.name	73447675
+13	Rodriguez, Streich and Gerhold	julie.com	eva.net	58289295
+14	Sporer Inc	connie.org	king.com	85999567
+15	Rath LLC	dianna.org	kelton.info	59107656
+16	Schmitt Inc	francesca.net	alexis.net	75106297
+17	Volkman and Sons	erika.info	willy.com	82258162
+18	Predovic and Sons	nelle.com	carmela.info	71511280
+19	Bernhard - Heaney	heath.biz	peggie.name	41188455
+20	Key-Systems GmbH	https://www.domaindiscount24.com/en	https://www.domaindiscount24.com/en/legal/imprint	\N
 \.
 
 
 --
--- Name: developers_id_seq; Type: SEQUENCE SET; Schema: public; Owner: vipfy_test_user
+-- Name: developers_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('developers_id_seq', 1, true);
+SELECT pg_catalog.setval('public.developers_id_seq', 20, true);
 
 
 --
--- Data for Name: employees; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Data for Name: email_data; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY employees (begindate, enddate, "position", companyid, departmentid, userid) FROM stdin;
+COPY public.email_data (unitid, email, verified, autogenerated, description, priority, tag) FROM stdin;
+7	pc@vipfy.com	t	f	\N	0	\N
+7	pc@vip.de	f	f	\N	0	\N
+72	hans@wurst.com	t	f	\N	0	\N
+22	nv@vipfy.com	t	f	\N	0	\N
+31	mm@vipfy.com	f	f	\N	0	\N
+67	jf@vipfy.com	t	f	\N	0	\N
 \.
 
 
 --
--- Data for Name: notifications; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Data for Name: employees; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY notifications (id, type, sendtime, readtime, deleted, senderdeleted, message, touser, fromuser) FROM stdin;
-1	1	\N	\N	f	f	Totam eveniet natus totam quia sed sunt.	2	1
-2	1	\N	\N	f	f	Sit ipsam et aut quia illo quia quo placeat.	2	1
-3	1	\N	\N	f	f	Quo ipsam eligendi dolorem atque ut.	2	1
-4	1	\N	\N	f	f	Aut ipsam quia.	2	1
-5	1	\N	\N	f	f	Et asperiores eum.	2	1
-7	1	\N	\N	f	f	Autem consequuntur tempore blanditiis autem nulla non.	2	1
-8	1	\N	\N	f	f	Incidunt dolore itaque.	2	1
-9	1	\N	\N	f	f	Eos culpa beatae.	2	1
-10	1	\N	\N	f	f	Tenetur esse ut facilis debitis non velit quaerat temporibus ullam.	2	1
-11	1	\N	\N	f	f	Dolorem vel eius expedita veniam corporis.	2	1
-12	1	\N	\N	f	f	Non quia blanditiis dolores sit et nesciunt.	2	1
-13	1	\N	\N	f	f	Itaque sit tempore qui aut soluta.	2	1
-14	1	\N	\N	f	f	Voluptate est doloremque inventore impedit neque perspiciatis ab.	2	1
-15	1	\N	\N	f	f	Sapiente quia expedita quibusdam perspiciatis esse distinctio voluptatem quasi repudiandae.	12	11
-16	1	\N	\N	f	f	Impedit earum asperiores deleniti sit repudiandae nihil.	6	11
-17	1	\N	\N	f	f	Assumenda qui et magnam hic provident expedita ad molestiae.	1	14
-18	1	\N	\N	f	f	Impedit consequatur sint eos vero iure omnis molestiae magni.	3	11
-19	1	\N	\N	f	f	Voluptatem sed facilis odio eum nam.	9	14
-20	1	\N	\N	f	f	Repellendus quis ut consequuntur ut sequi explicabo ratione.	3	8
-21	1	\N	\N	f	f	Ut tempore id eaque libero.	6	12
-22	1	\N	\N	f	f	Et ratione adipisci maxime id.	3	15
-23	1	\N	\N	f	f	Occaecati explicabo et blanditiis blanditiis.	5	13
-24	1	\N	\N	f	f	Nihil expedita quia velit illum voluptatem reprehenderit sapiente.	9	6
-25	1	\N	\N	f	f	Et sit sit animi odit.	3	11
-26	1	\N	\N	f	f	Ut maiores dolores aut.	3	10
-27	1	\N	\N	f	f	Quo iusto eaque sed rem quas culpa molestias est debitis.	3	1
-28	1	\N	\N	f	f	Omnis quibusdam qui soluta sunt.	2	27
-29	1	\N	\N	f	f	Id itaque ea repellat ad sed necessitatibus aut aliquid.	25	23
-30	1	\N	\N	f	f	Omnis ratione sequi voluptas neque adipisci laborum facere sed.	5	10
-31	1	\N	\N	f	f	In et nihil aliquid dolorem.	30	29
-32	1	\N	\N	f	f	Autem voluptatem vel et minus et et quisquam odio.	16	8
-33	1	\N	\N	f	f	Et assumenda quia eos.	8	16
-34	1	\N	\N	f	f	Voluptatum consequatur ut omnis cumque.	3	26
-35	1	\N	\N	f	f	Quaerat dolor ut velit et incidunt et.	5	25
-36	1	\N	\N	f	f	Aliquam magni non in.	11	15
-37	1	\N	\N	f	f	Velit culpa est neque qui perspiciatis ea dolores illo omnis.	3	8
-38	1	\N	\N	f	f	Quidem sit modi impedit placeat et quaerat quia suscipit.	12	22
-39	1	\N	\N	f	f	Ratione iure ducimus quibusdam qui itaque.	17	27
-40	1	\N	\N	f	f	Quae maiores est maiores.	28	16
-41	1	\N	\N	f	f	Voluptatem quaerat tempora inventore saepe quam non.	13	20
-42	1	\N	\N	f	f	Minus ipsam reiciendis sit culpa asperiores vel sed consectetur.	30	4
-43	1	\N	\N	f	f	Eius officia aut repellat cum consequatur quod et qui est.	19	7
-44	1	\N	\N	f	f	Nisi quo tenetur vitae consectetur laudantium facere.	27	7
-45	1	\N	\N	f	f	Eos voluptatem vitae quo est accusantium nesciunt repellat deserunt.	28	8
-46	1	\N	\N	f	f	Et praesentium qui similique similique sit odit quas delectus ullam.	20	6
-47	1	\N	\N	f	f	Non qui sapiente excepturi in eius quis illum possimus nihil.	12	3
-48	1	\N	\N	f	f	A repellat dolorum sit rerum distinctio reiciendis voluptatem ut.	18	24
-49	1	\N	\N	f	f	Occaecati rerum nulla dolorum sint voluptas et atque officiis.	16	18
-50	1	\N	\N	f	f	Alias error ad in id.	16	19
-51	1	\N	\N	f	f	Nesciunt quidem minus quam rerum.	11	9
-52	1	\N	\N	f	f	Asperiores ea autem et vero in illum.	23	6
-53	1	\N	\N	f	f	Autem qui voluptatum sed aspernatur error officia.	6	30
-54	1	\N	\N	f	f	Quaerat ut nesciunt porro mollitia dolores suscipit quo excepturi.	3	2
-55	1	\N	\N	f	f	Unde est tenetur quo nihil ut aliquam eos.	8	15
-56	1	\N	\N	f	f	Sunt alias delectus dolorem voluptatem eos ex facilis occaecati fugiat.	9	19
-57	1	\N	\N	f	f	Itaque sed atque quaerat voluptatum enim quae.	15	11
-58	1	\N	\N	f	f	Cupiditate est esse quos harum eaque officiis soluta at.	7	28
-59	1	\N	\N	f	f	Vel sit recusandae ducimus nobis autem ex.	15	2
-60	1	\N	\N	f	f	Placeat et iusto quidem nisi magni eveniet tempora.	12	24
-61	1	\N	\N	f	f	Commodi fuga dolores ducimus aut.	20	3
-62	1	\N	\N	f	f	Ullam nostrum ipsam nobis excepturi.	13	27
-63	1	\N	\N	f	f	Nulla vel unde natus vel possimus nihil odio praesentium porro.	29	8
-64	1	\N	\N	f	f	Rem ad magni et.	12	25
-65	1	\N	\N	f	f	Tempore odit sequi quod quis libero labore reprehenderit.	30	10
-66	1	\N	\N	f	f	Eos iste earum nostrum.	27	28
-67	1	\N	\N	f	f	Ut pariatur omnis.	10	9
-68	1	\N	\N	f	f	Aspernatur maiores totam error soluta non et aliquam omnis.	11	24
-69	1	\N	\N	f	f	Voluptatem ut aliquam consequuntur quidem delectus eos sint.	30	1
-70	1	\N	\N	f	f	Suscipit dolore dolores maxime odio fuga iure ipsum.	4	21
-71	1	\N	\N	f	f	Modi et ad dicta.	7	12
-72	1	\N	\N	f	f	Quas sunt incidunt dignissimos cum aut doloremque reiciendis non.	7	2
-73	1	\N	\N	f	f	Voluptas est sed sed laborum eius rerum aut quis est.	5	12
-74	1	\N	\N	f	f	Quia eos velit et et officia molestiae laborum hic.	27	17
-75	1	\N	\N	f	f	Eius maiores et eos architecto ipsum omnis.	21	23
-76	1	\N	\N	f	f	Sint dolorum et.	7	22
-77	1	\N	\N	f	f	Voluptatibus repellat dicta cumque enim et.	2	6
-78	1	\N	\N	f	f	Quaerat consequuntur voluptas eos architecto tenetur fugiat ipsa qui quisquam.	28	3
-79	1	\N	\N	f	f	Deserunt tempore inventore corrupti laboriosam cum.	17	15
-80	1	\N	\N	f	f	Aut eos cupiditate sed qui porro quo.	19	17
-81	1	\N	\N	f	f	Qui non sint repellat expedita in.	8	28
-82	1	\N	\N	f	f	Incidunt voluptatem placeat excepturi molestias.	28	14
-83	1	\N	\N	f	f	Ratione consequatur aliquam expedita doloribus maiores nemo dolorum.	11	23
-84	1	\N	\N	f	f	Omnis inventore pariatur beatae laudantium omnis qui repudiandae nulla dolores.	29	7
-85	1	\N	\N	f	f	Qui aspernatur ratione quos temporibus nulla.	12	20
-86	1	\N	\N	f	f	Eos earum tempora qui reprehenderit unde.	1	9
-87	1	\N	\N	f	f	Qui nostrum occaecati quo nihil aut est ea.	27	25
-88	1	\N	\N	f	f	Ipsa assumenda deserunt repellendus ipsa et laboriosam repudiandae modi voluptatem.	30	4
-6	1	\N	2018-01-21 17:33:30.92+01	t	f	Perspiciatis cupiditate illum.	2	1
-89	1	\N	\N	f	f	Repudiandae reiciendis vero recusandae reprehenderit sed blanditiis.	21	1
-90	1	\N	\N	f	f	Qui velit quis ut vero et deserunt occaecati.	68	13
-91	1	\N	\N	f	f	Dignissimos fugiat sed culpa quia facere.	44	19
-92	1	\N	\N	f	f	Necessitatibus sed doloremque et rerum suscipit nihil maxime voluptatem.	59	23
-93	1	\N	\N	f	f	Repellat eligendi quod neque aut.	38	16
-94	1	\N	\N	f	f	Corrupti sed impedit ut sit.	46	26
-95	1	\N	\N	f	f	Autem fuga nemo.	45	6
-96	1	\N	\N	f	f	Qui tempora voluptas distinctio temporibus porro quas praesentium.	68	26
-97	1	\N	\N	f	f	Molestiae quia dolores odio dolore voluptate omnis.	65	15
-98	1	\N	\N	f	f	Sit sunt ratione est repellendus aut omnis.	44	22
-99	1	\N	\N	f	f	Provident voluptatem eos minus aspernatur nostrum assumenda.	32	27
-100	1	\N	\N	f	f	Facere tenetur eos et rerum non in omnis sint tempore.	49	14
-101	1	\N	\N	f	f	Laboriosam numquam eaque nemo.	49	22
-102	1	\N	\N	f	f	Nisi aliquam dolor ad omnis eum tenetur.	49	3
-103	1	\N	\N	f	f	Similique doloremque dignissimos id harum consectetur.	63	4
-104	1	\N	\N	f	f	Blanditiis aut ut culpa enim id.	61	6
-105	1	\N	\N	f	f	Quas iusto maxime nihil repellat deleniti consequatur.	63	6
-106	1	\N	\N	f	f	Cumque ipsa accusantium rerum.	41	16
-107	1	\N	\N	f	f	Harum pariatur eos.	57	6
-108	1	\N	\N	f	f	Totam eius nisi qui aut enim atque tempora quaerat.	53	18
-109	1	\N	\N	f	f	Dolor dicta velit modi voluptatibus cumque quidem quisquam.	56	20
-110	1	\N	\N	f	f	Excepturi nesciunt dolores.	46	25
-111	1	\N	\N	f	f	Doloremque voluptatum quibusdam nihil explicabo consequatur architecto ducimus fuga.	35	22
-112	1	\N	\N	f	f	Id aut impedit aliquam.	38	10
-137	1	\N	2018-01-21 19:51:49.659+01	t	f	Libero aut reiciendis.	37	10
-113	1	\N	2018-01-21 18:16:48.597+01	t	f	Aliquam et labore reprehenderit.	32	29
-114	1	\N	\N	f	f	Reiciendis non in accusamus sed dignissimos illum quisquam ut facere.	56	15
-129	1	\N	2018-01-21 19:47:18.969+01	t	f	Labore est magnam.	54	28
-115	1	\N	2018-01-21 18:17:49.601+01	t	f	Delectus quia deserunt sit voluptatem rerum incidunt.	52	22
-116	1	\N	\N	f	f	Aut alias vero minus doloremque aut accusantium numquam hic.	68	9
-130	1	\N	\N	f	f	Sed corporis nihil ea.	31	25
-117	1	\N	2018-01-21 18:49:09.485+01	t	f	Quis quo aliquid fuga blanditiis nemo totam earum distinctio ratione.	54	15
-118	1	\N	\N	f	f	Et ut nisi.	70	13
-119	1	\N	2018-01-21 18:49:48.135+01	t	f	Aut consequuntur quos sapiente possimus reprehenderit voluptas.	54	20
-120	1	\N	\N	f	f	Ducimus quidem exercitationem est.	50	16
-138	1	\N	\N	f	f	Est illum ex sapiente sint.	52	5
-121	1	\N	2018-01-21 18:59:36.374+01	t	f	Deleniti molestiae minima qui ut id id ea omnis.	34	4
-122	1	\N	\N	f	f	Expedita tempora cupiditate atque tempore voluptatibus quo.	56	14
-131	1	\N	2018-01-21 19:48:09.491+01	t	f	Illo earum veritatis sint consectetur eveniet vero non esse quod.	38	20
-123	1	\N	2018-01-21 19:34:08.456+01	t	f	Dicta laborum possimus voluptate id suscipit corporis et sit quae.	34	25
-124	1	\N	\N	f	f	Occaecati dolores eos sint facere aut.	61	8
-132	1	\N	\N	f	f	Eos dicta illum dicta magni pariatur.	52	24
-125	1	\N	2018-01-21 19:34:45.69+01	t	f	At laudantium molestias sapiente aut vitae.	34	8
-126	1	\N	\N	f	f	Praesentium atque tempore odit.	35	2
-127	1	\N	2018-01-21 19:35:53.613+01	t	f	Officia et consequuntur illum.	53	29
-128	1	\N	\N	f	f	Quis totam magni optio.	34	16
-133	1	\N	2018-01-21 19:49:22.488+01	t	f	Harum quis velit dolorum nulla modi officia dolor aut non.	68	25
-134	1	\N	\N	f	f	Fugiat velit velit iste ratione sit ullam.	47	13
-142	1	\N	\N	f	f	Aspernatur veniam facilis nam neque nemo ut.	40	14
-135	1	\N	2018-01-21 19:50:45.444+01	t	f	Non consequatur repudiandae voluptatem harum totam perspiciatis ad ipsa amet.	33	7
-136	1	\N	\N	f	f	Et esse nostrum.	56	25
-139	1	\N	2018-01-21 19:53:10.549+01	t	f	Aliquid inventore minima qui accusamus.	41	26
-140	1	\N	\N	f	f	Dolores mollitia assumenda.	43	23
-141	1	\N	2018-01-21 19:54:02.218+01	t	f	Suscipit necessitatibus sunt voluptatem reiciendis ex optio assumenda qui fugiat.	40	25
-143	1	\N	2018-01-21 19:55:13.553+01	t	f	Sint quas maiores ipsum consequatur animi rerum sapiente recusandae debitis.	66	25
-144	1	\N	\N	f	f	Non aperiam dolores sapiente nemo.	48	21
-146	1	\N	\N	f	f	Dolor doloribus nobis nobis qui unde provident sapiente illum.	31	14
-145	1	\N	2018-01-21 19:56:46.691+01	t	f	Veritatis fuga suscipit saepe.	43	9
-148	1	\N	\N	f	f	Dolorum in illum quisquam.	59	24
-147	1	\N	2018-01-21 19:57:24.285+01	t	f	Facilis dolores dolores ut natus quibusdam dolores.	47	3
-150	1	\N	\N	f	f	Impedit molestiae sit eaque enim ducimus.	54	6
-149	1	\N	2018-01-21 19:58:44.259+01	t	f	Quidem non sit adipisci atque perferendis.	61	12
-152	1	\N	\N	f	f	Eveniet quia natus sed veritatis perspiciatis vitae placeat.	47	13
-151	1	\N	2018-01-21 20:00:42.139+01	t	f	Similique fugiat ea maxime explicabo enim suscipit.	51	29
-153	1	\N	2018-01-21 20:01:28.538+01	t	f	Libero eaque esse libero earum est placeat molestiae.	62	9
-154	1	\N	\N	f	f	Et corrupti ut et et deleniti voluptatem ut eos.	34	4
-186	1	\N	\N	f	f	Pariatur dolor aut animi autem ut et repellendus ea.	56	11
-155	1	\N	2018-01-21 20:03:09.12+01	t	f	Voluptatem ducimus quam quis ut et explicabo sit.	66	5
-156	1	\N	\N	f	f	Eligendi ipsa illum et molestiae nam corporis dolores voluptates explicabo.	57	29
-157	1	\N	2018-01-21 20:04:37.942+01	t	f	Vel quaerat alias consequatur nisi fugit cupiditate dolorum possimus voluptatem.	57	2
-158	1	\N	\N	f	f	Vero architecto ullam officiis molestiae ut occaecati aspernatur et dolorem.	38	29
-214	1	\N	\N	f	f	Dolor veritatis aut laborum aut quia rem officiis molestias.	70	26
-159	1	\N	2018-01-21 20:08:19.856+01	t	f	Perferendis saepe qui iure facere quis minus ad aspernatur.	35	25
-160	1	\N	\N	f	f	Dolor omnis vel.	43	2
-187	1	\N	2018-01-24 18:56:35.85+01	t	f	Ullam qui velit maxime non assumenda a eum quae.	61	14
-161	1	\N	2018-01-21 20:10:13.287+01	t	f	Sint rerum atque voluptatem et et ipsam doloribus nesciunt accusantium.	35	4
-162	1	\N	\N	f	f	Id sit eligendi est dolore.	65	1
-188	1	\N	\N	f	f	Aut consequuntur voluptatibus.	33	7
-163	1	\N	2018-01-21 20:11:23.013+01	t	f	Commodi et excepturi veritatis harum perspiciatis soluta id.	63	5
-164	1	\N	\N	f	f	Quis assumenda corporis reiciendis.	32	20
-165	1	\N	2018-01-21 20:14:38.261+01	t	f	Laudantium autem voluptatem repellat vel ut non.	53	19
-166	1	\N	\N	f	f	Voluptatum atque qui dolorem alias possimus qui eaque quis.	62	11
-203	1	\N	2018-01-24 18:59:15.834+01	t	f	Qui quis accusantium quia soluta dolore id ea.	63	24
-167	1	\N	2018-01-21 20:17:03.73+01	t	f	Quas modi deserunt tempora qui et aut ea.	66	25
-168	1	\N	\N	f	f	Et aut quam enim hic occaecati.	52	26
-189	1	\N	2018-01-24 18:56:39.485+01	t	f	Explicabo a in distinctio ullam sed eos.	57	18
-169	1	\N	2018-01-21 20:17:52.214+01	t	f	Quis rerum et dolor nobis.	53	13
-170	1	\N	\N	f	f	Totam expedita libero expedita nihil eos animi placeat sed veniam.	49	29
-190	1	\N	\N	f	f	Quis nihil tempora iure iusto.	60	27
-171	1	\N	2018-01-21 20:18:35.938+01	t	f	Quia itaque distinctio molestiae aut quod ullam rerum maxime.	51	12
-172	1	\N	\N	f	f	Sint quis reiciendis cumque voluptas dolor.	69	27
-173	1	\N	2018-01-21 20:18:56.922+01	t	f	Non et sed vel.	58	5
-174	1	\N	\N	f	f	Libero sit non quis quasi exercitationem molestiae at.	44	28
-204	1	\N	\N	f	f	Voluptatem pariatur praesentium repellendus dolores consequatur atque autem sed.	38	6
-175	1	\N	2018-01-21 20:19:17.186+01	t	f	Similique totam repellat delectus unde aspernatur sint.	31	16
-176	1	\N	\N	f	f	Voluptatem atque et.	52	1
-191	1	\N	2018-01-24 18:57:11.58+01	t	f	Eos error est quisquam vitae voluptas doloremque.	41	5
-177	1	\N	2018-01-21 20:19:56.436+01	t	f	Quod perferendis odit quaerat.	63	8
-178	1	\N	\N	f	f	Est atque qui vel laudantium.	53	22
-192	1	\N	\N	f	f	Magnam ducimus quo enim explicabo et et dolor.	48	28
-179	1	\N	2018-01-21 20:21:26.01+01	t	f	Voluptatibus voluptatum et quo ut doloremque eius dolores quae eligendi.	38	16
-180	1	\N	\N	f	f	Exercitationem molestiae ut molestiae.	46	14
-181	1	\N	2018-01-21 20:23:22.444+01	t	f	Nobis in rerum quis quo dolorum pariatur velit repellendus velit.	38	17
-182	1	\N	\N	f	f	Tenetur reprehenderit culpa dolorem dolor voluptatibus aut.	38	12
-183	1	\N	2018-01-21 20:23:42.463+01	t	f	Minus et omnis aut ut quas molestias.	49	8
-184	1	\N	\N	f	f	Vero qui expedita nostrum neque rerum repellat omnis adipisci.	70	3
-193	1	\N	2018-01-24 18:57:14.946+01	t	f	Et commodi recusandae enim deleniti voluptas iure dolor.	37	30
-185	1	\N	2018-01-21 20:26:06.396+01	t	f	Itaque assumenda occaecati adipisci.	67	11
-194	1	\N	\N	f	f	Quo voluptatum impedit et maiores aut aspernatur et debitis.	51	12
-211	1	\N	2018-01-24 19:04:46.756+01	t	f	Aspernatur fugit reprehenderit qui quae quaerat ut dolores optio corrupti.	70	27
-195	1	\N	2018-01-24 18:57:47.512+01	t	f	Accusamus dolorem aut laborum non.	33	12
-196	1	\N	\N	f	f	Quo rerum illum possimus.	57	11
-205	1	\N	2018-01-24 18:59:18.918+01	t	f	Ea assumenda expedita itaque debitis reprehenderit.	40	26
-197	1	\N	2018-01-24 18:57:50.129+01	t	f	Ut cupiditate modi et tenetur quo illum.	52	9
-198	1	\N	\N	f	f	Velit sint iure omnis expedita et natus rerum.	70	12
-206	1	\N	\N	f	f	Laborum commodi in magni dolores rerum.	31	2
-199	1	\N	2018-01-24 18:58:46.778+01	t	f	Corporis magni voluptas qui consequatur accusamus quis nam facere.	34	29
-200	1	\N	\N	f	f	Ut placeat dolores quas accusantium asperiores totam qui amet.	44	19
-201	1	\N	2018-01-24 18:58:49.704+01	t	f	Recusandae quibusdam nihil incidunt.	56	23
-202	1	\N	\N	f	f	Ut voluptate non est corporis repudiandae.	35	27
-212	1	\N	\N	f	f	Voluptas sequi eum neque.	38	14
-207	1	\N	2018-01-24 19:02:13.006+01	t	f	Dolorem modi eveniet dolorem ut aliquam.	42	2
-208	1	\N	\N	f	f	Maxime eum vel labore et temporibus consequatur.	60	16
-209	1	\N	2018-01-24 19:02:15.987+01	t	f	Occaecati vel quia voluptas at.	54	7
-210	1	\N	\N	f	f	Et officia voluptatem doloribus commodi.	56	10
-213	1	\N	2018-01-24 19:04:49.968+01	t	f	Id voluptatem quia est ipsum accusamus quam possimus necessitatibus vero.	45	25
-215	1	\N	2018-01-24 19:09:56.506+01	t	f	Nostrum voluptatem sit.	39	8
-216	1	\N	\N	f	f	Dolorem eos sit enim ipsam voluptatem est suscipit praesentium.	45	28
-218	1	\N	\N	f	f	Omnis vel harum.	57	20
-217	1	\N	2018-01-24 19:09:59.172+01	t	f	Asperiores eum rerum cupiditate ad reiciendis aut.	56	7
-220	1	\N	\N	f	f	Molestiae sed excepturi esse harum fugit nobis minima et impedit.	70	8
-219	1	\N	2018-01-25 11:41:29.001+01	t	f	Recusandae temporibus ut sunt et temporibus voluptatem repellat illum necessitatibus.	52	14
-222	1	\N	\N	f	f	Odio voluptatibus iusto molestiae quia voluptates officiis natus aperiam est.	46	20
-221	1	\N	2018-01-25 11:41:32.268+01	t	f	Magnam quod numquam et sit quod et recusandae.	38	28
-224	1	\N	\N	f	f	Aut alias porro qui eligendi facilis iste voluptatem et.	57	3
-223	1	\N	2018-01-25 11:49:21.017+01	t	f	Deleniti et qui a nostrum et ea ab nam.	47	13
-225	1	\N	2018-01-25 11:49:25.196+01	t	f	Ipsum excepturi consectetur qui tempore animi nostrum.	40	22
-226	1	\N	\N	f	f	Corporis doloremque rerum.	70	6
-278	1	\N	\N	f	f	Omnis non aliquam quidem aut laudantium odio et optio consectetur.	55	22
-227	1	\N	2018-01-25 11:51:51.058+01	t	f	Molestiae quis modi ea distinctio perspiciatis.	34	4
-228	1	\N	\N	f	f	Molestias occaecati fugit tenetur nesciunt maiores quasi at.	35	1
-261	1	\N	2018-01-25 12:42:21.67+01	t	f	Officiis maiores fuga ipsa et omnis.	34	9
-229	1	\N	2018-01-25 11:51:54.464+01	t	f	Quidem dolore atque recusandae dolorem molestiae explicabo nobis.	35	11
-230	1	\N	\N	f	f	Odio aspernatur expedita.	36	8
-262	1	\N	\N	f	f	Possimus deleniti dolore.	47	2
-231	1	\N	2018-01-25 11:55:02.07+01	t	f	Nulla minus et.	47	26
-232	1	\N	\N	f	f	Ipsa aut inventore minima.	35	21
-233	1	\N	2018-01-25 11:55:02.673+01	t	f	Qui rerum ut illum omnis sint rerum dolore suscipit at.	37	4
-234	1	\N	\N	f	f	Facere quibusdam aut atque quia quasi repudiandae in.	42	27
-235	1	\N	2018-01-25 11:56:15.697+01	t	f	Dolorem ipsum enim.	63	3
-236	1	\N	\N	f	f	Voluptatum adipisci omnis.	53	17
-263	1	\N	2018-01-25 12:42:26+01	t	f	Id reprehenderit distinctio dicta voluptatem.	56	15
-237	1	\N	2018-01-25 11:56:18.013+01	t	f	Aut recusandae ea laudantium eos voluptas veniam consequuntur vel.	56	29
-238	1	\N	\N	f	f	Dolorem id labore sunt fugit autem esse voluptatibus animi nulla.	60	2
-264	1	\N	\N	f	f	Consequatur suscipit qui non nesciunt expedita.	38	11
-239	1	\N	2018-01-25 12:29:15.755+01	t	f	Aliquid autem perferendis voluptas sit.	60	22
-240	1	\N	\N	f	f	Perspiciatis recusandae maiores et et facilis.	44	20
-241	1	\N	2018-01-25 12:31:39.967+01	t	f	Totam possimus minima delectus non distinctio et commodi expedita.	70	10
-242	1	\N	\N	f	f	Magni ad magni voluptates qui tempora sed cum natus.	32	21
-243	1	\N	2018-01-25 12:31:40.366+01	t	f	Alias ut eum.	36	23
-244	1	\N	\N	f	f	Assumenda quia corporis distinctio ab cum.	34	11
-245	1	\N	\N	f	f	Laudantium quo et quam aut cumque enim odit.	40	17
-265	1	\N	2018-01-25 12:48:07.707+01	t	f	Tempore aut doloribus quaerat.	50	3
-246	1	\N	2018-01-25 12:34:20.996+01	t	f	Reprehenderit tenetur eligendi enim eum.	35	28
-266	1	\N	\N	f	f	Consequatur aut accusamus.	43	26
-247	1	\N	2018-01-25 12:34:21.099+01	t	f	Excepturi iure eligendi consequatur et consequatur quasi.	44	30
-248	1	\N	\N	f	f	In ut quod enim sint consequatur.	64	16
-249	1	\N	2018-01-25 12:38:20.194+01	t	f	Nihil commodi vero quo omnis libero.	53	13
-250	1	\N	\N	f	f	Totam sed ad distinctio similique nobis excepturi.	53	17
-279	1	\N	2018-01-25 12:54:36.49+01	t	f	Officia voluptatibus temporibus illum iure fugiat minima maxime officiis ea.	37	16
-251	1	\N	2018-01-25 12:38:20.48+01	t	f	Sit sunt id.	60	16
-252	1	\N	\N	f	f	Quis ut molestias natus maxime ducimus.	55	18
-267	1	\N	2018-01-25 12:49:48.549+01	t	f	Cum excepturi ullam similique.	62	8
-253	1	\N	2018-01-25 12:39:40.746+01	t	f	Incidunt totam sit.	40	24
-254	1	\N	\N	f	f	Velit ut non officiis quaerat architecto.	31	22
-268	1	\N	\N	f	f	Quia dolore ex qui nulla odit qui maiores autem et.	32	21
-255	1	\N	2018-01-25 12:39:42.252+01	t	f	Aut veritatis quis ratione aut.	62	20
-256	1	\N	\N	f	f	Sed aliquid qui cumque eligendi.	55	8
-257	1	\N	2018-01-25 12:41:34.021+01	t	f	Accusantium corporis quis tempora sit.	69	11
-258	1	\N	\N	f	f	Facilis omnis aut nostrum.	67	8
-280	1	\N	\N	f	f	Nemo harum dolorum ut voluptatem laboriosam rerum.	63	2
-259	1	\N	2018-01-25 12:41:34.681+01	t	f	Reiciendis sapiente mollitia atque et dolores quia numquam.	36	29
-260	1	\N	\N	f	f	Quisquam facere illo et atque.	57	11
-269	1	\N	2018-01-25 12:49:53.844+01	t	f	Animi officia similique vel dicta est nam soluta laborum.	40	30
-270	1	\N	\N	f	f	Dolor tempore soluta non ullam eos pariatur.	69	15
-271	1	\N	2018-01-25 12:53:22.053+01	t	f	Nihil consectetur ab odio.	45	17
-272	1	\N	\N	f	f	Laborum quis adipisci aut sit provident.	59	16
-273	1	\N	2018-01-25 12:53:24.724+01	t	f	Labore perferendis at molestias voluptatem eveniet quo.	55	17
-274	1	\N	\N	f	f	Fuga et id qui error recusandae molestiae.	54	18
-281	1	\N	2018-01-25 12:59:36.532+01	t	f	Aut fugiat at.	52	12
-275	1	\N	2018-01-25 12:54:07.655+01	t	f	Velit sequi illo dignissimos animi.	31	28
-276	1	\N	\N	f	f	Eos vitae accusamus eaque quis.	51	19
-282	1	\N	\N	f	f	Amet reiciendis rerum delectus laudantium.	67	26
-277	1	\N	2018-01-25 12:54:32.349+01	t	f	Dicta dolores voluptatibus voluptatem expedita quidem nemo eligendi odit omnis.	41	24
-287	1	\N	2018-01-25 13:00:21.587+01	t	f	Perferendis quos accusamus quia iste ut sunt ut rerum vel.	60	21
-283	1	\N	2018-01-25 12:59:41.44+01	t	f	In maiores ipsam et quia cupiditate.	37	9
-284	1	\N	\N	f	f	Consequatur repellendus in unde.	63	11
-288	1	\N	\N	f	f	Quibusdam et eos dignissimos.	58	2
-285	1	\N	2018-01-25 13:00:20.375+01	t	f	Possimus nisi officia velit molestiae rem totam aperiam et iusto.	51	26
-286	1	\N	\N	f	f	Earum cumque et veritatis dolores similique.	62	6
-292	1	\N	\N	f	f	Dicta modi et.	51	21
-289	1	\N	2018-01-25 13:00:46.505+01	t	f	Enim soluta blanditiis sint quia eveniet et.	45	15
-290	1	\N	\N	f	f	Repellat magni occaecati doloribus temporibus ut maxime quas.	37	13
-291	1	\N	2018-01-25 13:00:50.886+01	t	f	Hic labore reprehenderit voluptas libero cum explicabo quia.	64	25
-294	1	\N	\N	f	f	Eum nesciunt dignissimos sint voluptate enim.	41	18
-293	1	\N	2018-01-25 13:01:22.697+01	t	f	Itaque quidem voluptas nostrum vero dolorem est minus.	57	14
-296	1	\N	\N	f	f	Placeat omnis reprehenderit alias libero.	70	24
-295	1	\N	2018-01-25 13:01:22.97+01	t	f	Illum voluptas et dolores recusandae eius reiciendis et aliquam.	52	20
-298	1	\N	\N	f	f	Incidunt necessitatibus tempora minima adipisci qui facilis voluptatibus voluptatum fugiat.	38	27
-297	1	\N	2018-01-25 13:02:31.534+01	t	f	Et aut perspiciatis sed id.	42	20
-300	1	\N	\N	f	f	Aspernatur veniam neque inventore debitis minus.	58	27
-299	1	\N	2018-01-25 13:02:32.84+01	t	f	Et nisi voluptas esse sapiente.	55	30
-338	1	\N	\N	f	f	Minima dignissimos sit et repudiandae harum eaque.	50	22
-301	1	\N	2018-01-25 13:03:33.913+01	t	f	Repellat consectetur eum.	42	2
-302	1	\N	\N	f	f	Molestiae saepe ut excepturi asperiores aut aut quidem.	54	21
-303	1	\N	2018-01-25 13:04:02.587+01	t	f	Omnis aut velit aut et culpa labore.	42	19
-304	1	\N	\N	f	f	Hic id possimus.	41	25
-354	1	\N	\N	f	f	Voluptatem ullam impedit sit deserunt sunt et autem.	49	2
-305	1	\N	2018-01-25 13:06:49.348+01	t	f	Atque optio sit fugit assumenda hic et repellendus.	69	5
-306	1	\N	\N	f	f	Exercitationem dignissimos quas sed et vel.	53	26
-339	1	\N	2018-01-27 11:38:21.29+01	t	f	Eligendi totam aliquid mollitia labore natus vitae.	59	28
-307	1	\N	2018-01-25 13:06:54.386+01	t	f	Quis enim accusantium dolores possimus velit.	35	7
-308	1	\N	\N	f	f	Suscipit dicta ducimus repellat quae eum.	49	18
-340	1	\N	\N	f	f	Mollitia voluptate dolores culpa excepturi repudiandae perspiciatis dignissimos sit temporibus.	49	14
-309	1	\N	2018-01-25 13:12:12.337+01	t	f	Excepturi voluptatibus nemo voluptatem dolorem sunt ut et qui.	68	26
-310	1	\N	\N	f	f	At est veniam laudantium.	68	10
-311	1	\N	2018-01-25 13:12:13.721+01	t	f	Consequuntur et est qui aut quam et autem eum.	51	14
-312	1	\N	\N	f	f	Minima perferendis in.	62	22
-313	1	\N	2018-01-25 13:12:45.842+01	t	f	Dolor necessitatibus rerum tenetur blanditiis.	50	28
-314	1	\N	\N	f	f	Totam asperiores saepe quia.	50	1
-341	1	\N	2018-01-27 11:39:03.661+01	t	f	Est aut vero quisquam dolore qui fuga.	58	6
-315	1	\N	2018-01-25 13:12:47.396+01	t	f	Enim placeat nobis soluta qui molestias dolor dolore doloribus.	37	1
-316	1	\N	\N	f	f	Facere quae et perspiciatis odio.	69	26
-342	1	\N	\N	f	f	Enim est omnis.	35	16
-317	1	\N	2018-01-25 13:17:11.1+01	t	f	Vitae est aliquam aliquid eaque nulla voluptatum quis.	33	26
-318	1	\N	\N	f	f	Aut assumenda eum necessitatibus quisquam est sint.	48	2
-319	1	\N	2018-01-25 13:19:24.558+01	t	f	Harum enim eligendi numquam quod.	51	4
-320	1	\N	\N	f	f	Sit ipsa quis dolorem sint.	38	12
-366	1	\N	\N	f	f	Aspernatur aut officia nobis voluptatem deserunt veritatis.	46	23
-321	1	\N	2018-01-25 13:19:25.856+01	t	f	Cupiditate eligendi expedita dicta iusto.	49	20
-322	1	\N	\N	f	f	Dolorem facere dolore a rerum aut.	58	21
-343	1	\N	2018-01-27 11:40:41.921+01	t	f	Dolores quasi et velit similique eveniet enim harum.	63	22
-323	1	\N	2018-01-26 18:17:20.89+01	t	f	Sint ipsum fugit quis corrupti.	69	9
-324	1	\N	\N	f	f	Nisi ex vitae sunt.	59	27
-344	1	\N	\N	f	f	Dicta vitae aut tenetur provident corporis.	69	13
-325	1	\N	2018-01-26 18:17:23.969+01	t	f	Omnis deleniti placeat.	54	28
-326	1	\N	\N	f	f	Ut laboriosam quas.	66	27
-327	1	\N	2018-01-26 18:39:52.473+01	t	f	Cum deleniti aut impedit sit adipisci veniam sed.	53	3
-328	1	\N	\N	f	f	Accusantium velit autem ullam possimus nihil perspiciatis asperiores amet dolor.	39	14
-329	1	\N	2018-01-26 18:39:58.135+01	f	f	Molestias praesentium esse vel praesentium nulla.	59	27
-330	1	\N	\N	f	f	Voluptate necessitatibus illo temporibus sint sit alias et voluptatum.	46	22
-355	1	\N	2018-01-29 10:28:47.7+01	t	f	Beatae laboriosam consequatur ea id et natus placeat.	47	11
-331	1	\N	2018-01-27 10:56:11.058+01	t	f	Fuga expedita labore aut quia dolorum illo officia amet.	39	12
-332	1	\N	\N	f	f	Placeat et accusantium aut qui.	63	22
-333	1	\N	\N	f	f	Cum delectus neque sed reprehenderit dignissimos reiciendis non modi.	54	22
-334	1	\N	\N	f	f	Est mollitia in modi eius consectetur quas quo vero deleniti.	46	3
-335	1	\N	\N	f	f	Vel repellendus autem aliquam et ut ut.	60	4
-336	1	\N	\N	f	f	Rerum consequatur recusandae architecto.	56	6
-345	1	\N	2018-01-27 11:40:57.119+01	t	f	Non dolorum et asperiores in cupiditate.	41	10
-337	1	\N	2018-01-27 11:37:41.96+01	t	f	Vel aperiam ab est.	36	14
-346	1	\N	\N	f	f	Sequi harum itaque blanditiis expedita quam sunt porro.	36	27
-356	1	\N	\N	f	f	Doloribus est nesciunt suscipit tempore porro qui dolores qui odio.	49	26
-347	1	\N	2018-01-27 11:42:57.924+01	t	f	Molestias rem veniam.	33	21
-348	1	\N	\N	f	f	Omnis culpa et iusto tempore aut asperiores esse et et.	45	2
-349	1	\N	2018-01-27 11:44:31.21+01	t	f	Blanditiis qui sit doloremque omnis ratione voluptate ullam suscipit fuga.	55	27
-350	1	\N	\N	f	f	Temporibus deserunt totam sequi accusantium consectetur voluptas aliquam consequatur.	38	4
-361	1	\N	2018-01-29 10:58:37.174+01	t	f	Necessitatibus et alias sequi.	44	9
-351	1	\N	2018-01-27 11:44:42.539+01	t	f	Aspernatur sed est distinctio atque autem laudantium.	49	27
-352	1	\N	\N	f	f	Earum aspernatur explicabo voluptatem.	66	26
-357	1	\N	2018-01-29 10:36:43.889+01	t	f	Et ea consequuntur corrupti cumque perferendis consequatur est rem molestias.	35	21
-353	1	\N	2018-01-29 10:15:10.665+01	t	f	Dolorem voluptate optio qui.	57	9
-358	1	\N	\N	f	f	Esse eius dolorum et est nihil tempore amet laborum.	62	12
-362	1	\N	\N	f	f	Et aut asperiores aut facere facere voluptatem dolorem.	32	25
-359	1	\N	2018-01-29 10:57:50.309+01	t	f	Neque culpa veritatis totam dolorum asperiores libero qui.	56	9
-360	1	\N	\N	f	f	Nam dignissimos dicta aliquam error et.	37	8
-365	1	\N	2018-01-29 11:12:03.035+01	t	f	Dolores provident rerum velit doloribus dolorem quaerat quibusdam.	69	5
-363	1	\N	2018-01-29 11:08:03.434+01	t	f	Hic iusto eum rerum dolores velit deserunt autem vel.	38	7
-364	1	\N	\N	f	f	Et iure temporibus sunt sit.	64	12
-368	1	\N	\N	f	f	Culpa voluptas necessitatibus.	52	8
-367	1	\N	2018-01-29 12:25:29.919+01	t	f	Labore iure quia debitis soluta voluptate mollitia expedita enim at.	55	20
-370	1	\N	\N	f	f	Illo eos odit facilis ullam libero.	67	3
-369	1	\N	2018-01-29 12:26:13.311+01	t	f	Quia magnam ut eveniet nulla.	32	24
-372	1	\N	\N	f	f	Harum fuga laudantium.	52	19
-371	1	\N	2018-01-29 12:28:12.228+01	t	f	Suscipit ut est.	43	21
-374	1	\N	\N	f	f	Saepe sit provident unde tenetur vero dolore.	51	11
-373	1	\N	2018-01-29 12:33:38.499+01	t	f	Voluptas sed fuga.	36	25
-375	1	\N	2018-01-29 12:35:32.538+01	t	f	Sed delectus voluptatem autem dolor suscipit saepe.	55	5
-376	1	\N	\N	f	f	Et soluta ea inventore saepe sed.	45	19
-377	1	\N	2018-01-29 12:37:09.872+01	t	f	Voluptatem ullam accusantium expedita.	34	19
+COPY public.employees (companyid, departmentid, userid, begindate, enddate, "position") FROM stdin;
+19	12	61	2017-12-06	\N	Admin
 \.
 
 
 --
--- Name: notifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: vipfy_test_user
+-- Data for Name: human_data; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('notifications_id_seq', 377, true);
-
-
---
--- Data for Name: plans; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
---
-
-COPY plans (id, description, renewalplan, period, numlicences, price, currency, name, activefrom, activeuntil, promo, promovipfy, promodeveloper, promoname, changeafter, changeplan, appid) FROM stdin;
+COPY public.human_data (unitid, firstname, middlename, lastname, title, sex, passwordhash, birthday, lastactive, resetoption, language) FROM stdin;
+70	Deleted		User		\N	$YeOC.exJhAZ8Ykb6.1m6L.53WuLz.QZ2z881PgopEMHvpOzZ3NRfK	\N	\N	\N	\N
+71	Deleted		User		\N	$05$NXJpgj1um0NJEGc2IK.POOORtPJBuHERI0XkcULeHHnqRHgPhIHA6	\N	\N	\N	\N
+7	Pascal		Clanget	Sire	m	$2a$12$EMPo75unK5FrkCIZi1vfsOAkKtaKoT8mwbOVunTe9pA0D7YeNQND2	1984-03-29	\N	\N	German
+31	Markus		Müller	Weasel	m	$05$48uK4TrxBobbzHpmMd9N1OF1bjAJtth5UkYMereKf2.gQcjS9sd/W	1982-01-12	\N	\N	\N
+22	Nils		Vossebein	Young Sire	m	$2a$12$kukINus97OHTkpbZOxV/verAqnv.9jhDuOuI/WxB4XSystzjfuBLq	\N	\N	\N	\N
+72	Hans		Wurst		\N	$2a$12$YQglo7m5LWbBOBkdiftuy.SX1njK7wJ4Q3ryh5XiBGPORYomYQwCm	\N	\N	\N	\N
+67	Jannis		Froese	CTO	m	$2a$12$MylBhmLQIrkhjiT6HfjuEuDMk2QRQ6u8LHIn8SyK6IaCvhX6Xlwfq	\N	\N	\N	\N
 \.
 
 
 --
--- Name: plans_id_seq; Type: SEQUENCE SET; Schema: public; Owner: vipfy_test_user
+-- Name: human_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('plans_id_seq', 1, false);
+SELECT pg_catalog.setval('public.human_data_id_seq', 17, true);
 
 
 --
--- Data for Name: reviewhelpful; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Data for Name: licence_data; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY reviewhelpful (helpfuldate, balance, comment, userid, reviewid) FROM stdin;
-2018-01-21 20:04:39+01	1	\N	72	34
-2018-01-21 20:08:20+01	1	\N	90	38
-2018-01-21 20:11:24+01	1	\N	88	42
-2018-01-21 20:14:38+01	1	\N	86	44
-2018-01-21 20:17:04+01	1	\N	26	1
-2018-01-21 20:17:52+01	1	\N	23	1
-2018-01-21 20:18:36+01	1	\N	44	50
-2018-01-21 20:18:56+01	1	\N	3	52
-2018-01-21 20:19:17+01	1	\N	78	1
-2018-01-21 20:19:57+01	1	\N	54	56
-2018-01-21 20:21:27+01	1	\N	75	58
-2018-01-21 20:23:24+01	1	\N	83	60
-2018-01-21 20:23:44+01	2	\N	17	62
-2018-01-21 20:26:07+01	2	\N	8	64
-2018-01-24 18:56:39+01	2	\N	13	66
-2018-01-24 18:56:40+01	2	\N	76	68
-2018-01-24 18:57:14+01	2	\N	8	72
-2018-01-24 18:57:12+01	2	\N	80	70
-2018-01-24 18:57:50+01	2	\N	48	74
-2018-01-24 18:57:50+01	2	\N	17	76
-2018-01-24 18:58:47+01	2	\N	91	78
-2018-01-24 18:58:49+01	2	\N	97	80
-2018-01-24 18:59:16+01	2	\N	80	82
-2018-01-24 18:59:19+01	2	\N	51	84
-2018-01-24 19:02:15+01	2	\N	65	86
-2018-01-24 19:02:15+01	2	\N	43	88
-2018-01-24 19:04:49+01	2	\N	57	92
-2018-01-24 19:09:59+01	2	\N	57	94
-2018-01-24 19:09:59+01	2	\N	10	96
-2018-01-25 11:41:32+01	2	\N	83	98
-2018-01-25 11:41:32+01	2	\N	2	100
-2018-01-25 11:49:21+01	2	\N	11	102
-2018-01-25 11:49:24+01	2	\N	80	104
-2018-01-25 11:51:50+01	2	\N	28	106
-2018-01-25 11:51:53+01	2	\N	93	108
-2018-01-25 11:55:00+01	2	\N	39	110
-2018-01-25 11:55:01+01	2	\N	65	112
-2018-01-25 11:56:14+01	2	\N	92	114
-2018-01-25 11:56:15+01	2	\N	31	116
-2018-01-25 12:30:55+01	2	\N	81	118
-2018-01-25 12:31:41+01	2	\N	47	120
-2018-01-25 12:31:43+01	2	\N	45	122
-2018-01-25 12:34:18+01	2	\N	60	124
-2018-01-25 12:34:21+01	2	\N	18	126
-2018-01-25 12:38:19+01	2	\N	26	128
-2018-01-25 12:38:22+01	2	\N	32	130
-2018-01-25 12:39:42+01	2	\N	15	132
-2018-01-25 12:39:44+01	2	\N	67	134
-2018-01-25 12:41:31+01	2	\N	53	136
-2018-01-25 12:41:37+01	2	\N	49	138
-2018-01-25 12:42:23+01	2	\N	4	140
-2018-01-25 12:42:25+01	2	\N	29	142
-2018-01-25 12:48:07+01	2	\N	23	144
-2018-01-25 12:49:49+01	2	\N	75	146
-2018-01-25 12:49:52+01	2	\N	33	148
-2018-01-25 12:53:20+01	2	\N	84	150
-2018-01-25 12:53:23+01	2	\N	67	152
-2018-01-25 12:54:08+01	2	\N	18	154
-2018-01-25 12:54:34+01	2	\N	67	156
-2018-01-25 12:54:35+01	2	\N	56	158
-2018-01-25 12:59:37+01	2	\N	99	160
-2018-01-25 12:59:40+01	2	\N	3	162
-2018-01-25 13:00:18+01	2	\N	7	164
-2018-01-25 13:00:20+01	2	\N	70	166
-2018-01-25 13:00:48+01	2	\N	93	168
-2018-01-25 13:00:49+01	2	\N	78	170
-2018-01-25 13:01:21+01	2	\N	14	174
-2018-01-25 13:01:20+01	2	\N	39	172
-2018-01-25 13:02:32+01	2	\N	22	176
-2018-01-25 13:02:34+01	2	\N	86	178
-2018-01-25 13:03:32+01	2	\N	47	180
-2018-01-25 13:04:03+01	2	\N	98	182
-2018-01-25 13:04:07+01	2	\N	59	184
-2018-01-25 13:06:50+01	2	\N	65	186
-2018-01-25 13:06:53+01	2	\N	39	188
-2018-01-25 13:12:13+01	2	\N	90	190
-2018-01-25 13:12:15+01	2	\N	14	192
-2018-01-25 13:12:44+01	2	\N	1	194
-2018-01-25 13:17:12+01	2	\N	36	198
-2018-01-25 13:19:22+01	2	\N	57	200
-2018-01-25 13:19:24+01	2	\N	57	202
-2018-01-26 18:17:18+01	2	\N	76	204
-2018-01-26 18:17:23+01	2	\N	73	206
-2018-01-26 18:39:51+01	2	\N	43	208
-2018-01-26 18:39:57+01	1	\N	94	210
-2018-01-27 10:48:38+01	2	\N	61	212
-2018-01-27 10:48:41+01	2	\N	61	214
-2018-01-27 10:53:51+01	2	\N	82	216
-2018-01-27 10:53:52+01	2	\N	85	218
-2018-01-27 10:54:34+01	2	\N	27	220
-2018-01-27 10:54:35+01	2	\N	95	222
-2018-01-27 10:55:48+01	2	\N	53	224
-2018-01-27 10:55:49+01	2	\N	22	226
-2018-01-27 10:56:15+01	2	\N	75	228
-2018-01-27 10:56:15+01	1	\N	80	230
-2018-01-27 11:32:27+01	2	\N	52	232
-2018-01-27 11:32:27+01	2	\N	14	234
-2018-01-27 11:36:27+01	2	\N	44	236
-2018-01-27 11:36:47+01	1	\N	47	238
-2018-01-27 11:37:42+01	2	\N	75	240
-2018-01-27 11:38:22+01	2	\N	64	242
-2018-01-27 11:39:03+01	2	\N	59	244
-2018-01-27 11:40:42+01	2	\N	61	246
-2018-01-27 11:40:58+01	2	\N	36	248
-2018-01-27 11:42:58+01	2	\N	20	250
-2018-01-27 11:44:31+01	2	\N	29	252
-2018-01-27 11:44:43+01	2	\N	16	254
-2018-01-29 10:15:11+01	2	\N	45	256
-2018-01-29 10:28:48+01	2	\N	7	258
-2018-01-29 10:36:44+01	2	\N	69	260
-2018-01-29 10:57:49+01	2	\N	3	262
-2018-01-29 10:58:22+01	2	\N	92	264
-2018-01-29 10:58:35+01	2	\N	60	266
-2018-01-29 11:08:03+01	2	\N	41	268
-2018-01-29 11:12:04+01	2	\N	31	270
-2018-01-29 12:25:30+01	2	\N	21	272
-2018-01-29 12:26:13+01	2	\N	98	274
-2018-01-29 12:28:13+01	2	\N	33	276
-2018-01-29 12:35:33+01	2	\N	60	280
-2018-01-29 12:37:10+01	2	\N	52	282
+COPY public.licence_data (unitid, boughtplanid, options, starttime, endtime, agreed, disabled, key) FROM stdin;
+7	1	\N	2018-03-27 11:47:31.940438	\N	f	f	\N
+7	3	\N	2018-03-27 11:52:09.936716	\N	f	f	\N
 \.
 
 
 --
--- Data for Name: reviews; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Data for Name: log_data; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY reviews (id, reviewdate, stars, reviewtext, userid, appid, answerto) FROM stdin;
-1	2017-01-22 00:00:00+01	4	Fantastic App	1	2	\N
-2	2018-01-21 18:49:47+01	4	Quos reprehenderit ut officia enim quod ut.	23	2	\N
-3	2018-01-21 18:59:35+01	4	Porro quaerat qui id a est.	53	2	\N
-4	2018-01-21 19:34:07+01	3	Natus voluptatum sint eveniet eligendi.	77	2	\N
-5	2018-01-21 19:34:46+01	5	\N	62	2	\N
-6	2018-01-21 19:35:53+01	4	Labore a eveniet est voluptas laboriosam soluta fugiat.	16	2	\N
-7	2018-01-21 19:35:53+01	3	\N	85	2	\N
-8	2018-01-21 19:48:11+01	4	Ab modi voluptatem praesentium et et.	13	2	\N
-9	2018-01-21 19:48:11+01	4	\N	95	2	\N
-10	2018-01-21 19:49:22+01	1	Est alias vel tempora quam ut.	40	2	\N
-11	2018-01-21 19:49:22+01	1	\N	31	2	\N
-12	2018-01-21 19:50:45+01	4	Molestiae minima labore dolor.	15	2	\N
-13	2018-01-21 19:50:45+01	2	\N	30	2	\N
-14	2018-01-21 19:51:49+01	1	Doloremque magni ad nihil vitae ad culpa.	43	2	\N
-15	2018-01-21 19:51:49+01	1	\N	39	2	\N
-16	2018-01-21 19:53:10+01	2	Amet quaerat dicta recusandae natus a necessitatibus.	22	2	\N
-17	2018-01-21 19:53:10+01	3	\N	60	2	\N
-18	2018-01-21 19:54:02+01	5	Deserunt cumque fugiat iusto eum quis error.	29	2	\N
-19	2018-01-21 19:54:02+01	4	\N	69	2	\N
-20	2018-01-21 19:55:12+01	2	Eum sed voluptatibus doloremque dolorem magni.	77	2	\N
-21	2018-01-21 19:55:13+01	1	\N	91	2	\N
-22	2018-01-21 19:56:46+01	5	Aut et voluptatum ut quod expedita distinctio.	67	2	\N
-23	2018-01-21 19:56:46+01	4	\N	45	2	\N
-24	2018-01-21 19:57:24+01	5	Fugiat voluptate doloribus molestiae ab veniam nihil earum non consequatur.	46	2	\N
-25	2018-01-21 19:57:24+01	1	\N	86	2	\N
-26	2018-01-21 19:58:44+01	3	Tempore ipsa enim sint rerum.	10	2	\N
-27	2018-01-21 19:58:44+01	4	\N	45	2	\N
-28	2018-01-21 20:00:42+01	3	\N	47	2	\N
-29	2018-01-21 20:01:28+01	2	In doloribus at natus et excepturi qui.	42	2	\N
-30	2018-01-21 20:01:28+01	1	\N	93	2	\N
-31	2018-01-21 20:03:09+01	5	Id voluptatem aperiam perferendis vel recusandae quisquam ipsam id nam.	10	2	\N
-32	2018-01-21 20:03:09+01	4	\N	1	2	\N
-33	2018-01-21 20:04:39+01	2	Rerum facilis suscipit unde id quos aperiam.	29	2	\N
-34	2018-01-21 20:04:39+01	1	\N	18	2	\N
-35	2018-01-21 20:08:00+01	4	\N	4	2	\N
-36	2018-01-21 20:08:20+01	5	Dicta consequatur cupiditate sunt quos vel.	53	2	\N
-37	2018-01-21 20:08:20+01	5	Dicta consequatur cupiditate sunt quos vel.	53	2	\N
-38	2018-01-21 20:08:20+01	3	\N	61	2	\N
-39	2018-01-21 20:10:13+01	5	Et optio fuga ut aliquid hic doloribus iure aut facere.	39	2	\N
-40	2018-01-21 20:10:14+01	4	\N	49	2	\N
-41	2018-01-21 20:11:24+01	1	Qui iure aliquam ad omnis.	50	2	\N
-42	2018-01-21 20:11:24+01	1	\N	38	2	\N
-43	2018-01-21 20:14:38+01	2	Non consequuntur voluptas saepe a sit dolor sunt voluptates minus.	19	2	\N
-44	2018-01-21 20:14:38+01	5	\N	52	2	\N
-45	2018-01-21 20:17:04+01	5	Libero quibusdam consequatur voluptas et exercitationem voluptas officia rerum.	59	2	\N
-46	2018-01-21 20:17:04+01	3	\N	54	2	\N
-47	2018-01-21 20:17:51+01	3	Nemo officiis quo.	2	2	\N
-48	2018-01-21 20:17:51+01	2	\N	64	2	\N
-49	2018-01-21 20:18:36+01	4	Perspiciatis ea laudantium necessitatibus dolorem.	15	2	\N
-50	2018-01-21 20:18:36+01	5	\N	56	2	\N
-51	2018-01-21 20:18:56+01	5	Facilis eveniet deserunt inventore necessitatibus.	50	2	\N
-52	2018-01-21 20:18:56+01	1	\N	91	2	\N
-53	2018-01-21 20:19:17+01	4	Ratione qui distinctio eveniet.	10	2	\N
-54	2018-01-21 20:19:17+01	2	\N	1	2	\N
-55	2018-01-21 20:19:57+01	5	Amet aliquam quo.	35	2	\N
-56	2018-01-21 20:19:57+01	1	\N	84	2	\N
-57	2018-01-21 20:21:26+01	1	Quod eos harum minima earum enim quos itaque reiciendis.	59	2	\N
-58	2018-01-21 20:21:27+01	4	\N	66	2	\N
-59	2018-01-21 20:23:24+01	3	Hic sed fugit iste sint optio et et.	48	2	\N
-60	2018-01-21 20:23:24+01	1	\N	23	2	\N
-61	2018-01-21 20:23:44+01	3	Aut repudiandae consequatur.	30	2	\N
-62	2018-01-21 20:23:44+01	5	\N	92	2	\N
-63	2018-01-21 20:26:06+01	2	Dolorem accusantium amet saepe.	32	2	\N
-64	2018-01-21 20:26:07+01	1	\N	50	2	\N
-65	2018-01-24 18:56:36+01	5	Odit ut error quia nihil amet.	33	2	\N
-66	2018-01-24 18:56:36+01	5	\N	58	2	\N
-67	2018-01-24 18:56:39+01	5	Et et quam voluptas.	28	2	\N
-68	2018-01-24 18:56:39+01	1	\N	87	2	\N
-69	2018-01-24 18:57:12+01	2	Nostrum et totam non harum.	47	2	\N
-70	2018-01-24 18:57:12+01	4	\N	85	2	\N
-71	2018-01-24 18:57:14+01	2	Placeat autem sapiente ad maxime voluptate.	20	2	\N
-72	2018-01-24 18:57:14+01	2	\N	55	2	\N
-73	2018-01-24 18:57:47+01	2	Error aperiam facilis.	38	2	\N
-74	2018-01-24 18:57:48+01	4	\N	24	2	\N
-75	2018-01-24 18:57:50+01	4	Sed iusto fuga.	47	2	\N
-76	2018-01-24 18:57:50+01	3	\N	82	2	\N
-77	2018-01-24 18:58:46+01	2	Dolor sunt optio molestiae deserunt laborum animi eum facilis amet.	15	2	\N
-78	2018-01-24 18:58:46+01	5	\N	12	2	\N
-79	2018-01-24 18:58:49+01	5	Quibusdam in accusamus ipsa iste debitis quis velit.	54	2	\N
-80	2018-01-24 18:58:49+01	3	\N	34	2	\N
-81	2018-01-24 18:59:16+01	4	Quia rem fugiat soluta consequatur id velit consequatur necessitatibus dolorum.	9	2	\N
-82	2018-01-24 18:59:16+01	4	\N	51	2	\N
-83	2018-01-24 18:59:19+01	2	Aliquid consectetur qui qui voluptate architecto qui repellendus.	7	2	\N
-84	2018-01-24 18:59:19+01	5	\N	71	2	\N
-85	2018-01-24 19:02:12+01	3	Ut consequuntur ab.	23	2	\N
-86	2018-01-24 19:02:12+01	2	\N	96	2	\N
-87	2018-01-24 19:02:15+01	3	Officiis in sint sit atque.	19	2	\N
-88	2018-01-24 19:02:15+01	2	\N	80	2	\N
-89	2018-01-24 19:04:48+01	2	Incidunt modi mollitia natus suscipit voluptatibus sed suscipit.	33	2	\N
-90	2018-01-24 19:04:48+01	1	Aspernatur voluptatem aut maxime.	16	2	\N
-91	2018-01-24 19:04:49+01	5	\N	22	2	\N
-92	2018-01-24 19:04:49+01	3	\N	62	2	\N
-93	2018-01-24 19:09:58+01	5	Quaerat et sequi.	38	2	\N
-94	2018-01-24 19:09:58+01	5	\N	21	2	\N
-95	2018-01-24 19:09:59+01	1	Incidunt ipsam repellat occaecati nobis eligendi voluptate quo magnam sit.	76	2	\N
-96	2018-01-24 19:09:59+01	5	\N	87	2	\N
-97	2018-01-25 11:41:29+01	4	Veniam vitae deleniti iusto quia excepturi et aut.	58	2	\N
-98	2018-01-25 11:41:29+01	4	\N	1	2	\N
-99	2018-01-25 11:41:32+01	4	Quod enim dicta reiciendis hic voluptatem dicta porro repellendus eaque.	11	2	\N
-100	2018-01-25 11:41:32+01	5	\N	38	2	\N
-204	2018-01-26 18:17:17+01	2	\N	92	2	\N
-101	2018-01-25 11:49:20+01	4	Itaque iusto voluptatem occaecati unde quia ex quis modi.	24	2	\N
-102	2018-01-25 11:49:21+01	4	\N	36	2	\N
-103	2018-01-25 11:49:23+01	1	Minus ut quos maiores a dolor unde.	52	2	\N
-104	2018-01-25 11:49:24+01	5	\N	36	2	\N
-105	2018-01-25 11:51:50+01	3	Quas excepturi cumque at nostrum voluptatum excepturi modi.	13	2	\N
-106	2018-01-25 11:51:50+01	3	\N	91	2	\N
-107	2018-01-25 11:51:53+01	1	Est labore ut.	18	2	\N
-108	2018-01-25 11:51:53+01	1	\N	24	2	\N
-109	2018-01-25 11:55:00+01	3	Cum pariatur quis vero et nesciunt voluptatem molestias.	17	2	\N
-110	2018-01-25 11:55:00+01	2	\N	79	2	\N
-111	2018-01-25 11:55:01+01	3	Eos eveniet fugit.	43	2	\N
-112	2018-01-25 11:55:01+01	3	\N	42	2	\N
-113	2018-01-25 11:56:14+01	5	Veniam eveniet aperiam laudantium.	24	2	\N
-114	2018-01-25 11:56:14+01	4	\N	26	2	\N
-115	2018-01-25 11:56:14+01	2	Sed ut nemo.	44	2	\N
-116	2018-01-25 11:56:15+01	2	\N	13	2	\N
-117	2018-01-25 12:30:55+01	3	Nam quis nobis natus ut corporis aspernatur aut.	74	2	\N
-118	2018-01-25 12:30:55+01	5	\N	51	2	\N
-119	2018-01-25 12:31:40+01	5	Qui ea dolor quasi voluptates at et.	76	2	\N
-120	2018-01-25 12:31:40+01	4	\N	32	2	\N
-121	2018-01-25 12:31:43+01	2	Et quia repellendus adipisci et ipsa et.	7	2	\N
-122	2018-01-25 12:31:43+01	4	\N	95	2	\N
-123	2018-01-25 12:34:18+01	1	Aspernatur eos atque cumque est laboriosam eaque et.	64	2	\N
-124	2018-01-25 12:34:18+01	4	\N	63	2	\N
-125	2018-01-25 12:34:21+01	1	Ut vitae possimus veniam et nemo beatae.	49	2	\N
-126	2018-01-25 12:34:21+01	5	\N	39	2	\N
-127	2018-01-25 12:38:19+01	3	Ut dicta cumque ducimus fuga facilis.	25	2	\N
-128	2018-01-25 12:38:19+01	3	\N	95	2	\N
-129	2018-01-25 12:38:22+01	5	Amet voluptas iure hic magnam explicabo sed.	12	2	\N
-130	2018-01-25 12:38:22+01	2	\N	3	2	\N
-131	2018-01-25 12:39:41+01	3	Incidunt et id et et qui rerum.	68	2	\N
-132	2018-01-25 12:39:41+01	2	\N	43	2	\N
-133	2018-01-25 12:39:44+01	5	Dignissimos et ab.	77	2	\N
-134	2018-01-25 12:39:44+01	3	\N	42	2	\N
-135	2018-01-25 12:41:31+01	1	Doloribus voluptatibus consectetur eius hic quibusdam quo sed ratione.	3	2	\N
-136	2018-01-25 12:41:31+01	3	\N	36	2	\N
-137	2018-01-25 12:41:37+01	4	Reprehenderit architecto ut voluptatem rerum eum recusandae.	76	2	\N
-138	2018-01-25 12:41:37+01	3	\N	14	2	\N
-139	2018-01-25 12:42:22+01	5	Voluptatum voluptatibus exercitationem voluptatem possimus.	16	2	\N
-140	2018-01-25 12:42:22+01	5	\N	41	2	\N
-141	2018-01-25 12:42:25+01	4	Velit quos numquam repudiandae beatae.	25	2	\N
-142	2018-01-25 12:42:25+01	5	\N	34	2	\N
-143	2018-01-25 12:48:07+01	2	Nostrum vero exercitationem.	21	2	\N
-144	2018-01-25 12:48:07+01	4	\N	43	2	\N
-145	2018-01-25 12:49:48+01	3	Consequatur at unde deserunt in officia temporibus.	38	2	\N
-146	2018-01-25 12:49:48+01	2	\N	93	2	\N
-147	2018-01-25 12:49:52+01	4	Cupiditate sunt inventore ad architecto repudiandae enim rerum.	24	2	\N
-148	2018-01-25 12:49:52+01	5	\N	11	2	\N
-149	2018-01-25 12:53:20+01	3	Quidem magnam rerum et ea.	43	2	\N
-150	2018-01-25 12:53:20+01	1	\N	82	2	\N
-151	2018-01-25 12:53:23+01	4	Quibusdam ut quia ipsam culpa modi quod.	19	2	\N
-152	2018-01-25 12:53:23+01	4	\N	54	2	\N
-153	2018-01-25 12:54:08+01	1	Atque est delectus libero et earum incidunt dolores rerum.	69	2	\N
-154	2018-01-25 12:54:08+01	5	\N	86	2	\N
-155	2018-01-25 12:54:32+01	2	Dicta rerum sint temporibus et at in.	65	2	\N
-156	2018-01-25 12:54:32+01	4	\N	30	2	\N
-157	2018-01-25 12:54:35+01	3	Provident quos eos quis ut est.	49	2	\N
-158	2018-01-25 12:54:35+01	5	\N	90	2	\N
-159	2018-01-25 12:59:37+01	4	Fugit modi occaecati unde voluptas quis.	22	2	\N
-160	2018-01-25 12:59:37+01	2	\N	71	2	\N
-161	2018-01-25 12:59:40+01	2	Quis expedita aut.	60	2	\N
-162	2018-01-25 12:59:40+01	1	\N	86	2	\N
-163	2018-01-25 13:00:17+01	4	Qui praesentium non id officia et.	15	2	\N
-164	2018-01-25 13:00:17+01	1	\N	53	2	\N
-165	2018-01-25 13:00:20+01	3	Qui sint sunt qui aliquam.	3	2	\N
-166	2018-01-25 13:00:20+01	4	\N	25	2	\N
-167	2018-01-25 13:00:46+01	1	Non quibusdam est pariatur adipisci vitae iste molestias earum consectetur.	40	2	\N
-168	2018-01-25 13:00:46+01	5	\N	11	2	\N
-169	2018-01-25 13:00:49+01	5	Modi aperiam necessitatibus.	26	2	\N
-170	2018-01-25 13:00:49+01	3	\N	92	2	\N
-171	2018-01-25 13:01:20+01	3	Similique velit ut voluptas voluptas non sequi quis.	41	2	\N
-172	2018-01-25 13:01:20+01	5	\N	82	2	\N
-173	2018-01-25 13:01:21+01	2	Aut perspiciatis qui.	46	2	\N
-174	2018-01-25 13:01:21+01	5	\N	81	2	\N
-175	2018-01-25 13:02:32+01	2	Fuga veritatis quos animi quas voluptas.	34	2	\N
-176	2018-01-25 13:02:32+01	1	\N	78	2	\N
-177	2018-01-25 13:02:34+01	1	Perspiciatis odit et porro.	31	2	\N
-178	2018-01-25 13:02:34+01	2	\N	45	2	\N
-179	2018-01-25 13:03:32+01	3	Voluptatibus velit et et.	57	2	\N
-180	2018-01-25 13:03:32+01	2	\N	65	2	\N
-181	2018-01-25 13:04:03+01	2	Doloribus qui velit aliquam expedita officia odit veritatis.	72	2	\N
-182	2018-01-25 13:04:03+01	3	\N	48	2	\N
-183	2018-01-25 13:04:07+01	1	Quasi fugit dolor et quod ut.	41	2	\N
-184	2018-01-25 13:04:07+01	3	\N	67	2	\N
-185	2018-01-25 13:06:49+01	4	Magni voluptatem quae sed saepe quis.	77	2	\N
-186	2018-01-25 13:06:49+01	4	\N	79	2	\N
-187	2018-01-25 13:06:53+01	1	Reprehenderit iure dicta aut.	66	2	\N
-188	2018-01-25 13:06:53+01	5	\N	68	2	\N
-189	2018-01-25 13:12:12+01	3	Omnis sit quae aperiam voluptatem dicta ut.	23	2	\N
-190	2018-01-25 13:12:12+01	5	\N	9	2	\N
-191	2018-01-25 13:12:15+01	5	Est delectus debitis earum.	17	2	\N
-192	2018-01-25 13:12:15+01	4	\N	74	2	\N
-193	2018-01-25 13:12:44+01	5	Nesciunt placeat consequatur impedit vitae.	44	2	\N
-194	2018-01-25 13:12:44+01	1	\N	28	2	\N
-195	2018-01-25 13:12:46+01	4	Et neque quo.	16	2	\N
-196	2018-01-25 13:12:46+01	2	\N	93	2	\N
-197	2018-01-25 13:17:11+01	2	Eius in quae labore assumenda iste voluptate autem natus.	54	2	\N
-198	2018-01-25 13:17:12+01	1	\N	77	2	\N
-199	2018-01-25 13:19:22+01	4	Qui omnis cumque quaerat harum.	21	2	\N
-200	2018-01-25 13:19:22+01	4	\N	96	2	\N
-201	2018-01-25 13:19:24+01	2	Tempora autem aut eaque et dolores repellat et.	36	2	\N
-202	2018-01-25 13:19:24+01	4	\N	24	2	\N
-203	2018-01-26 18:17:17+01	3	Cupiditate in et aut delectus voluptatibus qui et.	65	2	\N
-205	2018-01-26 18:17:23+01	4	Recusandae rerum vel.	56	2	\N
-206	2018-01-26 18:17:23+01	1	\N	11	2	\N
-207	2018-01-26 18:39:51+01	1	At voluptates soluta.	36	2	\N
-208	2018-01-26 18:39:51+01	2	\N	85	2	\N
-209	2018-01-26 18:39:57+01	2	Sunt omnis molestias ipsum sit est.	50	2	\N
-210	2018-01-26 18:39:57+01	1	\N	99	2	\N
-211	2018-01-27 10:48:38+01	2	Sunt blanditiis sit.	63	2	\N
-212	2018-01-27 10:48:38+01	3	\N	93	2	\N
-213	2018-01-27 10:48:41+01	1	Deserunt vitae corrupti praesentium animi magnam quas.	7	2	\N
-214	2018-01-27 10:48:41+01	4	\N	50	2	\N
-215	2018-01-27 10:53:51+01	5	Quae consectetur corporis ducimus aliquam.	66	2	\N
-216	2018-01-27 10:53:51+01	2	\N	70	2	\N
-217	2018-01-27 10:53:52+01	3	Voluptatem illo harum quisquam repellat minima est incidunt.	30	2	\N
-218	2018-01-27 10:53:52+01	5	\N	39	2	\N
-219	2018-01-27 10:54:34+01	4	Rem id et aliquid necessitatibus nihil dicta.	11	2	\N
-220	2018-01-27 10:54:34+01	2	\N	23	2	\N
-221	2018-01-27 10:54:35+01	1	Aspernatur sit repellendus aspernatur nihil nesciunt laboriosam placeat doloremque.	12	2	\N
-222	2018-01-27 10:54:35+01	2	\N	11	2	\N
-223	2018-01-27 10:55:48+01	5	Dolores distinctio eum omnis ratione in.	28	2	\N
-224	2018-01-27 10:55:48+01	4	\N	38	2	\N
-225	2018-01-27 10:55:49+01	2	Aspernatur aut veritatis omnis accusamus quis maiores.	65	2	\N
-226	2018-01-27 10:55:49+01	5	\N	88	2	\N
-227	2018-01-27 10:56:11+01	4	Dolorem molestiae reprehenderit explicabo explicabo mollitia in sed.	20	2	\N
-228	2018-01-27 10:56:14+01	5	\N	66	2	\N
-229	2018-01-27 10:56:15+01	3	Quia dolorum voluptatem quaerat.	37	2	\N
-230	2018-01-27 10:56:15+01	2	\N	71	2	\N
-231	2018-01-27 11:32:27+01	3	Sint dolorem incidunt earum facere consectetur.	61	2	\N
-232	2018-01-27 11:32:27+01	2	\N	92	2	\N
-233	2018-01-27 11:32:27+01	2	Vel velit delectus.	14	2	\N
-234	2018-01-27 11:32:27+01	5	\N	48	2	\N
-235	2018-01-27 11:36:27+01	2	Iure laboriosam incidunt sunt illum libero reiciendis eum.	42	2	\N
-236	2018-01-27 11:36:27+01	2	\N	69	2	\N
-237	2018-01-27 11:36:47+01	1	Rerum cumque dolor delectus distinctio et nobis sed ut.	24	2	\N
-238	2018-01-27 11:36:47+01	4	\N	85	2	\N
-239	2018-01-27 11:37:42+01	4	Voluptatem perferendis suscipit debitis aspernatur fugit consequuntur adipisci.	58	2	\N
-240	2018-01-27 11:37:42+01	1	\N	55	2	\N
-241	2018-01-27 11:38:22+01	1	Et ut accusantium quia corporis.	65	2	\N
-242	2018-01-27 11:38:22+01	2	\N	64	2	\N
-243	2018-01-27 11:39:03+01	3	Deleniti earum est.	49	2	\N
-244	2018-01-27 11:39:03+01	4	\N	55	2	\N
-245	2018-01-27 11:40:41+01	1	Ex nisi aut qui neque quibusdam.	71	2	\N
-246	2018-01-27 11:40:42+01	3	\N	98	2	\N
-247	2018-01-27 11:40:58+01	4	Sit nemo molestiae voluptatem voluptates alias eos.	11	2	\N
-248	2018-01-27 11:40:58+01	4	\N	57	2	\N
-249	2018-01-27 11:42:58+01	2	Iusto sed aut ipsum eius et iusto et.	16	2	\N
-250	2018-01-27 11:42:58+01	4	\N	46	2	\N
-251	2018-01-27 11:44:31+01	2	Neque iusto porro sit tempora quibusdam non error.	20	2	\N
-252	2018-01-27 11:44:31+01	4	\N	26	2	\N
-253	2018-01-27 11:44:42+01	5	Rerum aut incidunt quod quos est quis eum rem.	9	2	\N
-254	2018-01-27 11:44:42+01	5	\N	95	2	\N
-255	2018-01-29 10:15:11+01	2	Aut libero expedita voluptates.	3	2	\N
-256	2018-01-29 10:15:11+01	3	\N	61	2	\N
-257	2018-01-29 10:28:48+01	4	Labore ratione voluptate non alias autem eum.	9	2	\N
-258	2018-01-29 10:28:48+01	1	\N	81	2	\N
-259	2018-01-29 10:36:44+01	1	Quod perspiciatis sapiente ut dolor architecto quas maxime fugit.	46	2	\N
-260	2018-01-29 10:36:44+01	5	\N	39	2	\N
-261	2018-01-29 10:57:49+01	5	Aut omnis sed.	3	2	\N
-262	2018-01-29 10:57:49+01	3	\N	44	2	\N
-263	2018-01-29 10:58:22+01	4	Ea et sint corrupti vel.	22	2	\N
-264	2018-01-29 10:58:22+01	2	\N	30	2	\N
-265	2018-01-29 10:58:35+01	1	Maxime iste voluptates sint quia.	8	2	\N
-266	2018-01-29 10:58:35+01	3	\N	33	2	\N
-267	2018-01-29 11:08:03+01	1	Animi quo reiciendis quis delectus et consequatur alias omnis.	41	2	\N
-268	2018-01-29 11:08:03+01	5	\N	75	2	\N
-269	2018-01-29 11:12:03+01	5	Sunt ipsum velit.	73	2	\N
-270	2018-01-29 11:12:04+01	4	\N	48	2	\N
-271	2018-01-29 12:25:30+01	2	Recusandae necessitatibus nihil delectus quod nobis sunt.	43	2	\N
-272	2018-01-29 12:25:30+01	4	\N	77	2	\N
-273	2018-01-29 12:26:13+01	2	Eveniet voluptas sunt neque dolore veritatis sed recusandae rerum vitae.	19	2	\N
-274	2018-01-29 12:26:13+01	4	\N	40	2	\N
-275	2018-01-29 12:28:13+01	1	Excepturi impedit ipsam et neque officia aut.	31	2	\N
-276	2018-01-29 12:28:13+01	1	\N	90	2	\N
-277	2018-01-29 12:33:39+01	1	Hic in voluptatibus dolorem autem quaerat nihil sit.	18	2	\N
-278	2018-01-29 12:33:39+01	2	\N	21	2	\N
-279	2018-01-29 12:35:33+01	2	Ullam labore quis illum quia pariatur.	26	2	\N
-280	2018-01-29 12:35:33+01	2	\N	23	2	\N
-281	2018-01-29 12:37:10+01	5	Beatae exercitationem sit ut quia recusandae nulla officia quisquam autem.	30	2	\N
-282	2018-01-29 12:37:10+01	1	\N	73	2	\N
+COPY public.log_data (id, "time", "user", sudoer, eventtype, eventdata, ip) FROM stdin;
 \.
 
 
 --
--- Name: reviews_id_seq; Type: SEQUENCE SET; Schema: public; Owner: vipfy_test_user
+-- Name: log_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('reviews_id_seq', 282, true);
+SELECT pg_catalog.setval('public.log_data_id_seq', 1, false);
 
 
 --
--- Data for Name: speaks; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Data for Name: message_data; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY speaks (language, preferred, userid) FROM stdin;
+COPY public.message_data (id, receiver, sender, sendtime, readtime, archivetimesender, archivetimereceiver, messagetext, tag) FROM stdin;
+1	22	7	2018-02-26 19:15:19.527	\N	\N	\N	First message new format	\N
+8	7	22	2018-03-01 18:14:35.045439	\N	\N	\N	Test	\N
+9	7	22	2018-03-01 18:14:35.045439	\N	\N	\N	Test	\N
+7	7	22	2018-03-01 18:14:35.045439	\N	\N	\N	Test	\N
+4	7	22	2018-03-01 18:14:35.045439	\N	\N	\N	Test Message	\N
+5	7	22	2018-03-01 18:14:35.045439	\N	\N	\N	Test	\N
+11	22	7	2018-03-01 18:19:18.521	\N	\N	\N	hallo	\N
+12	22	7	2018-03-07 14:41:30.262901	\N	\N	\N	Test Refetcg	\N
+13	7	22	2018-03-08 20:55:37.563	\N	\N	\N	Hi	\N
+14	7	22	2018-04-05 22:37:40.235	\N	\N	\N	Hi funktioniert es?	\N
 \.
 
 
 --
--- Data for Name: usedcompanyplans; Type: TABLE DATA; Schema: public; Owner: user
+-- Name: message_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-COPY usedcompanyplans (userid, appid, planid, companyid, planbought, key, usedfrom, usedto) FROM stdin;
+SELECT pg_catalog.setval('public.message_data_id_seq', 14, true);
+
+
+--
+-- Data for Name: newsletter_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.newsletter_data (email, activesince, activeuntil) FROM stdin;
 \.
 
 
 --
--- Data for Name: userbills; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Data for Name: notifications; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY userbills (date, billpos, textpos, price, currency, orgcurrency, exchangerate, userid, planid) FROM stdin;
+COPY public.notifications (id, type, touser, fromuser, sendtime, readtime, deleted, senderdeleted, message) FROM stdin;
+66	1	67	23	2018-01-12 15:42:58.9966	\N	f	f	Was zur Hölle passiert hier?
+67	1	67	23	2018-01-12 15:44:06.503431	\N	f	f	WTF is going on here??
+68	1	67	23	2018-01-12 15:46:16.56606	\N	f	f	Was zur Hölle passiert hier?
+69	1	67	23	2018-01-12 15:48:53.506161	\N	f	f	Was zur Hölle passiert hier?
+70	1	67	23	2018-01-12 15:50:37.51543	\N	f	f	Was zur Hölle passiert hier?
+71	1	67	23	2018-01-12 15:51:38.099841	\N	f	f	Was zur Hölle passiert hier?
+72	1	67	23	2018-01-12 15:52:03.334918	\N	f	f	Was zur Hölle passiert hier?
+73	1	67	23	2018-01-12 15:53:02.848861	\N	f	f	Was zur Hölle passiert hier?
+74	1	67	23	2018-01-12 15:53:27.642579	\N	f	f	Was zur Hölle passiert hier?
+75	1	67	23	2018-01-12 15:54:51.891787	\N	f	f	Was zur Hölle passiert hier?
+76	1	67	23	2018-01-12 15:56:50.136566	\N	f	f	Was zur Hölle passiert hier?
+77	1	67	23	2018-01-12 16:02:40.392743	\N	f	f	Was zur Hölle passiert hier?
+78	1	67	23	2018-01-12 16:10:01.186606	\N	f	f	WTF??
+79	1	67	23	2018-01-12 16:15:35.173755	\N	f	f	WTF??
+80	1	67	23	2018-01-12 16:16:12.145731	\N	f	f	WTF!!!
+81	1	67	23	2018-01-12 16:17:51.116476	\N	f	f	Wie sieht es aus?
+82	1	67	23	2018-01-12 16:20:19.385491	\N	f	f	Hardgecoded kommt mal was an
+83	1	67	23	2018-01-12 16:21:13.770409	\N	f	f	Es wird wärmer
+5	1	8	6	2017-12-28 22:26:26.056915	\N	f	f	Hello, you fool, how are you?
+7	1	8	6	2017-12-28 23:25:37.882684	\N	f	f	From the man who sold the world...
+8	1	6	6	2017-12-28 23:25:46.129958	\N	f	f	From the man who sold the world...
+9	1	7	6	2017-12-29 00:50:10.788256	\N	f	f	Are u motherfucking ready for the new shit?
+10	1	7	6	2017-12-29 00:50:40.594263	\N	f	f	ABubble bubble bitch bitch rebel rebel party?
+11	1	7	6	2017-12-29 00:50:44.635054	\N	f	f	ABubble bubble bitch bitch rebel rebel party?
+12	1	7	6	2017-12-29 00:50:48.959463	\N	f	f	Bubble bubble bitch bitch rebel rebel party?
+1	1	61	4	2017-12-26 13:34:13.454858	2017-12-26 19:42:54.676	t	f	Hello Darkness my little friend...
+4	1	61	4	2017-12-28 14:04:55.122692	\N	f	f	Last friday night, ...
+3	1	61	4	2017-12-28 14:04:36.673216	2017-12-28 15:27:03.941	f	f	I kissed a girl, and I liked it...
+2	1	61	4	2017-12-26 19:52:41.105415	2017-12-26 19:52:46.689	t	t	I have come to see you again...
+13	1	61	4	2017-12-31 12:00:14.218463	\N	f	f	New Test
+16	1	67	21	2017-12-31 13:34:08.271568	\N	f	f	Auf gute Freunde...
+17	1	67	21	2017-12-31 13:34:17.53537	\N	f	f	Verlorne Liebe
+18	1	67	1	2017-12-31 13:34:28.244488	\N	f	f	Alte Götter
+19	1	67	11	2017-12-31 13:34:43.035715	\N	f	f	... und auf neue Ziele
+20	1	67	14	2018-01-11 12:48:16.093196	\N	f	f	Free the animal!
+21	1	67	17	2018-01-11 12:49:23.425749	\N	f	f	I love u so, treasure from the roof!
+22	1	67	17	2018-01-11 12:54:03.06072	\N	f	f	Just cut me up and throw me down
+23	1	67	17	2018-01-11 13:39:43.96224	\N	f	f	Wannsee wannsee wann seh ich dich endlich wieder?!
+24	1	67	17	2018-01-11 13:44:51.48789	\N	f	f	Du bist Boss, wenn jeder zweifelnde Ruf verstummt.
+25	1	67	22	2018-01-11 13:49:50.008083	\N	f	f	weil der Wille zum Erfolg durch deine Blutbahnen pumpt.
+26	1	67	27	2018-01-11 13:53:43.108221	\N	f	f	Auf den ganz normalen Wahnsinn.
+27	1	61	27	2018-01-11 16:43:08.971575	\N	f	f	Hallo Nils
+28	1	61	67	2018-01-11 16:43:27.060875	\N	f	f	Wie gehts?
+29	1	61	67	2018-01-11 16:48:43.375283	\N	f	f	Die Idee ist phänomenal!!!
+30	1	61	67	2018-01-11 16:48:53.662317	\N	f	f	Die Idee ist ganz okay
+31	1	61	67	2018-01-12 11:32:26.307039	\N	f	f	Whaaaaaaaaz up dawg?
+32	1	61	67	2018-01-12 11:33:22.342974	\N	f	f	Wanna buy some weeeed?
+33	1	67	2	2018-01-12 11:46:07.930287	\N	f	f	Mr Moon, Mr Moon, maybe your time is coming...
+34	1	67	2	2018-01-12 11:51:38.557507	\N	f	f	It was given as a promise to even every man
+35	1	67	2	2018-01-12 11:56:54.330793	\N	f	f	I wann love u but I m growing old
+36	1	67	2	2018-01-12 12:08:47.031047	\N	f	f	Ten little soldiers screaming in my soul
+37	1	67	2	2018-01-12 12:10:47.876431	\N	f	f	Unstoppable today
+38	1	67	2	2018-01-12 12:19:02.5302	\N	f	f	Bird set free
+39	1	67	2	2018-01-12 12:20:40.273439	\N	f	f	for a fee
+40	1	67	2	2018-01-12 12:27:34.783133	\N	f	f	Please work u devil!
+41	1	67	2	2018-01-12 12:32:16.638122	\N	f	f	Wooooooork!!
+42	1	67	2	2018-01-12 12:34:02.145429	\N	f	f	Another Test!!
+43	1	67	2	2018-01-12 12:36:41.511242	\N	f	f	And another Test!!
+44	1	67	2	2018-01-12 12:40:11.746876	\N	f	f	And another Test! Again!
+45	1	67	2	2018-01-12 12:41:03.633415	\N	f	f	And another Test! Again an again!
+46	1	67	2	2018-01-12 12:43:54.107643	\N	f	f	Please work!
+47	1	67	2	2018-01-12 12:56:42.003376	\N	f	f	One Step forward!
+48	1	67	2	2018-01-12 12:57:24.967896	\N	f	f	Next Step forward!
+49	1	67	2	2018-01-12 12:59:02.790029	\N	f	f	2 Step forward!
+50	1	67	2	2018-01-12 13:00:43.768847	\N	f	f	2 forward!
+51	1	67	2	2018-01-12 13:01:30.481597	\N	f	f	2 f2orward!
+52	1	67	2	2018-01-12 13:02:06.614893	\N	f	f	2 234!
+53	1	67	2	2018-01-12 13:02:49.630379	\N	f	f	Will it work?!
+54	1	67	2	2018-01-12 13:03:28.971232	\N	f	f	Will it work now?!
+55	1	67	2	2018-01-12 13:05:58.05847	\N	f	f	Will it work now??????????!
+56	1	67	2	2018-01-12 15:01:44.062388	\N	f	f	1
+57	1	67	2	2018-01-12 15:07:15.732508	\N	f	f	2
+58	1	67	2	2018-01-12 15:09:01.289737	\N	f	f	3
+59	1	67	23	2018-01-12 15:11:16.435873	\N	f	f	4
+60	1	67	23	2018-01-12 15:12:34.513146	\N	f	f	5
+61	1	67	23	2018-01-12 15:13:30.92958	\N	f	f	6
+62	1	67	23	2018-01-12 15:14:20.273432	\N	f	f	Test
+63	1	67	23	2018-01-12 15:14:53.174004	\N	f	f	Test
+64	1	67	23	2018-01-12 15:15:15.133221	\N	f	f	Test
+65	1	67	23	2018-01-12 15:16:26.908098	\N	f	f	Test
+84	1	67	23	2018-01-12 16:23:16.914234	\N	f	f	 wärmer
+85	1	67	23	2018-01-12 16:24:26.812914	\N	f	f	heiß???
+86	1	67	23	2018-01-12 16:26:16.56468	\N	f	f	heiß???
+87	1	67	23	2018-01-12 16:28:03.780068	\N	f	f	heiß???
+88	1	67	23	2018-01-12 16:28:51.022092	\N	f	f	heiß???
+89	1	67	23	2018-01-12 16:29:17.670228	\N	f	f	heiß?
+90	1	67	23	2018-01-12 16:30:41.831353	\N	f	f	heißer
+91	1	67	23	2018-01-12 16:35:09.452597	\N	f	f	heißer!
+92	1	67	23	2018-01-12 16:35:38.114493	\N	f	f	heißer!
+93	1	67	23	2018-01-12 16:38:12.352007	\N	f	f	heißer!
+94	1	67	23	2018-01-12 16:40:04.79429	\N	f	f	Ich geb auf
+95	1	67	23	2018-01-14 15:17:48.004794	\N	f	f	Neuer Tag, neues Glück
+96	1	67	23	2018-01-14 15:27:03.647833	\N	f	f	Neuer Tag, neuer Versuch
+97	1	67	23	2018-01-14 15:35:27.235389	\N	f	f	Ein Schritt weiter
+98	1	67	23	2018-01-14 15:47:14.84628	\N	f	f	Noch ein Schritt?
+99	1	67	23	2018-01-14 15:48:04.366049	\N	f	f	Noch ein Schritt?
+100	1	67	23	2018-01-14 15:49:24.425311	\N	f	f	Test?
+101	1	67	23	2018-01-14 15:51:29.216747	\N	f	f	Test?
+102	1	67	23	2018-01-14 15:52:32.175566	\N	f	f	Test!
+103	1	67	23	2018-01-14 15:54:36.301377	\N	f	f	Hallo!
+104	1	67	23	2018-01-14 15:55:32.898776	\N	f	f	Hallo!
+105	1	72	20	2018-01-14 15:58:56.636344	\N	f	f	Hallo!
+106	1	72	20	2018-01-14 15:59:48.014344	\N	f	f	Wie gehts?!
+107	1	72	20	2018-01-14 16:02:47.299899	\N	f	f	Wie gehts dir?!
+108	1	72	20	2018-01-14 16:04:30.342915	\N	f	f	Willkommen zurück im Kaninchenbau
+109	1	72	20	2018-01-14 16:06:07.595675	\N	f	f	Weiter gehts
+110	1	72	20	2018-01-14 16:10:31.128418	\N	f	f	Wieder ein Schritt nach vorne
+111	1	72	20	2018-01-14 16:12:57.739692	\N	f	f	Es ist nicht wirklich klarer
+112	1	72	20	2018-01-14 16:15:38.214644	\N	f	f	Neuer Fehler?
+113	1	72	20	2018-01-14 16:17:18.161285	\N	f	f	weiter?
+114	1	72	20	2018-01-14 16:19:05.081241	\N	f	f	Strange shit!
+115	1	72	20	2018-01-14 16:22:12.179995	\N	f	f	Wird klarer!
+116	1	72	20	2018-01-14 16:22:27.471061	\N	f	f	Klappt!
+117	1	72	20	2018-01-14 16:35:16.504619	\N	f	f	Klappt nicht!
+118	1	72	20	2018-01-14 16:56:03.487752	\N	f	f	Funktioniere!
+119	1	72	20	2018-01-15 10:33:15.072554	\N	f	f	Und wieder von vorne!
+120	1	72	20	2018-01-15 10:34:02.094193	\N	f	f	NOchmal!
+121	1	72	20	2018-01-15 10:52:34.331728	\N	f	f	Neuer Test!
+122	1	72	20	2018-01-15 10:53:49.61549	\N	f	f	Neuer Test!2
+123	1	72	20	2018-01-15 10:54:52.534	\N	f	f	Neuer Test!3
+124	1	72	20	2018-01-15 10:56:02.227569	\N	f	f	Neuer Test!4
+125	1	72	20	2018-01-15 10:57:51.465069	\N	f	f	Neuer Test!5
+126	1	72	20	2018-01-15 10:59:29.980884	\N	f	f	Neuer Test!6
+127	1	72	20	2018-01-15 11:02:25.466293	\N	f	f	Neuer Test!7
+128	1	72	20	2018-01-15 11:06:30.277008	\N	f	f	Neuer Test!8
+129	1	72	20	2018-01-15 11:07:18.816956	\N	f	f	Neuer Test!9
+130	1	72	20	2018-01-15 11:08:08.658368	\N	f	f	Neuer Test!10
+131	1	72	20	2018-01-15 11:08:59.243528	\N	f	f	Neuer Test!11
+132	1	72	20	2018-01-15 11:18:34.111147	\N	f	f	Neuer Test!12
+133	1	72	20	2018-01-15 11:20:00.952437	\N	f	f	Neuer Test!13
+134	1	72	20	2018-01-15 11:21:04.895094	\N	f	f	Neuer Test!14
+135	1	72	20	2018-01-15 11:22:09.708698	\N	f	f	Neuer Test!15
+136	1	72	20	2018-01-15 11:26:07.892168	\N	f	f	Triumph?
+137	1	72	20	2018-01-15 11:29:12.380259	\N	f	f	Eher nicht?
+138	1	72	20	2018-01-15 11:37:49.086031	\N	f	f	Neuer Test!16
+139	1	72	20	2018-01-15 11:39:59.600657	\N	f	f	Neuer Test!17
+140	1	72	20	2018-01-15 11:40:47.61882	\N	f	f	Neuer Test!18
+141	1	72	20	2018-01-15 11:41:56.326485	\N	f	f	Neuer Test!19
+142	1	72	20	2018-01-15 11:43:06.144518	\N	f	f	Neuer Test!20
+143	1	72	20	2018-01-15 11:45:02.615232	\N	f	f	Neuer Test!21
+144	1	72	20	2018-01-15 11:46:10.281033	\N	f	f	Neuer Test!22
+145	1	72	20	2018-01-15 11:46:30.213999	\N	f	f	Neuer Test!23
+146	1	72	20	2018-01-15 11:47:06.755046	\N	f	f	Neuer Test!24
+147	1	72	20	2018-01-15 11:47:28.703277	\N	f	f	Neuer Test!25
+148	1	72	20	2018-01-15 11:48:08.212964	\N	f	f	Neuer Test!26
+149	1	72	20	2018-01-15 11:50:15.065792	\N	f	f	Neuer Test!26
+150	1	72	20	2018-01-15 11:51:20.339133	\N	f	f	Neuer Test!27
+151	1	72	20	2018-01-15 11:53:36.095714	\N	f	f	Neuer Test!28
+152	1	72	20	2018-01-15 11:55:45.029161	\N	f	f	Neuer Test!29
+153	1	72	20	2018-01-15 12:11:43.183051	\N	f	f	Mal schauen...
+154	1	72	20	2018-01-15 12:12:46.867221	\N	f	f	Kein Fehler mehr :-)
+155	1	72	20	2018-01-15 12:14:56.741541	\N	f	f	Und weiter
+156	1	72	20	2018-01-15 12:17:07.495676	\N	f	f	Und weiter gehts
+157	1	72	20	2018-01-15 12:18:35.640875	\N	f	f	Und weiter gehts jetzt
+158	1	72	20	2018-01-15 12:20:20.747337	\N	f	f	Und weiter gehts jetzt mal wieder
+159	1	72	20	2018-01-15 12:22:31.152493	\N	f	f	Ein Schritt weiter
+160	1	72	20	2018-01-15 12:23:04.102434	\N	f	f	Ein Schritt weiter oder nicht
+161	1	72	20	2018-01-15 12:31:01.414943	\N	f	f	Ich nähere mich dem Ziel
+162	1	72	20	2018-01-15 12:34:49.105772	\N	f	f	Warum zweimal?
+163	1	72	20	2018-01-15 12:39:56.166237	\N	f	f	Neuer Versuch!
+164	1	72	20	2018-01-15 12:44:31.888347	\N	f	f	Interessante Dinge passieren hier!
+165	1	72	20	2018-01-15 12:45:11.834823	\N	f	f	Sehr interessante sogar!
+166	1	72	20	2018-01-15 12:47:14.44461	\N	f	f	Ich bin gleich wieder verwirrt!
+167	1	72	20	2018-01-15 12:49:57.892665	\N	f	f	Und weiter spielen!
+168	1	72	20	2018-01-15 12:52:11.990415	\N	f	f	Und weiter spielen und weiter!
+169	1	72	20	2018-01-15 12:53:27.320865	\N	f	f	Bald geht gar nichts mehr!
+170	1	72	20	2018-01-15 12:57:44.366466	\N	f	f	Und weiter am rumdoktoren!
+171	1	72	20	2018-01-15 13:00:23.365489	\N	f	f	Und weiter am rumdoktoren!
+172	1	72	20	2018-01-15 13:00:59.064405	\N	f	f	Und weiter am rumdoktoren!
+173	1	72	20	2018-01-15 13:05:27.313202	\N	f	f	Und weiter am rumdoktoren!
+174	1	72	20	2018-01-15 13:08:52.578499	\N	f	f	Und weiter am rumdoktoren!
+175	1	72	20	2018-01-15 13:11:01.445508	\N	f	f	Und weiter am rumdoktoren!
+176	1	72	20	2018-01-15 13:11:58.431754	\N	f	f	Neuer neuer neuer Versuch!
+177	1	72	20	2018-01-15 13:14:13.51728	\N	f	f	Fehlt vielleicht was!
+178	1	72	20	2018-01-15 13:17:02.604667	\N	f	f	Gefunden?!
+179	1	72	20	2018-01-15 13:19:11.444375	\N	f	f	Fehler übert Fehler?!
+180	1	72	20	2018-01-15 13:20:00.677435	\N	f	f	Bla Bla Bla?!
+181	1	72	20	2018-01-15 13:20:43.233275	\N	f	f	Es funktioniert?!
+182	1	72	20	2018-01-15 13:21:46.641903	\N	f	f	Es funktioniert tatsächlich?!
+183	1	72	20	2018-01-15 13:22:03.659956	\N	f	f	Doppelt?!
+184	1	72	20	2018-01-15 13:27:47.598924	\N	f	f	Warum Doppelt?!
+185	1	72	20	2018-01-15 13:28:24.537105	\N	f	f	Nicht mehr?!
+186	1	72	20	2018-01-15 13:28:53.208222	\N	f	f	Wieder?
+187	1	72	20	2018-01-15 13:31:51.672083	\N	f	f	Es klappt, aber warum doppelt?
+188	1	72	20	2018-01-15 13:37:57.794345	\N	f	f	Was neues ausprobiert!
+189	1	72	20	2018-01-15 13:40:06.388346	\N	f	f	Weiter gehts!
+190	1	72	20	2018-01-15 13:42:57.490097	\N	f	f	Doublette?!
+191	1	72	20	2018-01-15 13:47:25.786632	\N	f	f	Booyah!
+192	1	72	20	2018-01-15 13:48:18.184275	\N	f	f	Booyah2!
+193	1	72	20	2018-01-15 13:48:51.010398	\N	f	f	Es klappt!
+194	1	72	20	2018-01-15 13:49:51.540384	\N	f	f	Kleiner gemacht!
+195	1	72	20	2018-01-15 15:51:39.771868	\N	f	f	Geht noch alles?
+196	1	72	20	2018-01-15 15:52:44.954328	\N	f	f	Geht noch alles?
+197	1	72	20	2018-01-15 15:53:00.702187	\N	f	f	Geht noch alles?
+198	1	72	20	2018-01-15 15:53:27.229318	\N	f	f	Geht noch alles?
+199	1	72	20	2018-01-15 15:54:22.595712	\N	f	f	Weiter
+200	1	72	20	2018-01-15 15:54:59.609346	\N	f	f	Test
+201	1	72	20	2018-01-15 15:57:13.522293	\N	f	f	Nummer 200
+202	1	72	20	2018-01-15 15:59:23.231514	\N	f	f	Kommando zurück
+203	1	72	20	2018-01-15 16:01:10.508082	\N	f	f	Was hab ich jetzt wieder falsch gemacht
+204	1	72	20	2018-01-15 16:02:25.437298	\N	f	f	test1
+205	1	72	20	2018-01-15 16:03:22.532563	\N	f	f	test2
+206	1	74	34	2018-01-15 16:07:28.172031	\N	f	f	Noch ganz jungfräulich hier
+207	1	74	34	2018-01-15 16:45:11.549947	\N	f	f	Aber nicht mehr lange ;-)
+208	1	74	34	2018-01-15 16:49:27.482034	\N	f	f	Klappt noch?
+209	1	74	34	2018-01-15 16:56:51.867488	\N	f	f	Neuer Test
+210	1	74	34	2018-01-15 16:58:32.622261	\N	f	f	Weiter
+211	1	74	34	2018-01-15 16:58:56.851524	\N	f	f	Weiter gehts
+212	1	2	1	2018-01-20 11:18:55.415219	\N	f	f	Pariatur quia quia alias repellendus tenetur enim corrupti et.
+213	1	2	1	2018-01-20 11:25:50.088658	\N	f	f	Et eaque sunt.
+214	1	2	1	2018-01-20 11:26:44.700439	\N	f	f	Et nesciunt tenetur et nulla cumque ut.
+215	1	2	1	2018-01-20 11:27:48.854216	\N	f	f	Excepturi et ut eveniet omnis.
+216	1	2	1	2018-01-20 11:28:57.442573	\N	f	f	Consequatur eos porro libero ut.
+217	1	2	1	2018-01-20 11:29:33.330149	\N	f	f	Occaecati omnis voluptas.
+218	1	2	1	2018-01-20 11:30:30.68426	\N	f	f	Sint expedita veniam non adipisci et.
+219	1	2	1	2018-01-20 11:34:39.328081	\N	f	f	Quas nobis soluta.
+220	1	2	1	2018-01-20 11:36:43.353598	\N	f	f	Laborum ducimus tempora rerum.
+221	1	2	1	2018-01-20 11:40:46.417879	\N	f	f	Nobis velit non eum quam.
+222	1	2	1	2018-01-20 11:46:18.136789	\N	f	f	Sapiente esse consectetur nisi laboriosam qui architecto quos qui qui.
+223	1	67	34	2018-01-25 18:04:28.933595	\N	f	f	Can you hear me?
+224	1	67	34	2018-01-25 18:06:07.073051	\N	f	f	Can you hear me now?
+225	1	67	34	2018-01-26 10:43:05.289179	\N	f	f	Does Auth work?
+226	1	67	34	2018-01-26 10:47:33.656416	\N	f	f	Does Auth work?
+227	1	67	34	2018-01-26 10:47:59.372254	\N	f	f	Does Auth work?
+228	1	67	34	2018-01-26 10:49:34.656727	\N	f	f	Does Auth work now?
+229	1	67	17	2018-01-26 10:51:44.063907	\N	f	f	I hope now?
+230	1	67	17	2018-01-26 10:51:58.246443	\N	f	f	I hope now?
+231	1	67	17	2018-01-26 10:52:44.378769	\N	f	f	I hope now!
+232	1	74	17	2018-01-26 11:30:25.450726	\N	f	f	I hope now!
+233	1	74	17	2018-01-26 11:43:34.503811	\N	f	f	I hope now!
+234	1	74	17	2018-01-26 11:53:56.006816	\N	f	f	I hope now!
+235	1	74	17	2018-01-26 11:58:37.742948	\N	f	f	Strange things happening!
+236	1	74	17	2018-01-26 11:58:55.211712	\N	f	f	Strange things happening!
+237	1	74	17	2018-01-26 12:01:09.064081	\N	f	f	Strange things happening!
+238	1	74	17	2018-01-26 12:02:25.636158	\N	f	f	Stranger things happening!
+239	1	74	17	2018-01-26 12:03:30.429854	\N	f	f	Why!
+240	1	74	17	2018-01-26 12:04:22.037959	\N	f	f	Why!
+241	1	74	17	2018-01-26 12:04:36.620621	\N	f	f	Why!
+242	1	74	17	2018-01-26 12:04:44.816329	\N	f	f	Why!1
+243	1	74	17	2018-01-26 12:22:04.901943	\N	f	f	Why!12
+244	1	74	17	2018-01-26 12:31:59.991655	\N	f	f	Why!12
+245	1	74	17	2018-01-26 12:34:09.143307	\N	f	f	Dummer Fehler
+246	1	74	17	2018-01-26 12:35:52.538281	\N	f	f	Dummer Fehler
+247	1	74	17	2018-01-26 12:38:19.350155	\N	f	f	Shots fired!
+248	1	74	17	2018-01-26 12:42:51.987496	\N	f	f	More Shots fired!
+249	1	74	17	2018-01-26 12:46:44.17452	\N	f	f	More Shots fired!
+250	1	74	17	2018-01-26 12:48:19.73277	\N	f	f	Even More Shots fired!
+251	1	74	17	2018-01-26 12:49:31.255496	\N	f	f	Even More Shots fired!
+252	1	74	17	2018-01-26 12:49:49.037778	\N	f	f	Even More Shots fired!
+253	1	74	17	2018-01-26 12:49:59.641649	\N	f	f	Even More Shots fired 2!
+254	1	74	17	2018-01-26 12:53:13.778868	\N	f	f	Even More Shots fired 2!
+255	1	74	17	2018-01-26 12:56:31.418775	\N	f	f	Even More Shots fired 2!
+256	1	74	17	2018-01-26 12:59:44.01095	\N	f	f	Even More Shots fired 3!
+257	1	74	17	2018-01-26 13:04:14.234197	\N	f	f	Even More Shots fired 4!
+258	1	74	17	2018-01-26 13:05:01.155816	\N	f	f	Even More Shots fired 4!
+259	1	74	17	2018-01-26 13:08:41.670147	\N	f	f	Even More Shots fired 5!
+260	1	74	17	2018-01-26 13:16:03.389903	\N	f	f	Even More Shots fired 5!
+261	1	74	17	2018-01-26 13:18:23.377453	\N	f	f	Even More Shots fired 6!
+262	1	74	17	2018-01-26 13:19:27.337074	\N	f	f	Even More Shots fired 6!
+263	1	74	17	2018-01-26 13:34:09.53986	\N	f	f	Even More Shots fired 7!
+264	1	74	17	2018-01-26 13:35:27.763206	\N	f	f	Even More Shots fired 7!
+265	1	74	17	2018-01-26 13:36:03.089839	\N	f	f	 7!
+266	1	74	17	2018-01-26 13:37:43.894972	\N	f	f	 7!
+267	1	74	17	2018-01-26 13:38:20.687071	\N	f	f	 7!
+268	1	74	17	2018-01-26 13:39:57.628259	\N	f	f	 7!
+269	1	74	17	2018-01-26 13:40:49.529754	\N	f	f	Klappt!
+270	1	74	17	2018-01-26 13:42:41.920857	\N	f	f	Klappt!
+271	1	74	17	2018-01-26 13:47:29.716013	\N	f	f	Endlich!
+272	1	74	17	2018-01-26 13:47:39.770229	\N	f	f	Endlich!
+273	1	74	17	2018-01-26 13:48:36.703653	\N	f	f	Endlich!
+274	1	74	17	2018-01-26 13:48:49.579598	\N	f	f	Endlich funzt alles wie es soll!
+275	1	74	17	2018-01-26 13:51:37.44789	\N	f	f	Gott sei dank!
+276	1	74	61	2018-01-26 16:18:50.392965	\N	f	f	SCHEISS CORS!
+277	1	61	74	2018-01-26 16:19:48.6239	\N	f	f	SCHEISS CORS!
+278	1	61	72	2018-01-26 16:20:37.102997	\N	f	f	CORS!
+279	1	74	61	2018-01-26 16:21:31.503484	\N	f	f	SCHEISS CORS2!
+280	1	74	61	2018-01-26 16:26:20.412127	\N	f	f	Test!
+281	1	61	73	2018-01-26 16:26:35.749159	\N	f	f	Test!
+282	1	61	73	2018-01-26 16:28:03.498214	\N	f	f	Test16!
+283	1	61	73	2018-01-26 16:28:37.06962	\N	f	f	Test17!
+284	1	73	12	2018-01-27 11:30:34.62231	\N	f	f	Hi dude!
+285	1	74	12	2018-01-27 11:30:49.725422	\N	f	f	Hi dude!
+286	1	61	62	2018-02-01 18:05:28.791798	\N	f	f	TestMessage
+287	1	61	60	2018-02-01 22:09:39.732496	\N	f	f	Test
+288	1	2	61	2018-02-01 22:09:55.314144	\N	f	f	Test von Nils
+289	1	2	61	2018-02-01 22:16:03.75274	\N	f	f	dfa
+290	1	3	61	2018-02-01 22:22:04.671912	\N	f	f	Tesg
+291	1	3	61	2018-02-01 22:22:16.721459	\N	f	f	Tesg
+292	1	4	61	2018-02-01 22:28:44.081114	\N	f	f	Testmessage
+293	1	3	61	2018-02-01 22:29:20.685286	\N	f	f	fdg
+294	1	5	61	2018-02-01 22:30:06.408455	\N	f	f	Testmessage
+295	1	3	61	2018-02-01 22:32:14.105474	\N	f	f	Test
+296	1	3	61	2018-02-01 22:32:59.753145	\N	f	f	Test
+297	1	3	61	2018-02-01 23:03:40.624656	\N	f	f	safsafasdsagsd
+298	1	2	61	2018-02-01 23:19:15.118661	\N	f	f	dfaghs
+299	1	67	61	2018-02-01 23:24:33.725384	\N	f	f	Hi,\n\ndas Interface dürfte Funktionieren.\n\nGruß\nNils
+300	1	67	61	2018-02-01 23:25:42.541597	\N	f	f	Nochmal zum Test ;)
+301	1	67	61	2018-02-01 23:34:12.198875	\N	f	f	Timeout
+302	1	3	61	2018-02-01 23:35:36.397858	\N	f	f	test
+303	1	3	61	2018-02-01 23:36:27.400153	\N	f	f	Test
+304	1	67	61	2018-02-02 13:59:20.635468	\N	f	f	Hi wie geht es?\n\nGruß\nNils
+305	1	74	67	2018-02-03 11:23:08.989292	\N	f	f	Neuer Test
+306	1	74	67	2018-02-03 11:26:50.306747	\N	f	f	Neuer Test
+307	1	74	67	2018-02-03 11:27:20.733681	\N	f	f	Neuer Test
+308	1	74	67	2018-02-03 11:34:41.569145	\N	f	f	Neuer Test
+309	1	74	67	2018-02-03 12:07:02.358852	\N	f	f	Neuer32rasdefaewstq34traewsfasw
+310	1	74	67	2018-02-03 12:09:42.62024	\N	f	f	Neuer32rasdefaewstq34traewsfasw
+311	1	74	67	2018-02-03 12:10:28.462861	\N	f	f	Neuer32rasdefaewstq34traewsfasw
+312	1	74	67	2018-02-03 12:10:48.625876	\N	f	f	Neuer32rasdefaewstq34traewsfasw
+313	1	74	67	2018-02-03 12:11:59.274175	\N	f	f	Neuer32rasdefaewstq34traewsfasw
+314	1	74	67	2018-02-03 12:12:55.425861	\N	f	f	Neuer32rasdefaewstq34traewsfasw
+315	1	74	67	2018-02-03 12:13:05.637522	\N	f	f	Neuer32rasdefaewstq34traewsfasw
+316	1	74	67	2018-02-03 12:14:38.031458	\N	f	f	Neuer32rasdefaewstq34traewsfasw
+317	1	74	67	2018-02-03 12:16:06.166626	\N	f	f	Neuer32rasdefaewstq34traewsfasw
+318	1	74	67	2018-02-03 12:16:50.06287	\N	f	f	Neuer32rasdefaewstq34traewsfasw
+319	1	74	67	2018-02-03 12:18:09.17917	\N	f	f	Es geht wieder!!!
+320	1	74	67	2018-02-03 12:18:49.162596	\N	f	f	Es geht weiter!!!
+321	1	74	67	2018-02-03 15:21:02.099672	\N	f	f	Alles kaputt?
+322	1	74	67	2018-02-03 15:54:07.141156	\N	f	f	Es geht weiter!!!
+323	1	74	67	2018-02-03 15:54:20.846462	\N	f	f	Denn es klappt!!!
+324	1	74	67	2018-02-03 15:57:16.998846	\N	f	f	Denn es klappt immer noch!!!
+325	1	74	67	2018-02-03 16:12:17.095775	\N	f	f	Denn es klappt immer noch nicht richtig!!!
+326	1	74	67	2018-02-03 16:19:54.136657	\N	f	f	Argh!!!
+327	1	37	67	2018-02-04 16:07:04.98108	\N	f	f	Enim doloribus est.
+6	1	8	6	2017-12-28 22:26:58.492319	2018-02-04 16:07:05.252	f	f	
+328	1	20	67	2018-02-04 16:07:05.391702	2018-02-04 16:07:05.456	t	f	Quibusdam in cum occaecati dolore.
+329	1	67	74	2018-02-06 10:04:22.164557	\N	f	f	Test Test Test!!!
+330	1	67	74	2018-02-06 10:06:56.296269	\N	f	f	Test Test Test!!!
+331	1	68	74	2018-02-06 10:07:06.90527	\N	f	f	Test Test Test!!!
+332	1	70	74	2018-02-06 10:07:26.773149	\N	f	f	Test Test Test!!!
+333	1	67	74	2018-02-06 10:08:48.250461	\N	f	f	Test Test Test!!!
+334	1	67	74	2018-02-06 10:10:00.155028	\N	f	f	Test Test Test!!!
+335	1	67	74	2018-02-06 10:10:24.514472	\N	f	f	Klappt es jetzt?!!!
+336	1	67	74	2018-02-06 10:19:42.747785	\N	f	f	Klappt es jetzt?!!!
+337	1	67	74	2018-02-06 10:31:41.662483	\N	f	f	Es funzt?!!!
+338	1	2	67	2018-02-06 10:40:36.814073	\N	f	f	asdas
+339	1	3	67	2018-02-06 12:53:28.433061	\N	f	f	Hello
+340	1	61	67	2018-02-09 14:50:22.372605	\N	f	f	Wir müssen das Frontend fertig bauen.
+341	1	61	67	2018-02-09 14:50:39.93993	\N	f	f	Aber das ist noch soviel nervige Arbeit :(\n
 \.
 
 
 --
--- Data for Name: userrights; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Name: notifications_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-COPY userrights (userright, userid, companyid, departmentid) FROM stdin;
+SELECT pg_catalog.setval('public.notifications_id_seq', 341, true);
+
+
+--
+-- Data for Name: parentunit_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.parentunit_data (parentunit, childunit) FROM stdin;
+25	7
+25	22
+25	31
+25	67
+21	25
+21	71
+21	22
+14	21
 \.
 
 
 --
--- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: vipfy_test_user
+-- Data for Name: phone_data; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY users (id, firstname, middlename, lastname, "position", email, password, title, sex, userstatus, birthday, recoveryemail, mobilenumber, telefonnumber, addresscountry, addressstate, addresscity, addressstreet, addressnumber, profilepicture, lastactive, lastsecret, riskvalue, newsletter, referall, cobranded, resetoption, "createdAt", "updatedAt") FROM stdin;
-3	\N	\N	\N	\N	Isaiah.Stiedemann79@hotmail.com	$WlRGg5S8XsqC2/dwGT0fHOx5Ne23sYWusLuMkhslaZ3WYF3lt3Cm2	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 16:41:01+01	2018-01-20 16:41:01+01
-4	\N	\N	\N	\N	Dudley69@yahoo.com	Cxljl9MfKikwLXfqMGOHu5nDK.TK5YjhmG1rxO3aw2EoJaaJ2x3G	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 16:42:04+01	2018-01-20 16:42:04+01
-5	\N	\N	\N	\N	Keven.Bergstrom@yahoo.com	$05$gfmfXW2f3c2hq.9udVrpM.MAzQRS2NCHsHY1FUzAYN5HOd2LWQO0W	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 16:48:35+01	2018-01-20 16:48:35+01
-6	\N	\N	\N	\N	Melisa.Terry79@gmail.com	$05$GDEQZwKzvJQ4Qk.zJmo7cO5Jlm5gUWmKzRwzELoUjb1BVsjRlKeVq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 16:50:17+01	2018-01-20 16:50:17+01
-7	\N	\N	\N	\N	Reva.Turner84@gmail.com	$TNzo0wz82YpFDjAbfkoBcuO6MUuTCUKALQSlKne.6ybrUAyPOMqVe	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 16:53:24+01	2018-01-20 16:53:24+01
-8	\N	\N	\N	\N	Adah.Gusikowski30@hotmail.com	0zrRSTVMgz0ICR2HR21EeleWrBNHPSJCXtayhWAm7foT9UeVIV5e	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 16:54:42+01	2018-01-20 16:54:42+01
-9	\N	\N	\N	\N	Nina81@yahoo.com	05$IFIectD6dMXJvfGLHV5MIufummgF3I26523k5DEAS/erZ3e2Aiege	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:05:38+01	2018-01-20 17:05:38+01
-10	\N	\N	\N	\N	Earlene56@gmail.com	G9HJHdWOnctP3O2/SaK3utzfJY4CDEZHsSFQIyPlU7czTPUJtYU2	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:06:25+01	2018-01-20 17:06:25+01
-11	\N	\N	\N	\N	Dakota_Greenholt@yahoo.com	ClR22NairnAMneUPYrd7n.zXKJmPA5irqX8FfZpxgZqx9vJxyxFdu	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:08:18+01	2018-01-20 17:08:18+01
-12	\N	\N	\N	\N	Connie.Wunsch@gmail.com	05$5L65TMu1xlME49pdqGMn4.KZlpTGK1pqSQswD2wgJkDqlxVsDMU8C	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:10:29+01	2018-01-20 17:10:29+01
-13	\N	\N	\N	\N	Declan.Romaguera66@yahoo.com	imxOE6M3dsSYyJn2KqiN.5ULHUmMjOSxLHcSS/SvjXcu1zo2gx2i	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:13:58+01	2018-01-20 17:13:58+01
-14	\N	\N	\N	\N	Marisol_Feest69@yahoo.com	p9OkZAHVHUYFZUjghHVyxO53qs7SBxBgcRjAhsoweyh8JQ2Hha.Qi	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:21:05+01	2018-01-20 17:21:05+01
-15	\N	\N	\N	\N	Orin_Cruickshank@hotmail.com	$ZxpaVvGwns6BTAM00345eu7kV7CbtHdB5SMIFpEKBAngeizSD03J6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:28:01+01	2018-01-20 17:28:01+01
-2	\N	\N	\N	\N	newtestuser@vipfy.com	$2a$12$mRZSx/CBqIg.IKRbEkrCP.wLs18qhVk9yFZLfcDA3GK9sudU719uW	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 16:22:05+01	2018-01-20 16:22:05+01
-16	\N	\N	\N	\N	Maribel_Schaefer@yahoo.com	b02e8tFyUzIM2Y1n71I/eawfq9scnwJf71Ygd1TBOkJeZwmplLRe	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:32:21+01	2018-01-20 17:32:21+01
-18	\N	\N	\N	\N	Arnold.Weissnat@gmail.com	$RkaEEoSZy7J.E2ehcnk5E.LU0cc2TBoocqG0QThn2SJXmDuKyRQni	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:38:18+01	2018-01-20 17:38:18+01
-19	\N	\N	\N	\N	Donavon_Rodriguez@gmail.com	$Aq3RsXLmpW2gN9aVGREbhORWJxIVssmkCrrTpjNtzECeaqXcPxqiy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:39:47+01	2018-01-20 17:39:47+01
-20	\N	\N	\N	\N	Justina.Emmerich@yahoo.com	pbPr4FEUQ358prSO5A3XewEAUsjfgOvB3Iu2EzuaRjJizQCuG.FG	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:39:58+01	2018-01-20 17:39:58+01
-21	\N	\N	\N	\N	Korbin_Deckow37@hotmail.com	0gFuqG02jsWTe5j.mdT8.IcRFKNRxarS6HV/kIl6ONrqi4aBHOYO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:41:41+01	2018-01-20 17:41:41+01
-22	\N	\N	\N	\N	Christa_Lakin79@hotmail.com	g64e8.lNI7PH24NRtob77ud1Cakch067A1VRLBrF0Ys7w8ChYQnKC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:42:36+01	2018-01-20 17:42:36+01
-23	\N	\N	\N	\N	Dejuan24@gmail.com	05$gxXPZKNrJQFGSlShWt6Z7O1EN7vppHtUOUCOFFCtxVaAzvGikTEj2	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:43:48+01	2018-01-20 17:43:48+01
-24	\N	\N	\N	\N	Chris50@hotmail.com	5$tpHkJBwibkamixZUr20LU.cQdVJkhN.nebWjWnI956JH4wnG6eR.2	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:45:08+01	2018-01-20 17:45:08+01
-25	\N	\N	\N	\N	Taya_McDermott98@gmail.com	j7A4J4QaOCGDcj2NBAa/5OHY.T26aApT84gso5i29SUmvS4wlRTje	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:47:52+01	2018-01-20 17:47:52+01
-26	\N	\N	\N	\N	Chet96@hotmail.com	5$RvsOTrfmy2vvR2Hg0iobgutDNCj8PMFmKHP.MRbjX6HUMrwo6.2LO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:51:02+01	2018-01-20 17:51:02+01
-27	\N	\N	\N	\N	Kattie_Wyman30@hotmail.com	jgnCZnpACzKfa7GWyuU2jOtzxmrin10Sp.7YMkiyoNYWwyesf60v.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:51:24+01	2018-01-20 17:51:24+01
-17	\N	\N	\N	\N	Beth_Kunde24@gmail.com	$2a$12$11v8Ip4BOOsR5dd832jnkuocJC4iv5I5Bl9e1PwM9K0lFHnG7W07K	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:34:55+01	2018-01-20 17:34:55+01
-28	\N	\N	\N	\N	Micaela29@hotmail.com	05$Emao.B3SXvqaHFyZb6aRgOjN.NbClS7.LJcfFYISqNnfauRbstoU.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:54:26+01	2018-01-20 17:54:26+01
-29	\N	\N	\N	\N	Veronica5@yahoo.com	21Cy830fTS5WUIS3W2sSOH8MN1C2YbNQWNMuhiHrX7/LTtImUPoa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 17:56:57+01	2018-01-20 17:56:57+01
-30	\N	\N	\N	\N	Raoul20@gmail.com	IKFhA2UsLws0nKSWIWAfuRY0THzApRHvYisABGxYQ9hnIqtEMpJm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:02:58+01	2018-01-20 18:02:58+01
-31	\N	\N	\N	\N	Jessyca29@hotmail.com	$05$7I68UPrz5KkG1ZlS.FAaz.hl1xsLEl7PnaDDSAp4OceOsuSoX9WZ2	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:04:59+01	2018-01-20 18:04:59+01
-32	\N	\N	\N	\N	Beth_Cormier@yahoo.com	$Jex4nY3ybO88Ns4JupE2ae50i4DaSpqN7BehekNgu3gEhFklPR.HO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:07:35+01	2018-01-20 18:07:35+01
-33	\N	\N	\N	\N	Paula58@hotmail.com	499609wtYnwze9OaURteu2TKR0NY.EaG1aRXSMCEdbw9VYuQMpJK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:11:21+01	2018-01-20 18:11:21+01
-34	\N	\N	\N	\N	Louisa.Fisher@gmail.com	5$b3FBwdEZ82SO9bMNtH5nlOmHr7Xjf8kKrE04WHzrY.JZRP9RfYwHm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:12:16+01	2018-01-20 18:12:16+01
-35	\N	\N	\N	\N	Edythe.Moen40@hotmail.com	5$MFdtH5VJAYjI42EOjNkFUu7hPe7V6fYA26dCBR93nFdZekkrNf7tK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:12:56+01	2018-01-20 18:12:56+01
-36	\N	\N	\N	\N	safasf@safasf.dd	$2KOy7fg4YuB/i1ehR0I.NOWLyij.JiruDxPLMSXfXueUW4JL0YAue	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:19:01+01	2018-01-20 18:19:01+01
-37	\N	\N	\N	\N	testuser23@vipfy.com	$05$e2wpYJ1p8k6538wSPG3gluyy6NC4rj7TEFlXrXG5/8dXGGzyjELS.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:21:00+01	2018-01-20 18:21:00+01
-38	\N	\N	\N	\N	Morris_Swaniawski@gmail.com	bftaQjfjTHOkmwbF2aq42OQonhdzFOSqwWoNB6xHfkKPoENSqIXoy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:22:49+01	2018-01-20 18:22:49+01
-39	\N	\N	\N	\N	Linwood21@gmail.com	$05$r32SQD97J3QEtIJVj1bfsegFFhCeHrF.wsPJ.2nlbaEX9iYs31oly	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-20 18:25:45+01	2018-01-20 18:25:45+01
-40	\N	\N	\N	\N	Eugenia_Schultz38@gmail.com	$05$YnKialEIdUZBPkRJ42C1B.fBdVAkkKOcO.Jbr4OtmA7p1ybOWH5Bu	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-20 18:26:16+01	2018-01-20 18:26:16+01
-41	\N	\N	\N	\N	Forrest_Kuhn@yahoo.com	5$9X26Gfgf1OgDw44Yif2bJOYpx6ou2OG0OkdG4xXCYdQJUomcWVcgG	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:31:37+01	2018-01-20 18:31:37+01
-42	\N	\N	\N	\N	Savanah.Upton9@gmail.com	$05$zlLebybByiz9oXoDCOISMuXq6Mo8gZZkISCQPHZHdFmfyrhhavAoK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:47:04+01	2018-01-20 18:47:04+01
-43	\N	\N	\N	\N	Cyril_Bruen97@yahoo.com	khfWvFBUNli7AXDaL47Jhe4.2MLDOwz0n2CeBGO3JfehrO65.4wnO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-20 18:48:22+01	2018-01-20 18:48:22+01
-44	\N	\N	\N	\N	Alejandrin77@gmail.com	$05$l2DB3Ws2iGZ2w0KO.flSnOyAGlLJHFpWexO8c0rjLcARehgYHPRBG	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-20 18:49:11+01	2018-01-20 18:49:11+01
-46	\N	\N	\N	\N	Delmer58@gmail.com	$KZ2MdtrJANCrgb8Bj0CffOMKv9x7H5r/fi3RukwUaGf0ikUDPiXSu	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 18:59:13+01	2018-01-20 18:59:13+01
-47	\N	\N	\N	\N	Kayden.Ankunding@gmail.com	$2x5rT287CTDY0xsHve862.e7Hvv.EtoHYV8cWQqbPia6o7fOcB0bK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-20 18:59:58+01	2018-01-20 18:59:58+01
-48	\N	\N	\N	\N	Alexandrine_Gleichner@yahoo.com	05$bFtlcj9N9ebDnif3ZdQ4OOHo7Hn7l5GasgQ2SL5C0GOlJgTQFYARe	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 19:00:26+01	2018-01-20 19:00:26+01
-49	\N	\N	\N	\N	Anika.Howell@hotmail.com	5$T8cty60eLk18EM7qBjU2Met4WLV6DkhsstE3VWvG9GhuX2CFp6ecW	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-20 19:01:10+01	2018-01-20 19:01:10+01
-50	\N	\N	\N	\N	Julio.Heller89@yahoo.com	$05$Lz4p2VuWKCZsDAabwh7AxuwXVfWmOdefpspB2GBCDuaG41iR08Xuu	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 19:02:59+01	2018-01-20 19:02:59+01
-45	\N	\N	\N	\N	Lauryn_Reilly@gmail.com		\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-20 18:54:48+01	2018-01-20 18:54:48+01
-51	\N	\N	\N	\N	Magdalena_Hammes@hotmail.com	PsBEJlB.3WSHHBQlrBGAe4EENjFXKyYUMNrX8yvcECQoL.3qX5qi	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 13:02:10+01	2018-01-21 13:02:10+01
-52	\N	\N	\N	\N	Vincenza_Hauck58@yahoo.com	5$D43C.pei8fw2u0HoMUv.1.jhVGH77Jc5GCTmq4t6Uq6YMFv7KpZXq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 13:05:28+01	2018-01-21 13:05:28+01
-53	\N	\N	\N	\N	Royce_Quigley63@gmail.com	$05$5uQLC56ZPwc8pz6VanHyf.it85HLplxlMgqcUOBFiDwE.1pxYGJcC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 13:16:01+01	2018-01-21 13:16:01+01
-54	\N	\N	\N	\N	Sylvan.Schulist@hotmail.com	5$cXswIlqkJfMXWYMxamCkfeB10I0eDN1KwuF023V1BTT6f98wpmORi	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 13:20:56+01	2018-01-21 13:20:56+01
-55	\N	\N	\N	\N	Delbert47@hotmail.com	05$f7Z5JeqHIXIwYIFbeoAtSeFp5ROAJpzWNCwQlvsxM2Cq.5F6b6tyi	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 13:24:03+01	2018-01-21 13:24:03+01
-56	\N	\N	\N	\N	Dorian14@yahoo.com	2DviACig8mePVSM0NwTbpuIVwRcgmEb12ixozCLUVeXOSDDMCr4JS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 13:27:22+01	2018-01-21 13:27:22+01
-57	\N	\N	\N	\N	Jean34@hotmail.com	5$O3gmM0TnsnlQtfs9jbwHt.XyHn8w2z.uy2OfZS2.9TfzziNzT95Fa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 13:29:44+01	2018-01-21 13:29:44+01
-58	\N	\N	\N	\N	Krystal_Mayert75@gmail.com	05$pZaoRV4T7KGBkGI9aF6CheAdAO21xas0fgVAUFsbXUiiv8vutUCYW	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 13:32:27+01	2018-01-21 13:32:27+01
-59	\N	\N	\N	\N	Freddie_Aufderhar55@yahoo.com	qemXy5rDoB9tFh2m9U0pO9wyDry5FynFf5l8KJJuU4pAthfOJl4W	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 13:35:22+01	2018-01-21 13:35:22+01
-60	\N	\N	\N	\N	Mathias_Nienow4@hotmail.com	bAPiVbE2NTPCk5YILi.YuJWTNc16ftOvQ60EY7Cj8WtWFiYlC6sC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 13:38:04+01	2018-01-21 13:38:04+01
-61	\N	\N	\N	\N	Deontae41@yahoo.com	$r8ZudOFo3Zp4WDsi8KMamuJS2wunbXYw5mDv6VfgB0xhH4NCFpFTO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 13:38:36+01	2018-01-21 13:38:36+01
-63	\N	\N	\N	\N	Christa.Abshire@yahoo.com	5$cj2QUOwTmxQG4K3RThHjUOs5aV.eveZ0OFBZGhuN4y46hOGy54nbi	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 13:52:02+01	2018-01-21 13:52:02+01
-64	\N	\N	\N	\N	Akeem_Mitchell@yahoo.com	05$T8iKRBFgyDR7LbVHITFYR.5vQMXCq9WHuoStYz8E.6hpgpDtW2GeK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 13:56:23+01	2018-01-21 13:56:23+01
-65	\N	\N	\N	\N	Abigale5@hotmail.com	GDZcqBAsYsZ77uqGR.LV.4oaiVsllQKyuDX9FX.zO3.AUm.kQgQC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 13:57:32+01	2018-01-21 13:57:32+01
-66	\N	\N	\N	\N	Albert_Jakubowski95@yahoo.com	.4arMVFI8bl2rL7RAotDOAAud2Ca4ZLy5HCnqnuz4.r8C0CbJEVW	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 13:58:27+01	2018-01-21 13:58:27+01
-67	\N	\N	\N	\N	Liliana0@gmail.com	05$EQHuFCyqYFW49MNbuWHm.eGXTIdmdPv3Pu35RPsVPtEBajDjdrIra	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 14:29:21+01	2018-01-21 14:29:21+01
-68	\N	\N	\N	\N	Jaquan0@gmail.com	eLiR.rlUfQKLQRRHS2kpOtDWkBPZxv/30S9eppbbcxqw6MADAhoa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 14:46:36+01	2018-01-21 14:46:36+01
-69	\N	\N	\N	\N	Vallie_Terry31@gmail.com	$2a$12$86eRMAh5I968nO/mpgvGTuHdXqOgRvKojKh6QM7no4C03j92tRuyO	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 14:49:14+01	2018-01-21 14:49:14+01
-70	\N	\N	\N	\N	Patrick12@yahoo.com	$2a$12$Tp2lv8zWY9mCI0ZkiO4L4eHVNdziY/Z3iFTKqSTW/tewfwkC5OKCa	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 14:50:05+01	2018-01-21 14:50:05+01
-71	\N	\N	\N	\N	Fay_Hessel@gmail.com	$2a$12$a/mReRutf3ZVSNevQF0cvOVuwEc18nwEjLOrpz6RQZbHfjqLtwRMC	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 14:53:20+01	2018-01-21 14:53:20+01
-72	\N	\N	\N	\N	Bell.Schmitt27@gmail.com	$2a$12$FhE8g.Jf0WhiHpUFxklsp.qaBxaARIIxBcIFXfLa4xvPnSchMXj9.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 14:58:39+01	2018-01-21 14:58:39+01
-73	\N	\N	\N	\N	Eldridge.Hahn@hotmail.com	tpcmNdiXuCaENQ0DJvy9HuEmPE.zbWE6rD.mozOZyAu4A6pzBu97W	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 14:59:24+01	2018-01-21 14:59:24+01
-74	\N	\N	\N	\N	Stevie74@hotmail.com	$AK8mR.aMEH2LTKa5qRQ42uMcWnbdmmWqHVze3WadksJf.THlS14Ta	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 14:59:34+01	2018-01-21 14:59:34+01
-75	\N	\N	\N	\N	Ali.Armstrong79@yahoo.com	$2a$12$1aPskK83016OQ7ZS.2/vpuPNQhSRsFcLmUjR92PGdD3JWzL2JXm5W	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 14:59:48+01	2018-01-21 14:59:48+01
-76	\N	\N	\N	\N	Sister21@yahoo.com	3NcCbNsHJMSSxH1IOIKQf.ujWML26JjyX.o8J7jtbIRZR.NrYDfYm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:03:17+01	2018-01-21 15:03:17+01
-77	\N	\N	\N	\N	Lora.Kuhlman@yahoo.com	$2a$12$buJQedaEziOPKrlD4kg0vOIBNBvcwH86QG4mJ69V4Q0/ZzlKPgFJK	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:03:30+01	2018-01-21 15:03:30+01
-78	\N	\N	\N	\N	Colby.Osinski34@hotmail.com	5$gfOrUG02m52XeKAFoandEukcUy2SG1lbolCYZy1Rji2anexJo7GBa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:03:52+01	2018-01-21 15:03:52+01
-79	\N	\N	\N	\N	Weldon_Kerluke@yahoo.com	05$6IipXBdrQ3hQJCkADaECGe9nNrKs9zsq0mEVIGlfwlFpYWolGodIC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:03:52+01	2018-01-21 15:03:52+01
-80	\N	\N	\N	\N	Madonna73@hotmail.com	$05$509wYyyawqLm2BmZMPWd9uMl3GMdxyscylkC9bxsiFY1pWHscfSJy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 15:04:25+01	2018-01-21 15:04:25+01
-81	\N	\N	\N	\N	Herbert_Armstrong@yahoo.com	5$Okv2UUjDGlFTQHMqgzpUm.EzHuIg1YBDE0BWbfH1xvnlRmXai..P.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:04:26+01	2018-01-21 15:04:26+01
-82	\N	\N	\N	\N	Gus.Champlin56@hotmail.com	5$TZ.IOYv1XESqQ6eS4jdeyuOmVBt8nGj6nk1VUIpWnaja3OE4aa5QG	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:07:20+01	2018-01-21 15:07:20+01
-83	\N	\N	\N	\N	Emelia_Reichel@gmail.com	$2a$12$7aCX8MeiiRAizRYEN6a/FO3MukZgwf3DRpJGNH5UTQVIujpLJT5qW	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:08:05+01	2018-01-21 15:08:05+01
-84	\N	\N	\N	\N	Murphy_McCullough4@gmail.com	5$NTR9aTmZYGWAYT79T7WWueEl9LO4gBRBfsj4mB9H2VY497drjYeRq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:15:11+01	2018-01-21 15:15:11+01
-85	\N	\N	\N	\N	Theresa.Kemmer25@gmail.com	AQVg5zu4T5FkcLtJYNCY.F744AVxA0HLCb0qfUWaQwF23hMxqa5u	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:16:19+01	2018-01-21 15:16:19+01
-86	\N	\N	\N	\N	Tabitha.Rath20@hotmail.com	LrWRwD44pL23aVj5fDK3beDKXb6bK7XM8JQjNEPc6TffTFF71/UL.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:16:56+01	2018-01-21 15:16:56+01
-87	\N	\N	\N	\N	Amari_Ankunding@hotmail.com	$2a$12$4Gox3RbFOclQcxBaFMBYZuj2EjAeHbOFKMN0cZGzq.5TFoKxnKjKO	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:17:25+01	2018-01-21 15:17:25+01
-88	\N	\N	\N	\N	Carlo99@yahoo.com	05$dXqyVuUH.XCBnKSiTJpa3e6W4wetv8v5taChG9PocH0Vk4lShm936	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:18:12+01	2018-01-21 15:18:12+01
-89	\N	\N	\N	\N	Werner.Bechtelar@hotmail.com	05$ocR.6yv9i.gV2Ix9Oa34..jLVfhxUiCXJTAMXAqc35V2svFRkDhVq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:21:45+01	2018-01-21 15:21:45+01
-90	\N	\N	\N	\N	Reina66@gmail.com	$05$eqyumDshmwcGIvCxoDBXAObkbGLMQ9YcgIVHyCGyOjbRsXOgHVbkC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:23:15+01	2018-01-21 15:23:15+01
-91	\N	\N	\N	\N	Judson45@hotmail.com	$IxD7RLsyQ2lWPScnzTh13.2tYBLCGhKhgr71ivkylaT3iT9BVutSa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:24:54+01	2018-01-21 15:24:54+01
-92	\N	\N	\N	\N	Jamar_Jones48@hotmail.com	5$znsurVlhEI6YxkpJw6siAefGYQfrVTpb0JHvmFBBftpgWFJJGh0wS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:26:16+01	2018-01-21 15:26:16+01
-93	\N	\N	\N	\N	Jany67@yahoo.com	$sS1D74Q5Phou7fiEJxvfuOZWm9Qml0gYXT29c2wPlkOyETdtCe5vq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:26:59+01	2018-01-21 15:26:59+01
-94	\N	\N	\N	\N	Bennett46@yahoo.com	5$OV6.4l1jF5JDeLyG1T9gu.yRbdL8eeEa89EfiRUkJ4DXKSLTHUVcm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:29:41+01	2018-01-21 15:29:41+01
-95	\N	\N	\N	\N	Marty.Hartmann@gmail.com	2If0bnuzSihBF4leAmGMQue1pHzkt5BZzHn1mYS1Vm4Fby8IGqF2a	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:31:36+01	2018-01-21 15:31:36+01
-96	\N	\N	\N	\N	Bruce_Considine@yahoo.com	$3Lvb3tlDt981jEuE8p4IO.xnH4q2TDYUgRxHxoDgVvWW9cEUEfOCO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:31:59+01	2018-01-21 15:31:59+01
-97	\N	\N	\N	\N	Jarrod62@yahoo.com	$2a$12$sGQHLQpBASN/C8QNv1LPxuXNJJs995SNY4XxUNlvTOIqNgkNg63/C	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:33:29+01	2018-01-21 15:33:29+01
-98	\N	\N	\N	\N	Emmanuelle_Greenholt@yahoo.com	$2a$12$2drug1RQWwksa3b8wrcv3unLNA2n.FJT8rpNfHr9gy20xILGUuX5W	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:34:55+01	2018-01-21 15:34:55+01
-99	\N	\N	\N	\N	Garfield.Cole81@yahoo.com	$2a$12$XgGP6p9XIVSwPBlvZ0IW6e1uYuCbNiSfzRMTnVH0KxJeQNBOfpFjG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:36:50+01	2018-01-21 15:36:50+01
-100	\N	\N	\N	\N	Milton_McClure@hotmail.com	05$1ZqBuc4pRm.EOt8c1QHA6ukiMoKMwURPbnkP16WcJv1WhCk4.t9fy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:37:31+01	2018-01-21 15:37:31+01
-101	\N	\N	\N	\N	Toy.Sporer@hotmail.com	$2a$12$sFGqeGe.PoAA2xWib70/BOfE1.BGB1gomz7eRROcjh3QkVzMQNMzK	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:37:32+01	2018-01-21 15:37:32+01
-102	\N	\N	\N	\N	Jaleel.Eichmann36@hotmail.com	$v5LGpiZEwfDLu5KxdXz6YOzOFI4WR18xhBHpikknyefBtNGd2800S	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 15:37:48+01	2018-01-21 15:37:48+01
-103	\N	\N	\N	\N	Meghan.Treutel@hotmail.com	$2a$12$K9BSE1mKSLoP7Fv4DCHrouwL44reXzy.bQUVgWadRS/FtBMzxMzT.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:37:48+01	2018-01-21 15:37:48+01
-104	\N	\N	\N	\N	Maida43@hotmail.com	$5.itvvBgQfJUURd23b13reB5Eib1JC0mW0dI9GGBTiyv3./MFeMLW	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 15:38:18+01	2018-01-21 15:38:18+01
-105	\N	\N	\N	\N	Zack88@gmail.com	$05$gVgVLVA86kU9NNikPWp.vegVRM4DwV7V.Hl7HFVV.oy5UYqqn2crS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:38:19+01	2018-01-21 15:38:19+01
-128	\N	\N	\N	\N	Eugenia26@yahoo.com	05$9hngD6V7QAvuIQp.ssm3NOjPWKAjbgxJHi9YfUS3J8S2WQHd4BfBa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 16:47:39+01	2018-01-21 16:47:39+01
-137	\N	\N	\N	\N	Hank.Beier73@gmail.com	$2a$12$oI9ZrmwUi9.CvIm6vSXEcepsZ1MBP1aOfpJ8qDYqTftG6UAS8971e	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:57:19+01	2018-01-21 16:57:19+01
-62	\N	\N	\N	\N	testuser69@vipfy.com	4RDBu9EJNNR.LLlugCmTmtATJxFiZ6exPcHHUn8m9iq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 13:50:53+01	2018-01-21 13:50:53+01
-106	\N	\N	\N	\N	Izaiah.Windler16@gmail.com	05$v7ClcnpMEoGiEwLWlN6.5.824x.HQgH2DxdX5Koa/wFJFoNj.HtWu	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 15:54:20+01	2018-01-21 15:54:20+01
-107	\N	\N	\N	\N	Earnest.Mraz53@hotmail.com	$2a$12$Jv64M/CvhJwtVgm6J.OuseAhgY7Pvfz5fHhwUnKPsGV/4fQv77a2a	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:54:21+01	2018-01-21 15:54:21+01
-108	\N	\N	\N	\N	Emiliano_Witting40@gmail.com	DtMTGwbrsmIqIwVoWEF2XOGBOy1HJcNhsw8FtH7k42JjK47hAOCru	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:56:02+01	2018-01-21 15:56:02+01
-109	\N	\N	\N	\N	Manuela24@yahoo.com	$2a$12$kCICqYKjFGFOIYFh90C7feArZnPHuU3jzqXOJ6U0o1fbXdbhv1orC	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:56:03+01	2018-01-21 15:56:03+01
-110	\N	\N	\N	\N	Nikolas.Bogisich3@hotmail.com	1Ie5Kjjz2uNXflpM6RCMOlaolvuCux0F2zxLZmY2.u.R3uOA.9Fe	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:57:18+01	2018-01-21 15:57:18+01
-111	\N	\N	\N	\N	Fritz.Bashirian94@hotmail.com	$2a$12$zFxKxiNE0MyX6m0jsxfqbegpMLvCeu8HJu71beJazQKC0ZXDjY13i	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:57:19+01	2018-01-21 15:57:19+01
-112	\N	\N	\N	\N	Valerie.Mraz23@gmail.com	5$LnYphXioe4H2mz9rZn8DTuWnEg3M9YwXcepVvASyUiDK1PAFfRUu6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:57:49+01	2018-01-21 15:57:49+01
-113	\N	\N	\N	\N	Darwin86@hotmail.com	$2a$12$jTPuH46O55Tu7VnZLuT9z.M9QqpT60.SijKLl2byVFU5RTnuk1T9C	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:57:49+01	2018-01-21 15:57:49+01
-114	\N	\N	\N	\N	Violette_Wilderman2@hotmail.com	k8giFlcg0puoOrg5wY8p4eox4N26tBW2fY/6Ya35O1v536LmJyEMK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 15:58:16+01	2018-01-21 15:58:16+01
-115	\N	\N	\N	\N	Brigitte51@hotmail.com	$2a$12$5g/ne6qe1gWjJy4zs7v6kO5.1FhVrt/US8tw16eJdf2WzeWNcz71S	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 15:58:17+01	2018-01-21 15:58:17+01
-116	\N	\N	\N	\N	Alize.Mosciski12@yahoo.com	$05$gC7FV1cR5Kz80r.CbFAiH.4jUE6IWleghGK0SZ0PruTc9aSmkBJDG	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 16:04:59+01	2018-01-21 16:04:59+01
-117	\N	\N	\N	\N	Sammie_Emmerich@hotmail.com	$2a$12$WYDkOf.YtWUusu.dy9TfXeEszY/TFGZKn3EsmKMppNKdrndPfSGIu	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:05:00+01	2018-01-21 16:05:00+01
-118	\N	\N	\N	\N	Dale3@yahoo.com	sguFZgn23cKHsacjuYQBpulAKWfU4uFgLwyns.QCHY4WZBsRGCkZe	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:05:43+01	2018-01-21 16:05:43+01
-119	\N	\N	\N	\N	Westley48@hotmail.com	$2a$12$l1JNS9VIkNLzEERzWYYrOOTtiewCu6nDx0P8BL5mnE6.q2RGL2hT.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:05:44+01	2018-01-21 16:05:44+01
-120	\N	\N	\N	\N	Gianni_Reilly@hotmail.com	05$on5KfbizAbEgKdPxl33xieZFaVqDj3W5t0YqBeN3L7uFhzHs5R3wm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 16:06:43+01	2018-01-21 16:06:43+01
-121	\N	\N	\N	\N	Michel22@yahoo.com	$2a$12$fPb6i33Q7l1dE6gWUEYlUOA1BqCktLdEKFpipsATgtJjGSry2.m6O	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:06:44+01	2018-01-21 16:06:44+01
-122	\N	\N	\N	\N	Nathanial_Goyette35@hotmail.com	5$t9vfnwPDm1iod11XZIaySOEuC58n5EoCyGi071p2cFm6r4ir5i0x6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:14:13+01	2018-01-21 16:14:13+01
-123	\N	\N	\N	\N	Terry.Wolff@yahoo.com	$2a$12$7zFgkHiEFqW31PdTOPywwe6E/yAwYhiFvUW9TK268gz38nsP.A2GC	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:14:14+01	2018-01-21 16:14:14+01
-124	\N	\N	\N	\N	Gennaro.Torphy@yahoo.com	P7FoxIdgqwXKOtH7P.CS3OGQDtBCpIyWqODHRSTLoY2xJzybfMOSu	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 16:14:38+01	2018-01-21 16:14:38+01
-125	\N	\N	\N	\N	Emery_Wisozk@yahoo.com	$2a$12$j8dC2RIHH8/BTx/mFAAGmu.q8qMECLvjW9GwTvfBBg2ei5nzlV0zi	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:14:39+01	2018-01-21 16:14:39+01
-126	\N	\N	\N	\N	Myrna_Simonis72@gmail.com	$j3v9akzCNKEVM0BHL.3Khuu66qxNq5POAtbxRInhq5v34EPzE3pRy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:42:12+01	2018-01-21 16:42:12+01
-138	\N	\N	\N	\N	Neva_Windler@gmail.com	PyPUegCPcA21LuYh1UYY.OUhdUe5DmtqTSnFIjnKdKm3rT6j2PW2	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:57:48+01	2018-01-21 16:57:48+01
-127	\N	\N	\N	\N	Steve.Bartoletti95@yahoo.com	$2a$12$exyuPXRPpOgotApUVSrdsunu4m6XRG/CyGiVIB7HOjqHxhQOrE556	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:42:13+01	2018-01-21 16:42:13+01
-129	\N	\N	\N	\N	Mose_Tillman48@yahoo.com	5$ves3u2xfwLSZ1BnvkmrpOehvDL4GqvdBmIWWmdzcNnA2Or0vsz.b.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:47:39+01	2018-01-21 16:47:39+01
-130	\N	\N	\N	\N	Lela.Schaden91@yahoo.com	3rXi7hPC0lASfE1UaKIhO1A7kfYlhJxCx1o0NTLka.kOn4voKQe2	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 16:50:42+01	2018-01-21 16:50:42+01
-139	\N	\N	\N	\N	Kristofer.Klocko@gmail.com	$2a$12$rPuXsA46c6noWzGHvs09/.dFu82zQ77Dru8PEFRkh7ZwxsKKGEyEe	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:57:49+01	2018-01-21 16:57:49+01
-1	Schwanzus	mega	longus	\N	testuser@vipfy.com	qzh70d2jayROroCBGY2MaBc4NRSehMCMPe7ToXksm0K	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-20 14:45:32+01	2018-01-20 14:45:32+01
-131	\N	\N	\N	\N	Travis.Bauch66@gmail.com	$2b9FOHm7tpPi5wQN67YzQ.99uKsh4My4ZcNi2t34MTPZzJ2abzT7u	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:50:42+01	2018-01-21 16:50:42+01
-132	\N	\N	\N	\N	Jacynthe29@yahoo.com	5$cPzjKgdYuGCsQWS.vQf0kepLM5HTK7gWOaZPGwG4Omx4J5Ba7Nr0C	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:54:31+01	2018-01-21 16:54:31+01
-133	\N	\N	\N	\N	Alfredo47@yahoo.com	$2a$12$yDbt4puyZrlVp9tHQ6ApxOsQS5580eXJ2FQ7Pe/ksOp6tSRYDdbbS	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:54:31+01	2018-01-21 16:54:31+01
-134	\N	\N	\N	\N	Carley74@gmail.com	05$G0QWEjbTGTGUuaUgyDl4Eu26VIbSOlYek5diMa0MZOXUSueVxvlge	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 16:56:51+01	2018-01-21 16:56:51+01
-135	\N	\N	\N	\N	Shyann15@yahoo.com	$2a$12$FjY5xEK85Ya8zvQoYlpRSeKDLmzB1KODLpd1JQmYE2WjOfvgERJRm	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 16:56:51+01	2018-01-21 16:56:51+01
-136	\N	\N	\N	\N	Jayde.Romaguera@hotmail.com	5$vRLOuSKx6O9amPmAcZbdReI.0FLqaXwg5zj8UBCVlE88HfaHqDuQm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 16:57:19+01	2018-01-21 16:57:19+01
-140	\N	\N	\N	\N	Cullen_Will@hotmail.com	$05$DxMLEoPACsz5OTHIWqG3Ze5ROFpYi9yd28kpVvOsi8puyHNLwcjt2	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 17:03:47+01	2018-01-21 17:03:47+01
-141	\N	\N	\N	\N	Donna.Kunze35@yahoo.com	$2a$12$6mrU/x8eQdTKqM42OBoWV./yb5P.8ap5MO1FLHn84eC8zZLWTr3mi	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 17:03:48+01	2018-01-21 17:03:48+01
-142	\N	\N	\N	\N	Donnie.Schmitt57@gmail.com	05$OC2lkWkiOaIRd8mmNEz9b.ay7Z2TRTzSHfFXKR.fdgYdUvl39GEyS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 17:20:24+01	2018-01-21 17:20:24+01
-143	\N	\N	\N	\N	Lempi_Konopelski41@hotmail.com	$2a$12$agf8wFI4NtwFOInQsqW3au0elwifkJl5XySU16Q7VvNlXxCA/8psq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 17:20:24+01	2018-01-21 17:20:24+01
-144	\N	\N	\N	\N	Antwon_Eichmann@gmail.com	5$79SS2lb0RZ2BuKhSB6oSz.DWgZeGbLT1Jy1KUkjWBNfejw3hkUI26	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 17:24:30+01	2018-01-21 17:24:30+01
-145	\N	\N	\N	\N	Abigale.Dach@yahoo.com	$2a$12$owVoUasL4QoTRZARj0uVeO2arfMvqNopz.wixH1wkCblmDPgaeYni	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 17:24:30+01	2018-01-21 17:24:30+01
-146	\N	\N	\N	\N	Alvina.Parker10@hotmail.com	$05$4b1kyKMAREyA9XXmja0Wdeq5U6g9s29QJlqj4oj00eKiVMIyp3q56	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 17:25:27+01	2018-01-21 17:25:27+01
-147	\N	\N	\N	\N	Dayna_Larson@hotmail.com	$2a$12$0PalPqzmWfBqcKV9EqevWuG/T5lxlqfjQ3a23WKnvdC7K92BjEqH6	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 17:25:27+01	2018-01-21 17:25:27+01
-148	\N	\N	\N	\N	Irving_Altenwerth@gmail.com	5$Dmw2P01g1Bv.Ny2Q8x8vau6q07WRQxjMDCjq49h8jxFZZhwxMFCLa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 17:33:30+01	2018-01-21 17:33:30+01
-149	\N	\N	\N	\N	Gideon.Johns18@gmail.com	$2a$12$pkmFJX9AToK5mZz9zK4RJ.GiTdvHJneYd/6r3NaZke32QMoS6.CFC	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 17:33:31+01	2018-01-21 17:33:31+01
-150	\N	\N	\N	\N	Hayden.Schowalter88@yahoo.com	5$BTJFeskieyPLJk75P3jw2OA67pjQaQRnnCb6v9CbfREJNhiznS3ja	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 17:33:51+01	2018-01-21 17:33:51+01
-151	\N	\N	\N	\N	Tomas_Hintz@yahoo.com	$2a$12$U/EwBX1ZwKrWnqF7.GNNheiBYKvvVVkKE2V1XisUJsHivMt7yO.9u	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 17:33:51+01	2018-01-21 17:33:51+01
-152	\N	\N	\N	\N	Tabitha.Brakus@gmail.com	5$BgOvGJ2QG000OEZTV7fhAu34sssRDKVJ4nrONRHYKWJK7fNl6KUfW	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 17:55:57+01	2018-01-21 17:55:57+01
-153	\N	\N	\N	\N	Gerhard.Koepp39@hotmail.com	$2a$12$rAZuZJc3729Wou0/9DSxtufvXXHtydGFwX9SuESdA2ODHNereuPAy	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 17:55:57+01	2018-01-21 17:55:57+01
-154	\N	\N	\N	\N	Christopher_Sawayn@hotmail.com	5$PAXjHt2gj9HGL6VqOlASrOHkNFfu8r1LZ2S9AbxMGLQgFReUTe5D6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 17:56:41+01	2018-01-21 17:56:41+01
-155	\N	\N	\N	\N	Candida21@hotmail.com	$2a$12$dcdZZ1cSBDmyuVEeN4SSdO2RaihkYNm9Vv4PtyRhDYQ6FRtqe6Ysq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 17:56:41+01	2018-01-21 17:56:41+01
-156	\N	\N	\N	\N	Camila6@yahoo.com	$05$YlnXWep51abc35lKRH9Ipui35XST7IXHoEO0zkKZyZ4Ij142PJYdS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:01:09+01	2018-01-21 18:01:09+01
-157	\N	\N	\N	\N	Karina.Braun61@yahoo.com	$2a$12$iCeqxRQeJJnZv4SLRZbo1.HIRdKFVEtaLTRDcqwvtUVtbU36ev2mu	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:01:10+01	2018-01-21 18:01:10+01
-158	\N	\N	\N	\N	Larry_Breitenberg@hotmail.com	05$knISftNh1d1mYOKk11oUFO04yAiWHxgQS2Gl4khqbfMHlGFsANOdS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 18:03:04+01	2018-01-21 18:03:04+01
-159	\N	\N	\N	\N	Providenci_Lind@yahoo.com	$2a$12$Q.SRoUFgv6pqPOPTaUYcZOn5yRyuTi4x1qaKp.oweRLtjNRSRYhtG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:03:04+01	2018-01-21 18:03:04+01
-160	\N	\N	\N	\N	Fidel.Jerde49@gmail.com	akEcsIWtKXflN37f24PQrOMpd5DI0Aj8R5.Jg0k33HVfab7jH2la6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 18:05:30+01	2018-01-21 18:05:30+01
-161	\N	\N	\N	\N	Adrian76@yahoo.com	$2a$12$B5DCO5YcsCZkSlS7qBHVVeKcfMSxmWSn6kLM/6DXqK/RnkHDULVKC	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:05:30+01	2018-01-21 18:05:30+01
-162	\N	\N	\N	\N	Titus.Keebler@gmail.com	$PoAALuxUd1Rib4LrUDaXjOPzxoDq5TtZo2ZibbKTHKqidfR44W5Z6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 18:06:28+01	2018-01-21 18:06:28+01
-163	\N	\N	\N	\N	Otha.Pfannerstill@gmail.com	$2a$12$uWG3UFw9EJWlAMXtao/mcOvYuycwPdqTUzCwC4ptlDFtTmtJ24hNG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:06:28+01	2018-01-21 18:06:28+01
-164	\N	\N	\N	\N	Maximo.Cummerata@hotmail.com	05$H4cSpX2ACjSn7kjQxFPL.OwS5wVRm2VaR28c3nJcNOjUDvux2Plo6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:11:12+01	2018-01-21 18:11:12+01
-165	\N	\N	\N	\N	Adolphus41@yahoo.com	$2a$12$XruEzyII4OlRqER8sNYWRuoJmtLb5wTeA0H5qIdclzTsZWL.Sh1wq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:11:12+01	2018-01-21 18:11:12+01
-166	\N	\N	\N	\N	Audra.Stroman35@gmail.com	jykXQHPeu5932W1iamIo.Y4g.qQPTcEHlddOvNzuBYMXqCNmaxZK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 18:12:46+01	2018-01-21 18:12:46+01
-167	\N	\N	\N	\N	Reina62@hotmail.com	$2a$12$LpndQl1vNnHOwR.29Ej5lOs/L2BEAMbVrsKzTbQFT0Wts6V3aIuq.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:12:47+01	2018-01-21 18:12:47+01
-168	\N	\N	\N	\N	Pat56@gmail.com	$K7hMVEAqt50Tdd8YtvusfeK9Fw7z4jLzHffA0QFv07ZFq8rf.pKL6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 18:14:02+01	2018-01-21 18:14:02+01
-169	\N	\N	\N	\N	Judy.Barrows@yahoo.com	$2a$12$.0YEC7jzETWHxt.52mKA7eoKzH6MkZq.Gaz.bhQj1VjDNtAac6y/O	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:14:03+01	2018-01-21 18:14:03+01
-170	\N	\N	\N	\N	Leanne45@yahoo.com	$r7Sja0M3auOB8t2bTa0MvOBWxGQg5.jKHBH4FKZ4tiJgG.AcMOjFm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:14:47+01	2018-01-21 18:14:47+01
-171	\N	\N	\N	\N	Gretchen_Skiles@yahoo.com	$2a$12$y41m8P2ejOkMSOLRhKbZ4OlAZwqH8ASawsd0Kkfd6SLmL3x83vTIa	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:14:48+01	2018-01-21 18:14:48+01
-172	\N	\N	\N	\N	Ludwig16@hotmail.com	5$bgEXnIkZYc6jq61usv2U3.yt6sZeYxv6dvfckDyJ.zBGXqL1SQNTq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:15:19+01	2018-01-21 18:15:19+01
-173	\N	\N	\N	\N	Jazmyn72@hotmail.com	$2a$12$n6MHS4lWtfd4nAwBFfa/GuO2e9W2y0Bk85/8/OlnxdjfxgVkoa242	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:15:19+01	2018-01-21 18:15:19+01
-174	\N	\N	\N	\N	Thora55@gmail.com	E21QAS7eKYNoPgxrnOi6uYORSbwT96zBYaXzn0Nfcd0CYA7aa/F.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 18:15:59+01	2018-01-21 18:15:59+01
-175	\N	\N	\N	\N	Demetris.Yundt51@gmail.com	$2a$12$b4mB1hLxiWPpN710xZl/rOzx5.9432Ef08nsV56aTn1zyvJhBTqhO	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:15:59+01	2018-01-21 18:15:59+01
-176	\N	\N	\N	\N	Albina6@hotmail.com	$05$AwwQ5stZYrvg0RMSDiLRUuKBhB7YUFrZAa2TqissGdCPhw0Jxo76y	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:16:47+01	2018-01-21 18:16:47+01
-177	\N	\N	\N	\N	Kathleen35@gmail.com	$2a$12$3Y.PXf4S1AROIrH8o7/a4.jF62YHgt79mucC8NGElhXFoAmYCG.cG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:16:47+01	2018-01-21 18:16:47+01
-178	\N	\N	\N	\N	Kelli81@hotmail.com	B20fl0iV407yrT2A38ovmu.dwRedJxbAo5aWbs1pfVsIRae6ETfda	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:17:48+01	2018-01-21 18:17:48+01
-179	\N	\N	\N	\N	Reyes_Kub@yahoo.com	$2a$12$AyF5Oumwv7hGUsI0l7Oj3OrfMu4bSMwAU4ayD4vwXymGHXOXm945m	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:17:49+01	2018-01-21 18:17:49+01
-180	\N	\N	\N	\N	Andreane_Jones@gmail.com	5$Z4PMGHoIFJqKt8L77M6jJeQXq0qg9pBXctAjCn7.rp0sZlyBT9yWq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:49:09+01	2018-01-21 18:49:09+01
-181	\N	\N	\N	\N	Elody.Skiles72@yahoo.com	$2a$12$G3p0gAdQahSwDe0DncekfuDbPIl1jWicvtE3/GqfZMmCSYlVzyTL2	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:49:09+01	2018-01-21 18:49:09+01
-182	\N	\N	\N	\N	Hal_Watsica71@yahoo.com	5$T3l2TQFmFS1sdSTAJHHvAufMGiwdEaMtO1PCkM9xPoDGZWMIoNh6C	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 18:49:48+01	2018-01-21 18:49:48+01
-183	\N	\N	\N	\N	Florence.Lebsack96@yahoo.com	$2a$12$mEx2RqEqgS1iZQOfCXUup.86U..w/7ahP0.oWiWlfMUkgT/eRlmQO	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:49:48+01	2018-01-21 18:49:48+01
-184	\N	\N	\N	\N	Nathanael.Herzog42@yahoo.com	$05$r3jroz32dlACLEnrAnjTnOdac..52aGLR/144BFaXOFBvCy9m3sJe	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:59:35+01	2018-01-21 18:59:35+01
-185	\N	\N	\N	\N	Oleta17@yahoo.com	$2a$12$tTrMvMPEh.lynmO.4Wx.zO5xmC4ROrR541vFJOjbhskfemZSu32xu	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 18:59:36+01	2018-01-21 18:59:36+01
-186	\N	\N	\N	\N	Nya_Dibbert63@hotmail.com	UYRszK21OYfoqxhMVfOseqMWoyKiGbXG5Hjmw2zauvw7PTjF2NXy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 19:34:07+01	2018-01-21 19:34:07+01
-187	\N	\N	\N	\N	Loraine_Grimes8@gmail.com	$2a$12$oZluWyH.2NNFkjTlNyxOYOM7nxWbQBAmpvwuvHwkFfzf8UZKPWGi.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:34:08+01	2018-01-21 19:34:08+01
-188	\N	\N	\N	\N	Angelita4@hotmail.com	5$fZ9AFzSXTp072HmtOyE.vu9l7eRZE.2ddbyy/ITkuoSmCYwsq0Jcy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:34:44+01	2018-01-21 19:34:44+01
-189	\N	\N	\N	\N	Cyril_Rice42@yahoo.com	$2a$12$jUHCbbVssG0AGkCb6pfYRuDdJr5CzSlMgHwKzy4k0LMVGX19UxjXS	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:34:45+01	2018-01-21 19:34:45+01
-190	\N	\N	\N	\N	Antoinette.Boehm15@hotmail.com	$05$2xAj1CwC7ioMDfUqDDfCue9.Dj7uLjm6OQAzu5q0myGu14O.SK9ym	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 19:35:52+01	2018-01-21 19:35:52+01
-191	\N	\N	\N	\N	Lucienne_Bernhard@gmail.com	$2a$12$tiSZ.0UrQpzi2uxSpx1Vv.U0UQ6lEQPpstU5iMd9D0o2V9gOmGq1C	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:35:52+01	2018-01-21 19:35:52+01
-192	\N	\N	\N	\N	Marietta_Kuvalis@gmail.com	05$GwFlLIjz6loL9BYOxzxT7uvTsp4Hao6yklf9zlVRsu0YYWIxMjZRW	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:47:18+01	2018-01-21 19:47:18+01
-193	\N	\N	\N	\N	Oran64@hotmail.com	$2a$12$4BBQ.bCwKM77WwJZG8L.i.lQdApOt3QXinLG4R69h2ofYlDZ3VNFa	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:47:18+01	2018-01-21 19:47:18+01
-194	\N	\N	\N	\N	Audrey_Ziemann@gmail.com	5$WT2TGC7BEYjqp9p6cx2bk.aKZ4eCQzFvDs2QF2LoVfyv6qNA6If8a	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 19:48:09+01	2018-01-21 19:48:09+01
-195	\N	\N	\N	\N	Deshaun34@gmail.com	$2a$12$rD/Y85x26iJ1fDHVMoFeteb32FxA.dJL9Cn8S1cDaonN5GnLRSVGC	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:48:10+01	2018-01-21 19:48:10+01
-196	\N	\N	\N	\N	Issac_Lakin63@gmail.com	$90dPactirATw6Vq2znMlKuSkpTDV1hrj8KkUhyg31Lrr32snG1762	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 19:49:22+01	2018-01-21 19:49:22+01
-197	\N	\N	\N	\N	Dan40@hotmail.com	$2a$12$D66rn0cyVdB/IGimlfjYkuG9f1jHnNZ4pHfUL/DpkjB0Xa2qZuOJC	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:49:22+01	2018-01-21 19:49:22+01
-198	\N	\N	\N	\N	Conor85@yahoo.com	05$2XQTvpNrDz4xIFoksN76Le2OrffOgDU7gl2WJGqanElmF7USxn1Gm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 19:50:44+01	2018-01-21 19:50:44+01
-199	\N	\N	\N	\N	Lavon90@hotmail.com	$2a$12$nJSAESCdB9S7kqRutNh.LeX8F.acCQT1/a1szxMUZyNpU803lH1Im	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:50:45+01	2018-01-21 19:50:45+01
-200	\N	\N	\N	\N	Coleman.OConnell62@hotmail.com	1d14kyCFw6.p406M0NyDuWRjoTZlfeOJA2pKvhrF9vVcOpHPDk6K	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:51:49+01	2018-01-21 19:51:49+01
-201	\N	\N	\N	\N	Daphne.Crist40@hotmail.com	$2a$12$mgOiN8NNpXt6N4jLlvH9tud3jHXeYTwPwmfQiBPbDmgYq/lGxCgTq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:51:50+01	2018-01-21 19:51:50+01
-202	\N	\N	\N	\N	Ona20@yahoo.com	05$gFPbod.SnUgSxc5C6nOjCeRBuY82WNbrKDm2T1NeQ8kNL6edteBSG	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:53:10+01	2018-01-21 19:53:10+01
-203	\N	\N	\N	\N	Eugenia_Schulist92@hotmail.com	$2a$12$kKGRg2hiaYmSSw9xF6xe4ue8MpNa0naoFRkMn92m3CqtmsWCclZsW	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:53:10+01	2018-01-21 19:53:10+01
-204	\N	\N	\N	\N	Chanelle.Dietrich2@hotmail.com	Qzlcm.xeS3b.hWLZ.Fl01eWDqCmbSL1z8M3CaOT7Rro0ncvle9i3a	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:54:01+01	2018-01-21 19:54:01+01
-205	\N	\N	\N	\N	Toy69@gmail.com	$2a$12$CRTJjKvOwH3fShEHSB/QhuCi5LkL6n0B7xhZ3dUt6ktVsCuTWHB0e	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:54:02+01	2018-01-21 19:54:02+01
-206	\N	\N	\N	\N	Hillary31@gmail.com	05$HpkSrhatk2YL.2d9nIAoaO1..9oGi0h0VfuitOeuqdtgHUytIzLMy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:55:13+01	2018-01-21 19:55:13+01
-207	\N	\N	\N	\N	Jay45@hotmail.com	$2a$12$OV6xkPHOWdPzK.hi.dXcTe5gJRvIqo.1qPx3X/np4t1P2u8RP5qFa	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:55:14+01	2018-01-21 19:55:14+01
-208	\N	\N	\N	\N	Angie93@yahoo.com	05$6F2xx62xyAvKF./0QjvDdOcE.L6ziHhjbfn7iGR916YPSAJssXYh6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 19:56:45+01	2018-01-21 19:56:45+01
-209	\N	\N	\N	\N	Elroy_Eichmann@yahoo.com	$2a$12$xmi8Fgh6K8TZa4uHQ3x8weoU1pNtmRy8l0g3cOhwIDLZB4vo0yf9m	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:56:46+01	2018-01-21 19:56:46+01
-210	\N	\N	\N	\N	Leone41@gmail.com	$m3cFS1t5s244hdGRJoQhfO9sm9tn3TA2Rdbux2iPxA4/ugaGlhkZm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 19:57:24+01	2018-01-21 19:57:24+01
-211	\N	\N	\N	\N	Merle.Abbott@hotmail.com	$2a$12$FGdIhGtyG6CJbe0vtHF7zuXIv33fj5LofWwkuex4ms/kaOydOD5Lu	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:57:24+01	2018-01-21 19:57:24+01
-212	\N	\N	\N	\N	Kailey_Bechtelar37@hotmail.com	aclUliWG7WI8W42q1YH/yelwqjxFDI0xpdWoIWkhSl84M/0cf9LZ6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 19:58:44+01	2018-01-21 19:58:44+01
-213	\N	\N	\N	\N	Hannah_Parker@gmail.com	$2a$12$l6LQAukiLNgl73Z7CO4rqObx/QzIK.oWIK/pp.A1wfiu4/xkXlEbq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 19:58:45+01	2018-01-21 19:58:45+01
-214	\N	\N	\N	\N	Hermann35@hotmail.com	yvY4tBbDiJH3LAUmDMQ3d.gw5v7ImqPXoFgwSmqfp3gb6KfMT28iC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:00:41+01	2018-01-21 20:00:41+01
-215	\N	\N	\N	\N	Elinor.Berge92@hotmail.com	$2a$12$9A87X4D1KOqWYUHw7YqBgueulc2mDjN6VmZojKhKn3lfIkijC1b3K	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:00:41+01	2018-01-21 20:00:41+01
-216	\N	\N	\N	\N	Maddison.Emard62@hotmail.com	$yiVjBdiKGl.z5XIzcqnEAO.FNhmBg9Cy5Q0KU8JycxMZAkvkp5pAa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:01:27+01	2018-01-21 20:01:27+01
-217	\N	\N	\N	\N	Tate_Beier97@yahoo.com	$2a$12$n1.k4H1yIBFOucuzVP/IQOgE9ytfsh0TcaQNuIQaP7QFqI4ssmiR.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:01:28+01	2018-01-21 20:01:28+01
-218	\N	\N	\N	\N	Mike.Feest@hotmail.com	05$BfCgCr54lQWnBIxaFD6wUurdIsXbMa33qdDhUYv9Fb94CzNHnHrc.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 20:03:09+01	2018-01-21 20:03:09+01
-219	\N	\N	\N	\N	Kaia95@hotmail.com	$2a$12$glTTdxH3ddBYr7bAThvXLeCy30t0dBurtSwFdXejVJSfXr.YCCldG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:03:09+01	2018-01-21 20:03:09+01
-220	\N	\N	\N	\N	Mandy.Armstrong@yahoo.com	5$ThYO20FvPIIpUETsQ6lwOeIsfiJtvD9.QECxYVjdqoiYclbCGx6uy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 20:04:38+01	2018-01-21 20:04:38+01
-221	\N	\N	\N	\N	Brisa66@yahoo.com	$2a$12$b5baIlDKz/CYBSsAHb3gv.TkPqrWiMY/epUXySfWzQbUvlrxvpdK2	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:04:39+01	2018-01-21 20:04:39+01
-222	\N	\N	\N	\N	Braxton_Hahn@yahoo.com	05$x2ynnnmqpsKF7nIBYsYjVe0F0tGphoouBQrp6jVkT8Jv46P1BuMnq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:08:19+01	2018-01-21 20:08:19+01
-223	\N	\N	\N	\N	Eddie.Watsica68@yahoo.com	$2a$12$.ygN1pj4dZIdHeIQi6SJy.SllFxxCUQxXxbAK79AInWPV41AkAA3m	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:08:20+01	2018-01-21 20:08:20+01
-224	\N	\N	\N	\N	Brian89@hotmail.com	0QVUhkGZWtUijsS2m5rcuqUlu2rzPAR8E1FRaMt0.6KqkRXlcAz6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 20:10:12+01	2018-01-21 20:10:12+01
-225	\N	\N	\N	\N	Peyton_McKenzie@hotmail.com	$2a$12$seOn4jxVOl88RUjDD.7j/uvJnbszcSIyq76rXAZueS91JzLjuVkUe	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:10:13+01	2018-01-21 20:10:13+01
-226	\N	\N	\N	\N	Dorris_Cummerata57@hotmail.com	Q3Gpq.0HkEe5LPf4.t3VQO9sq05ErKEobVKlHgzSdJwGNWTixYrGq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:11:23+01	2018-01-21 20:11:23+01
-227	\N	\N	\N	\N	Thea.Borer4@yahoo.com	$2a$12$uWgP9Xuc354p09WHunAdq.olWnwpn5YbrsmRsSCTDkk0wjkt0C2P2	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:11:23+01	2018-01-21 20:11:23+01
-228	\N	\N	\N	\N	Piper_Bednar60@gmail.com	$qvX7BMG5nfq8QekVMv2DxOJK46c22z2EZU1I89Qeio8xqBCOjcgIa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 20:14:38+01	2018-01-21 20:14:38+01
-229	\N	\N	\N	\N	Vicenta.Schmidt86@hotmail.com	$2a$12$Z.HoyE0umAVp9OKPF.e1iO9vSy66P5f6yxCdMPA1qo1XP/LfkpCM6	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:14:39+01	2018-01-21 20:14:39+01
-230	\N	\N	\N	\N	Sabryna_Heller99@hotmail.com	05$8UT1D3iAwVtW7ivpmaugwuG09arflXWqbN3vInfRH8OeNilxPwRIS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 20:17:03+01	2018-01-21 20:17:03+01
-231	\N	\N	\N	\N	Bradley.Greenfelder@hotmail.com	$2a$12$twdx78zaw2ifeL6d/Umsce/JybrdFFw.qtIogA9dLigoLiW4xHv7a	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:17:03+01	2018-01-21 20:17:03+01
-232	\N	\N	\N	\N	Polly_McCullough@gmail.com	7RA8mR5GXtqza4mBBDTfusOfyiK58cV1yKZc3sV6PdoJJLzyAaHy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:17:52+01	2018-01-21 20:17:52+01
-233	\N	\N	\N	\N	Omer89@yahoo.com	$2a$12$NlYEP94TCz6vc27WCOx5EercV.999xP.a6233h1RYR9BmW3OoUwZa	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:17:52+01	2018-01-21 20:17:52+01
-234	\N	\N	\N	\N	Astrid35@hotmail.com	$fLhDA58MZc3usZS3khZVK.R0uUkBBZ4YJhMDsR6372f/6AiC14rvC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:18:36+01	2018-01-21 20:18:36+01
-235	\N	\N	\N	\N	Alda_Ruecker9@hotmail.com	$2a$12$Raio0Sn3bQ.0R5MDhAx7A.mQq6IGR.B4v5SaRlQ6N3uZ4SHxEWPR2	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:18:36+01	2018-01-21 20:18:36+01
-236	\N	\N	\N	\N	Brando18@hotmail.com	5$gyDGfluAJcTt6VyEJNIyaOGiteSH2qagEOq1Sg6qRZ4bhZ0RmFyNq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 20:18:56+01	2018-01-21 20:18:56+01
-237	\N	\N	\N	\N	Odessa_Dickens@gmail.com	$2a$12$f4DmS1RGg0hcphBn4rY3ZOWWx92uqnS1a1cnY6h5SktkErDZF5r1i	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:18:56+01	2018-01-21 20:18:56+01
-238	\N	\N	\N	\N	Kavon.Satterfield5@yahoo.com	05$P9c2jBnC6R/c6BnxkqTe8Orm2W4yxAPdvfW5MnA8xAGo7DsNzxUiS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 20:19:17+01	2018-01-21 20:19:17+01
-239	\N	\N	\N	\N	Joy_Runolfsdottir28@hotmail.com	$2a$12$oAJJwlhxUVtu6Vu6I.Ekeuu.MOHuD3IAYcoNMw/B4IXrQlzsGFWZq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:19:17+01	2018-01-21 20:19:17+01
-240	\N	\N	\N	\N	Justyn.Abernathy17@yahoo.com	$.yaDayJTdsKNncw0Zj5fdOXA1nTYPiZNNdIqGi16rANaCoqsjW0uG	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 20:19:56+01	2018-01-21 20:19:56+01
-241	\N	\N	\N	\N	Agustin_Doyle@hotmail.com	$2a$12$/cPLZ0CCg3CAkivHRnVTz.h6/nQzOlICZOGBUp2rvugusMK9RsyRm	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:19:57+01	2018-01-21 20:19:57+01
-242	\N	\N	\N	\N	Nova26@gmail.com	$05$ofg0vprf05bwrC2s6HQWEOExA8usFfH3rWKAgBsSD4NpHhDlpAlqS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 20:21:25+01	2018-01-21 20:21:25+01
-243	\N	\N	\N	\N	Cathrine_Witting@yahoo.com	$2a$12$yG5/sEDyneLk4p3bXUVXBefDFoYg4wR2UJx/NjGe15uH50cvG5i6q	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:21:26+01	2018-01-21 20:21:26+01
-244	\N	\N	\N	\N	Laurel54@yahoo.com	CsERWLis7yqum9SBS39E.1mcIjs.vDZjpZkqeV5l1LB2ShFAT7dS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-21 20:23:22+01	2018-01-21 20:23:22+01
-245	\N	\N	\N	\N	Icie1@hotmail.com	$2a$12$540ZunSrkKZHw5/rlSe3e.b7G6wuJAJz2hG8C9bEH3Nc7fTVRvSH6	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:23:23+01	2018-01-21 20:23:23+01
-246	\N	\N	\N	\N	Demond.Kiehn18@yahoo.com	$V9woQYUsaGBhHUNw9TmpVe5dcqjkzZ8wWg2.S6cdm7tH11JkcN9jK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:23:43+01	2018-01-21 20:23:43+01
-247	\N	\N	\N	\N	Tommie.Stoltenberg@gmail.com	$2a$12$2pIJMD1E4bBQj0RGz9XKkOOFvHGccvRAuJziRxqhIVBxS0GD9XUkG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:23:43+01	2018-01-21 20:23:43+01
-248	\N	\N	\N	\N	Taya.Waters88@hotmail.com	$v59uGFv0719OwbpfHZQBAOV2Xwi5O4aRp1qen.vLya15ABzTSHadi	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:26:06+01	2018-01-21 20:26:06+01
-249	\N	\N	\N	\N	Jaycee_Hudson@hotmail.com	$2a$12$Gyq7kvLV7ke4usbCMDT.4uqXdQOa/FhFcU/7zyd4hcFjRxVFY4Dg2	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-21 20:26:07+01	2018-01-21 20:26:07+01
-250	\N	\N	\N	\N	Millie9@gmail.com	5$UR2KNPGQ.Nw6WEqV0v2dNuiNPurIbQYobub4y37tWesGAOU/pXSZ.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-24 18:56:35+01	2018-01-24 18:56:35+01
-251	\N	\N	\N	\N	Kaycee_Vandervort51@hotmail.com	$2a$12$iS820pKjl/uXPxqwuDv34OCBlqKDsP/R9MNCqYakDvmiU8AuztyWa	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:56:36+01	2018-01-24 18:56:36+01
-252	\N	\N	\N	\N	Mandy_Gibson7@gmail.com	5$zoF3DYnsW5y.04eHKjOhyeFoDXA7aoXFql6f2qiz/xarSQO7O6m2e	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-24 18:56:39+01	2018-01-24 18:56:39+01
-253	\N	\N	\N	\N	Melvina97@hotmail.com	$2a$12$zL7XbanZCquL5xAGOok8i.UGp/4c.lOsJqGFiPAdjJFqaHqCsrqDe	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:56:39+01	2018-01-24 18:56:39+01
-254	\N	\N	\N	\N	Hermina.White16@yahoo.com	05$wzqLitdgcbo93DxHqfIlB.a5Aqnz2QE6JfDW32UN1sGGfrWuqTxma	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-24 18:57:11+01	2018-01-24 18:57:11+01
-255	\N	\N	\N	\N	Birdie38@hotmail.com	$2a$12$zEFWCey9IR9xxR9u/2L.auRkDeATUgSXsbUHryxS9JOwQcag40do6	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:57:11+01	2018-01-24 18:57:11+01
-256	\N	\N	\N	\N	Lucy.Mills@yahoo.com	$05$BqGVfHpsmrMa5QyC8KVG4eZB2z40tSAn2vWTXBkZ3kBKvb7rqRsli	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:57:13+01	2018-01-24 18:57:13+01
-257	\N	\N	\N	\N	Abelardo.Stokes41@gmail.com	$2a$12$LbQppArLme/2GpW2Ms45Q.JOZn/acrjkqIyoXOmpL4a9jwb.jePcC	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:57:14+01	2018-01-24 18:57:14+01
-258	\N	\N	\N	\N	Valentin.Medhurst@hotmail.com	05$CADatvoStUyMQ.DM8h2TdOW8hfUrfAT9fC29PC05opzfvguLEPuLG	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:57:47+01	2018-01-24 18:57:47+01
-259	\N	\N	\N	\N	Ashtyn94@gmail.com	$2a$12$Hgci/iz0KTTp7VF0C71pCOlX.Wxg1iSR.OzQq.1WsBoMqt9Ek3YwG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:57:47+01	2018-01-24 18:57:47+01
-260	\N	\N	\N	\N	Doug_Mayert30@yahoo.com	$Madztb7oq8X8ukPTYZTFWeqkQLRZZ2yiOe8vzsmnrJOEceNQ6etaa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:57:49+01	2018-01-24 18:57:49+01
-261	\N	\N	\N	\N	Pasquale.Herman55@hotmail.com	$2a$12$dQUxq2EeUD.cL5gwevF8F.8tuol1/axNeIkrJlQjC/QMRJvcSNUaS	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:57:50+01	2018-01-24 18:57:50+01
-262	\N	\N	\N	\N	Jacinto.Harber@yahoo.com	$D3kt55kAJh57f8OR7.To7e7UlWVvIyt2rlN4WA2lfJKJ6TPqES65y	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:58:46+01	2018-01-24 18:58:46+01
-263	\N	\N	\N	\N	Cali.Graham60@gmail.com	$2a$12$Kw.izyLzgZfkUHY7NkI4H.fb9yCvIPQorVot2jrZtUzLUYPP/6wh.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:58:46+01	2018-01-24 18:58:46+01
-264	\N	\N	\N	\N	Jermaine_Orn@yahoo.com	b1Ge3xlj07yfPz0j5JNoXu3MQQV9nNnTa15G6zVby0ZoAYdyzHKYa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-24 18:58:49+01	2018-01-24 18:58:49+01
-265	\N	\N	\N	\N	Ferne.Olson@yahoo.com	$2a$12$tsVcxSN9FqZG8jYMgytmhutl8NQ3lrONBYEI6JUeg9hXt1wCmza4.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:58:49+01	2018-01-24 18:58:49+01
-266	\N	\N	\N	\N	Augustus.Mills@gmail.com	$h605gSVh2UGJVvwgf6fcO.tdzwOy.FrCTTJjZZ7pf2vvjEzQyO7N.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:59:16+01	2018-01-24 18:59:16+01
-267	\N	\N	\N	\N	Rubye37@yahoo.com	$2a$12$CqAdZzv0lacR9IGZdvAOaOySDCds4q3C6HC3qowX2OqDcz5FnuaNS	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:59:16+01	2018-01-24 18:59:16+01
-268	\N	\N	\N	\N	German_Schultz16@hotmail.com	$05$R9Zy8Kc2g9v1YN98TyZk3e8XmuSH1NbVaYDkcRKr/hiNcPlvfluMS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:59:18+01	2018-01-24 18:59:18+01
-269	\N	\N	\N	\N	Ryan.Franecki86@hotmail.com	$2a$12$0nki30EMlprRNVTwIAO4UuqAqdzlwd0fClOKmQx79EtnHKSP7Pw3i	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 18:59:19+01	2018-01-24 18:59:19+01
-270	\N	\N	\N	\N	Hector.VonRueden64@gmail.com	gSnu2TJoJzOWN3c4MFVLCuudtgcAJZCbprbXAjIsq2XZgfktWfZBu	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-24 19:02:12+01	2018-01-24 19:02:12+01
-271	\N	\N	\N	\N	Hayden.Koss@gmail.com	$2a$12$fDuMy9fvRXEROw6Tovtqiez7tKhms8QD4isvRPoW/79yzDKA2vGMa	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 19:02:12+01	2018-01-24 19:02:12+01
-272	\N	\N	\N	\N	Mortimer_Johnston@yahoo.com	LXhdjd52nQuLkC/4SaN2bOEggG6B6ZhoaBPd5A2rELZW4LlOpnPpC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-24 19:02:15+01	2018-01-24 19:02:15+01
-273	\N	\N	\N	\N	Jailyn47@yahoo.com	$2a$12$9SvxNxM9zgdm0NvraDJgsOiiZoi36j6V8C7ZkWmpC8CWsrsugbkdC	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 19:02:15+01	2018-01-24 19:02:15+01
-274	\N	\N	\N	\N	Verner93@hotmail.com	arIByHc6TVeBegRLib8SOGSnCFE5MpNDqAzFRvROBRgANb9tCH7u	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 19:04:46+01	2018-01-24 19:04:46+01
-275	\N	\N	\N	\N	John.Schimmel@hotmail.com	$2a$12$KVKR8aoSudboRedobGMGnuvx0g7aqqnDN6KbkVvPW/syPkAo1j/Sq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 19:04:46+01	2018-01-24 19:04:46+01
-276	\N	\N	\N	\N	Alisa65@hotmail.com	xmtz40Y8QM2dfPoMZ72mkO6EltuG46OD11yN.biujiM0h5Jg0UShS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-24 19:04:48+01	2018-01-24 19:04:48+01
-277	\N	\N	\N	\N	Else35@hotmail.com	$05$avltnBeRwBoVxeMN7LK4lOE0M6LvqfcdyE96zLJOTdrTexLd7fR5S	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-24 19:09:56+01	2018-01-24 19:09:56+01
-278	\N	\N	\N	\N	Jordi_Ebert89@yahoo.com	$2a$12$RwsZEfwQRRIYlnF6A303UugSpcf1UxncBmYA7e7jZ75SfsUTa6Ari	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 19:09:56+01	2018-01-24 19:09:56+01
-279	\N	\N	\N	\N	Kamryn65@gmail.com	$05$oYIcPpwQJhTaOf6ENHYfyOEMF3irBm1m5IqXFe1ofiGpdcdBTwpxO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-24 19:09:57+01	2018-01-24 19:09:57+01
-280	\N	\N	\N	\N	Grayson49@hotmail.com	$2a$12$2fNk0q29SoIsGXohqOL/H.Jq4XZhHAa5tp6YnpHkY17rUeTe.ZNim	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-24 19:09:58+01	2018-01-24 19:09:58+01
-281	\N	\N	\N	\N	Katrine.Schultz@gmail.com	2o7dkwE0rqIF.hebeHPmouTgtxHOpYCq8wCfyfGU0LQ2CA29HSbh6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 11:41:28+01	2018-01-25 11:41:28+01
-282	\N	\N	\N	\N	Camryn_Zieme10@hotmail.com	$2a$12$ZkqIrvJalbDIpmdo3XavlukMjqWVHHvn.lpOSecUnqpccey4Ygn36	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:41:29+01	2018-01-25 11:41:29+01
-283	\N	\N	\N	\N	Brant_Zboncak@gmail.com	05$h0WEPzuN62ufCUkZAiZR.OTfN82IAyu0KTPERPcp7fW7g6pJu702W	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:41:32+01	2018-01-25 11:41:32+01
-284	\N	\N	\N	\N	Dominic30@yahoo.com	$2a$12$7ELNzy3at0UEJ69lKJ1nb.uQ.25e6jOLwQYOJ7p9KTRmyq9ZH6kpK	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:41:32+01	2018-01-25 11:41:32+01
-285	\N	\N	\N	\N	Terrell_Kuhic@yahoo.com	$05$zQzsKgIdGCerNbBOaxj29.c1P5PkiuAsxELVUd8fcAulE85EsqnYe	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 11:49:20+01	2018-01-25 11:49:20+01
-286	\N	\N	\N	\N	Trent.Nikolaus21@yahoo.com	$2a$12$0Me.wO1CT0WHTNqh.cfVY.QC.GPOwvtBELSP2PHJMTPI9Ao1QAovO	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:49:21+01	2018-01-25 11:49:21+01
-287	\N	\N	\N	\N	Colten_Walker82@gmail.com	WfMhRvQyLrG0k1vEB6BuuY82aHa6tS4XnJuFlwDi0L59JPgAOp0G	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:49:23+01	2018-01-25 11:49:23+01
-288	\N	\N	\N	\N	Annabelle.Hauck56@gmail.com	$2a$12$R2Q6D109BWzD5yL6Vg1H7.w0RcD9YICdjugLLQuETaIoBf8coKUxy	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:49:24+01	2018-01-25 11:49:24+01
-289	\N	\N	\N	\N	Vernie_Schuppe@gmail.com	$05$F2RL9c7lmkkmAzWClab3m.qYuKRnxIoPTjyZn5Lb7sYzPAdFl8/0u	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:51:48+01	2018-01-25 11:51:48+01
-290	\N	\N	\N	\N	Coby_Ritchie@yahoo.com	$2a$12$THAoBDcfyWKXUD/ht1fjP.YEgX41KHWgZPY.R1d5rWQOE2fHWrSHu	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:51:48+01	2018-01-25 11:51:48+01
-291	\N	\N	\N	\N	Kris_Osinski@yahoo.com	05$5yMVtM0eZXiEIPc53o3U0OwdujQmT1agsVukZpBbUfccsfkjcpK9u	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:51:51+01	2018-01-25 11:51:51+01
-292	\N	\N	\N	\N	Bernardo_Mohr1@hotmail.com	$2a$12$Sb2Hwi3ZNS8QOencTPK0IOgH0iU9h8qja0aX7aYmsZ2lL8K1cCaIe	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:51:51+01	2018-01-25 11:51:51+01
-293	\N	\N	\N	\N	Laurine.Wisozk20@gmail.com	GlPH9wkCEvF.jlXZkhJQj.I0RovStwDPWb4N1OO5IiBiZo818LSxG	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:54:57+01	2018-01-25 11:54:57+01
-294	\N	\N	\N	\N	Bennie22@hotmail.com	$2a$12$YL/v4ukdQab5BQSPnA8jgO3GJ30R59rxahEytxjfjS3lFs8WK/hey	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:54:57+01	2018-01-25 11:54:57+01
-295	\N	\N	\N	\N	Jasmin.Feeney@hotmail.com	REZV8mdX9oqAKHWS95L1U.PjNFpxcs6NQbVTP0DAgJQBLz7u8eOsK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 11:54:58+01	2018-01-25 11:54:58+01
-296	\N	\N	\N	\N	Felipe14@yahoo.com	$2a$12$OY3ehYtK6mnGIB2MOCZwT.djk1s34pV0IrmXadJJvKn7Iow2FI6.C	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:54:59+01	2018-01-25 11:54:59+01
-297	\N	\N	\N	\N	Rachelle_Okuneva17@gmail.com	05$wqnhT2kfrFdGqK.CPKPKOewOX4QMoc6Gj5owXN.YtUtdzzPMTJPHK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 11:56:10+01	2018-01-25 11:56:10+01
-298	\N	\N	\N	\N	Wilhelm0@yahoo.com	$2a$12$tL4lQG/Y2QUEWThxgGGgLeTXNUWfBbUfYIM3GwL9OsX0G2P6tI0ym	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:56:10+01	2018-01-25 11:56:10+01
-299	\N	\N	\N	\N	Savannah20@yahoo.com	05$ThOywNcAV5p5JJvyC6TgQebZF8kIif72dmN851MVvnRHKhz.4ZqVa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 11:56:12+01	2018-01-25 11:56:12+01
-300	\N	\N	\N	\N	Maribel3@gmail.com	$2a$12$mmZJf.D7qxy74v9A0vYc6.hRRt5iA4u0XyzoYE/5Jt4yA1hlULFLC	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 11:56:12+01	2018-01-25 11:56:12+01
-301	\N	\N	\N	\N	Adolf64@yahoo.com	05$j7S1G.q5vm7AXfT4eIJck.AR34QzX.4PMNPoE.LTqOEGSmEOeJCLy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 12:31:28+01	2018-01-25 12:31:28+01
-302	\N	\N	\N	\N	Naomi_Kautzer0@hotmail.com	$2a$12$KeHGy7gsWlXBwypLeWWjheZuN.h3n7b9Ng7Eom2cQpOkjxGgNx44u	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:31:28+01	2018-01-25 12:31:28+01
-303	\N	\N	\N	\N	Dessie_Boyle46@yahoo.com	$05$Fafv45sDpPixpliuLcVrvO.hIGpeHi9c6P7vlBxVwhuY21CqdevkK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:31:41+01	2018-01-25 12:31:41+01
-304	\N	\N	\N	\N	Anissa60@yahoo.com	$2a$12$JbRH2cmg8dfqAzK1Qa7qKuQe14fKlVYnNiiLcNSu7NWsa9YWoZ0N2	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:31:41+01	2018-01-25 12:31:41+01
-305	\N	\N	\N	\N	Felipe83@yahoo.com	05$XWaV4duymRpd.sVPTCUWn.F.4tdtYxenxn2tBhogIQWwBRJTgfWU2	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:31:42+01	2018-01-25 12:31:42+01
-306	\N	\N	\N	\N	Reinhold49@gmail.com	$2a$12$sR//MQy2B/OCx8I5hOo35eIun8Hgwx0zQVw8jS/ARbLXTfZAYxJme	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:31:42+01	2018-01-25 12:31:42+01
-307	\N	\N	\N	\N	Andrew34@hotmail.com	$05$2eeyOTb6tn.Fb3lFUvRwCuXeIR0Q/gcG8KMk5kA.GnhBqXdUGUp1i	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:34:18+01	2018-01-25 12:34:18+01
-308	\N	\N	\N	\N	Hunter.Kessler@gmail.com	$uzjCOK9L50PkSV1uJoNN9u8RfKgYUJjmsAOHUALnm8nIMzG3S1cse	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 12:34:18+01	2018-01-25 12:34:18+01
-309	\N	\N	\N	\N	Lilla_Williamson36@hotmail.com	$2a$12$cjcNymUNi3ESiR7KGvg2cO9z9ieptZjDTdC4q37Ls0jQaB3oFnZWq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:34:18+01	2018-01-25 12:34:18+01
-310	\N	\N	\N	\N	Dulce.Miller@hotmail.com	$2a$12$1VMQQa1HQuu1MgXzCNJHRuxxb8s4WhO5MVtDMy7zPtDYxb6/g76wq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:34:18+01	2018-01-25 12:34:18+01
-311	\N	\N	\N	\N	Griffin_Rolfson73@yahoo.com	$1s5oE8yhk5TEXQaLtDx6u.9Zp48w3RRy7cb6yw3eTprLzESOs2zzS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:38:18+01	2018-01-25 12:38:18+01
-312	\N	\N	\N	\N	Eugene13@yahoo.com	$2a$12$/bYBODfU06pDkFXuQTvcGOYsW4Mf6j8rcN.e/NHPa8eL08IkFmkOi	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:38:19+01	2018-01-25 12:38:19+01
-313	\N	\N	\N	\N	Carlos.Hettinger79@yahoo.com	$05$PLj4h2ZiuJGdTATQvt5JpueCwJgT/jM2zSqSSITCvvffEbM0N9pvq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 12:38:21+01	2018-01-25 12:38:21+01
-314	\N	\N	\N	\N	Tristian_Jones25@hotmail.com	$2a$12$jQkNcnkpOsaY6EskYcTGnOfiaBaPjRQSEa.Qzcjs2l0nF9qb.Zw06	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:38:22+01	2018-01-25 12:38:22+01
-315	\N	\N	\N	\N	Seth.Gaylord@yahoo.com	IZHth8bH9HrKBbWMspmO0e5h2WJBPifhZqWZ27EIUHAD3tsxEMLky	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 12:39:41+01	2018-01-25 12:39:41+01
-316	\N	\N	\N	\N	Judson16@hotmail.com	$2a$12$fHasx0LhySWSJWYrJeHk5umyVfevwXZbfrPKSAyFowb5t/rqCHdYm	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:39:42+01	2018-01-25 12:39:42+01
-317	\N	\N	\N	\N	Dora71@hotmail.com	$05$teV6XnrSiAJ5vwxzlcYB7.OprPATifcXcs2NTHyni2hl.oleXHXuu	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 12:39:43+01	2018-01-25 12:39:43+01
-318	\N	\N	\N	\N	Antonette.Hermann@yahoo.com	$2a$12$xcGHiex6o/xqUsseNqZv6eaW9XE6QHxLHK8rkRAEgAZEULS27Rk0e	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:39:43+01	2018-01-25 12:39:43+01
-319	\N	\N	\N	\N	Donavon49@gmail.com	05$hOin691m2NstbGZgBzGrBeQh92msLURfTo9bqFH7DyYuWWLVPhVFi	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:41:32+01	2018-01-25 12:41:32+01
-320	\N	\N	\N	\N	Berta22@hotmail.com	$2a$12$EhGhMeOXQaVd0mFPmyUnQuMAQkMm4X3OeDcmjsc8mON60ImQjOJR.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:41:32+01	2018-01-25 12:41:32+01
-321	\N	\N	\N	\N	Lon99@hotmail.com	5$TYvBO.B5ymR5o093hQBuvuh36cHXYrcelz2Sp7tsgQnUyhXxbhblC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:41:35+01	2018-01-25 12:41:35+01
-322	\N	\N	\N	\N	Chase_Boyle@gmail.com	$2a$12$aadNsPWhqUCRGfVeRdZKoeMOvr0PFawXlM8dDzNAMxZ4GbxQUfig.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:41:35+01	2018-01-25 12:41:35+01
-323	\N	\N	\N	\N	Randall35@gmail.com	5fQ2LxEWRZZIYk42iPo.v.V53gmu9hXZ8AMYCX8cqUFqpOGYjsBsC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:42:19+01	2018-01-25 12:42:19+01
-324	\N	\N	\N	\N	Dalton.Gulgowski@gmail.com	$2a$12$ZckjCKPDHcLbCo1ihjTv6.LCtO2J0qVfCAgofUqj/Tjvfj3f7vg4C	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:42:20+01	2018-01-25 12:42:20+01
-325	\N	\N	\N	\N	Rosella97@yahoo.com	m.fptE9jsPmueJyT7oIWOsRkyTPfcToPbrKAwI1ilptGX4FtFgRq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:42:23+01	2018-01-25 12:42:23+01
-326	\N	\N	\N	\N	Monique.Lehner95@gmail.com	$2a$12$a3WcrjtRmcr4xKERPY.tOe8KQdTmPR34498ErHDc2F1wPIs1XMWke	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:42:23+01	2018-01-25 12:42:23+01
-327	\N	\N	\N	\N	Hailee_Runolfsdottir6@yahoo.com	dOjQa26d5wLeQwqeeNomOUQe1oyjPbvEavJHvolmNE5E.rfzWBT6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:48:07+01	2018-01-25 12:48:07+01
-328	\N	\N	\N	\N	Gilberto.Balistreri@hotmail.com	$2a$12$EwMGxdOJEu/rGUvKQWzPrOrODmf/E0rv0ApcCWrxu0MHI4lmccLEy	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:48:07+01	2018-01-25 12:48:07+01
-329	\N	\N	\N	\N	Lizeth_Green79@gmail.com	5$M0dQj3lQQOgSbE.JlR8sJeEExgAdBM7cIU4DAw23iFQYomfdkS2WC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 12:49:48+01	2018-01-25 12:49:48+01
-330	\N	\N	\N	\N	Arnaldo.OReilly57@gmail.com	$2a$12$eDQAM679bws5Jh2A0U7VMeQXK1WJ9E72Q1uG0s2EzY6EHb/vCQeAO	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:49:48+01	2018-01-25 12:49:48+01
-331	\N	\N	\N	\N	Murray58@yahoo.com	1SPRnh5gf.heNkV2eV1YCeNLjKZlLAYCt7gp4iFx5ybIPxSl69bIq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 12:49:52+01	2018-01-25 12:49:52+01
-332	\N	\N	\N	\N	Harmony98@hotmail.com	$2a$12$0yYFHxKKyT/w/9yOBQWueOf7VhTmA0LxlpQynYBC3Rrczh5S781iO	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:49:52+01	2018-01-25 12:49:52+01
-333	\N	\N	\N	\N	America_Beahan74@gmail.com	parGr4yVMa36.46Xeme5yeg0nvceZPjZViMZCczRKKALwYqrJXrT.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 12:53:19+01	2018-01-25 12:53:19+01
-334	\N	\N	\N	\N	Alfreda40@yahoo.com	$2a$12$0FcMFwPS1BT.QgS7Mfh3b.r0QW3e3Ycx1WLAso6cEgV5NnGiw3Cza	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:53:20+01	2018-01-25 12:53:20+01
-335	\N	\N	\N	\N	Margarett.Senger@gmail.com	7cEjPDK2nrsglxn6yV3P2O.tsHHlSB0yMCxsbG3A6GFPk99LKR1ci	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:53:20+01	2018-01-25 12:53:20+01
-336	\N	\N	\N	\N	Maxie33@yahoo.com	$2a$12$5gpdTGd6/cp1ShJXjkbEm.SkISLMAxODgbnBzLx0mD2I9ThBylPiW	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:53:21+01	2018-01-25 12:53:21+01
-337	\N	\N	\N	\N	Vladimir.Weber@yahoo.com	$05$eW7Bye3ZrqOUu9MXKJ6AfunggDgLbxNVDxuT8.MAvHmqqpT1Warby	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 12:54:09+01	2018-01-25 12:54:09+01
-338	\N	\N	\N	\N	Jessika.Schmeler70@yahoo.com	$2a$12$SUDvNsEGNn5umIcL6g66venVeKp6g3d0VwmC/OIrvPT4pP7/zLfcG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:54:09+01	2018-01-25 12:54:09+01
-339	\N	\N	\N	\N	Cynthia_Hills@hotmail.com	5$6dzjuQUNc0Qu2B.UWvJJF.XLimNnZ89hL2xKOq5uRPHiD2sGUXrYW	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 12:54:31+01	2018-01-25 12:54:31+01
-340	\N	\N	\N	\N	Loy15@gmail.com	$2a$12$OE8RdHGvWIFDlJmLHT0/g.Hn1JEKt79uowU5C9/6AETtCEoiamG4e	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:54:32+01	2018-01-25 12:54:32+01
-341	\N	\N	\N	\N	Xavier25@gmail.com	QjGIRF71Z8SipUw9E6F2zuNvDjZcLT5NeD0h0I.ugCqTgnPvBDDFO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:54:34+01	2018-01-25 12:54:34+01
-342	\N	\N	\N	\N	Bernadette.Cummerata@gmail.com	$2a$12$FBSRThmzGFehn1miqJhTmu1uay/OEkZkxBoYx58yIR9ahDv5p2zZ6	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:54:35+01	2018-01-25 12:54:35+01
-343	\N	\N	\N	\N	Reginald.Bergstrom@gmail.com	wzfuE44ceS1eVmS9A5yCDe2FAFbLppnX2f37PngbQIRqyLTjlzB8G	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:59:36+01	2018-01-25 12:59:36+01
-344	\N	\N	\N	\N	Alverta.Franecki@hotmail.com	$2a$12$919Al1sxQ4cf6XkQN/Wose.Za55jl1kNAfmZII4g/T4BpIzfc0.z2	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:59:37+01	2018-01-25 12:59:37+01
-345	\N	\N	\N	\N	Uriel.OReilly0@yahoo.com	$05$0907GiRI5pfoxb5J9Y1bOuDj919M.wSpAS82SdaCBJGw6JNn3O0Zu	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 12:59:39+01	2018-01-25 12:59:39+01
-346	\N	\N	\N	\N	Branson32@hotmail.com	$2a$12$dD36PVBPtGlx6sGdEwRUwuo0cKIkD3ScbUFrg7pEDH5wo.ljvs/Nq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 12:59:39+01	2018-01-25 12:59:39+01
-347	\N	\N	\N	\N	Bulah37@hotmail.com	$05$CvVymmu58CudnUTLvqxCZeoShtpzDwJ0Co8zhaHQ.Bjxc06MkcxN.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:00:17+01	2018-01-25 13:00:17+01
-349	\N	\N	\N	\N	Javon.Harber@gmail.com	mrTY1ABMmAZsnh.YEP8RSebSp1c4xYrPhesYFXBRIIIGkJ2fPqj..	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:00:17+01	2018-01-25 13:00:17+01
-348	\N	\N	\N	\N	Jonatan9@hotmail.com	$2a$12$xUNGtX/DRiN5AnW/SaShaefbcExnHvBMMyffuhT3eHMhduQkOzqv.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:00:17+01	2018-01-25 13:00:17+01
-350	\N	\N	\N	\N	Jameson_Boyer@yahoo.com	$2a$12$qzxoeSiELTVRk2I/a5wUdu4p5lMgkJFrjq.7sZ47l457U1YcdSnhW	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:00:18+01	2018-01-25 13:00:18+01
-351	\N	\N	\N	\N	Boris_Jast@gmail.com	$witP1DzUfsrZvmHbOvW4IeacbW.ji1TiCmGBS0aKb.5edZG4c2MXm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 13:00:47+01	2018-01-25 13:00:47+01
-353	\N	\N	\N	\N	Cassidy.Pfeffer@gmail.com	$05$rTSaYYK62qPjzjqSYLMXX.hx1jyAqaMaN7GHoSk8expkEGU7.6jgS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:00:48+01	2018-01-25 13:00:48+01
-352	\N	\N	\N	\N	Floy_Bergstrom60@hotmail.com	$2a$12$dD2GLUL.f.3j5foLhsUMAuHJz..oBR0c1vE1o2.ALLZJRXAhUZYaW	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:00:48+01	2018-01-25 13:00:48+01
-354	\N	\N	\N	\N	Claire.Steuber47@yahoo.com	$2a$12$fK22BzEhK7sUcz5m6iX3pONiIEmeirK8JU2N7IWUZ5m8PNQ/LbEHe	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:00:48+01	2018-01-25 13:00:48+01
-355	\N	\N	\N	\N	Blaze.Connelly@gmail.com	$05$EfXCNmC5Bg7MCoj6yo4L.eE15NA.Aaqi12hK06UfjT7BTHTLMnWcO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:01:20+01	2018-01-25 13:01:20+01
-356	\N	\N	\N	\N	Sanford_Walsh51@hotmail.com	$2a$12$JLr98gPgOnmYmwirqQriXOyENJ4t5fU681lKS9INluE0PPcNHlpS2	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:01:20+01	2018-01-25 13:01:20+01
-357	\N	\N	\N	\N	Destin87@yahoo.com	05$aYFk0VaI2xt42X2qxoTD3eYC95gUgQ8J8dOu5aYDalF11ay3WywnO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:01:22+01	2018-01-25 13:01:22+01
-358	\N	\N	\N	\N	Holden95@gmail.com	$2a$12$Az8hqnZWdXnLiRQfU4CLyeqIHZ09FSL98.m9PW5b4SRI9RB/FOsZC	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:01:23+01	2018-01-25 13:01:23+01
-359	\N	\N	\N	\N	Felix_Connelly@yahoo.com	KWCH24BeQCLQDYI18WEIub62Q.HlQQB78rLjlQIEAKiiVZfJnI26	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:02:32+01	2018-01-25 13:02:32+01
-360	\N	\N	\N	\N	Khalid.Schuster@yahoo.com	$2a$12$5j3zUTBh3W.S4ay5yu1mXu3fexj9oy9CVZmwrwZa/v8yY0L4bO1ma	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:02:33+01	2018-01-25 13:02:33+01
-361	\N	\N	\N	\N	Esteban.Farrell23@yahoo.com	$t5RQo2VjebLkqt/IlvJh4u1SMc.R6jmIHqFRoqfuc3V9mtnB8o34u	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 13:02:34+01	2018-01-25 13:02:34+01
-362	\N	\N	\N	\N	Cathy97@gmail.com	$2a$12$H.CjTsVqWI0vg.s.B/7TrOBxiSwg09kf9yCFt.nOLpFEOFEIt1eHm	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:02:34+01	2018-01-25 13:02:34+01
-363	\N	\N	\N	\N	Aryanna44@yahoo.com	$05$61K0kBLUcBWOvLkoEOVT8.dh4cAuA3ybGV6NQtdx4U7UtQU6VDQiC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:03:32+01	2018-01-25 13:03:32+01
-364	\N	\N	\N	\N	Laron_Mraz66@yahoo.com	$2a$12$jtmVSK2AFAhsPLBF89Hs/esJorL5yWgGJfW6bqOP62DDrOhLDUKSW	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:03:33+01	2018-01-25 13:03:33+01
-365	\N	\N	\N	\N	Alysha.Prohaska74@hotmail.com	$cwSidTrM9ekbQvCCIWhvy.YtGaxgk2tv6s/eygxgEFpu7dlmse3ay	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:04:02+01	2018-01-25 13:04:02+01
-366	\N	\N	\N	\N	Ruthe_Barrows51@hotmail.com	$2a$12$4Nq5lyL57Xroxz0XYtUx2uqAkLsbbOB6jz9tXac8c4fFEvAbBpFnG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:04:03+01	2018-01-25 13:04:03+01
-367	\N	\N	\N	\N	Dannie36@yahoo.com	$05$GZHGQAGJRTJWbEWvVsn8HexFmsbCDlG9jST8u8W2OIckyypxWZeXa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 13:04:06+01	2018-01-25 13:04:06+01
-368	\N	\N	\N	\N	Lacey4@hotmail.com	$2a$12$mHiJXpd1ZubmXutAMzXSbea/WyJ2TwEevwUBdKm5mUwsLt8SXTxEy	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:04:06+01	2018-01-25 13:04:06+01
-369	\N	\N	\N	\N	Jonathan_Koss98@hotmail.com	F1OsfJ1ctALEd9Zd6VqQeEh9jQRFXTP4rzoXfsSOI2i.LaP03e5m	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 13:06:48+01	2018-01-25 13:06:48+01
-370	\N	\N	\N	\N	Zachariah.Schmidt@yahoo.com	$2a$12$SolEq4jG4WT4PleLdKPGwueTynv6T0QfjDwRg45rW/Kwv0b04t8ea	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:06:49+01	2018-01-25 13:06:49+01
-371	\N	\N	\N	\N	Benny_McGlynn@yahoo.com	h2bnAUjUQPmih3WA8dn1eTGf2ydyvs32FadIetvoG1wlvgtgHzrS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:06:52+01	2018-01-25 13:06:52+01
-372	\N	\N	\N	\N	Gunner.Durgan@yahoo.com	$iEjAmy12lxCTaRBAWsChPunSsfOddA3qt6biU4NrMvF6mcpBEkPji	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:06:52+01	2018-01-25 13:06:52+01
-373	\N	\N	\N	\N	Maxime87@yahoo.com	$05$DGINOG0ISTZOa.yqBD8Sj.jJDgHD35VqieQWknQQHoDDxPQD0g9Vy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:12:13+01	2018-01-25 13:12:13+01
-374	\N	\N	\N	\N	Fern.Simonis@yahoo.com	$2a$12$v1/IEXTZx4wVJr2cXPwFkuHRZeod844k7.2hMPAmiKpE0R6bw7FA6	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:12:13+01	2018-01-25 13:12:13+01
-375	\N	\N	\N	\N	Hazel.Tillman8@yahoo.com	$05$IXinh2f1n581ZktGdb6CreZCt88UT.lAZ1rJ3WDqPZOJ7LPXt0Kn.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 13:12:14+01	2018-01-25 13:12:14+01
-376	\N	\N	\N	\N	Lisandro_Rosenbaum@yahoo.com	$2a$12$hTxs.NHbzzuL9JODFtH8WeCIjMpK4eR1AyKQwHlnCjumN5B5M4UN.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:12:14+01	2018-01-25 13:12:14+01
-377	\N	\N	\N	\N	Tatyana_Walsh37@yahoo.com	05$2Zq1wAHKdLy3yGmlI2soX.21htz0Fbw8r2n.WYiD.wacMkgxzaqAq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:12:43+01	2018-01-25 13:12:43+01
-378	\N	\N	\N	\N	Samir.Quigley@yahoo.com	$2a$12$Byn791iNJ/.8WZv2IXcrSOBM3Vsk.eN7mPPvDNg7A5il/1rZVyQ.K	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:12:44+01	2018-01-25 13:12:44+01
-379	\N	\N	\N	\N	Tobin_Bednar@gmail.com	5$EE7mZXcb0vNvZgOx0lv3Pe7J22oAMLJkL8bKfM2Yni6BolXsPZ4Ba	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:12:44+01	2018-01-25 13:12:44+01
-380	\N	\N	\N	\N	Green_Schaden@gmail.com	$2a$12$SLKRj541lZLayZM2Auyg/upr0SThya1M0AObMov6okmpGORQcsFrm	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:12:45+01	2018-01-25 13:12:45+01
-381	\N	\N	\N	\N	Ward10@hotmail.com	$05$AQtF0DPcG5d2EOOP06AabuC3vQwtQ9iRdO9BvE3m4ygc9Yiyw.gbS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 13:17:13+01	2018-01-25 13:17:13+01
-382	\N	\N	\N	\N	Mozell_Halvorson42@yahoo.com	$2a$12$WSa614So84wwAA/j2E3yQ.RI2SUZnuV6pgIMw/qcxjvs5mHCCQFDG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:17:13+01	2018-01-25 13:17:13+01
-383	\N	\N	\N	\N	Annette_Gulgowski@hotmail.com	$05$kUsSkwv1ntSI9KJa4xzBe.E10Mdna0vvOEuNCaHiWtRdnlNYsR24.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:19:22+01	2018-01-25 13:19:22+01
-384	\N	\N	\N	\N	Keely40@gmail.com	$2a$12$VXMG0IYyCHrmeYQ7bhnRA.CkPwbuDM0aisvP88Vv5Oogzgeo/sH7a	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:19:22+01	2018-01-25 13:19:22+01
-385	\N	\N	\N	\N	Vernon.Mohr@yahoo.com	05$hrwLQo6Io9bkBpGZxTDiUeJxgcflRTaSoZD0VRXabX9HIfbWEBMM.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-25 13:19:23+01	2018-01-25 13:19:23+01
-386	\N	\N	\N	\N	Jairo.Osinski@gmail.com	$2a$12$zJYJR1DppzynIb.E4RpS8eXVnt40CsH9ADLkNFLYi6y/tm6z.Lzpm	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-25 13:19:24+01	2018-01-25 13:19:24+01
-387	\N	\N	\N	\N	Deangelo.Abshire25@yahoo.com	5$TYdOYGiGZs0WNUnQXu.g.OkXRxsre4KUHgmbYZGTDK.Iz6lr2bM.m	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-26 18:17:15+01	2018-01-26 18:17:15+01
-388	\N	\N	\N	\N	Ervin28@yahoo.com	$2a$12$.LF.q8Uyq2wzPnoPJ15DZ.YfPz1vLuH.wDoQqQPwaII0W8debrr8W	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-26 18:17:16+01	2018-01-26 18:17:16+01
-389	\N	\N	\N	\N	Jennings.Romaguera@hotmail.com	5$r9rNjL2fVIJ9zJ4SmvTsWOaANcF62iwRQihI5LwsmD2njQcUPoJWO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-26 18:17:21+01	2018-01-26 18:17:21+01
-390	\N	\N	\N	\N	Velva14@hotmail.com	$2a$12$AeQnEFWw3mUiES7pHmgJHeyBBKD.LLoEdm/QjnZ6ygBiptzm9y4Ha	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-26 18:17:21+01	2018-01-26 18:17:21+01
-391	\N	\N	\N	\N	Johathan.Goodwin@hotmail.com	YSbU6.pU8gvQjBk9auzj.1ctDnGGsjnx7aHY4pVU1uHUlkaX3llS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-26 18:39:53+01	2018-01-26 18:39:53+01
-392	\N	\N	\N	\N	Loyal35@yahoo.com	$2a$12$r5CPQ8y9nEaAfQtm61V73.z7LIG9YHtUScjBPU6p3cGrwM.xkuyzm	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-26 18:39:53+01	2018-01-26 18:39:53+01
-393	\N	\N	\N	\N	Vernon_Kreiger31@hotmail.com	0hN0g3W.SbR6r1rsokWoODcNsfsDJ687rI0vz3GX2vBR/q/fg05C	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-26 18:39:55+01	2018-01-26 18:39:55+01
-394	\N	\N	\N	\N	Johnny.Pacocha66@yahoo.com	$2a$12$e629Xr2TcGEpa76Dq2jGvOCqvDAyGRb9jjrrGekF08HJkIyf9UCB2	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-26 18:39:55+01	2018-01-26 18:39:55+01
-395	\N	\N	\N	\N	Collin16@yahoo.com	$xZj0WRyMgz14M6Q8HPyTFuVYowNpk5lO42K6VZkmFmiuouemgE8PO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 10:56:10+01	2018-01-27 10:56:10+01
-396	\N	\N	\N	\N	Marquise_Wolf@gmail.com	$2a$12$WXZasInGrWIC9fzR9DVHOOBe7MTMNpC7aQlEYD1EJ1TC7y3QlFeuK	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 10:56:11+01	2018-01-27 10:56:11+01
-397	\N	\N	\N	\N	Garnett.Weimann88@yahoo.com	GuU4sWYP8jYGCDPOjKSauNzTvG2ENSnDmimkNqCCQ5u0Xdkva5v6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 10:56:14+01	2018-01-27 10:56:14+01
-398	\N	\N	\N	\N	Cristal36@yahoo.com	$2a$12$QkhSnC3aw5sEBqR98gxiaODYvOZdPRpDQME9LVntFA0foW04GGvi6	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 10:56:15+01	2018-01-27 10:56:15+01
-399	\N	\N	\N	\N	Mikayla_Hane94@yahoo.com	x2NcTdnHiP2xpzSep7bc.RqtArKbFMIJ9czoyAhY8CsPYjvEPuty	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-27 11:36:47+01	2018-01-27 11:36:47+01
-400	\N	\N	\N	\N	Edwina33@gmail.com	$2a$12$Oe.cqxusb21PlGgINNSIdeoeuN5osbwBGD67HqW4eHE0yA7DNH2ti	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:36:47+01	2018-01-27 11:36:47+01
-401	\N	\N	\N	\N	Jewel14@gmail.com	$PE2epS5yHbRo5m.MekMOBege5ta55NZ3eApjxGPyGMfcjNybz.4ba	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-27 11:37:41+01	2018-01-27 11:37:41+01
-402	\N	\N	\N	\N	Quinton_Rolfson41@yahoo.com	$2a$12$x3DgwpFxqBNvACYeozAC2.veCVmLJCM6eVGj/XoId5Y.q9uXEPDNG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:37:42+01	2018-01-27 11:37:42+01
-403	\N	\N	\N	\N	Velda79@yahoo.com	05$6ebR6RKM3kzlprNPVtrBs.8Fds.3L.zvq0fw3Jhq2ZpvIyFxzGuqC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-27 11:38:21+01	2018-01-27 11:38:21+01
-404	\N	\N	\N	\N	Brendan_Pouros@hotmail.com	$2a$12$nr4etfJUVAs2ENeXKZU8muxEXMSZVgLsEJvfNuy2.qv6FIjfsJ1aG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:38:22+01	2018-01-27 11:38:22+01
-405	\N	\N	\N	\N	Carroll89@hotmail.com	HdAP.g.0NY8L5fkvg0r1OsUXGiJE2J5Q5J9UJnAu0XvzuS8Sktkm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:39:03+01	2018-01-27 11:39:03+01
-406	\N	\N	\N	\N	Albina_Volkman95@gmail.com	$2a$12$ymtffP7L1Tt0DqQ.ZLzNjuOqKI4.c.8AdH4J/UW1VmMy5KBeocvuS	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:39:03+01	2018-01-27 11:39:03+01
-407	\N	\N	\N	\N	Clemmie.Koepp@hotmail.com	5$ONys2XQXJzKVdcl1QfK0NOJryIOkQquzQwPj6JlKjpgjVN9OkNG7C	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-27 11:40:41+01	2018-01-27 11:40:41+01
-408	\N	\N	\N	\N	Grace.Kutch@yahoo.com	$2a$12$2IbN4yNlcgH7J99XybHmH.9GBdvncq4hLLgPf48/hITnb/uYTM9ni	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:40:41+01	2018-01-27 11:40:41+01
-409	\N	\N	\N	\N	Gregoria46@hotmail.com	05$RV7UVRs5MT39ELzuWXfA5.LoI5wJJLRQggaJDJhexlnFVDrl.KAHa	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:40:57+01	2018-01-27 11:40:57+01
-410	\N	\N	\N	\N	Carmen.Nolan10@gmail.com	$2a$12$DySkieaG.8GEI7Uq31cle.ItpYkJFL8rXhtYSHGpdjy7jM54tDAMG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:40:58+01	2018-01-27 11:40:58+01
-411	\N	\N	\N	\N	Sheila97@yahoo.com	05$vZY2.GgsArR5ruoU.dI.lOW2x.57qABfhVSf45Dxd.QPCVdIk5dne	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-27 11:42:57+01	2018-01-27 11:42:57+01
-412	\N	\N	\N	\N	Elton.Kuhic@hotmail.com	$2a$12$i1V0Vqr6UhNOgAAz4dEi8Ow1Pv3zZbWR2NaVQr07pRAjEWqK38BXO	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:42:58+01	2018-01-27 11:42:58+01
-413	\N	\N	\N	\N	Terrence_Toy@yahoo.com	$05$mq3qkChsUMCTKWFacX2mKe7n6pEVRbbH5bbL9C9DJEFkXdH4khbaG	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:44:30+01	2018-01-27 11:44:30+01
-414	\N	\N	\N	\N	Era13@gmail.com	$2a$12$6KvtzDdYxq7x.MJ0CcYrcOHcACydia860SrXXTJ40z5p5hFXRsWeO	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:44:31+01	2018-01-27 11:44:31+01
-415	\N	\N	\N	\N	Frederique_Mitchell@yahoo.com	u77SZ1hV3954R9BEjybaeUcY1ORPZXBSGp0y2iDlz5U8ztGdp84K	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:44:42+01	2018-01-27 11:44:42+01
-416	\N	\N	\N	\N	Myah.Bergnaum@gmail.com	$2a$12$ab9gNApbdHUP0f9CG9KsoeYSKLK0LDcI5Uy1.LVeJT4w./y5oydnu	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-27 11:44:43+01	2018-01-27 11:44:43+01
-417	\N	\N	\N	\N	Nigel.OConnell69@gmail.com	5$nWeV8rc2ggSG9O.aMUGT0eDosDRvn0gj.ZldOGAKgEbRqsdHw6g/y	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 10:15:10+01	2018-01-29 10:15:10+01
-418	\N	\N	\N	\N	Jett_Kassulke37@yahoo.com	$2a$12$fR5x1M/QocftoRgzxi2wiOdb/RPnSB11JF/8eEFjXIrQXrjOYoO1C	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 10:15:11+01	2018-01-29 10:15:11+01
-419	\N	\N	\N	\N	Elva.Hilll@yahoo.com	5$bFQ2M2OwrF9MTSCLCchpJuygUPVUd4HDLVLL/jDmQBEHiCN9giDlO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-29 10:28:47+01	2018-01-29 10:28:47+01
-420	\N	\N	\N	\N	Akeem.McKenzie60@gmail.com	$2a$12$DI4GcFSqggymCmMLwmzE7.HVK9eyjAafxyCrhY5S0PCPbzw2vvBnu	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 10:28:48+01	2018-01-29 10:28:48+01
-421	\N	\N	\N	\N	Damian.Leuschke@yahoo.com	5$oaxOSI30hPY7Xtv6.UxZWO2rqrQWzrbTod4Yq9xIx8tv3aaY6Mlfm	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 10:36:43+01	2018-01-29 10:36:43+01
-422	\N	\N	\N	\N	Abner97@yahoo.com	$2a$12$30DkYAjTZTf8GgffNIKaGusDyJqSz6UJDHfYfoHd.nEXCRmwImpU.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 10:36:44+01	2018-01-29 10:36:44+01
-423	\N	\N	\N	\N	Carlo53@gmail.com	$05$LUT7TMHRabMm6Es9SaN92u6iTfT2DQ2h/T6ew6BTEV7S1NgLaTI/S	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-29 10:57:48+01	2018-01-29 10:57:48+01
-424	\N	\N	\N	\N	Hillard87@yahoo.com	$2a$12$pPttMOeIAnBI55X.eHbNbeNOu9PwAdJ/.X/rYGOQukki1gvfGvsQm	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 10:57:49+01	2018-01-29 10:57:49+01
-425	\N	\N	\N	\N	Lonzo_Kemmer@yahoo.com	5$l2cpvCFdXLA2wET.RDgSTORbVlIEPN34qkbXD1pALmpuovEffJ8ly	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 10:58:22+01	2018-01-29 10:58:22+01
-426	\N	\N	\N	\N	Marcellus.Gottlieb@hotmail.com	$2a$12$MzHY5XwSmCflzhnaOpe.W.5sXymBGrNg0sgpGXQddWvf4aOvAMN3K	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 10:58:22+01	2018-01-29 10:58:22+01
-427	\N	\N	\N	\N	Anissa.Prosacco11@gmail.com	05$AP7Zwdfmzj11bSNTBcbYNuSF1rUVPjYmkj2TVeaq.olLORtD0W/22	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 10:58:35+01	2018-01-29 10:58:35+01
-428	\N	\N	\N	\N	Alessia.Walsh@hotmail.com	$2a$12$x9olBfJANkf/T0cE7w90buaKMrwhhnrKoAWvko1faEn50wm4zBKiq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 10:58:35+01	2018-01-29 10:58:35+01
-429	\N	\N	\N	\N	Shad.Buckridge@hotmail.com	$gyIHwrQSt4ZCDJPqR8kREetJnNWzev8TAvBxk24hUICUWZ5XiXfAe	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-29 11:08:02+01	2018-01-29 11:08:02+01
-430	\N	\N	\N	\N	Desiree_Becker64@hotmail.com	$2a$12$54j1p3KfXIanpxnwyQUKweJLGt2.GK1cbuLBCM8.N3zKvHk3yS5s6	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 11:08:03+01	2018-01-29 11:08:03+01
-431	\N	\N	\N	\N	Lucius28@hotmail.com	dT3kYYpRyM1Xe9ztsfRheHDqSKH0GnQOTgSHNWji34uQ.YanVF7q	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 11:12:03+01	2018-01-29 11:12:03+01
-432	\N	\N	\N	\N	Ernie.Tromp91@gmail.com	$2a$12$B4m1v5iSmQSg3PeBsieVdelr/utQrDUt42EIT2BXJI6faHjLx4zmi	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 11:12:03+01	2018-01-29 11:12:03+01
-433	\N	\N	\N	\N	Heather59@yahoo.com	05$lDEEjvSxBh8LWPD9SUHEp.aS5ixCxllG1G01y6JpSYCObC2bSIWje	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-29 12:25:29+01	2018-01-29 12:25:29+01
-434	\N	\N	\N	\N	Jack_Terry59@hotmail.com	$2a$12$S/SZ/GppE2Bzs0irDsKZZOa5Ksjc.zKELEs5EL8s5F7HHg2o.uKXW	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 12:25:30+01	2018-01-29 12:25:30+01
-435	\N	\N	\N	\N	Malvina86@yahoo.com	5i2dB266a9i.YIdytmH9O.oYejZEp4eIWDRK83XSrJlCrJvDjBt7m	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 12:26:13+01	2018-01-29 12:26:13+01
-436	\N	\N	\N	\N	Burnice.Nienow34@yahoo.com	$2a$12$j31uEIRGyqhzpMn3dL9nZuw3yXWXU00rJ15fl.Jna0yUf32ZPO2fK	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 12:26:13+01	2018-01-29 12:26:13+01
-437	\N	\N	\N	\N	Macy.Sporer81@gmail.com	WlwI4gTBykY3qoJGvyefxuewZ99nJG4N2bIrEOmHlUy8HxLFKL8v6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 12:28:12+01	2018-01-29 12:28:12+01
-438	\N	\N	\N	\N	Nelson96@gmail.com	$2a$12$QQ.kKKJUaJvsJa5KBmyMtOmvrTmmFUje.KksTCcalUe8KRZt7XNwG	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 12:28:12+01	2018-01-29 12:28:12+01
-439	\N	\N	\N	\N	Marjory97@yahoo.com	$QgFuPVHMUMS3yApQYLD61.gNy66OtZwOcFkuT6IwKMojSWkd920su	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-29 12:33:38+01	2018-01-29 12:33:38+01
-440	\N	\N	\N	\N	Lisandro_Stokes9@gmail.com	$2a$12$A5oN8lFs5wbyoq2bwRwKNuxaGSk.1xFpNyrJxP512cnIKu.9BIiN.	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 12:33:38+01	2018-01-29 12:33:38+01
-441	\N	\N	\N	\N	Garrick_Breitenberg50@yahoo.com	5$CL2XE2QrI/9ryiGeiAbXDusPCJznhq4/GDYgBr5KviTFkAdQE6JIe	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-29 12:35:32+01	2018-01-29 12:35:32+01
-442	\N	\N	\N	\N	Drake_Bogisich0@yahoo.com	$2a$12$rZ80n6JPts0uBx1rUcv8BOd8fYpHDdoWSH1YvRaW4WGUykvGzn2Ay	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 12:35:33+01	2018-01-29 12:35:33+01
-443	\N	\N	\N	\N	Emelia_OConner89@hotmail.com	PLpdMGYrKD1g8uKlgsFAAe0IlHQTa2W13XzH.xK80DgAK9fW7esRi	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-29 12:37:09+01	2018-01-29 12:37:09+01
-444	\N	\N	\N	\N	Foster32@hotmail.com	$2a$12$T4Rospbw.rQWR.0XDLBu6eE/djyeRr6YxavjEl2wZpkQXOlwy2bGW	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-29 12:37:10+01	2018-01-29 12:37:10+01
+COPY public.phone_data (unitid, number, verified, autogenerated, description, priority, tag) FROM stdin;
 \.
 
 
 --
--- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: vipfy_test_user
+-- Data for Name: plan_data; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('users_id_seq', 444, true);
+COPY public.plan_data (id, name, appid, teaserdescription, features, startdate, enddate, numlicences, price, currency, options, payperiod, cancelperiod, gotoplan, optional, mainplan, gototime) FROM stdin;
+2	Basic Weebly	2	Basic Plan for Weebly	\N	2018-03-06 14:30:50.42971	\N	1	10.00	USD	\N	\N	\N	\N	f	\N	\N
+19	Options A	3	Option option sha lala	\N	2018-05-28 00:00:00	\N	5	23.32	EUR	\N	00:00:01	00:00:02	\N	t	18	\N
+5	Moo Basic	6	Basic Plan for Moo	\N	2018-04-21 09:43:59.347799	2018-05-06 00:00:00	1	10.00	USD	\N	1 year	\N	\N	f	\N	\N
+3	Admins	4	How many Admins do you need?	{}	2018-04-18 14:23:53.907899	\N	1	2.00	USD	{"type": "counter"}	\N	\N	\N	t	1	\N
+4	Basic Pipedrive	4	An advanced plan for pipedrive	\N	2018-04-21 08:42:22.07053	\N	5	15.00	USD	\N	1 year	\N	\N	f	1	\N
+7	Basic Pipedrive	4	\N	\N	2018-05-04 10:43:16.962856	\N	1	4.50	USD	\N	1 year	\N	\N	f	1	\N
+8	Pipedrive Plus	4	More than Pipedrive Basic	[{"name": " ", "subfeatures": [{"name": "Yes"}, {"name": "Partly", "subfeatures": [{"name": "Yes"}]}]}, {"name": "24/7"}]	2018-05-04 10:47:03.963842	\N	1	200.00	USD	\N	1 year	\N	\N	f	\N	\N
+6	Pipedrive Pro	4	\N	\N	2018-05-03 14:36:12.946809	\N	1	10.00	USD	{"type": "checkbox"}	1 year	\N	\N	t	1	\N
+1	Basic Pipedrive	4	Basic Plan for Pipedrive	[{"name": " ", "subfeatures": [{"name": "Yes"}, {"name": "Partly", "subfeatures": [{"name": "Yes"}]}]}, {"name": "24/7"}]	2018-03-01 18:49:25.903196	\N	2	5.00	USD	{"addoptions": [{"name": "SSL-Security", "preselect": true, "monthlyPrice": 10}], "addUserMonthly": 5, "monthlyUserPrice": 20}	1 year	\N	\N	f	\N	\N
+9	Slack Basic	3	\N	\N	2018-05-24 00:00:00	2018-06-07 00:00:00	12	12.32	USD	\N	00:00:01	\N	\N	f	\N	\N
+10	\N	\N	\N	\N	2018-05-05 12:41:19.25348	\N	1	\N	USD	\N	\N	\N	\N	f	\N	\N
+11	\N	\N	\N	\N	2018-05-05 12:42:07.846154	\N	1	\N	USD	\N	\N	\N	\N	f	\N	\N
+12	\N	\N	\N	\N	2018-05-05 12:42:35.91866	\N	1	\N	USD	\N	\N	\N	\N	f	\N	\N
+13	Google Apps Basic	5	The basic plan for a subscription to Google Apps	\N	2018-05-02 00:00:00	2018-12-04 23:00:00	5	9.99	USD	\N	00:00:01	00:00:02	\N	f	\N	\N
+14	Pro Weebly	2	The pro version of Weebly with way more features	\N	2018-05-15 00:00:00	\N	20	19.99	USD	\N	00:00:01	00:00:02	\N	f	\N	\N
+15	Basic Weebly Sub 1	2	A new basic plan for Weebly. Great for starters	\N	2018-05-24 00:00:00	\N	10	9.99	USD	\N	00:00:03	00:00:01	\N	f	2	\N
+16	Super Basic Weebly	2	Lorem ipsum nils nils nils	\N	2018-05-10 00:00:00	2018-11-27 23:00:00	15	5.99	USD	\N	00:00:01	00:00:02	\N	f	\N	\N
+17	Option B	2	The Option B for super basic Weebly 	\N	2018-05-09 00:00:00	\N	5	3.19	YEN	\N	00:00:02	\N	\N	f	16	\N
+18	Slack Pro	3	The pro version of Slack	\N	2018-05-03 00:00:00	\N	20	19.99	EUR	\N	00:00:01	00:00:02	\N	f	\N	\N
+\.
 
 
 --
--- Name: appimages appimages_pkey; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: plan_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY appimages
+SELECT pg_catalog.setval('public.plan_data_id_seq', 19, true);
+
+
+--
+-- Data for Name: plans; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.plans (id, appid, description, renewalplan, period, numlicences, price, currency, name, activefrom, activeuntil, promo, promovipfy, promodeveloper, promoname, changeafter, changeplan) FROM stdin;
+3	2	\N	\N	1	5	40.00	USD	Group	\N	\N	\N	\N	\N	\N	\N	\N
+4	2	One year for you	\N	12	1	120.00	USD	Individual	\N	\N	\N	\N	\N	\N	\N	\N
+5	2	One year for your company	\N	12	5	500.00	USD	Group Year	\N	\N	\N	\N	\N	\N	\N	\N
+8	11	special	\N	1	1	11.00	USD	test	\N	\N	\N	\N	\N	\N	\N	\N
+1	3	<ul><li>Websitebuilder</li><li>One User</li><li>Standard Support</li><ul>	\N	1	1	10.00	USD	Standard	\N	\N	\N	\N	\N	\N	\N	\N
+2	3	<ul><li>Websitebuilder</li><li>Five Users</li><li>Standard Support</li><ul>	\N	1	5	30.00	USD	Group	\N	\N	\N	\N	\N	\N	\N	\N
+9	1	special	\N	1	1	20.00	USD	Weebly	\N	\N	\N	\N	\N	\N	\N	\N
+10	1	\N	\N	1	1	30.00	USD	Weebly	\N	\N	\N	\N	\N	\N	\N	\N
+11	1	\N	\N	1	1	40.00	USD	Weebly	\N	\N	\N	\N	\N	\N	\N	\N
+12	2	\N	\N	1	1	50.00	USD	Weebly	\N	\N	\N	\N	\N	\N	\N	\N
+\.
+
+
+--
+-- Name: plans_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.plans_id_seq', 12, true);
+
+
+--
+-- Data for Name: promo_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.promo_data (id, name, planid, startdate, enddate, restrictions, description, sponsor, discount) FROM stdin;
+\.
+
+
+--
+-- Name: promo_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.promo_data_id_seq', 1, false);
+
+
+--
+-- Data for Name: review_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.review_data (unitid, appid, reviewdate, stars, reviewtext, id, answerto) FROM stdin;
+22	2	2018-02-26 18:22:16.014763	3	Test Text	16	\N
+7	2	2018-02-27 14:38:14.149633	4	2. Test 4 stars	18	\N
+22	2	2018-03-01 16:19:33.218859	3	Test	19	\N
+22	2	2018-03-01 16:24:04.558905	3	Test	20	\N
+7	2	2018-03-01 16:24:59.276328	4	Great App!	21	\N
+7	2	2018-03-01 16:25:55.865715	4	Another Great App!	22	\N
+7	2	2018-03-01 16:26:59.1961	4	And Another Great App!	23	\N
+22	2	2018-03-01 16:42:10.158104	5	Great app by me :D	24	\N
+22	2	2018-03-01 16:47:46.259557	5	Test App Revuew	25	\N
+22	2	2018-03-01 16:49:21.620996	5	Test me	26	\N
+22	2	2018-03-02 02:31:33.404934	4	Test the new interface. Hopefully it works :D	27	\N
+22	2	2018-03-02 02:37:39.834698	3	Bla	28	\N
+22	2	2018-03-02 02:40:30.14068	3	Test	29	\N
+22	2	2018-03-02 02:44:49.256246	4	Hopefully last function test	30	\N
+7	4	2018-03-03 12:11:29.705012	5	Pipedrive is a great App\n	31	\N
+7	4	2018-03-03 12:25:59.995327	5	It is still great	32	\N
+22	2	2018-03-07 14:44:23.2038	4	Test Review	33	\N
+22	2	2018-03-07 14:50:50.814725	3	Test no refetch	34	\N
+7	2	2018-03-08 20:49:29.242898	5	Prettier ist toll!	35	\N
+22	11	2018-04-03 11:10:45.195317	3	Okay App - shitty company	36	\N
+7	4	2018-04-04 19:06:26.485507	2	Not as good as it once was	37	\N
+22	4	2018-04-05 22:21:57.223	4	Pipedrive Review	38	\N
+22	4	2018-04-05 22:24:25.928	3	Review Pipedrive	39	\N
+\.
+
+
+--
+-- Data for Name: reviewhelpful; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.reviewhelpful (helpfuldate, comment, balance, reviewid, unitid) FROM stdin;
+\.
+
+
+--
+-- Data for Name: reviewhelpful_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.reviewhelpful_data (reviewid, unitid, helpfuldate, comment, balance) FROM stdin;
+\.
+
+
+--
+-- Name: reviews_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.reviews_id_seq', 39, true);
+
+
+--
+-- Data for Name: right_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.right_data (holder, forunit, type) FROM stdin;
+22	\N	admin
+22	22	buyapps
+7	14	admin
+\.
+
+
+--
+-- Data for Name: speaks; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.speaks (userid, language, preferred) FROM stdin;
+\.
+
+
+--
+-- Data for Name: unit_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.unit_data (id, payingoptions, banned, deleted, suspended, profilepicture, riskvalue, createdate, "position") FROM stdin;
+70	\N	f	t	f		\N	2018-04-22 12:05:34.045	\N
+71	\N	f	t	f		\N	2018-04-22 12:06:00.375	\N
+31	\N	f	f	f	\N	\N	2018-04-13 13:41:18.542	CEO
+72	\N	f	f	f	\N	\N	2018-04-25 08:41:49.382	\N
+22	{"cardtype": "visa"}	f	f	f	\N	\N	2018-02-26 17:19:25.795	CMO
+12	\N	f	f	f	\N	\N	\N	Weebly
+13	\N	f	f	f	\N	\N	\N	Slack
+15	\N	f	f	f	\N	\N	\N	Google Apps
+16	\N	f	f	f	\N	\N	\N	Moo
+17	\N	f	f	f	\N	\N	\N	Vistaprint
+18	\N	f	f	f	\N	\N	\N	CakeHr
+19	\N	f	f	f	\N	\N	\N	Waveapps
+20	\N	f	f	f	\N	\N	\N	Xero
+21	\N	f	f	f	\N	\N	\N	DD24
+67	\N	f	f	f	\N	\N	2018-04-18 18:58:53.253	CTO
+14	\N	f	f	f	https://storage.googleapis.com/vipfy-imagestore-01/vipfy-logo.png	\N	\N	Pipedrive
+25	\N	f	f	f	logo_white	\N	2018-04-05 11:06:28.487283	\N
+7	\N	f	f	f	Pascal_q.jpg	\N	2018-02-20 11:19:34.034	COO
+\.
+
+
+--
+-- Name: unit_data_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.unit_data_id_seq', 72, true);
+
+
+--
+-- Data for Name: usedcompanyplans; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.usedcompanyplans (userid, appid, planid, companyid, planbought, key, usedfrom, usedto) FROM stdin;
+\.
+
+
+--
+-- Data for Name: userbills; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.userbills (userid, date, billpos, textpos, price, currency, appid, planid, orgcurrency, exchangerate) FROM stdin;
+5	2017-12-30 15:17:01.598623	1	Eine Position	11.20	USD	2	1	EUR	1.0300000000
+\.
+
+
+--
+-- Data for Name: userrights; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.userrights (userid, companyid, departmentid, userright) FROM stdin;
+61	17	12	1
+61	19	12	1
+\.
+
+
+--
+-- Data for Name: users_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.users_data (id, firstname, middlename, lastname, "position", email, password, title, sex, userstatus, birthday, recoveryemail, mobilenumber, telefonnumber, addresscountry, addressstate, addresscity, addressstreet, addressnumber, profilepicture, lastactive, lastsecret, riskvalue, newsletter, referall, cobranded, resetoption, "createdAt", "updatedAt") FROM stdin;
+2	Tatum	Arnaldo	Reilly	Lead Applications Director	Velda.Orn@yahoo.com	Producer	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:29:32+00	\N	\N	f	0	0	0	2017-08-10 13:29:32.533+00	2017-08-10 13:29:32.533+00
+3	Jamar	Courtney	Pfannerstill	District Factors Administrator	Lawrence_Schuster63@hotmail.com	Pennsylvania	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:29:32+00	\N	\N	f	0	0	0	2017-08-10 13:29:32.534+00	2017-08-10 13:29:32.534+00
+4	Vernon	Nicklaus	Larkin	Corporate Response Specialist	Orlo3@yahoo.com	program	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:29:32+00	\N	\N	f	0	0	0	2017-08-10 13:29:32.534+00	2017-08-10 13:29:32.534+00
+5	Kristopher	Talia	Klocko	Corporate Functionality Agent	Isabell.Heaney@gmail.com	intuitive	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:29:32+00	\N	\N	f	0	0	0	2017-08-10 13:29:32.535+00	2017-08-10 13:29:32.535+00
+6	Cole	Kenny	Stark	Direct Security Supervisor	Lempi_McKenzie84@hotmail.com	Fish	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:29:32+00	\N	\N	f	0	0	0	2017-08-10 13:29:32.536+00	2017-08-10 13:29:32.536+00
+7	Ava	Joana	Fisher	Investor Tactics Administrator	Casimer67@gmail.com	Home Loan Account	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:29:32+00	\N	\N	f	0	0	0	2017-08-10 13:29:32.538+00	2017-08-10 13:29:32.538+00
+8	Lina	Carol	Kub	Lead Operations Representative	Jessyca4@gmail.com	Louisiana	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:29:32+00	\N	\N	f	0	0	0	2017-08-10 13:29:32.539+00	2017-08-10 13:29:32.539+00
+9	Kiel	Sonny	Schoen	Chief Markets Associate	Margie_Anderson@yahoo.com	Implementation	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:29:32+00	\N	\N	f	0	0	0	2017-08-10 13:29:32.538+00	2017-08-10 13:29:32.538+00
+10	Joy	Brian	Gerlach	Investor Infrastructure Manager	Mortimer.Konopelski@yahoo.com	asymmetric	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:29:32+00	\N	\N	f	0	0	0	2017-08-10 13:29:32.54+00	2017-08-10 13:29:32.54+00
+11	Eden	Laurence	Hackett	Regional Brand Designer	Nigel90@yahoo.com	Handmade Fresh Computer	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:32:13+00	\N	\N	f	0	0	0	2017-08-10 13:32:13.526+00	2017-08-10 13:32:13.526+00
+12	Janick	Reid	Halvorson	National Factors Associate	Werner_Jacobs@hotmail.com	Pitcairn Islands	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:32:13+00	\N	\N	f	0	0	0	2017-08-10 13:32:13.528+00	2017-08-10 13:32:13.528+00
+13	Quincy	Kimberly	Lowe	Future Metrics Assistant	Nannie_Kling79@hotmail.com	Monitored	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:32:13+00	\N	\N	f	0	0	0	2017-08-10 13:32:13.529+00	2017-08-10 13:32:13.529+00
+14	Wiley	Elvie	Cormier	Corporate Metrics Engineer	Maria65@gmail.com	Cotton	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:32:13+00	\N	\N	f	0	0	0	2017-08-10 13:32:13.53+00	2017-08-10 13:32:13.53+00
+15	Rylee	Anabel	Mraz	National Factors Designer	Susie.Paucek2@gmail.com	challenge	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:32:13+00	\N	\N	f	0	0	0	2017-08-10 13:32:13.53+00	2017-08-10 13:32:13.53+00
+16	Vincenzo	Madaline	Fritsch	Dynamic Division Manager	Therese.Conn63@yahoo.com	Web	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:32:13+00	\N	\N	f	0	0	0	2017-08-10 13:32:13.532+00	2017-08-10 13:32:13.532+00
+17	Beau	Dasia	Green	Customer Functionality Developer	Barney.Kohler@hotmail.com	hacking	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:32:13+00	\N	\N	f	0	0	0	2017-08-10 13:32:13.533+00	2017-08-10 13:32:13.533+00
+18	Modesto	Luisa	Daniel	Central Tactics Agent	Efrain.Rutherford85@gmail.com	Bedfordshire	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:32:13+00	\N	\N	f	0	0	0	2017-08-10 13:32:13.534+00	2017-08-10 13:32:13.534+00
+19	Lola	Ernie	Wiegand	Human Applications Coordinator	Evangeline_Stroman59@yahoo.com	USB	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:32:13+00	\N	\N	f	0	0	0	2017-08-10 13:32:13.534+00	2017-08-10 13:32:13.534+00
+20	Niko	Kaylee	Becker	Corporate Identity Consultant	Tristian.Mante29@gmail.com	Gorgeous Concrete Table	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:32:13+00	\N	\N	f	0	0	0	2017-08-10 13:32:13.535+00	2017-08-10 13:32:13.535+00
+21	Marshall	Velda	Connelly	Legacy Branding Liaison	Lera.Thompson69@gmail.com	digital	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 14:58:57+00	\N	\N	f	0	0	0	2017-08-10 14:58:57.684+00	2017-08-10 14:58:57.684+00
+22	Crystal	Aiyana	Breitenberg	Investor Identity Coordinator	Kelsie35@hotmail.com	Forint	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 14:58:57+00	\N	\N	f	0	0	0	2017-08-10 14:58:57.687+00	2017-08-10 14:58:57.687+00
+23	Frederik	Buck	Torphy	Product Infrastructure Facilitator	Joanne36@gmail.com	invoice	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 14:58:57+00	\N	\N	f	0	0	0	2017-08-10 14:58:57.688+00	2017-08-10 14:58:57.688+00
+24	Nyasia	Hettie	Pollich	Direct Markets Producer	Simeon.Hermiston84@yahoo.com	Lek	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 14:58:57+00	\N	\N	f	0	0	0	2017-08-10 14:58:57.689+00	2017-08-10 14:58:57.689+00
+25	Jarrod	Creola	Yost	International Security Executive	Chanelle20@hotmail.com	salmon	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 14:58:57+00	\N	\N	f	0	0	0	2017-08-10 14:58:57.689+00	2017-08-10 14:58:57.689+00
+26	Clovis	Terrill	Rippin	Human Communications Consultant	Liliana14@gmail.com	Light	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 14:58:57+00	\N	\N	f	0	0	0	2017-08-10 14:58:57.691+00	2017-08-10 14:58:57.691+00
+27	Gus	Romaine	DuBuque	Principal Markets Officer	Lukas.Cummerata@yahoo.com	payment	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 14:58:57+00	\N	\N	f	0	0	0	2017-08-10 14:58:57.694+00	2017-08-10 14:58:57.694+00
+28	Shanny	Josh	Gottlieb	Principal Program Agent	Lavon45@hotmail.com	Designer	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 14:58:57+00	\N	\N	f	0	0	0	2017-08-10 14:58:57.693+00	2017-08-10 14:58:57.693+00
+29	Sarah	Kiera	Corkery	Principal Web Executive	Jerad.Koch@yahoo.com	Central	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 14:58:57+00	\N	\N	f	0	0	0	2017-08-10 14:58:57.695+00	2017-08-10 14:58:57.695+00
+30	Hosea	Juanita	Lueilwitz	Future Identity Consultant	Georgette_Schuppe8@gmail.com	Synchronised	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 14:58:57+00	\N	\N	f	0	0	0	2017-08-10 14:58:57.696+00	2017-08-10 14:58:57.696+00
+31	Conrad	Napoleon	Fay	Customer Optimization Director	Tyson.Okuneva27@gmail.com	Credit Card Account	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 15:00:43+00	\N	\N	f	0	0	0	2017-08-10 15:00:43.182+00	2017-08-10 15:00:43.182+00
+32	Dorothea	Krystel	Kuphal	Global Mobility Manager	Angelina.Boehm@hotmail.com	Turkmenistan	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 15:00:43+00	\N	\N	f	0	0	0	2017-08-10 15:00:43.184+00	2017-08-10 15:00:43.184+00
+33	Jamar	Alford	Cummings	Human Factors Executive	Makenna_Lakin94@hotmail.com	indexing	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 15:00:43+00	\N	\N	f	0	0	0	2017-08-10 15:00:43.185+00	2017-08-10 15:00:43.185+00
+34	Kari	Issac	Kertzmann	Senior Accountability Technician	Allison71@yahoo.com	Trail	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 15:00:43+00	\N	\N	f	0	0	0	2017-08-10 15:00:43.186+00	2017-08-10 15:00:43.186+00
+35	Verda	Felipa	Schneider	Regional Data Officer	Rod.Walker39@hotmail.com	Comoro Franc	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 15:00:43+00	\N	\N	f	0	0	0	2017-08-10 15:00:43.187+00	2017-08-10 15:00:43.187+00
+36	Evalyn	Vince	Bradtke	Legacy Intranet Facilitator	Ramona34@hotmail.com	sexy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 15:00:43+00	\N	\N	f	0	0	0	2017-08-10 15:00:43.188+00	2017-08-10 15:00:43.188+00
+37	Chance	Augusta	Doyle	Future Directives Engineer	Lysanne97@hotmail.com	Lithuania	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 15:00:43+00	\N	\N	f	0	0	0	2017-08-10 15:00:43.191+00	2017-08-10 15:00:43.191+00
+38	Stan	Cletus	Leffler	Dynamic Division Supervisor	Narciso.Kertzmann@gmail.com	Tokelau	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 15:00:43+00	\N	\N	f	0	0	0	2017-08-10 15:00:43.19+00	2017-08-10 15:00:43.19+00
+39	Krystel	Minnie	Beatty	Customer Program Producer	Frankie43@hotmail.com	focus group	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 15:00:43+00	\N	\N	f	0	0	0	2017-08-10 15:00:43.192+00	2017-08-10 15:00:43.192+00
+40	Domenico	Americo	Corwin	Dynamic Configuration Strategist	Johanna_Towne@yahoo.com	Crossroad	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2017-08-10 15:00:43+00	\N	\N	f	0	0	0	2017-08-10 15:00:43.193+00	2017-08-10 15:00:43.193+00
+60	\N	\N	\N	\N		\\xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-08-22 22:14:53.082907+00	2017-08-22 22:14:53.082907+00
+61	Nils	\N	Vossebein	\N	nils.vossebein@gmx.de	$2a$12$kdlPZC5NvzmgAs8hewssQ.GFadFQ2oBu6gTz1Jm4mjzD1fcPlOx0K	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-08-22 22:19:21.999659+00	2017-08-22 22:19:21.999659+00
+63	\N	\N	\N	\N	mmmhome@gmail.com	\\x854ddc006369eb7bac38bb6690e7f9b05d0d68659be1f96564df407d653e0df2	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-08-23 10:54:08.700911+00	2017-08-23 10:54:08.700911+00
+62	\N	\N	\N	\N	nils.vossebein@gmail.com	4af2531c65fb505cfbd0add1e2f31573	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-08-23 10:49:52.912159+00	2017-08-23 10:49:52.912159+00
+65	\N	\N	\N	\N	pascal@test.de	$2a$12$w6g68hNrkiPSCuI8WxVAYOSTTM9lyjJF3FvVJFqS1YIZvTesF.ck.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-09 11:10:05.702+00	2017-11-09 11:10:05.702+00
+68	\N	\N	\N	\N	neuerTest@test.com	$2a$12$VYW8sO6.fYjZYO2V4o6Bb.i6Abq7Y/XZmkZV1jLuUTXEoAYMFjpaC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-13 14:13:37.649+00	2017-11-13 14:13:37.649+00
+69	\N	\N	\N	\N	testEmail@test.com	$2a$12$uSXWcEOxazdxdYku7qluUOABKD/YzTqydbggSdUb3xx7ggxllp7ri	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-13 15:54:17.77+00	2017-11-13 15:54:17.77+00
+1	Alvena	Ima	Muller	Forward Infrastructure Facilitator	Gaetano_Lind28@yahoo.com	Senior	\N	f	toverify	\N	saveme@forgot.com	017323434534	\N	\N	\N	\N	\N	\N	\N	2017-08-10 13:29:32+00	\N	\N	f	0	0	0	2017-08-10 13:29:32.531+00	2017-09-11 11:03:39.208+00
+70	\N	\N	\N	\N	pas@calneu.de	$2a$12$SR9IHpeM8YB63BMdJMH.lOzTaAv5zXTpC7fboRlrJpcbilTYEz14.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-15 12:27:07.825+00	2017-11-15 12:27:07.825+00
+71	\N	\N	\N	\N	pas@cal2.de	$2a$12$XgHm6ddKngNh/xm.tfNKJ.HFPWqNV5wqLJ1j8PVN5yrRUru2SJjWO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-16 13:13:38.064211+00	2017-11-16 13:13:38.064211+00
+88	\N	\N	\N	\N	pascal.clanget@googlemail.com	$2a$05$xcMohfft8BbvCqSOVetbkuAONPjsSWwZ/YtFsxXBECy6fZS5X4gqe	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-19 13:53:55.73739+00	2017-11-19 13:53:55.73739+00
+93	\N	\N	\N	\N	asdf@asd	$2a$05$KjSKMgoZCcir7DK.IaeaCe1iBnOA2M5a4wiSjL2L/SDP80/DHYNMC	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-19 15:18:19.790261+00	2017-11-19 15:18:19.790261+00
+94	\N	\N	\N	\N	3asdf@asf333	$2a$05$r0PCvRtpPWt4APy8sWK6FO2RF6pbHVnEBahap3tvdeUhqd1lMfs1i	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-19 15:28:35.783309+00	2017-11-19 15:28:35.783309+00
+95	\N	\N	\N	\N	pascal.clanget@fernuni-hagen.de	$2a$05$5QnApdj8dmF2eGfNZONltOdhEZXp8VY1AWegpjB74VpU02AsD9cFO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-19 16:02:17.293378+00	2017-11-19 16:02:17.293378+00
+96	\N	\N	\N	\N	pascal.clanget@ernuni-hagen.de	$2a$05$sB9/saXJ4crW060gPeAIAeMfrK1sznqlFjPwkrHBEcsMoe2NXdKSW	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-19 16:04:11.565973+00	2017-11-19 16:04:11.565973+00
+91	\N	\N	\N	\N	pascal.clanget@studium.fernuni-hagen.de	$2a$12$t5GY2OcF7Riui2n0mBhcmedNe9XVbWsZ7yGHvacSEmKXI9oenbAVe	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2017-11-19 14:50:45.258495+00	2017-11-19 14:50:45.258495+00
+89	\N	\N	\N	\N	test@testdafdsfasdf.de	$2a$12$.X0NFaeOwlQKNK0GNWBfGeBgzz7YxxNxkgZcpFgVYbOQjM3DSwC.G	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2017-11-19 14:27:49.715491+00	2017-11-19 14:27:49.715491+00
+72	\N	\N	\N	\N	pas2@cal.de	$2a$12$KDTJ1gju2Ct0eQRVYIzOI.2HFLsaEmzoEqaCEmfit9OlQ9Pq5S6Lq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-16 13:30:43.296098+00	2017-11-16 13:30:43.296098+00
+74	\N	\N	\N	\N	pas4@cal.de	$2a$12$1.uGkYlJjZYBXAkByeJ8c.ptpPfI4tJV9pgUKNrjnuLzND2qPPEz2	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-16 13:45:40.322706+00	2017-11-16 13:45:40.322706+00
+73	\N	\N	\N	\N	pas3@cal.de	$12$XdRwG4R99T.UvcKKlyGh.OStPhySPNT8cQrNOuK.15EM1Xn2VU9O.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-16 13:33:33.120663+00	2017-11-16 13:33:33.120663+00
+97	\N	\N	\N	\N	pc@vipfy.com	$2NC8YWI3UVmQJp93p0dWG.KZSuGgawyFvuRXSd01.cQLqpeVoR1yq	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-19 23:57:57.679939+00	2017-11-19 23:57:57.679939+00
+67	Pascal	\N	Cousland	\N	pas@cal.de	$2a$12$eVSQCtpooPsRlmQkHFzbq.lJ0Bj.un/bYKZFlocGfoltDA3nQk7GK	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2017-11-09 11:31:38.948+00	2017-11-09 11:31:38.948+00
+98	\N	\N	\N	\N	pas6@cal.de	05$9KGToG5WRimsrup1UeXFde2iJEgIsj85SHWmQB5p8C3JVFxqJc.8e	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-02 14:42:44+00	2018-01-02 14:42:44+00
+99	\N	\N	\N	\N	pas7@cal.de	m0YMuOCDTZB9S0gW59lb.2t1p7F8b5lDFd2ByuEnO9.XlInkFZPu	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-02 14:44:23+00	2018-01-02 14:44:23+00
+100	\N	\N	\N	\N	pas8@cal.de	$q3r4kkDNJjNdIZQQrzx5ruCIzNtiCHd.gzV1Q3f0yfPY6HLwij2we	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-02 14:46:46+00	2018-01-02 14:46:46+00
+102	\N	\N	\N	\N	n.vossebein@rps-hockey.de	05$7ZkuGtOtPa22nInELkUEreBrzl2VaSTGp/cG9hsFDwoUQi5CmocmO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-23 12:54:04+00	2018-01-23 12:54:04+00
+104	\N	\N	\N	\N	office@vipfy.com	SzKlzfqTL2L48BtsHQJdzebkp2O3kkMoyrOTVMh29eTxe/uE/urD6	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-01-23 13:06:39+00	2018-01-23 13:06:39+00
+105	\N	\N	\N	\N	vipfy.development@googlemail.com	$7mNWXG2MWc5uUu6GHAH67Oy9mAlsjp6utCmqqXAHgvdv2BnOQixN2	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-01-23 17:51:51+00	2018-01-23 17:51:51+00
+106	\N	\N	\N	\N	Vesta_Fisher82@hotmail.com	EvNAxMQMtFV2PnQNGJFBquvZH29KNmV/gZLf8PScFILzz4Yv1aqyy	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-02-04 16:07:05+00	2018-02-04 16:07:05+00
+107	\N	\N	\N	\N	newtestuser@vipfy.com	$2a$12$CkyTxXDU83zeVkItSKlY5OCI1nhqvr3P6jKqaP8hBo3IGnXvV.JYq	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-02-04 16:07:05+00	2018-02-04 16:07:05+00
+108	\N	\N	\N	\N	Brady_Quitzon@hotmail.com	$2a$12$hvgqHtiNA0ncHN8fvy4jg.LcS/uxYhBAOaXwo/FDXaJZQHv/fxc/a	\N	\N	normal	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	f	0	0	0	2018-02-04 16:07:06+00	2018-02-04 16:07:06+00
+109	\N	\N	\N	\N	hioojj@test.com	$nmZRXuPbvJ0VdrY4JxdtBuk9PfdEqKJc.eXjOpdVuvq2YZZo.jINS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-02-06 15:42:55+00	2018-02-06 15:42:55+00
+110	\N	\N	\N	\N	jf@vipfy.com	05$ByYwAdG.uA9bEOP9cViOBOT0AVKvS4lwEfSFySyljUgnKU.5PY9o.	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-02-06 15:43:17+00	2018-02-06 15:43:17+00
+111	\N	\N	\N	\N	test@example.invalid	$05$a2hNI7dAyXYCvhDkbOjBKulW442REOz0udSVjusQqqZTkR5l.ipaS	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-02-20 01:15:52+00	2018-02-20 01:15:52+00
+112	\N	\N	\N	\N	mm@vipfy.com	OZZsSrVFVyoynMw1IO1depSSTT2FGk.7f.TNsqwVisYzpP1LO	\N	\N	toverify	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	t	0	0	0	2018-03-14 19:54:34+00	2018-03-14 19:54:34+00
+\.
+
+
+--
+-- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.users_id_seq', 112, true);
+
+
+--
+-- Data for Name: website_data; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.website_data (website, unitid, tag, verified, autogenerated, description, priority) FROM stdin;
+\.
+
+
+--
+-- Name: address_data adress_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.address_data
+    ADD CONSTRAINT adress_data_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: app_data app_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.app_data
+    ADD CONSTRAINT app_data_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: appimages appimages_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.appimages
     ADD CONSTRAINT appimages_pkey PRIMARY KEY (id);
 
 
 --
--- Name: appnotifications appnotifications_pkey; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: appnotifications appnotifications_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY appnotifications
+ALTER TABLE ONLY public.appnotifications
     ADD CONSTRAINT appnotifications_pkey PRIMARY KEY (id);
 
 
 --
--- Name: apps apps_name_key; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: apps apps_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY apps
-    ADD CONSTRAINT apps_name_key UNIQUE (name);
-
-
---
--- Name: apps apps_pkey; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY apps
+ALTER TABLE ONLY public.apps
     ADD CONSTRAINT apps_pkey PRIMARY KEY (id);
 
 
 --
--- Name: boughtcompanyplans boughtcompanyplans_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+-- Name: bill_data bill_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY boughtcompanyplans
+ALTER TABLE ONLY public.bill_data
+    ADD CONSTRAINT bill_data_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: billposition_data billposition_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.billposition_data
+    ADD CONSTRAINT billposition_data_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: boughtcompanyplans boughtcompanyplans_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtcompanyplans
     ADD CONSTRAINT boughtcompanyplans_pkey PRIMARY KEY (companyid, appid, planid, datebought);
 
 
 --
--- Name: boughtuserplans boughtuserplans_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+-- Name: boughtplan_data boughtplan_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY boughtuserplans
+ALTER TABLE ONLY public.boughtplan_data
+    ADD CONSTRAINT boughtplan_data_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: boughtsubplan_data boughtsubplan_data_boughtplanid_subplanid_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtsubplan_data
+    ADD CONSTRAINT boughtsubplan_data_boughtplanid_subplanid_pk PRIMARY KEY (boughtplanid, subplanid);
+
+
+--
+-- Name: boughtuserplans boughtuserplans_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtuserplans
     ADD CONSTRAINT boughtuserplans_pkey PRIMARY KEY (userid, appid, planid, datebought);
 
 
 --
--- Name: companies companies_pkey; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: companies companies_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY companies
+ALTER TABLE ONLY public.companies
     ADD CONSTRAINT companies_pkey PRIMARY KEY (id);
 
 
 --
--- Name: departments departments_pkey; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: department_data department_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY departments
+ALTER TABLE ONLY public.department_data
+    ADD CONSTRAINT department_data_pkey PRIMARY KEY (unitid);
+
+
+--
+-- Name: departments departments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.departments
     ADD CONSTRAINT departments_pkey PRIMARY KEY (id);
 
 
 --
--- Name: developers developers_pkey; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: developers developers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY developers
+ALTER TABLE ONLY public.developers
     ADD CONSTRAINT developers_pkey PRIMARY KEY (id);
 
 
 --
--- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: email_data email_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY notifications
+ALTER TABLE ONLY public.email_data
+    ADD CONSTRAINT email_data_pkey PRIMARY KEY (email);
+
+
+--
+-- Name: employees employees_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.employees
+    ADD CONSTRAINT employees_pkey PRIMARY KEY (companyid, departmentid, userid, begindate);
+
+
+--
+-- Name: human_data human_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.human_data
+    ADD CONSTRAINT human_data_pkey PRIMARY KEY (unitid);
+
+
+--
+-- Name: licence_data licence_data_unitid_boughtplanid_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.licence_data
+    ADD CONSTRAINT licence_data_unitid_boughtplanid_pk PRIMARY KEY (unitid, boughtplanid);
+
+
+--
+-- Name: log_data log_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.log_data
+    ADD CONSTRAINT log_data_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: message_data message_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.message_data
+    ADD CONSTRAINT message_data_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: newsletter_data newsletter_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.newsletter_data
+    ADD CONSTRAINT newsletter_data_pkey PRIMARY KEY (email, activesince);
+
+
+--
+-- Name: notifications notifications_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notifications
     ADD CONSTRAINT notifications_pkey PRIMARY KEY (id);
 
 
 --
--- Name: plans plans_pkey; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: parentunit_data parentunit_data_parentunit_childunit_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY plans
+ALTER TABLE ONLY public.parentunit_data
+    ADD CONSTRAINT parentunit_data_parentunit_childunit_pk PRIMARY KEY (parentunit, childunit);
+
+
+--
+-- Name: phone_data phone_data_unitid_number_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.phone_data
+    ADD CONSTRAINT phone_data_unitid_number_pk UNIQUE (unitid, number);
+
+
+--
+-- Name: plan_data plan_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plan_data
+    ADD CONSTRAINT plan_data_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: plans plans_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plans
     ADD CONSTRAINT plans_pkey PRIMARY KEY (id);
 
 
 --
--- Name: reviews reviews_pkey; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: promo_data promo_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY reviews
+ALTER TABLE ONLY public.promo_data
+    ADD CONSTRAINT promo_data_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: reviewhelpful_data reviewhelpful_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reviewhelpful_data
+    ADD CONSTRAINT reviewhelpful_pkey PRIMARY KEY (reviewid, unitid);
+
+
+--
+-- Name: review_data reviews_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.review_data
     ADD CONSTRAINT reviews_pkey PRIMARY KEY (id);
 
 
 --
--- Name: usedcompanyplans usedcompanyplans_pkey; Type: CONSTRAINT; Schema: public; Owner: user
+-- Name: speaks speaks_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY usedcompanyplans
+ALTER TABLE ONLY public.speaks
+    ADD CONSTRAINT speaks_pkey PRIMARY KEY (userid, language);
+
+
+--
+-- Name: unit_data unit_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.unit_data
+    ADD CONSTRAINT unit_data_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: usedcompanyplans usedcompanyplans_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usedcompanyplans
     ADD CONSTRAINT usedcompanyplans_pkey PRIMARY KEY (userid, appid, planid, companyid, planbought, usedfrom);
 
 
 --
--- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: userbills userbills_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY users
+ALTER TABLE ONLY public.userbills
+    ADD CONSTRAINT userbills_pkey PRIMARY KEY (userid, date, billpos);
+
+
+--
+-- Name: userrights userrights_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.userrights
+    ADD CONSTRAINT userrights_pkey PRIMARY KEY (userid, companyid, departmentid, userright);
+
+
+--
+-- Name: users_data users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.users_data
     ADD CONSTRAINT users_email_key UNIQUE (email);
 
 
 --
--- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: users_data users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY users
+ALTER TABLE ONLY public.users_data
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
 
 --
--- Name: appimages appimages_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: website_data website_data_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY appimages
-    ADD CONSTRAINT appimages_appid_fkey FOREIGN KEY (appid) REFERENCES apps(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: appnotifications appnotifications_fromapp_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY appnotifications
-    ADD CONSTRAINT appnotifications_fromapp_fkey FOREIGN KEY (fromapp) REFERENCES apps(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE ONLY public.website_data
+    ADD CONSTRAINT website_data_pkey PRIMARY KEY (website);
 
 
 --
--- Name: appnotifications appnotifications_touser_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: users_view _RETURN; Type: RULE; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY appnotifications
-    ADD CONSTRAINT appnotifications_touser_fkey FOREIGN KEY (touser) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: apps apps_developerid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY apps
-    ADD CONSTRAINT apps_developerid_fkey FOREIGN KEY (developerid) REFERENCES developers(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: departments departments_companyid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY departments
-    ADD CONSTRAINT departments_companyid_fkey FOREIGN KEY (companyid) REFERENCES companies(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: employees employees_companyid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY employees
-    ADD CONSTRAINT employees_companyid_fkey FOREIGN KEY (companyid) REFERENCES companies(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: employees employees_departmentid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY employees
-    ADD CONSTRAINT employees_departmentid_fkey FOREIGN KEY (departmentid) REFERENCES departments(id) ON UPDATE CASCADE ON DELETE SET NULL;
+CREATE RULE "_RETURN" AS
+    ON SELECT TO public.users_view DO INSTEAD  SELECT unit_data.id,
+    human_data.firstname,
+    human_data.middlename,
+    human_data.lastname,
+    human_data.title,
+    human_data.sex,
+    human_data.birthday,
+    human_data.resetoption,
+    human_data.language,
+    unit_data.profilepicture,
+    unit_data.payingoptions,
+    unit_data.banned,
+    unit_data.deleted,
+    unit_data.suspended,
+    unit_data.riskvalue,
+    unit_data."position",
+    unit_data.createdate,
+    ( SELECT json_agg(json_build_object('email', email_data.email, 'verified', email_data.verified, 'autogenerated', email_data.autogenerated)) AS json_agg
+           FROM public.email_data
+          WHERE (email_data.unitid = unit_data.id)
+          GROUP BY unit_data.id) AS emails
+   FROM (public.human_data
+     JOIN public.unit_data ON ((human_data.unitid = unit_data.id)))
+  GROUP BY human_data.unitid, human_data.firstname, human_data.middlename, human_data.lastname, human_data.title, human_data.sex, human_data.birthday, human_data.resetoption, human_data.language, unit_data.id, unit_data.profilepicture, unit_data.banned, unit_data.deleted, unit_data.suspended, unit_data.riskvalue, unit_data."position";
 
 
 --
--- Name: employees employees_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: app_details _RETURN; Type: RULE; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY employees
-    ADD CONSTRAINT employees_userid_fkey FOREIGN KEY (userid) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: notifications notifications_fromuser_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY notifications
-    ADD CONSTRAINT notifications_fromuser_fkey FOREIGN KEY (fromuser) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: notifications notifications_touser_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY notifications
-    ADD CONSTRAINT notifications_touser_fkey FOREIGN KEY (touser) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: plans plans_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY plans
-    ADD CONSTRAINT plans_appid_fkey FOREIGN KEY (appid) REFERENCES apps(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: reviewhelpful reviewhelpful_reviewid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY reviewhelpful
-    ADD CONSTRAINT reviewhelpful_reviewid_fkey FOREIGN KEY (reviewid) REFERENCES reviews(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: reviewhelpful reviewhelpful_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY reviewhelpful
-    ADD CONSTRAINT reviewhelpful_userid_fkey FOREIGN KEY (userid) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: reviews reviews_answerto_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY reviews
-    ADD CONSTRAINT reviews_answerto_fkey FOREIGN KEY (answerto) REFERENCES reviews(id) ON UPDATE CASCADE ON DELETE SET NULL;
+CREATE RULE "_RETURN" AS
+    ON SELECT TO public.app_details DO INSTEAD  SELECT app_data.id,
+    app_data.name,
+    app_data.commission,
+    app_data.logo,
+    app_data.description,
+    app_data.teaserdescription,
+    app_data.website,
+    app_data.supportunit,
+    app_data.images,
+    app_data.features,
+    app_data.options,
+    app_data.disabled,
+    app_data.developer,
+    round(avg(reviews.stars), 2) AS avgstars,
+    min(plan_data.price) AS cheapestprice,
+    ( SELECT min(LEAST((d2.price - ((promos_running.discount ->> 'absoluteDiscount'::text))::numeric(10,2)), (d2.price * ((1)::numeric - ((promos_running.discount ->> 'relativeDiscount'::text))::numeric(11,10))))) AS min
+           FROM (public.promos_running
+             JOIN public.plans_running d2 ON ((promos_running.planid = d2.id)))) AS cheapestpromo,
+    ( SELECT website_data.website
+           FROM public.website_data
+          WHERE ((website_data.unitid = u.id) AND (website_data.tag = 'SUPPORT'::text))
+          ORDER BY website_data.priority
+         LIMIT 1) AS supportwebsite,
+    ( SELECT phone_data.number
+           FROM public.phone_data
+          WHERE ((phone_data.unitid = u.id) AND (phone_data.tag = 'SUPPORT'::text))
+          ORDER BY phone_data.priority
+         LIMIT 1) AS supportphone,
+    dev_dep.name AS developername,
+    ( SELECT website_data.website
+           FROM public.website_data
+          WHERE (website_data.unitid = dev.id)
+          ORDER BY website_data.priority
+         LIMIT 1) AS developerwebsite
+   FROM (((((public.app_data
+     LEFT JOIN public.reviews ON ((app_data.id = reviews.appid)))
+     LEFT JOIN public.plans_running plan_data ON ((app_data.id = plan_data.appid)))
+     LEFT JOIN public.unit_data u ON ((app_data.supportunit = u.id)))
+     LEFT JOIN public.unit_data dev ON ((app_data.developer = dev.id)))
+     LEFT JOIN public.department_data dev_dep ON ((dev.id = dev_dep.unitid)))
+  GROUP BY app_data.id, u.id, dev_dep.name, dev.id;
 
 
 --
--- Name: reviews reviews_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: review_view insertreview; Type: RULE; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY reviews
-    ADD CONSTRAINT reviews_appid_fkey FOREIGN KEY (appid) REFERENCES apps(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: reviews reviews_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY reviews
-    ADD CONSTRAINT reviews_userid_fkey FOREIGN KEY (userid) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+CREATE RULE insertreview AS
+    ON INSERT TO public.review_view DO INSTEAD  INSERT INTO public.review_data (unitid, appid, reviewtext, stars)
+  VALUES (new.unitid, new.appid, new.reviewtext, new.stars);
 
 
 --
--- Name: speaks speaks_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: right_data lowecase_right_on_insert_trigger; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY speaks
-    ADD CONSTRAINT speaks_userid_fkey FOREIGN KEY (userid) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: usedcompanyplans usedcompanyplans_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: user
---
-
-ALTER TABLE ONLY usedcompanyplans
-    ADD CONSTRAINT usedcompanyplans_appid_fkey FOREIGN KEY (appid, planid, companyid, planbought) REFERENCES boughtcompanyplans(companyid, appid, planid, datebought);
+CREATE TRIGGER lowecase_right_on_insert_trigger BEFORE INSERT OR UPDATE ON public.right_data FOR EACH ROW EXECUTE PROCEDURE public.lowecase_right_on_insert();
 
 
 --
--- Name: userbills userbills_planid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: address_data adress_data_unitid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY userbills
-    ADD CONSTRAINT userbills_planid_fkey FOREIGN KEY (planid) REFERENCES plans(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: userbills userbills_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY userbills
-    ADD CONSTRAINT userbills_userid_fkey FOREIGN KEY (userid) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE ONLY public.address_data
+    ADD CONSTRAINT adress_data_unitid_fkey FOREIGN KEY (unitid) REFERENCES public.unit_data(id);
 
 
 --
--- Name: userrights userrights_companyid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: app_data app_data_developer_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY userrights
-    ADD CONSTRAINT userrights_companyid_fkey FOREIGN KEY (companyid) REFERENCES companies(id) ON UPDATE CASCADE ON DELETE SET NULL;
-
-
---
--- Name: userrights userrights_departmentid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
---
-
-ALTER TABLE ONLY userrights
-    ADD CONSTRAINT userrights_departmentid_fkey FOREIGN KEY (departmentid) REFERENCES departments(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE ONLY public.app_data
+    ADD CONSTRAINT app_data_developer_fkey FOREIGN KEY (developer) REFERENCES public.unit_data(id);
 
 
 --
--- Name: userrights userrights_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: vipfy_test_user
+-- Name: app_data app_data_supportunit_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY userrights
-    ADD CONSTRAINT userrights_userid_fkey FOREIGN KEY (userid) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE ONLY public.app_data
+    ADD CONSTRAINT app_data_supportunit_fkey FOREIGN KEY (supportunit) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: appimages appimages_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.appimages
+    ADD CONSTRAINT appimages_appid_fkey FOREIGN KEY (appid) REFERENCES public.apps(id);
+
+
+--
+-- Name: appnotifications appnotifications_fromapp_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.appnotifications
+    ADD CONSTRAINT appnotifications_fromapp_fkey FOREIGN KEY (fromapp) REFERENCES public.apps(id);
+
+
+--
+-- Name: appnotifications appnotifications_touser_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.appnotifications
+    ADD CONSTRAINT appnotifications_touser_fkey FOREIGN KEY (touser) REFERENCES public.users_data(id);
+
+
+--
+-- Name: apps apps_developerid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.apps
+    ADD CONSTRAINT apps_developerid_fkey FOREIGN KEY (developerid) REFERENCES public.developers(id);
+
+
+--
+-- Name: bill_data bill_data_unitid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.bill_data
+    ADD CONSTRAINT bill_data_unitid_fkey FOREIGN KEY (unitid) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: billposition_data billposition_data_billid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.billposition_data
+    ADD CONSTRAINT billposition_data_billid_fkey FOREIGN KEY (billid) REFERENCES public.bill_data(id);
+
+
+--
+-- Name: billposition_data billposition_data_planid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.billposition_data
+    ADD CONSTRAINT billposition_data_planid_fkey FOREIGN KEY (planid) REFERENCES public.plan_data(id);
+
+
+--
+-- Name: billposition_data billposition_data_vendor_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.billposition_data
+    ADD CONSTRAINT billposition_data_vendor_fkey FOREIGN KEY (vendor) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: boughtcompanyplans boughtcompanyplans_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtcompanyplans
+    ADD CONSTRAINT boughtcompanyplans_appid_fkey FOREIGN KEY (appid) REFERENCES public.apps(id);
+
+
+--
+-- Name: boughtcompanyplans boughtcompanyplans_companyid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtcompanyplans
+    ADD CONSTRAINT boughtcompanyplans_companyid_fkey FOREIGN KEY (companyid) REFERENCES public.companies(id);
+
+
+--
+-- Name: boughtcompanyplans boughtcompanyplans_planid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtcompanyplans
+    ADD CONSTRAINT boughtcompanyplans_planid_fkey FOREIGN KEY (planid) REFERENCES public.plans(id);
+
+
+--
+-- Name: boughtplan_data boughtplan_data_boughtplan_data_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtplan_data
+    ADD CONSTRAINT boughtplan_data_boughtplan_data_id_fk FOREIGN KEY (predecessor) REFERENCES public.boughtplan_data(id);
+
+
+--
+-- Name: boughtplan_data boughtplan_data_buyer_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtplan_data
+    ADD CONSTRAINT boughtplan_data_buyer_fkey FOREIGN KEY (buyer) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: boughtplan_data boughtplan_data_payer_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtplan_data
+    ADD CONSTRAINT boughtplan_data_payer_fkey FOREIGN KEY (payer) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: boughtplan_data boughtplan_data_planid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtplan_data
+    ADD CONSTRAINT boughtplan_data_planid_fkey FOREIGN KEY (planid) REFERENCES public.plan_data(id);
+
+
+--
+-- Name: boughtsubplan_data boughtsubplan_data_boughtplan_data_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtsubplan_data
+    ADD CONSTRAINT boughtsubplan_data_boughtplan_data_id_fk FOREIGN KEY (boughtplanid) REFERENCES public.boughtplan_data(id);
+
+
+--
+-- Name: boughtsubplan_data boughtsubplan_data_plan_data_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtsubplan_data
+    ADD CONSTRAINT boughtsubplan_data_plan_data_id_fk FOREIGN KEY (subplanid) REFERENCES public.plan_data(id);
+
+
+--
+-- Name: boughtuserplans boughtuserplans_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtuserplans
+    ADD CONSTRAINT boughtuserplans_appid_fkey FOREIGN KEY (appid) REFERENCES public.apps(id);
+
+
+--
+-- Name: boughtuserplans boughtuserplans_planid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtuserplans
+    ADD CONSTRAINT boughtuserplans_planid_fkey FOREIGN KEY (planid) REFERENCES public.plans(id);
+
+
+--
+-- Name: boughtuserplans boughtuserplans_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.boughtuserplans
+    ADD CONSTRAINT boughtuserplans_userid_fkey FOREIGN KEY (userid) REFERENCES public.users_data(id);
+
+
+--
+-- Name: companybills companybills_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.companybills
+    ADD CONSTRAINT companybills_appid_fkey FOREIGN KEY (appid) REFERENCES public.apps(id);
+
+
+--
+-- Name: companybills companybills_companyid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.companybills
+    ADD CONSTRAINT companybills_companyid_fkey FOREIGN KEY (companyid) REFERENCES public.companies(id);
+
+
+--
+-- Name: department_data department_data_unitid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.department_data
+    ADD CONSTRAINT department_data_unitid_fkey FOREIGN KEY (unitid) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: departments departments_companyid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.departments
+    ADD CONSTRAINT departments_companyid_fkey FOREIGN KEY (companyid) REFERENCES public.companies(id);
+
+
+--
+-- Name: email_data email_data_unitid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.email_data
+    ADD CONSTRAINT email_data_unitid_fkey FOREIGN KEY (unitid) REFERENCES public.unit_data(id) ON DELETE CASCADE;
+
+
+--
+-- Name: employees employees_companyid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.employees
+    ADD CONSTRAINT employees_companyid_fkey FOREIGN KEY (companyid) REFERENCES public.companies(id);
+
+
+--
+-- Name: employees employees_departmentid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.employees
+    ADD CONSTRAINT employees_departmentid_fkey FOREIGN KEY (departmentid) REFERENCES public.departments(id);
+
+
+--
+-- Name: employees employees_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.employees
+    ADD CONSTRAINT employees_userid_fkey FOREIGN KEY (userid) REFERENCES public.users_data(id);
+
+
+--
+-- Name: human_data human_data_unit_data_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.human_data
+    ADD CONSTRAINT human_data_unit_data_id_fk FOREIGN KEY (unitid) REFERENCES public.unit_data(id) ON DELETE CASCADE;
+
+
+--
+-- Name: licence_data licence_data_boughtplanid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.licence_data
+    ADD CONSTRAINT licence_data_boughtplanid_fkey FOREIGN KEY (boughtplanid) REFERENCES public.boughtplan_data(id);
+
+
+--
+-- Name: licence_data licence_data_unitid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.licence_data
+    ADD CONSTRAINT licence_data_unitid_fkey FOREIGN KEY (unitid) REFERENCES public.unit_data(id) ON DELETE CASCADE;
+
+
+--
+-- Name: log_data log_data_unit_data_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.log_data
+    ADD CONSTRAINT log_data_unit_data_id_fk FOREIGN KEY ("user") REFERENCES public.unit_data(id);
+
+
+--
+-- Name: log_data log_data_unit_data_id_fk_2; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.log_data
+    ADD CONSTRAINT log_data_unit_data_id_fk_2 FOREIGN KEY (sudoer) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: message_data message_data_receiver_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.message_data
+    ADD CONSTRAINT message_data_receiver_fkey FOREIGN KEY (receiver) REFERENCES public.unit_data(id) ON DELETE CASCADE;
+
+
+--
+-- Name: message_data message_data_sender_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.message_data
+    ADD CONSTRAINT message_data_sender_fkey FOREIGN KEY (sender) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: notifications notifications_fromuser_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_fromuser_fkey FOREIGN KEY (fromuser) REFERENCES public.users_data(id);
+
+
+--
+-- Name: notifications notifications_touser_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.notifications
+    ADD CONSTRAINT notifications_touser_fkey FOREIGN KEY (touser) REFERENCES public.users_data(id);
+
+
+--
+-- Name: parentunit_data parentunit_data_unit_data_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.parentunit_data
+    ADD CONSTRAINT parentunit_data_unit_data_id_fk FOREIGN KEY (parentunit) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: parentunit_data parentunit_data_unit_data_id_fk_2; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.parentunit_data
+    ADD CONSTRAINT parentunit_data_unit_data_id_fk_2 FOREIGN KEY (childunit) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: phone_data phone_data_unitid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.phone_data
+    ADD CONSTRAINT phone_data_unitid_fkey FOREIGN KEY (unitid) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: plan_data plan_data_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plan_data
+    ADD CONSTRAINT plan_data_appid_fkey FOREIGN KEY (appid) REFERENCES public.app_data(id);
+
+
+--
+-- Name: plan_data plan_data_plan_data_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plan_data
+    ADD CONSTRAINT plan_data_plan_data_id_fk FOREIGN KEY (mainplan) REFERENCES public.plan_data(id);
+
+
+--
+-- Name: plan_data plan_data_plan_data_id_fk_2; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plan_data
+    ADD CONSTRAINT plan_data_plan_data_id_fk_2 FOREIGN KEY (gotoplan) REFERENCES public.plan_data(id);
+
+
+--
+-- Name: plans plans_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.plans
+    ADD CONSTRAINT plans_appid_fkey FOREIGN KEY (appid) REFERENCES public.apps(id);
+
+
+--
+-- Name: promo_data promo_data_planid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.promo_data
+    ADD CONSTRAINT promo_data_planid_fkey FOREIGN KEY (planid) REFERENCES public.plan_data(id);
+
+
+--
+-- Name: promo_data promo_data_sponsor_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.promo_data
+    ADD CONSTRAINT promo_data_sponsor_fkey FOREIGN KEY (sponsor) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: review_data review_data_human_data_unitid_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.review_data
+    ADD CONSTRAINT review_data_human_data_unitid_fk FOREIGN KEY (unitid) REFERENCES public.human_data(unitid);
+
+
+--
+-- Name: reviewhelpful_data reviewhelpful_reviewid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reviewhelpful_data
+    ADD CONSTRAINT reviewhelpful_reviewid_fkey FOREIGN KEY (reviewid) REFERENCES public.review_data(id);
+
+
+--
+-- Name: reviewhelpful reviewhelpful_reviewid_fkey1; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reviewhelpful
+    ADD CONSTRAINT reviewhelpful_reviewid_fkey1 FOREIGN KEY (reviewid) REFERENCES public.review_data(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: reviewhelpful_data reviewhelpful_unit_data_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reviewhelpful_data
+    ADD CONSTRAINT reviewhelpful_unit_data_id_fk FOREIGN KEY (unitid) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: reviewhelpful reviewhelpful_unitid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.reviewhelpful
+    ADD CONSTRAINT reviewhelpful_unitid_fkey FOREIGN KEY (unitid) REFERENCES public.unit_data(id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- Name: review_data reviews_answerto_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.review_data
+    ADD CONSTRAINT reviews_answerto_fkey FOREIGN KEY (answerto) REFERENCES public.review_data(id);
+
+
+--
+-- Name: review_data reviews_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.review_data
+    ADD CONSTRAINT reviews_appid_fkey FOREIGN KEY (appid) REFERENCES public.app_data(id);
+
+
+--
+-- Name: right_data right_data_unit_data_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.right_data
+    ADD CONSTRAINT right_data_unit_data_id_fk FOREIGN KEY (holder) REFERENCES public.unit_data(id) ON DELETE CASCADE;
+
+
+--
+-- Name: right_data right_data_unit_data_id_fk_2; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.right_data
+    ADD CONSTRAINT right_data_unit_data_id_fk_2 FOREIGN KEY (forunit) REFERENCES public.unit_data(id) ON DELETE CASCADE;
+
+
+--
+-- Name: speaks speaks_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.speaks
+    ADD CONSTRAINT speaks_userid_fkey FOREIGN KEY (userid) REFERENCES public.users_data(id);
+
+
+--
+-- Name: usedcompanyplans usedcompanyplans_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usedcompanyplans
+    ADD CONSTRAINT usedcompanyplans_appid_fkey FOREIGN KEY (appid, planid, companyid, planbought) REFERENCES public.boughtcompanyplans(companyid, appid, planid, datebought);
+
+
+--
+-- Name: usedcompanyplans usedcompanyplans_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usedcompanyplans
+    ADD CONSTRAINT usedcompanyplans_userid_fkey FOREIGN KEY (userid) REFERENCES public.users_data(id);
+
+
+--
+-- Name: userbills userbills_appid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.userbills
+    ADD CONSTRAINT userbills_appid_fkey FOREIGN KEY (appid) REFERENCES public.apps(id);
+
+
+--
+-- Name: userbills userbills_planid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.userbills
+    ADD CONSTRAINT userbills_planid_fkey FOREIGN KEY (planid) REFERENCES public.plans(id);
+
+
+--
+-- Name: userbills userbills_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.userbills
+    ADD CONSTRAINT userbills_userid_fkey FOREIGN KEY (userid) REFERENCES public.users_data(id);
+
+
+--
+-- Name: userrights userrights_companyid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.userrights
+    ADD CONSTRAINT userrights_companyid_fkey FOREIGN KEY (companyid) REFERENCES public.companies(id);
+
+
+--
+-- Name: userrights userrights_departmentid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.userrights
+    ADD CONSTRAINT userrights_departmentid_fkey FOREIGN KEY (departmentid) REFERENCES public.departments(id);
+
+
+--
+-- Name: userrights userrights_userid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.userrights
+    ADD CONSTRAINT userrights_userid_fkey FOREIGN KEY (userid) REFERENCES public.users_data(id);
+
+
+--
+-- Name: website_data website_data_unitid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.website_data
+    ADD CONSTRAINT website_data_unitid_fkey FOREIGN KEY (unitid) REFERENCES public.unit_data(id);
+
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: cloudsqlsuperuser
+--
+
+REVOKE ALL ON SCHEMA public FROM cloudsqladmin;
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+GRANT ALL ON SCHEMA public TO cloudsqlsuperuser;
+GRANT ALL ON SCHEMA public TO PUBLIC;
 
 
 --

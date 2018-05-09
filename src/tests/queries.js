@@ -64,27 +64,20 @@ export const allApps = `
     allApps {
       id
       name
-      developerid
+      commission
+      disabled
       description
-      applogo
-    }
-  }
-`;
-
-export const allAppImages = `
-  query {
-    allAppImages {
-      id
-      link
-    }
-  }
-`;
-
-export const fetchAppImages = `
-  query FetchAppImages($appid: Int!){
-    fetchAppImages(appid: $appid) {
-      id
-      link
+      teaserdescription
+      website
+      features
+      options
+      developer {
+        id
+      }
+      supportunit {
+        id
+      }
+      images
     }
   }
 `;
@@ -94,18 +87,43 @@ export const fetchApp = `
     fetchApp(name: $name) {
       id
       name
-      developerid
+      commission
+      disabled
       description
-      applogo
+      teaserdescription
+      website
+      features
+      options
+      developer {
+        id
+      }
+      supportunit {
+        id
+      }
+      images
     }
   }
 `;
 
-export const fetchDeveloper = `
-  query FetchDeveloper($developerid: Int!) {
-    fetchDeveloper(id: $developerid) {
+export const fetchAppById = `
+  query FetchAppById($id: Int!){
+    fetchAppById(id: $id) {
+      id
       name
+      commission
+      disabled
+      description
+      teaserdescription
       website
+      features
+      options
+      developer {
+        id
+      }
+      supportunit {
+        id
+      }
+      images
     }
   }
 `;

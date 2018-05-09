@@ -12,10 +12,11 @@ export default {
   fetchApp: (parent, { name }, { models }) => models.AppDetails.findOne({ where: { name } }),
   fetchAppById: (parent, { id }, { models }) => models.AppDetails.findById(id),
 
+  // Not needed till now, maybe delete
   fetchUserApps: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
       const { user: { unitid } } = decode(token);
-      const boughtPlans = await models.BoughtPlan.findAll({ where: { buyfor: unitid } });
+      const boughtPlans = await models.BoughtPlan.findAll({ where: { payer: unitid } });
 
       return boughtPlans;
     } catch ({ message }) {

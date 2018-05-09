@@ -2,6 +2,8 @@ import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 import { createProduct, createPlan } from "../../services/stripe";
 
+/* eslint array-callback-return: "off" */
+
 export default {
   createPlan: async (parent, { plan }, { models }) => {
     try {
@@ -70,6 +72,37 @@ export default {
       await models.Plan.update({ enddate }, { where: { id } });
 
       return { ok: true };
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
+
+  fetchLicences: requiresAuth.createResolver(async (parent, { appid }, { models, token }) => {
+    const { user: { unitid } } = decode(token);
+
+    try {
+      const plans = await models.Plan.findAll({
+        attributes: ["id"],
+        where: { appid }
+      });
+      const planIds = plans.map(plan => plan.get("id"));
+
+      const boughtPlans = await models.BoughtPlan.findAll({
+        where: { buyer: unitid, planid: { [models.sequelize.Op.or]: [...planIds] } }
+      });
+      const boughtPlanIds = boughtPlans.map(pb => pb.get("id"));
+
+      const licences = await models.Licence.findAll({
+        where: { unitid, boughtplanid: { [models.sequelize.Op.or]: [...boughtPlanIds] } }
+      });
+
+      await licences.map(licence => {
+        if (licence.disabled) {
+          licence.set({ agreed: false, key: null });
+        }
+      });
+
+      return licences;
     } catch (err) {
       throw new Error(err.message);
     }

@@ -1,20 +1,16 @@
-import { testDefault } from "./helper";
-import { dummyApp, dummyAppImage, dummyDeveloper } from "./dummies";
-import { allApps, allAppImages, fetchApp, fetchAppImages, fetchDeveloper } from "./queries";
+import { testDefault, testAuthentication } from "./helper";
+import { dummyApp, dummyNewApp, dummyResponse } from "./dummies";
+import { allApps, fetchApp, fetchAppById } from "./queries";
+import { createApp, updateApp, toggleAppStatus } from "./mutations";
 
-const tests = [
+/* eslint array-callback-return: "off" */
+
+const testQueries = [
   {
     description: "allApps should fetch all available Apps",
     operation: allApps,
     name: "allApps",
     dummy: dummyApp,
-    arrayTest: true
-  },
-  {
-    description: "allAppImages should return all Links to Images",
-    operation: allAppImages,
-    name: "allAppImages",
-    dummy: dummyAppImage,
     arrayTest: true
   },
   {
@@ -27,24 +23,57 @@ const tests = [
     }
   },
   {
-    description: "fetchAppImages should return all Links to Images associated with an App",
-    operation: fetchAppImages,
-    name: "fetchAppImages",
-    dummy: dummyAppImage,
+    description: "fetchAppById should fetch an App when given an id",
+    operation: fetchAppById,
+    name: "fetchAppById",
+    dummy: dummyApp,
     args: {
-      appid: 2
-    },
-    arrayTest: true
-  },
-  {
-    description: "fetchDeveloper should return the developer with the given id",
-    operation: fetchDeveloper,
-    name: "fetchDeveloper",
-    args: {
-      developerid: 1
-    },
-    dummy: dummyDeveloper
+      id: 2
+    }
   }
 ];
 
-describe("Query", () => tests.map(test => testDefault(test)));
+const testMutations = [
+  {
+    description: "createApp should create a new app",
+    operation: createApp,
+    name: "createApp",
+    dummy: dummyResponse,
+    args: {
+      app: dummyNewApp
+    }
+  },
+  {
+    description: "updateApp should update the props of an app",
+    operation: updateApp,
+    name: "updateApp",
+    dummy: dummyResponse,
+    args: {
+      id: 6,
+      app: {
+        description: "Changed to test"
+      }
+    }
+  },
+  {
+    description: "toggleAppStatus should de/activate an app",
+    operation: toggleAppStatus,
+    name: "toggleAppStatus",
+    dummy: dummyResponse,
+    args: {
+      id: 6
+    }
+  }
+];
+
+describe("Query", () => testQueries.map(test => testDefault(test)));
+describe("Mutations", () => {
+  const unnecessaryTests = [];
+  testMutations.map(test => {
+    testDefault(test);
+    if (!unnecessaryTests.includes(test.name)) {
+      testAuthentication(test);
+    }
+    unnecessaryTests.push(test.name);
+  });
+});
