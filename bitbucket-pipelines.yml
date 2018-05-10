@@ -61,7 +61,7 @@ pipelines:
           image: keymetrics/pm2
           deployment: test
           script:
-            - pm2 deploy ecosystem.config.js development update
+            - pm2 deploy ecosystem.config.js dev update
 definitions: 
   services: 
     postgres: 
