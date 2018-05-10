@@ -22,7 +22,7 @@ pipelines:
           
           #run tests
           - npm run test app.spec.js
-          - npm run test company.spec.js
+          - npm run test auth.spec.js
           - npm run test message.spec.js
           - npm run test review.spec.js
           - npm run test user.spec.js
@@ -50,7 +50,7 @@ pipelines:
             
             #run tests
             - npm run test app.spec.js
-            - npm run test company.spec.js
+            - npm run test auth.spec.js
             - npm run test message.spec.js
             - npm run test review.spec.js
             - npm run test user.spec.js
