@@ -12,6 +12,16 @@ export const types = `
     countcomment: Int
   }
 
+  type ReviewData {
+    id: Int!
+    reviewer: User!
+    appid: App!
+    reviewdate: String!
+    stars: Int
+    reviewtext: String
+    answerto: Review
+  }
+
   type ReviewHelpful {
     reviewid: Review!
     reviewer: User!
@@ -23,7 +33,7 @@ export const types = `
 
 export const queries = `
   allReviews: [Review]!
-  
+
   # Finds all Reviews belonging to an app
   fetchReviews(appid: Int!): [Review!]
 `;
@@ -33,5 +43,5 @@ export const mutations = `
   writeReview(appid: Int!, stars: Int!, text: String): Response!
 
 # Rate a review
-  rateReview(reviewid: Int!, userid: Int!, balance: Int!): ReviewResponse!
+  rateReview(reviewid: Int!, balance: Int!): ReviewResponse!
 `;

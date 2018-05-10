@@ -11,30 +11,39 @@ import { SECRET, SECRETTWO } from "../login-data";
 
 const app = express();
 
-// Objects to inject into context to test whether an user is logged-in
-export const user = {
-  id: 7,
-  email: expect.any(String)
-};
-
 export const token =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVuaXRpZCI6IjcyIn0sImlhdCI6MTUyNTk1MzU1NCwiZXhwIjoxNTI1OTk2NzU0fQ.gU62PA7OhJfh3TTzxpmoVo9DMrRFROnHrDCQQb_MlqQ";
+
+export const adminToken =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVuaXRpZCI6IjcifSwiaWF0IjoxNTI1Nzg5Mjk5LCJleHAiOjE1MjU4MzI0OTl9.ZV4iygY3_IR4ziBHI91bNHP1sWkFSCIhRkQkN14NaYk";
 
+export const context = {
+  SECRET,
+  SECRETTWO,
+  token,
+  models
+};
+
 // Helper function to test Queries
-export const executeQuery = (query, args = {}, context = {}) =>
-  graphql(schema, query, {}, context, args);
+export const executeQuery = (query, args = {}, ct = {}) => graphql(schema, query, {}, ct, args);
 
 // A function to test standard behaviour from queries
-export function testDefault({ description, operation, dummy, name, arrayTest, args, errorTest }) {
+export function testDefault({
+  description,
+  operation,
+  dummy,
+  name,
+  args,
+  arrayTest,
+  errorTest,
+  adminTest
+}) {
   return test(description, async () => {
+    if (adminTest == true) {
+      context.token = adminToken;
+    }
     expect.assertions(2);
-    const result = await executeQuery(operation, args, {
-      models,
-      user,
-      token,
-      SECRET,
-      SECRETTWO
-    });
+    const result = await executeQuery(operation, args, context);
     const { data, errors } = result;
 
     if (errorTest) {
@@ -51,10 +60,13 @@ export function testDefault({ description, operation, dummy, name, arrayTest, ar
   });
 }
 
-export function testAuthentication({ operation, name, args }) {
+export function testAuthentication({ operation, name, args, adminTest }) {
   return test(`${name} should throw an error if the user is not authenticated`, async () => {
     expect.assertions(2);
-    const result = await executeQuery(operation, args, { models });
+    const result = await executeQuery(operation, args, {
+      models,
+      token: adminTest ? token : null
+    });
     const { data, errors } = result;
 
     await expect(errors).toEqual(expect.anything());

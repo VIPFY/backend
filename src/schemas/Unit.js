@@ -69,6 +69,7 @@ export const types = `
     suspended: Boolean!
     profilepicture: String
     employees: Int
+    payingoptions: JSON
   }
 
   type DepartmentData {

@@ -42,33 +42,33 @@ export default {
     }
   },
 
-  fetchPlan: (parent, { planid }, { models }) => models.Plan.findById(planid),
+  fetchPlan: (parent, { planid }, { models }) => models.Plan.findById(planid)
 
-  fetchPayers: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    const { user: { unitid } } = decode(token);
-    const payers = [];
-    const directParent = await models.ParentUnit.findOne({
-      attributes: ["parentunit"],
-      where: { childunit: unitid }
-    });
-    const findRoot = async unit => {
-      if (unit == null) {
-        return;
-      }
-      unit = null;
-      unit = await models.ParentUnit.findOne({
-        attributes: ["parentunit"],
-        where: { childunit: unitid }
-      });
-
-      if (unit != null) {
-        payers.push(unit);
-      }
-      findRoot(unit);
-    };
-
-    findRoot(directParent);
-    console.log(payers);
-    return payers;
-  })
+  // fetchPayers: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+  //   const { user: { unitid } } = decode(token);
+  //   const payers = [];
+  //   const directParent = await models.ParentUnit.findOne({
+  //     attributes: ["parentunit"],
+  //     where: { childunit: unitid }
+  //   });
+  //   const findRoot = async unit => {
+  //     if (unit == null) {
+  //       return;
+  //     }
+  //     unit = null;
+  //     unit = await models.ParentUnit.findOne({
+  //       attributes: ["parentunit"],
+  //       where: { childunit: unitid }
+  //     });
+  //
+  //     if (unit != null) {
+  //       payers.push(unit);
+  //     }
+  //     findRoot(unit);
+  //   };
+  //
+  //   findRoot(directParent);
+  //   console.log(payers);
+  //   return payers;
+  // })
 };

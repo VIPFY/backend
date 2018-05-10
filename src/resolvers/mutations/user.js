@@ -75,8 +75,8 @@ export default {
   }),
 
   deleteUser: requiresAuth.createResolver(async (parent, { unitid }, { models, token }) => {
-    const alreadyDeleted = await models.Unit.findById(unitid);
-    if (alreadyDeleted.deleted) throw new Error("User already deleted!");
+    const already = await models.Unit.findById(unitid);
+    if (already.deleted) throw new Error("User already deleted!");
 
     return models.sequelize.transaction(async ta => {
       try {

@@ -4,6 +4,7 @@ import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
 import billQueries from "./queries/bill";
 import contactQueries from "./queries/contact";
+import authQueries from "./queries/auth";
 
 import appMutations from "./mutations/app";
 import messageMutations from "./mutations/message";
@@ -21,6 +22,7 @@ import Subscription from "./subscriptions";
 import { find, findDepartment, implementDate, implementJSON } from "./CustomResolvers";
 
 const Query = Object.assign(
+  authQueries,
   userQueries,
   contactQueries,
   appQueries,

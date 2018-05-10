@@ -129,7 +129,6 @@ export const queries = `
   boughtPlans(unitid: Int!): [BoughtPlan]!
   fetchPlan(planid: Int!): Plan!
   fetchPlans(appid: Int!): [Plan]!
-  fetchPayers: [Unit]!
 `;
 
 export const mutations = `

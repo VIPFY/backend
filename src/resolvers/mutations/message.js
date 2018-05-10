@@ -6,21 +6,22 @@ import { NEW_MESSAGE, pubsub } from "../../constants";
 export default {
   setDeleteStatus: requiresAuth.createResolver(async (parent, { id, type }, { models }) => {
     const messageExists = await models.MessageData.findById(id);
-    if (messageExists) {
-      try {
-        await models.MessageData.update({ [type]: true }, { where: { id } });
-        return {
-          ok: true
-        };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    } else throw new Error("Message doesn't exist!");
+    if (!messageExists) throw new Error("Message doesn't exist!");
+
+    try {
+      await models.MessageData.update({ [type]: true }, { where: { id } });
+      return {
+        ok: true
+      };
+    } catch (err) {
+      throw new Error(err.message);
+    }
   }),
 
   setReadtime: requiresAuth.createResolver(async (parent, { id }, { models }) => {
     try {
-      const { message: { readtime } } = await models.MessageData.findById(id);
+      const message = await models.MessageData.findById(id);
+      const { readtime } = message;
 
       if (!readtime) {
         const now = Date.now();

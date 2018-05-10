@@ -56,6 +56,7 @@ const db = {
   Promo: sequelize.import("./promo"),
   PromosRunning: sequelize.import("./promosRunning"),
   Review: sequelize.import("./review"),
+  ReviewData: sequelize.import("./reviewData"),
   ReviewHelpful: sequelize.import("./reviewHelpful"),
   Right: sequelize.import("./right"),
   Unit: sequelize.import("./unit"),

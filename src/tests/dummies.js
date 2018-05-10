@@ -2,7 +2,7 @@
 import { random } from "lodash";
 import { lorem } from "faker";
 
-export const dummyEmail = "Lauryn_Reilly@gmail.com";
+export const dummyEmail = "pc@vipfy.com";
 
 export const dummyReview = {
   stars: random(1, 5),
@@ -18,7 +18,7 @@ export const dummyReviewFail = {
 
 export const dummyReviewFail2 = {
   stars: random(1, 5),
-  appid: 662,
+  appid: 6626654,
   text: lorem.sentence()
 };
 
@@ -28,8 +28,9 @@ export const dummyRateReview = {
 };
 
 export const dummyUser = {
-  email: expect.any(String),
-  id: expect.any(Number)
+  id: expect.any(Number),
+  firstname: expect.any(String),
+  lastname: expect.any(String)
 };
 
 export const dummyApp = {
@@ -55,7 +56,9 @@ export const dummyApp = {
 
 export const dummyNewApp = {
   name: "Vipfy Test App",
-  commission: "22",
+  commission: {
+    text: "We get thousand dollars"
+  },
   teaserdescription: "This is a test description",
   description: "This is a test.",
   developer: "21",
@@ -78,40 +81,56 @@ export const dummyCompany = {
   name: expect.any(String)
 };
 
-export const dummyMessage = {
+export const dummyUnreadMessage = {
   id: expect.any(Number),
-  type: expect.any(Number),
+  sendtime: expect.any(Number),
+  archivetimesender: null,
+  messagetext: expect.any(String),
+  readtime: null,
+  archivetimereceiver: null,
+  sendername: expect.any(String),
+  receiver: {
+    id: expect.any(Number)
+  },
+  senderpicture: null
+};
+
+export const dummyReadMessage = {
+  id: expect.any(Number),
+  sendtime: expect.any(Number),
+  archivetimesender: null,
+  messagetext: expect.any(String),
+  readtime: expect.any(Number),
+  archivetimereceiver: null,
+  sendername: expect.any(String),
+  receiver: {
+    id: expect.any(Number)
+  },
+  senderpicture: null
+};
+
+export const dummySetReadtimeResponse = {
+  ok: true,
+  id: expect.any(Number),
   message: expect.any(String)
 };
 
-export const dummyResponse = {
-  ok: true
-};
-
-export const dummyReviewSimpleResponse = {
-  appid: expect.any(Number)
-};
-
-export const dummyWriteReviewResponse = {
-  ok: true,
-  id: expect.any(Number)
-};
+export const dummyResponse = { ok: true };
 
 export const dummyReviewResponse = {
+  id: expect.any(Number),
+  appid: { id: expect.any(Number) },
   stars: expect.any(Number),
   reviewtext: expect.any(String),
   reviewdate: expect.any(String),
-  user: {
-    firstname: expect.any(String),
-    middlename: expect.any(String),
-    lastname: expect.any(String)
-  }
+  counthelpful: expect.any(Number),
+  countunhelpful: expect.any(Number),
+  countcomment: expect.any(Number)
 };
 
 export const dummyRateReviewResponse = {
   ok: true,
-  balance: expect.any(Number),
-  id: null
+  balance: expect.any(Number)
 };
 
 export const dummyMessageResponseSuccess = {

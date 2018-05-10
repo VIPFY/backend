@@ -1,9 +1,17 @@
 export const fetchMessages = `
-  query FetchMessages{
-    fetchMessages {
+  query FetchMessages($read: Boolean) {
+    fetchMessages(read: $read) {
       id
-      type
-      message
+      sendtime
+      archivetimesender
+      messagetext
+      readtime
+      archivetimereceiver
+      sendername
+      receiver {
+        id
+      }
+      senderpicture
     }
   }
 `;
@@ -12,8 +20,8 @@ export const allUsers = `
   query {
     allUsers {
       id
-      email
-      userstatus
+      firstname
+      lastname
     }
   }
 `;
@@ -22,7 +30,16 @@ export const me = `
   query {
     me {
       id
-      email
+      admin
+    }
+  }
+`;
+
+export const admin = `
+  query {
+    admin {
+      id
+      admin
     }
   }
 `;
@@ -37,24 +54,35 @@ export const allCompanies = `
 `;
 
 export const allReviews = `
-  query {
-    allReviews {
-      appid
+{
+  allReviews {
+    id
+    appid {
+      id
     }
+    reviewdate
+    stars
+    reviewtext
+    counthelpful
+    countunhelpful
+    countcomment
   }
+}
 `;
 
-export const fetchReview = `
-  query FetchReview($appid: Int!) {
-    fetchReview(appid: $appid) {
-      stars
-      reviewtext
-      reviewdate
-      user {
-        firstname
-        lastname
-        middlename
+export const fetchReviews = `
+  query FetchReviews($appid: Int!) {
+    fetchReviews(appid: $appid) {
+      id
+      appid {
+        id
       }
+      stars
+      reviewdate
+      reviewtext
+      counthelpful
+      countunhelpful
+      countcomment
     }
   }
 `;

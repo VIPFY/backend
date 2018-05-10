@@ -1,11 +1,14 @@
 import { lorem } from "faker";
-import { random } from "lodash";
-import models from "../models/index";
-import { executeQuery, testDefault, testAuthentication, token } from "./helper";
-import { dummyMessage, dummyResponse, dummyMessageResponseSuccess } from "./dummies";
+import { executeQuery, testDefault, testAuthentication, context } from "./helper";
+import {
+  dummyReadMessage,
+  dummyUnreadMessage,
+  dummySetReadtimeResponse,
+  dummyResponse,
+  dummyMessageResponseSuccess
+} from "./dummies";
 import { fetchMessages } from "./queries";
 import { sendMessage, setDeleteStatus, setReadtime } from "./mutations";
-import { SECRET, SECRETTWO } from "../login-data";
 
 /* eslint-disable array-callback-return */
 
@@ -14,7 +17,17 @@ const testQueries = [
     description: "fetchMessages should fetch all messages for an user",
     operation: fetchMessages,
     name: "fetchMessages",
-    dummy: dummyMessage,
+    dummy: dummyUnreadMessage,
+    arrayTest: true
+  },
+  {
+    description: "fetchMessages should fetch all read messages for an user",
+    operation: fetchMessages,
+    name: "fetchMessages",
+    dummy: dummyReadMessage,
+    args: {
+      read: true
+    },
     arrayTest: true
   }
 ];
@@ -26,7 +39,7 @@ const testMutations = [
     name: "sendMessage",
     dummy: dummyMessageResponseSuccess,
     args: {
-      touser: random(31, 70),
+      touser: 7,
       message: lorem.sentence()
     }
   },
@@ -35,7 +48,7 @@ const testMutations = [
     operation: sendMessage,
     name: "sendMessage",
     args: {
-      touser: 67,
+      touser: 72,
       message: lorem.sentence()
     },
     errorTest: true
@@ -55,7 +68,7 @@ const testMutations = [
     operation: sendMessage,
     name: "sendMessage",
     args: {
-      touser: random(0, 66),
+      touser: 22,
       message: ""
     },
     errorTest: true
@@ -66,33 +79,29 @@ const testMutations = [
     name: "setDeleteStatus",
     args: {
       id: 99999,
-      model: "Notification",
-      type: "deleted"
+      type: "archivetimesender"
     },
     errorTest: true
+  },
+  {
+    description: "setReadtime should change the readtime prop",
+    operation: setReadtime,
+    dummy: dummySetReadtimeResponse,
+    name: "setReadtime",
+    args: {
+      id: 16
+    }
   },
   {
     description: "setReadtime should throw an error, if the message was already read",
     operation: setReadtime,
     name: "setReadtime",
     args: {
-      id: 6,
-      model: "Notification"
+      id: 7
     },
     errorTest: true
   }
 ];
-
-describe("Query", () => {
-  const unnecessaryTests = [];
-  testQueries.map(test => {
-    testDefault(test);
-    if (!unnecessaryTests.includes(test.name)) {
-      testAuthentication(test);
-    }
-    unnecessaryTests.push(test.name);
-  });
-});
 
 describe("Mutation", () => {
   const unnecessaryTests = [];
@@ -105,11 +114,21 @@ describe("Mutation", () => {
   });
 });
 
+describe("Query", () => {
+  const unnecessaryTests = [];
+  testQueries.map(test => {
+    testDefault(test);
+    if (!unnecessaryTests.includes(test.name)) {
+      testAuthentication(test);
+    }
+    unnecessaryTests.push(test.name);
+  });
+});
+
 describe("This workflow", () => {
   test("should send a message from user to user, read it and delete it.", async () => {
-    const receiver = random(1, 65);
+    const receiver = 22;
     const message = lorem.sentence();
-    const model = "Notification";
 
     const sendTheMessage = await executeQuery(
       sendMessage,
@@ -117,7 +136,7 @@ describe("This workflow", () => {
         touser: receiver,
         message
       },
-      { models, SECRET, SECRETTWO, token }
+      context
     );
 
     await expect(sendTheMessage.errors).toBeUndefined();
@@ -125,11 +144,8 @@ describe("This workflow", () => {
 
     const readTheMessage = await executeQuery(
       setReadtime,
-      {
-        id: sendTheMessage.data.sendMessage.id,
-        model
-      },
-      { models, SECRET, SECRETTWO, token }
+      { id: sendTheMessage.data.sendMessage.id },
+      context
     );
 
     await expect(readTheMessage.errors).toBeUndefined();
@@ -139,10 +155,9 @@ describe("This workflow", () => {
       setDeleteStatus,
       {
         id: sendTheMessage.data.sendMessage.id,
-        model,
-        type: "deleted"
+        type: "archivetimesender"
       },
-      { models, SECRET, SECRETTWO, token }
+      context
     );
 
     await expect(deleteTheMessage.errors).toBeUndefined();

@@ -9,16 +9,16 @@ export const sendMessage = `
 `;
 
 export const setDeleteStatus = `
-  mutation SetDeleteStatus($id: Int!, $model: MESSAGE_MODEL!, $type: MESSAGE_COLUMN!) {
-    setDeleteStatus(id: $id, model: $model, type: $type) {
+  mutation SetDeleteStatus($id: Int!, $type: MESSAGE_COLUMN!) {
+    setDeleteStatus(id: $id, type: $type) {
       ok
     }
   }
 `;
 
 export const setReadtime = `
-  mutation SetReadtime($id: Int!, $model: MESSAGE_MODEL!) {
-    setReadtime(id: $id, model: $model) {
+  mutation SetReadtime($id: Int!) {
+    setReadtime(id: $id) {
       ok
       id
       message
@@ -72,7 +72,6 @@ export const writeReview = `
   mutation WriteReview($appid: Int!, $stars: Int!, $text: String) {
     writeReview(appid: $appid, stars: $stars, text: $text) {
       ok
-      id
     }
   }
 `;
@@ -82,7 +81,6 @@ export const rateReview = `
     rateReview(reviewid: $reviewid, balance: $balance) {
       ok
       balance
-      id
     }
   }
 `;
@@ -115,6 +113,38 @@ export const updateApp = `
 export const toggleAppStatus = `
   mutation ToggleAppStatus($id: Int!) {
     toggleAppStatus(id: $id) {
+      ok
+    }
+  }
+`;
+
+export const deleteApp = `
+  mutation DeleteApp($id: Int!) {
+    deleteApp(id: $id) {
+      ok
+    }
+  }
+`;
+
+export const freezeAccount = `
+  mutation FreezeAccount($unitid: Int!) {
+    freezeAccount(unitid: $unitid) {
+      ok
+    }
+  }
+`;
+
+export const adminUpdateUser = `
+  mutation AdminUpdateUser($userData: UserInput!, $unitid: Int!) {
+    adminUpdateUser(user: $userData, unitid: $unitid) {
+      ok
+    }
+  }
+`;
+
+export const deleteUser = `
+  mutation DeleteUser($unitid: Int!) {
+    deleteUser(unitid: $unitid) {
       ok
     }
   }

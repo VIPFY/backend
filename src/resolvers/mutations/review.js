@@ -17,16 +17,14 @@ export default {
         throw new Error("Rating must be between 1 and 5 stars!");
       } else {
         try {
-          await models.Review.create({
+          await models.ReviewData.create({
             stars,
             reviewtext: text,
             unitid,
             appid
           });
 
-          return {
-            ok: true
-          };
+          return { ok: true };
         } catch (err) {
           throw new Error(err.message);
         }
@@ -40,12 +38,7 @@ export default {
 
       const p1 = models.User.findById(unitid);
       const p2 = models.Review.findById(reviewid);
-      const p3 = models.ReviewHelpful.findOne({
-        where: {
-          reviewid,
-          unitid
-        }
-      });
+      const p3 = models.ReviewHelpful.findOne({ where: { reviewid, unitid } });
       const [commenter, review, changeRating] = await Promise.all([p1, p2, p3]);
 
       if (!review) {

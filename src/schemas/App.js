@@ -2,7 +2,7 @@ export const types = `
   type App {
     id: Int!
     name: String!
-    commission: String
+    commission: JSON
     description: String
     teaserdescription: String
     website: String
