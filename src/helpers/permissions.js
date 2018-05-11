@@ -20,17 +20,15 @@ const createResolver = resolver => {
 
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(async (parent, args, { token }) => {
-  if (!token) {
-    throw new Error("Not authenticated!");
-  }
+  if (!token) throw new Error("Not authenticated!");
 });
 
 // These functions can be nested. Here it checks first whether an user
 // is authenticated and then if he has admin status.
 export const requiresAdmin = requiresAuth.createResolver(
   async (parent, args, { models, token }) => {
-    const { user: { unitid } } = await decode(token);
     try {
+      const { user: { unitid } } = await decode(token);
       const rights = await models.Right.findOne({ where: { holder: unitid } });
       if (!rights.type || rights.type.toLowerCase() != "admin") {
         throw new Error("You're not an Admin!");

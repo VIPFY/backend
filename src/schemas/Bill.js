@@ -131,6 +131,11 @@ export const queries = `
   fetchPlans(appid: Int!): [Plan]!
 
   fetchBills: [Bill]!
+
+  # This mutation checks whether an user has the right to log into an app
+  fetchLicences: [Licence]!
+  # This mutation checks whether an user has the right to log into an app by providing an app id
+  fetchLicencesByApp(appid: Int!): [Licence]!
 `;
 
 export const mutations = `
@@ -142,7 +147,4 @@ export const mutations = `
   buyPlan(planid: Int!, buyFor: Int): Response!
 
   endPlan(id: Int!, enddate: String!): Response!
-
-  # This mutation checks whether an user has the right to log into an app
-  fetchLicences(appid: Int!): [Licence]!
 `;
