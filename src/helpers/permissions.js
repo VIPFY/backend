@@ -19,8 +19,22 @@ const createResolver = resolver => {
 };
 
 // Check whether the user is authenticated
-export const requiresAuth = createResolver(async (parent, args, { token }) => {
+export const requiresAuth = createResolver(async (parent, args, { models, token }) => {
   if (!token) throw new Error("Not authenticated!");
+
+  try {
+    const { user: { company, unitid } } = decode(token);
+
+    const userExists = await models.Unit.findById(unitid);
+    if (!userExists) throw new Error("Couldn't find user in database!");
+
+    if (company) {
+      const companyExists = await models.Unit.findById(company);
+      if (!companyExists) throw new Error("Couldn't find company in database!");
+    }
+  } catch (err) {
+    throw new Error(err.message);
+  }
 });
 
 // These functions can be nested. Here it checks first whether an user

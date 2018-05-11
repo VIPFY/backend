@@ -68,6 +68,7 @@ export const types = `
     buyer: Unit!
     planid: Plan!
     predecessor: Plan
+    licences: [Licence]
   }
 
   type BoughtSubplanData {
@@ -126,7 +127,7 @@ export const types = `
 `;
 
 export const queries = `
-  boughtPlans(unitid: Int!): [BoughtPlan]!
+  boughtPlans: [BoughtPlan]!
   fetchPlan(planid: Int!): Plan!
   fetchPlans(appid: Int!): [Plan]!
 

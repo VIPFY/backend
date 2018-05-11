@@ -14,14 +14,29 @@ export default {
     }
   },
 
-  boughtPlans: requiresAuth.createResolver(async (parent, { unitid }, { models }) => {
-    const userExists = await models.Unit.findById(unitid);
-    if (!userExists) throw new Error("Couldn't find User!");
-
+  boughtPlans: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
-      const plans = await models.BoughtPlan.findAll({ where: { buyer: unitid } });
+      const { user: { company } } = decode(token);
+      const boughtPlans = await models.BoughtPlan.findAll({ where: { payer: company } });
+      const ids = await boughtPlans.map(bp => bp.get("id"));
+      boughtPlans.forEach(bp => {
+        bp.licences = [];
+      });
 
-      return plans;
+      const licences = await models.Licence.findAll({
+        attributes: { exclude: ["key"] },
+        where: { boughtplanid: { [models.sequelize.Op.or]: [...ids] } }
+      });
+
+      await boughtPlans.map(boughtPlan =>
+        licences.map(licence => {
+          if (licence.boughtplanid == boughtPlan.id) {
+            boughtPlan.licences.push(licence);
+          }
+        })
+      );
+
+      return boughtPlans;
     } catch ({ message }) {
       throw new Error(message);
     }
