@@ -1,7 +1,9 @@
 import { random } from "lodash";
 import bcrypt from "bcrypt";
+import { decode } from "jsonwebtoken";
 import { createTokens } from "../../services/auth";
 import { sendEmail } from "../../services/mailjet";
+import { requiresAuth } from "../../helpers/permissions";
 import { createPassword, parentAdminCheck } from "../../helpers/functions";
 
 export default {
@@ -98,6 +100,43 @@ export default {
 
     return { ok: true, user, token, refreshToken };
   },
+
+  changePassword: requiresAuth.createResolver(
+    async (parent, { pw, newPw, confirmPw }, { models, token, SECRET, SECRETTWO }) => {
+      try {
+        if (newPw != confirmPw) throw new Error("New passwords don't match!");
+        if (pw == newPw) throw new Error("Current and new password can't be the same one!");
+
+        const { user: { unitid } } = await decode(token);
+        const findOldPassword = await models.Login.findOne({
+          where: {
+            unitid,
+            verified: true,
+            banned: false,
+            deleted: false,
+            suspended: false
+          }
+        });
+        if (!findOldPassword) throw new Error("No database entry found!");
+
+        const valid = await bcrypt.compare(pw, findOldPassword.passwordhash);
+        if (!valid) throw new Error("Incorrect old password!");
+        const passwordhash = await bcrypt.hash(newPw, 12);
+
+        await models.Human.update({ passwordhash }, { where: { unitid } });
+        const basicUser = await models.User.findById(unitid);
+
+        const refreshTokenSecret = basicUser.passwordhash + SECRETTWO;
+        const [newToken, refreshToken] = await createTokens(basicUser, SECRET, refreshTokenSecret);
+
+        const user = parentAdminCheck(models, basicUser);
+
+        return { ok: true, user, token: newToken, refreshToken };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
 
   forgotPassword: async (parent, { email }, { models }) => {
     const emailExists = await models.Login.findOne({ where: { email } });

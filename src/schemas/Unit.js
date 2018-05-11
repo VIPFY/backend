@@ -133,6 +133,9 @@ export const mutations = `
   # After confirming the email, an user has to set a password
   signUpConfirm(email: String!, password: String!): RegisterResponse!
 
+  # Let an active user change his password
+  changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!
+
   # Send the user a new link for sign up
   forgotPassword(email: String!): ForgotPwResponse!
 
