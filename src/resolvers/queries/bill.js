@@ -2,6 +2,18 @@ import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 
 export default {
+  fetchBills: async (parent, args, { models, token }) => {
+    try {
+      const { user: { unitid } } = decode(token);
+
+      const bills = await models.Bill.findAll({ where: { unitid } });
+
+      return bills;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  },
+
   boughtPlans: requiresAuth.createResolver(async (parent, { unitid }, { models }) => {
     const userExists = await models.Unit.findById(unitid);
     if (!userExists) throw new Error("Couldn't find User!");
