@@ -56,12 +56,6 @@ pipelines:
             - npm run test user.spec.js
           services: 
             - postgres
-      - step:
-          name: Deploy to dev.vipfy.com
-          image: keymetrics/pm2:latest-stretch
-          deployment: test
-          script:
-            - pm2 deploy ecosystem.config.js dev update
 definitions: 
   services: 
     postgres: 
