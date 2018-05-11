@@ -79,6 +79,12 @@ export const types = `
     unitid: Unit!
   }
 
+  type DepartmentEmployee {
+    id: Unit!
+    childid: Unit
+    employee: User!
+  }
+
   input UserInput {
     firstname: String
     middlename: String
@@ -115,7 +121,7 @@ export const queries = `
   allDepartments: [Department]!
 
   # Returns the amount of units in a Department
-  fetchDepartmentSize(unitid: Int!): Int!
+  fetchCompanySize: Int!
 `;
 
 export const mutations = `

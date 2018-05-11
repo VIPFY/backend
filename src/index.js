@@ -71,8 +71,8 @@ const authMiddleware = async (req, res, next) => {
         }
         req.user = newTokens.user;
       } else {
-        req.headers["x-token"] = null;
-        req.headers["x-refresh-token"] = null;
+        req.headers["x-token"] = undefined;
+        req.headers["x-refresh-token"] = undefined;
       }
     }
   }
@@ -102,9 +102,6 @@ app.use(
       context: {
         models,
         token,
-        // token:
-        // eslint-disable-next-line
-        //   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjo3NH0sImlhdCI6MTUxNzY3MzE5NiwiZXhwIjoxNTE3NzE2Mzk2fQ.5Tlsrg6F9UuwcKYZu21JFqVlEPhRKJZVsWXwuJlVgs4",
         SECRET,
         SECRETTWO
       },

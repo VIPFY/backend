@@ -1,3 +1,4 @@
+import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 
 export default {
@@ -25,11 +26,13 @@ export default {
     })
   ),
 
-  fetchDepartmentSize: requiresAuth.createResolver(async (parent, { unitid }, { models }) => {
+  fetchCompanySize: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
-      const size = await models.ParentUnit.count({ where: { parentunit: unitid } });
+      const { user: { company } } = decode(token);
+      console.log(company);
+      const size = await models.Department.findOne({ where: { unitid: company } });
 
-      return size;
+      return size.employees;
     } catch ({ message }) {
       throw new Error(message);
     }

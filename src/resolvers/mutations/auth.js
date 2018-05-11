@@ -94,9 +94,11 @@ export default {
     if (!valid) throw new Error(error);
 
     const refreshTokenSecret = emailExists.passwordhash + SECRETTWO;
+    const user = await parentAdminCheck(models, basicUser);
+    // User doesn't have the property unitid, so we have to pass emailExists for
+    // the token creation
+    emailExists.company = user.company;
     const [token, refreshToken] = await createTokens(emailExists, SECRET, refreshTokenSecret);
-
-    const user = parentAdminCheck(models, basicUser);
 
     return { ok: true, user, token, refreshToken };
   },
@@ -127,9 +129,14 @@ export default {
         const basicUser = await models.User.findById(unitid);
 
         const refreshTokenSecret = basicUser.passwordhash + SECRETTWO;
-        const [newToken, refreshToken] = await createTokens(basicUser, SECRET, refreshTokenSecret);
+        const user = await parentAdminCheck(models, basicUser);
+        findOldPassword.company = user.company;
 
-        const user = parentAdminCheck(models, basicUser);
+        const [newToken, refreshToken] = await createTokens(
+          findOldPassword,
+          SECRET,
+          refreshTokenSecret
+        );
 
         return { ok: true, user, token: newToken, refreshToken };
       } catch (err) {

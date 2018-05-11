@@ -5,11 +5,11 @@ import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 export default {
   me: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     // they are logged in
-    if (token) {
-      const { user: { unitid } } = decode(token);
-
+    if (token && token != "null") {
       try {
+        const { user: { unitid } } = decode(token);
         const me = await models.User.findById(unitid);
+
         if (me.suspended) throw new Error("This User is suspended!");
         if (me.banned) throw new Error("This User is banned!");
         if (me.deleted) throw new Error("This User got deleted!");
@@ -25,8 +25,8 @@ export default {
   admin: requiresAdmin.createResolver(async (parent, args, { models, token }) => {
     // they are logged in
     if (token) {
-      const { user: { unitid } } = decode(token);
       try {
+        const { user: { unitid } } = decode(token);
         const p1 = models.User.findById(unitid);
         const p2 = models.Right.findOne({ where: { holder: unitid } });
         const [me, rights] = await Promise.all([p1, p2]);

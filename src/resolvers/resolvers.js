@@ -63,6 +63,7 @@ export default {
   BoughtPlan: find({ buyer: "Unit", planid: "Plan" }),
   Department: find(unit),
   DepartmentData: find(unit),
+  DepartmentEmployee: find({ id: "Unit", childid: "Unit", employee: "User" }),
   Email: find(unit),
   Human: find(unit),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),
