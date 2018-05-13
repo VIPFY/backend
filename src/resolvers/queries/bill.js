@@ -1,6 +1,8 @@
 import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 
+/* eslint-disable no-param-reassign, array-callback-return */
+
 export default {
   fetchBills: async (parent, args, { models, token }) => {
     try {
@@ -49,7 +51,6 @@ export default {
       const mainPlans = allPlans.filter(plan => plan.mainplan == null);
       // Add to each main plan a property sub plan to store them later
       mainPlans.forEach(mainPlan => {
-        // eslint-disable-next-line
         mainPlan.subplans = [];
       });
       // Filter out the sub plans

@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import { random } from "lodash";
+import moment from "moment";
 
 export const getDate = () => {
   const time = new Date().getTime();
@@ -32,4 +33,14 @@ export const parentAdminCheck = async (models, user) => {
   await user.set({ admin: !!isAdmin });
 
   return user;
+};
+
+export const formatFilename = filename => {
+  const date = moment().format("DDMMYYYY");
+  const randomString = Math.random()
+    .toString(36)
+    .substring(2, 7);
+  const cleanFilename = filename.toLowerCase().replace(/[^a-z0-9]/g, "-");
+
+  return `${date}-${randomString}-${cleanFilename}`;
 };

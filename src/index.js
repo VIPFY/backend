@@ -15,15 +15,15 @@ import fs from "fs";
 // To create the GraphQl functions
 
 import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
-import { apolloUploadExpress } from "apollo-upload-server";
 import { makeExecutableSchema } from "graphql-tools";
 import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
 import { SECRET, SECRETTWO } from "./login-data";
-import { refreshTokens } from "./services/auth";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import models from "./models";
+import { authMiddleware, fileMiddleware } from "./middleware";
+import { refreshTokens } from "./helpers/auth";
 
 const app = express();
 const ENVIRONMENT = process.env.ENVIRONMENT;
@@ -49,37 +49,6 @@ export const schema = makeExecutableSchema({
   logger: process.env.LOGGING ? { log: e => console.log(e) } : false
 });
 
-// Middleware to authenticate the user. If the user sends the authorization token
-// he receives after a successful login, everything will be fine.
-const authMiddleware = async (req, res, next) => {
-  const token = req.headers["x-token"];
-  if (token != "null" && token) {
-    try {
-      const { user } = await jwt.verify(token, SECRET);
-      req.user = user;
-    } catch (err) {
-      console.log(err);
-      if (err.name == "TokenExpiredError") {
-        // If the token has expired, we use the refreshToken to assign new ones
-        const refreshToken = req.headers["x-refresh-token"];
-        const newTokens = await refreshTokens(token, refreshToken, models, SECRET, SECRETTWO);
-
-        if (newTokens.token && newTokens.refreshToken) {
-          res.set("Access-Control-Expose-Headers", "x-token, x-refresh-token");
-          res.set("x-token", newTokens.token);
-          res.set("x-refresh-token", newTokens.refreshToken);
-        }
-        req.user = newTokens.user;
-      } else {
-        req.headers["x-token"] = undefined;
-        req.headers["x-refresh-token"] = undefined;
-      }
-    }
-  }
-  next();
-};
-app.use(authMiddleware);
-
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
   origin:
@@ -88,12 +57,13 @@ const corsOptions = {
       : "http://localhost:3000",
   credentials: true // <-- REQUIRED backend setting
 };
-app.use(cors(corsOptions));
 
+app.use(authMiddleware);
+app.use(cors(corsOptions));
 app.use(
   "/graphql",
   bodyParser.json(),
-  // apolloUploadExpress({ uploadDir: "./" }),
+  fileMiddleware,
   graphqlExpress(({ headers }) => {
     const token = headers["x-token"];
 

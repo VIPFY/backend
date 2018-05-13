@@ -1,7 +1,7 @@
 import { random } from "lodash";
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
-import { createTokens } from "../../services/auth";
+import { createTokens } from "../../helpers/auth";
 import { sendEmail } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
 import { createPassword, parentAdminCheck } from "../../helpers/functions";

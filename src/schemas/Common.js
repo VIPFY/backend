@@ -37,7 +37,7 @@ type Log {
 }
 
 # Necessary to upload pictures
-input Upload {
+input File {
   name: String!
   type: String!
   size: Int!

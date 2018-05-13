@@ -99,8 +99,6 @@ export const types = `
     birthday: Date
     position: String
     language: String
-    profilepicture: String
-    encodedpic: Upload
   }
 `;
 
@@ -125,9 +123,9 @@ export const queries = `
 `;
 
 export const mutations = `
-  createUser(user: UserInput!): Response!
-  adminUpdateUser(user: UserInput!, unitid: Int!): Response!
-  updateProfilePic(profilepicture: String!): Response!
+  createUser(user: UserInput!, file: File): Response!
+  adminUpdateUser(user: UserInput, file: File, unitid: Int!): Response!
+  updateProfilePic(file: File!): Response!
   deleteUser(unitid: Int!): Response!
 
   # Only an email is required for the signup

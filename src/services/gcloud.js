@@ -1,6 +1,6 @@
-// Imports the Google Cloud client library
-import Storage from "@google-cloud/storage";
 import fs from "fs";
+import Storage from "@google-cloud/storage";
+import { formatFilename } from "../helpers/functions";
 
 // Your Google Cloud Platform project ID
 const projectId = "vipfy-148316";
@@ -11,26 +11,26 @@ const storage = new Storage({ projectId });
 // The name for the new bucket
 const bucketName = "vipfy-imagestore-01";
 // eslint-disable-next-line
-export const uploadFile = async (file, name) => {
-  const localReadStream = fs.createReadStream(file);
-  const remoteWriteStream = storage
-    .bucket(bucketName)
-    .file(name)
-    .createWriteStream();
-  localReadStream
-    .pipe(remoteWriteStream)
-    .on("error", err => console.log(err))
-    .on("finish", res => {
-      console.log(res);
+export const uploadFile = async ({ path, name }, folder) => {
+  const profilepicture = formatFilename(name);
+  const destination = `${folder}/${profilepicture}`;
 
-      return true;
-    });
-  // try {
-  //   const res = await storage.bucket(bucketName).upload(file);
-  //   console.log(res);
-  //
-  //   return true;
-  // } catch (err) {
-  //   throw new Error(err);
-  // }
+  try {
+    await storage.bucket(bucketName).upload(path, { destination, public: true });
+    await fs.unlinkSync(path);
+
+    return profilepicture;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+export const deleteFile = async (file, folder) => {
+  try {
+    await storage.bucket(bucketName).deleteFiles({ prefix: `${folder}/${file}` });
+
+    return true;
+  } catch (err) {
+    throw new Error(err.message);
+  }
 };
