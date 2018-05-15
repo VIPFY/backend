@@ -79,6 +79,10 @@ export default {
         if (licence.disabled) {
           licence.set({ agreed: false, key: null });
         }
+
+        if (!licence.agreed) {
+          licence.set({ key: null });
+        }
       });
 
       return licences;

@@ -9,7 +9,9 @@ import { SECRET, SECRETTWO } from "./login-data";
 import { refreshTokens } from "./helpers/auth";
 import models from "./models";
 
+/* eslint-disable consistent-return */
 export const authMiddleware = async (req, res, next) => {
+  console.log(req.url);
   const token = req.headers["x-token"];
   if (token != "null" && token) {
     try {

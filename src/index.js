@@ -42,12 +42,9 @@ if (ENVIRONMENT == "production") {
 } else {
   server = http.createServer(app);
 }
+
 // eslint-disable-next-line
-export const schema = makeExecutableSchema({
-  typeDefs,
-  resolvers,
-  logger: process.env.LOGGING ? { log: e => console.log(e) } : false
-});
+export const schema = makeExecutableSchema({ typeDefs, resolvers });
 
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
@@ -66,7 +63,7 @@ app.use(
   fileMiddleware,
   graphqlExpress(({ headers }) => {
     const token = headers["x-token"];
-
+    console.log(headers.origin);
     return {
       schema,
       context: {
@@ -90,6 +87,7 @@ if (ENVIRONMENT != "production") {
     })
   );
 }
+
 // The home route is currently empty
 app.get("/", (req, res) =>
   res.send(`Go to http${secure}://localhost:${PORT}/graphiql for the Interface`)
