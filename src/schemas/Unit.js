@@ -100,6 +100,15 @@ export const types = `
     position: String
     language: String
   }
+
+  input CompanyInput {
+    name: String
+    companysize: String
+    industry: String
+    revenue: String
+    companyage: String
+    ageofowner: String
+  }
 `;
 
 export const queries = `
@@ -127,6 +136,8 @@ export const mutations = `
   adminUpdateUser(user: UserInput, file: File, unitid: Int!): Response!
   updateProfilePic(file: File!): Response!
   deleteUser(unitid: Int!): Response!
+
+  createCompany(company: CompanyInput!): Response!
 
   # Only an email is required for the signup
   signUp(email: String!, newsletter: Boolean): RegisterResponse!

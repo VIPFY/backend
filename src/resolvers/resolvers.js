@@ -50,10 +50,7 @@ const developerAndSupport = { developer: "Unit", supportunit: "Unit" };
 const plans = { appid: "App", gotoplan: "Plan", mainplan: "Plan" };
 
 export default {
-  Query: () => {
-    console.log(Query);
-    return Query;
-  },
+  Query,
   Mutation,
   Subscription,
   Date: implementDate,

@@ -133,5 +133,11 @@ export default {
     } catch ({ message }) {
       throw new Error(message);
     }
+  }),
+
+  createCompany: requiresAuth.createResolver(async (parent, { company }, { models, token }) => {
+    console.log(company);
+
+    return { ok: true };
   })
 };

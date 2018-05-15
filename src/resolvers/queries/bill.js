@@ -71,6 +71,7 @@ export default {
   },
 
   fetchLicences: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    const startTime = Date.now();
     try {
       const { user: { unitid } } = decode(token);
       const licences = await models.Licence.findAll({ where: { unitid } });
@@ -80,8 +81,14 @@ export default {
           licence.set({ agreed: false, key: null });
         }
 
-        if (!licence.agreed) {
+        if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
           licence.set({ key: null });
+        }
+
+        if (licence.endtime) {
+          if (Date.parse(licence.endtime) < startTime) {
+            licence.set({ key: null });
+          }
         }
       });
 
