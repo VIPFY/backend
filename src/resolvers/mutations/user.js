@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 import { createPassword } from "../../helpers/functions";
-import { sendEmail } from "../../services/mailjet";
+import { sendRegistrationEmail } from "../../services/mailjet";
 import { uploadFile, deleteFile } from "../../services/gcloud";
 import { userPicFolder } from "../../constants";
 /* eslint-disable no-unused-vars, max-len */
@@ -29,7 +29,7 @@ export default {
 
         // Don't send emails when testing the database!
         if (process.env.ENVIRONMENT != "testing") {
-          sendEmail(email, passwordhash);
+          sendRegistrationEmail(email, passwordhash);
         }
 
         return { ok: true };
@@ -84,24 +84,31 @@ export default {
       try {
         const already = await models.Unit.findById(unitid);
         if (already.deleted) throw new Error("User already deleted!");
+
         const p1 = models.Unit.update(
           { deleted: true, profilepicture: "" },
           { where: { id: unitid } },
           { transaction: ta }
         );
+
         const p2 = models.Human.update(
           { firstname: "Deleted", middlename: "", lastname: "User" },
           { where: { unitid } },
           { transaction: ta }
         );
+
         const p3 = models.Email.destroy({ where: { unitid } }, { transaction: ta });
+
         const p4 = models.Address.update(
           { address: { city: "deleted" }, description: "deleted" },
           { where: { unitid } },
           { transaction: ta }
         );
+
         const p5 = models.ParentUnit.destroy({ where: { childunit: unitid } }, { transaction: ta });
+
         await Promise.all([p1, p2, p3, p4, p5]);
+
         if (already.profilepicture) {
           await deleteFile(already.profilepicture, userPicFolder);
         }

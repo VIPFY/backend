@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
 
 /* eslint-disable no-param-reassign, array-callback-return */
 
@@ -80,6 +80,16 @@ export default {
           licence.set({ agreed: false, key: null });
         }
       });
+
+      return licences;
+    } catch (err) {
+      throw new Error(err);
+    }
+  }),
+
+  adminFetchLicences: requiresAdmin.createResolver(async (parent, { id }, { models }) => {
+    try {
+      const licences = await models.Licence.findAll({ where: { unitid: id } });
 
       return licences;
     } catch (err) {

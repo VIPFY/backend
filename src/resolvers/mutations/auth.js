@@ -2,7 +2,7 @@ import { random } from "lodash";
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { createTokens } from "../../helpers/auth";
-import { sendEmail } from "../../services/mailjet";
+import { sendRegistrationEmail } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
 import { createPassword, parentAdminCheck } from "../../helpers/functions";
 
@@ -15,7 +15,8 @@ export default {
     } else {
       return models.sequelize.transaction(async ta => {
         try {
-          const passwordhash = await createPassword(email);
+          // const passwordhash = await createPassword(email);
+          const passwordhash = await bcrypt.hash("test", 12);
 
           const unit = await models.Unit.create({}, { transaction: ta });
           const p1 = models.Human.create({ unitid: unit.id, passwordhash }, { transaction: ta });
@@ -28,8 +29,9 @@ export default {
 
           // Don't send emails when testing the database!
           if (process.env.ENVIRONMENT != "testing") {
-            sendEmail(email, passwordhash);
+            sendRegistrationEmail(email, passwordhash);
           }
+
           const refreshSecret = user.passwordhash + SECRETTWO;
           const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);
           return {
@@ -162,7 +164,7 @@ export default {
 
       // Don't send emails when testing the database!
       if (process.env.ENVIRONMENT != "testing") {
-        sendEmail(email, newHash);
+        sendRegistrationEmail(email, newHash);
       }
 
       return {

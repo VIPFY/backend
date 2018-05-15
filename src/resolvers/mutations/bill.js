@@ -5,7 +5,7 @@ import { createProduct, createPlan } from "../../services/stripe";
 /* eslint array-callback-return: "off" */
 
 export default {
-  createPlan: async (parent, { plan }, { models }) => {
+  createPlan: requiresAdmin.createResolver(async (parent, { plan }, { models }) => {
     try {
       await models.Plan.create({ ...plan });
 
@@ -13,7 +13,17 @@ export default {
     } catch (err) {
       throw new Error(err);
     }
-  },
+  }),
+
+  updatePlan: requiresAdmin.createResolver(async (parent, { plan, id }, { models }) => {
+    try {
+      await models.Plan.update({ ...plan }, { where: { id } });
+
+      return { ok: true };
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
 
   createStripePlan: requiresAuth.createResolver(async (parent, { name, productid, amount }) => {
     let product;

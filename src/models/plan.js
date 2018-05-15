@@ -1,4 +1,4 @@
-export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, CHAR, BOOLEAN }) => {
+export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, STRING, BOOLEAN }) => {
   const Plan = sequelize.define("plan_data", {
     name: TEXT,
     teaserdescription: TEXT,
@@ -8,7 +8,7 @@ export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, CHAR, BOOLEAN 
     numlicences: INTEGER,
     price: DECIMAL(10, 2),
     currency: {
-      type: CHAR(3),
+      type: STRING(3),
       validate: {
         len: [1, 3]
       },

@@ -135,6 +135,7 @@ export const queries = `
 
   # This mutation checks whether an user has the right to log into an app
   fetchLicences: [Licence]!
+  adminFetchLicences(id: Int!): [Licence]!
   # This mutation checks whether an user has the right to log into an app by providing an app id
   fetchLicencesByApp(appid: Int!): [Licence]!
 `;
@@ -144,6 +145,8 @@ export const mutations = `
   createStripePlan(name: String, productid: String, amount: Int!): Response!
 
   createPlan(plan: PlanInput!): Response!
+  updatePlan(id: Int!, plan: PlanInput!): Response!
+
   # This allows the user to buy a plan
   buyPlan(planid: Int!, buyFor: Int): Response!
 

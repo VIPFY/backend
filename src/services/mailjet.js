@@ -13,7 +13,7 @@ const sendMailjetEmail = async options => {
   }
 };
 
-export const sendEmail = email => {
+export const sendRegistrationEmail = (email, password) => {
   const options = {
     FromEmail: "office@vipfy.com",
     FromName: "Vipfy Office",
@@ -38,18 +38,6 @@ export const sendEmailToVipfy = data => {
       fromphone: data.phone,
       contactmessage: data.message
     }
-  };
-
-  sendMailjetEmail(options);
-};
-
-export const sendEmailCreatedUser = Email => {
-  const options = {
-    FromEmail: "office@vipfy.com",
-    FromName: "Vipfy Office",
-    "MJ-TemplateID": "",
-    "MJ-TemplateLanguage": true,
-    Recipients: [{ Email }]
   };
 
   sendMailjetEmail(options);

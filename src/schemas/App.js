@@ -45,6 +45,7 @@ export const types = `
     avgstars: Float
     supportphone: String
     supportwebsite: String
+    developerwebsite: String
     description: String
     teaserdescription: String
     website: String
@@ -73,7 +74,7 @@ export const queries = `
 
 export const mutations = `
   createApp(app: AppInput!, file: File): Response!
-  updateApp(id: Int!, app: AppInput, file: File): Response!
+  updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, file: File): Response!
   deleteApp(id: Int!): Response!
   toggleAppStatus(id: Int!): Response!
 `;
