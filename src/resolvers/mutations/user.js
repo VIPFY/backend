@@ -141,7 +141,7 @@ export default {
           { holder: unitid, forunit: company.id, type: "admin" },
           { transaction: ta }
         );
-        const p2 = models.Department.create({ unitid: company.id, name }, { transaction: ta });
+        const p2 = models.DepartmentData.create({ unitid: company.id, name }, { transaction: ta });
         const p3 = models.ParentUnit.create(
           { parentunit: company.id, childunit: unitid },
           { transaction: ta }
@@ -158,7 +158,7 @@ export default {
   updateStatisticData: requiresAuth.createResolver(
     async (parent, { data, companyid }, { models, token }) => {
       try {
-        await models.Department.update({ ...data }, { where: { unitid: companyid } });
+        await models.DepartmentData.update({ ...data }, { where: { unitid: companyid } });
 
         return { ok: true };
       } catch (err) {
