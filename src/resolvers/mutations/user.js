@@ -47,6 +47,10 @@ export default {
     }
   }),
 
+  updateUser: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    console.log(args);
+  }),
+
   adminUpdateUser: requiresAdmin.createResolver(
     async (parent, { unitid, user = {}, file }, { models }) => {
       const { password, position, verified, email, banned } = user;

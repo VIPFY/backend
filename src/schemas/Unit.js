@@ -138,7 +138,7 @@ export const mutations = `
   deleteUser(unitid: Int!): Response!
 
   createCompany(name: String!): Response!
-  updateStatisticData(data: StatisticData!, companyid: Int!): Response!
+  updateStatisticData(data: StatisticData!): Response!
   addEmployee(id: Int!): Response!
 
   # Only an email is required for the signup
