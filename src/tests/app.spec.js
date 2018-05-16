@@ -51,7 +51,7 @@ const testMutations = [
     name: "updateApp",
     dummy: dummyResponse,
     args: {
-      id: 6,
+      appid: 6,
       app: {
         description: "Changed to test"
       }
@@ -141,7 +141,7 @@ describe("This workflow", () => {
       description: lorem.text(),
       website: internet.domainName()
     };
-    const updatedApp = await executeQuery(updateApp, { id, app: appUpdate }, context);
+    const updatedApp = await executeQuery(updateApp, { appid: id, app: appUpdate }, context);
 
     await expect(updatedApp.errors).toBeUndefined();
     await expect(updatedApp.data.updateApp).toEqual(dummyResponse);

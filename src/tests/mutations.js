@@ -103,8 +103,8 @@ export const createApp = `
 `;
 
 export const updateApp = `
-  mutation UpdateApp($app: AppInput!, $id: Int!) {
-    updateApp(app: $app, id: $id) {
+  mutation UpdateApp($app: AppInput!, $appid: Int!, $developerid: Int, $supportid: Int) {
+    updateApp(app: $app, appid: $appid, developerid: $developerid, supportid: $supportid) {
       ok
     }
   }
