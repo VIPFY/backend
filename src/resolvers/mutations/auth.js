@@ -7,44 +7,40 @@ import { requiresAuth } from "../../helpers/permissions";
 import { createPassword, parentAdminCheck } from "../../helpers/functions";
 
 export default {
-  signUp: async (parent, { email, newsletter }, { models, SECRET, SECRETTWO }) => {
-    // Check whether the email is already in use
-    const emailInUse = await models.Email.findOne({ where: { email } });
-    if (emailInUse) {
-      throw new Error("Email already in use!");
-    } else {
-      return models.sequelize.transaction(async ta => {
-        try {
-          // const passwordhash = await createPassword(email);
-          const passwordhash = await bcrypt.hash("test", 12);
-
-          const unit = await models.Unit.create({}, { transaction: ta });
-          const p1 = models.Human.create({ unitid: unit.id, passwordhash }, { transaction: ta });
-          const p2 = models.Email.create({ email, unitid: unit.id }, { transaction: ta });
-          const [user, emailAddress] = await Promise.all([p1, p2]);
-
-          if (newsletter) {
-            models.Newsletter.create({ email: emailAddress.email }, { transaction: ta });
-          }
-
-          // Don't send emails when testing the database!
-          if (process.env.ENVIRONMENT != "testing") {
-            sendRegistrationEmail(email, passwordhash);
-          }
-
-          const refreshSecret = user.passwordhash + SECRETTWO;
-          const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);
-          return {
-            ok: true,
-            token,
-            refreshToken
-          };
-        } catch ({ message }) {
-          throw new Error(message);
+  signUp: async (parent, { email, newsletter }, { models, SECRET, SECRETTWO }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        // Check whether the email is already in use
+        const emailInUse = await models.Email.findOne({ where: { email } });
+        if (emailInUse) {
+          throw new Error("Email already in use!");
         }
-      });
-    }
-  },
+
+        // const passwordhash = await createPassword(email);
+        const passwordhash = await bcrypt.hash("test", 12);
+
+        const unit = await models.Unit.create({}, { transaction: ta });
+        const p1 = models.Human.create({ unitid: unit.id, passwordhash }, { transaction: ta });
+        const p2 = models.Email.create({ email, unitid: unit.id }, { transaction: ta });
+        const [user, emailAddress] = await Promise.all([p1, p2]);
+
+        if (newsletter) {
+          models.Newsletter.create({ email: emailAddress.email }, { transaction: ta });
+        }
+
+        sendRegistrationEmail(email, passwordhash);
+
+        const refreshSecret = user.passwordhash + SECRETTWO;
+        const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);
+        return {
+          ok: true,
+          token,
+          refreshToken
+        };
+      } catch ({ message }) {
+        throw new Error(message);
+      }
+    }),
 
   signUpConfirm: async (parent, { email, password }, { models, SECRET, SECRETTWO }) => {
     const emailExists = await models.Email.findOne({ where: { email } });
@@ -161,11 +157,7 @@ export default {
       const newHash = await user.dataValues.passwordhash.replace("/", 2).substr(start);
 
       await models.Human.update({ passwordhash: newHash }, { where: { unitid: user.unitid } });
-
-      // Don't send emails when testing the database!
-      if (process.env.ENVIRONMENT != "testing") {
-        sendRegistrationEmail(email, newHash);
-      }
+      sendRegistrationEmail(email, newHash);
 
       return {
         ok: true,

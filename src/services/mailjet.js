@@ -3,17 +3,20 @@ import { MAILJET_KEY, MAILJET_SECRET } from "../login-data";
 const Mailjet = require("node-mailjet").connect(MAILJET_KEY, MAILJET_SECRET);
 
 const sendMailjetEmail = async options => {
+  // Don't send emails when testing the database!
+  if (process.env.ENVIRONMENT == "testing") return;
+
   try {
     const res = await Mailjet.post("send").request(options);
     console.log(res.body);
-
-    return true;
   } catch (err) {
     throw new Error(err);
   }
 };
 
 export const sendRegistrationEmail = (email, password) => {
+  if (process.env.ENVIRONMENT == "testing") return;
+
   const options = {
     FromEmail: "office@vipfy.com",
     FromName: "Vipfy Office",
@@ -26,6 +29,8 @@ export const sendRegistrationEmail = (email, password) => {
 };
 
 export const sendEmailToVipfy = data => {
+  if (process.env.ENVIRONMENT == "testing") return;
+
   const options = {
     FromEmail: "office@vipfy.com",
     FromName: "Vipfy Office",

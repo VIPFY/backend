@@ -117,13 +117,17 @@ export default {
       });
       const planIds = plans.map(plan => plan.get("id"));
 
+      if (planIds.length == 0) {
+        throw new Error("This App has no plans!");
+      }
+
       const boughtPlans = await models.BoughtPlan.findAll({
-        where: { buyer: unitid, planid: { [models.sequelize.Op.or]: [...planIds] } }
+        where: { planid: { [models.sequelize.Op.in]: [...planIds] } }
       });
       const boughtPlanIds = boughtPlans.map(pb => pb.get("id"));
 
       const licences = await models.Licence.findAll({
-        where: { unitid, boughtplanid: { [models.sequelize.Op.or]: [...boughtPlanIds] } }
+        where: { unitid, boughtplanid: { [models.sequelize.Op.in]: [...boughtPlanIds] } }
       });
 
       await licences.map(licence => {

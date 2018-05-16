@@ -26,11 +26,7 @@ export default {
         );
         const p2 = models.Email.create({ unitid: unit.id, email }, { transaction: ta });
         await Promise.all([p1, p2]);
-
-        // Don't send emails when testing the database!
-        if (process.env.ENVIRONMENT != "testing") {
-          sendRegistrationEmail(email, passwordhash);
-        }
+        sendRegistrationEmail(email, passwordhash);
 
         return { ok: true };
       } catch ({ message }) {
@@ -135,9 +131,66 @@ export default {
     }
   }),
 
-  createCompany: requiresAuth.createResolver(async (parent, { company }, { models, token }) => {
-    console.log(company);
+  createCompany: requiresAuth.createResolver(async (parent, { name }, { models, token }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const { user: { unitid } } = decode(token);
+        const company = await models.Unit.create({}, { transaction: ta });
 
-    return { ok: true };
-  })
+        const p1 = models.Right.create(
+          { holder: unitid, forunit: company.id, type: "admin" },
+          { transaction: ta }
+        );
+        const p2 = models.Department.create({ unitid: company.id, name }, { transaction: ta });
+        const p3 = models.ParentUnit.create(
+          { parentunit: company.id, childunit: unitid },
+          { transaction: ta }
+        );
+        await Promise.all([p1, p2, p3]);
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    })
+  ),
+
+  updateStatisticData: requiresAuth.createResolver(
+    async (parent, { data, companyid }, { models, token }) => {
+      try {
+        await models.Department.update({ ...data }, { where: { unitid: companyid } });
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
+
+  addEmployee: requiresAuth.createResolver(async (parent, { email }, { models, token }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const { user: { unitid, company } } = decode(token);
+        const p1 = models.Right.findOne({ where: { holder: unitid } });
+        const p2 = models.Email.findOne({ where: { email } });
+        const [isAdmin, emailInUse] = Promise.all([p1, p2]);
+
+        if (!isAdmin) throw new Error("User has not the right to add an employee!");
+        if (emailInUse) throw new Error("Email already in use!");
+
+        const passwordhash = await bcrypt.hash("test", 12);
+
+        const unit = await models.Unit.create({}, { transaction: ta });
+        const p3 = models.Human.create({ unitid: unit.id, passwordhash }, { transaction: ta });
+        const p4 = models.Email.create({ email, unitid: unit.id }, { transaction: ta });
+        const [user, emailAddress] = await Promise.all([p3, p4]);
+
+        // sendRegistrationEmail(email, passwordhash);
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    })
+  )
 };

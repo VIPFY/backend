@@ -39,9 +39,9 @@ export const authMiddleware = async (req, res, next) => {
   next();
 };
 
-const uploadDir = "files";
-
 export const fileMiddleware = (req, res, next) => {
+  const uploadDir = "files";
+
   if (!req.is("multipart/form-data")) {
     return next();
   }

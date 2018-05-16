@@ -62,7 +62,7 @@ export const types = `
   type Department {
     name: String!
     legalinformation: JSON
-    staticdata: JSON
+    statisticdata: JSON
     unitid: Unit!
     banned: Boolean!
     deleted: Boolean!
@@ -75,7 +75,7 @@ export const types = `
   type DepartmentData {
     name: String!
     legalinformation: JSON
-    staticdata: JSON
+    statisticdata: JSON
     unitid: Unit!
   }
 
@@ -101,7 +101,7 @@ export const types = `
     language: String
   }
 
-  input CompanyInput {
+  input StatisticData {
     name: String
     companysize: String
     industry: String
@@ -137,7 +137,9 @@ export const mutations = `
   updateProfilePic(file: File!): Response!
   deleteUser(unitid: Int!): Response!
 
-  createCompany(company: CompanyInput!): Response!
+  createCompany(name: String!): Response!
+  updateStatisticData(data: StatisticData!, companyid: Int!): Response!
+  addEmployee(id: Int!): Response!
 
   # Only an email is required for the signup
   signUp(email: String!, newsletter: Boolean): RegisterResponse!
