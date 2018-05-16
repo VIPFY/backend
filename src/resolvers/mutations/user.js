@@ -155,17 +155,22 @@ export default {
     })
   ),
 
-  updateStatisticData: requiresAuth.createResolver(
-    async (parent, { data, companyid }, { models, token }) => {
-      try {
-        await models.DepartmentData.update({ ...data }, { where: { unitid: companyid } });
+  updateStatisticData: requiresAuth.createResolver(async (parent, { data }, { models, token }) => {
+    try {
+      const { user: { unitid, company } } = decode(token);
+      const isAdmin = await models.Right.findOne({ where: { holder: unitid, forunit: company } });
 
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
+      if (!isAdmin) {
+        throw new Error("User has not the right to add this companies data!");
       }
+
+      await models.DepartmentData.update({ ...data }, { where: { unitid: company } });
+
+      return { ok: true };
+    } catch (err) {
+      throw new Error(err.message);
     }
-  ),
+  }),
 
   addEmployee: requiresAuth.createResolver(async (parent, { email }, { models, token }) =>
     models.sequelize.transaction(async ta => {
