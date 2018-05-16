@@ -28,7 +28,7 @@ export default {
           models.Newsletter.create({ email: emailAddress.email }, { transaction: ta });
         }
 
-        sendRegistrationEmail(email, passwordhash);
+        // sendRegistrationEmail(email, passwordhash);
 
         const refreshSecret = user.passwordhash + SECRETTWO;
         const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);

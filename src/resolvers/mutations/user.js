@@ -26,7 +26,7 @@ export default {
         );
         const p2 = models.Email.create({ unitid: unit.id, email }, { transaction: ta });
         await Promise.all([p1, p2]);
-        sendRegistrationEmail(email, passwordhash);
+        // sendRegistrationEmail(email, passwordhash);
 
         return { ok: true };
       } catch ({ message }) {
