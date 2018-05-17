@@ -24,7 +24,7 @@ export default {
 
   admin: requiresVipfyAdmin.createResolver(async (parent, args, { models, token }) => {
     // they are logged in
-    if (token) {
+    if (token && token != "null") {
       try {
         const { user: { unitid } } = decode(token);
         const p1 = models.User.findById(unitid);

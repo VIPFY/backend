@@ -7,7 +7,7 @@ import { graphql } from "graphql";
 import express from "express";
 import { schema } from "../index";
 import models from "../models/index";
-import { SECRET, SECRETTWO } from "../login-data";
+import { SECRET, SECRET_TWO } from "../login-data";
 
 const app = express();
 
@@ -19,7 +19,7 @@ export const adminToken =
 
 export const context = {
   SECRET,
-  SECRETTWO,
+  SECRET_TWO,
   token,
   models
 };

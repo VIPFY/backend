@@ -1,7 +1,7 @@
 /*
-This is the main component which has the server. It imports all models,
-resolvers, creates the schema with them, defines middleware for the app and
-establishes the connection to the database before starting the server
+* This is the main component which has the server. It imports all models,
+* resolvers, creates the schema with them, uses middleware for the app and
+* establishes the connection to the database before starting the server
 */
 
 import express from "express";
@@ -18,11 +18,11 @@ import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
 import { makeExecutableSchema } from "graphql-tools";
 import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
-import { SECRET, SECRETTWO } from "./login-data";
+import { SECRET, SECRET_TWO } from "./login-data";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import models from "./models";
-import { authMiddleware, fileMiddleware } from "./middleware";
+import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware";
 import { refreshTokens } from "./helpers/auth";
 
 const app = express();
@@ -57,20 +57,21 @@ const corsOptions = {
 
 app.use(authMiddleware);
 app.use(cors(corsOptions));
+app.use(loggingMiddleWare);
 app.use(
   "/graphql",
   bodyParser.json(),
   fileMiddleware,
   graphqlExpress(({ headers }) => {
     const token = headers["x-token"];
-    console.log(headers.origin);
+    console.log(token);
     return {
       schema,
       context: {
         models,
         token,
         SECRET,
-        SECRETTWO
+        SECRET_TWO
       },
       debug: ENVIRONMENT == "development"
     };
@@ -120,7 +121,7 @@ if (ENVIRONMENT != "testing") {
                       refreshToken,
                       models,
                       SECRET,
-                      SECRETTWO
+                      SECRET_TWO
                     );
                     return { models, token: newTokens.token };
                   }

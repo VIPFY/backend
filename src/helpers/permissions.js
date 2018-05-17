@@ -58,8 +58,9 @@ export const requiresAdmin = requiresAuth.createResolver(
 
 export const requiresVipfyAdmin = requiresAuth.createResolver(async (parent, args, { token }) => {
   try {
-    const { user: { unitid, company } } = await decode(token);
-    if (company != 25 || unitid != 7 || unitid != 22 || unitid != 67) {
+    const { user: { unitid } } = decode(token);
+
+    if (unitid != 7 && unitid != 22 && unitid != 67) {
       throw new Error("You're not a Vipfy Admin");
     }
   } catch (err) {

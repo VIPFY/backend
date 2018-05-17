@@ -154,7 +154,7 @@ export default {
   }),
 
   createCompany: requiresAuth.createResolver(
-    async (parent, { name }, { models, token, SECRET, SECRETTWO }) =>
+    async (parent, { name }, { models, token, SECRET, SECRET_TWO }) =>
       models.sequelize.transaction(async ta => {
         try {
           const { user: { unitid, company: companyExists } } = decode(token);
@@ -184,7 +184,7 @@ export default {
 
           const user = await models.Login.findOne({ where: { unitid } }, { transaction: ta });
           user.company = company.id;
-          const refreshTokenSecret = user.passwordhash + SECRETTWO;
+          const refreshTokenSecret = user.passwordhash + SECRET_TWO;
           const [newToken, refreshToken] = await createTokens(user, SECRET, refreshTokenSecret);
 
           return { ok: true, token: newToken, refreshToken };

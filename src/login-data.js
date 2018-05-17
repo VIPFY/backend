@@ -1,5 +1,6 @@
 export const SECRET = "test4364!SDkiw4insdf%&sd23flksjf3iob23LKDIisld???";
-export const SECRETTWO = "3440jafg0a4et0asw0jf!%&????DFDd04jafjasf4657g45w4sg";
+export const SECRET_TWO = "3440jafg0a4et0asw0jf!%&????DFDd04jafjasf4657g45w4sg";
+export const SECRET_THREE = "502rwjwe090DSFNSDKLFNSDIF0023rwejwer";
 export const POSTGRESLOGIN = "N2InaiEj8iG8EvrJ";
 
 // API keys from our partners
