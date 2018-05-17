@@ -47,8 +47,29 @@ export default {
     }
   }),
 
-  updateUser: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    console.log(args);
+  updateUser: requiresAuth.createResolver(async (parent, { user }, { models, token }) => {
+    try {
+      const { profilepicture, position, password, ...human } = user;
+      const { user: { unitid } } = decode(token);
+
+      if (password) {
+        throw new Error("You can't update the password this way!");
+      }
+
+      if (profilepicture) {
+        await models.Unit.update({ profilepicture });
+      }
+
+      if (position) {
+        await models.Unit.update({ position });
+      }
+
+      await models.Human.update({ ...human }, { where: { unitid } });
+
+      return { ok: true };
+    } catch (err) {
+      throw new Error(err.message);
+    }
   }),
 
   adminUpdateUser: requiresAdmin.createResolver(

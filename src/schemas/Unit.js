@@ -133,6 +133,7 @@ export const queries = `
 
 export const mutations = `
   createUser(user: UserInput!, file: File): Response!
+  updateUser(user: UserInput!): Response!
   adminUpdateUser(user: UserInput, file: File, unitid: Int!): Response!
   updateProfilePic(file: File!): Response!
   deleteUser(unitid: Int!): Response!
