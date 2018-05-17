@@ -176,14 +176,10 @@ export default {
           );
 
           await Promise.all([p1, p2, p3]);
-          const p4 = models.User.findById(unitid, { transaction: ta });
-          const p5 = models.Login.findOne({ where: { unitid } }, { transaction: ta });
 
-          const [basicUser, user] = await Promise.all([p4, p5]);
+          const user = await models.Login.findOne({ where: { unitid } }, { transaction: ta });
+          user.company = company.id;
           const refreshTokenSecret = user.passwordhash + SECRETTWO;
-          const getCompany = await parentAdminCheck(models, basicUser);
-          user.company = getCompany.company;
-
           const [newToken, refreshToken] = await createTokens(user, SECRET, refreshTokenSecret);
 
           return { ok: true, token: newToken, refreshToken };
