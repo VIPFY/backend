@@ -30,6 +30,7 @@ export const parentAdminCheck = async (models, user) => {
   const isAdmin = await models.Right.findOne({
     where: { holder: user.id, forunit: user.company, type: "admin" }
   });
+
   await user.set({ admin: !!isAdmin });
 
   return user;
