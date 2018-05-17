@@ -200,7 +200,10 @@ export default {
         throw new Error("User has not the right to add this companies data!");
       }
 
-      await models.DepartmentData.update({ ...data }, { where: { unitid: company } });
+      await models.DepartmentData.update(
+        { statisticdata: { ...data } },
+        { where: { unitid: company } }
+      );
 
       return { ok: true };
     } catch (err) {
