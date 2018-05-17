@@ -1,11 +1,11 @@
-import { requiresAdmin } from "../../helpers/permissions";
+import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { uploadFile, deleteFile } from "../../services/gcloud";
 import { appPicFolder } from "../../constants";
 
 /* eslint-disable no-param-reassign */
 
 export default {
-  createApp: requiresAdmin.createResolver(async (parent, { app, file }, { models }) => {
+  createApp: requiresVipfyAdmin.createResolver(async (parent, { app, file }, { models }) => {
     try {
       const nameExists = await models.App.findOne({ where: { name: app.name } });
       if (nameExists) throw new Error("Name is already in Database!");
@@ -30,7 +30,7 @@ export default {
     }
   }),
 
-  updateApp: requiresAdmin.createResolver(
+  updateApp: requiresVipfyAdmin.createResolver(
     async (parent, { supportid, developerid, appid, app = {}, file }, { models }) => {
       const tag = "SUPPORT";
 
@@ -78,7 +78,7 @@ export default {
     }
   ),
 
-  deleteApp: requiresAdmin.createResolver(async (parent, { id }, { models }) => {
+  deleteApp: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
     try {
       const app = await models.App.findById(id);
       await models.App.destroy({ where: { id } });
@@ -93,7 +93,7 @@ export default {
     }
   }),
 
-  toggleAppStatus: requiresAdmin.createResolver(async (parent, { id }, { models }) => {
+  toggleAppStatus: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
     try {
       const { disabled } = await models.App.findById(id);
       await models.App.update({ disabled: !disabled }, { where: { id } });

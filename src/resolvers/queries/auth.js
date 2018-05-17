@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { parentAdminCheck } from "../../helpers/functions";
-import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
+import { requiresAuth, requiresVipfyAdmin } from "../../helpers/permissions";
 
 export default {
   me: requiresAuth.createResolver(async (parent, args, { models, token }) => {
@@ -22,7 +22,7 @@ export default {
     } else throw new Error("Not Authenticated!");
   }),
 
-  admin: requiresAdmin.createResolver(async (parent, args, { models, token }) => {
+  admin: requiresVipfyAdmin.createResolver(async (parent, args, { models, token }) => {
     // they are logged in
     if (token) {
       try {
@@ -41,18 +41,5 @@ export default {
         throw new Error(err.message);
       }
     } else throw new Error("Not an authenticated Admin!");
-  }),
-
-  // THIS HAS TO BE CHANGED!!!
-  fetchUserByPassword: async (parent, { password }, { models }) => {
-    try {
-      const { user: { dataValues: { email } } } = await models.User.findOne({
-        where: { passwordhash: password, verified: false }
-      });
-
-      return email;
-    } catch ({ message }) {
-      throw new Error(message);
-    }
-  }
+  })
 };

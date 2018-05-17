@@ -1,8 +1,8 @@
 import dd24Api from "../../services/dd24";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAdmin } from "../../helpers/permissions";
 
 export default {
-  domainCommands: requiresAuth.createResolver(async (parent, { command, params, agb }) => {
+  domainCommands: requiresAdmin.createResolver(async (parent, { command, params, agb }) => {
     try {
       if (command != "AddDomain" || (command == "AddDomain" && agb)) {
         const result = await dd24Api(command, params);

@@ -42,13 +42,27 @@ export const requiresAuth = createResolver(async (parent, args, { models, token 
 export const requiresAdmin = requiresAuth.createResolver(
   async (parent, args, { models, token }) => {
     try {
-      const { user: { unitid } } = await decode(token);
-      const rights = await models.Right.findOne({ where: { holder: unitid } });
-      if (!rights.type || rights.type.toLowerCase() != "admin") {
-        throw new Error("You're not an Admin!");
+      const { user: { unitid, company } } = await decode(token);
+      const rights = await models.Right.findOne({
+        where: { holder: unitid, forunit: company }
+      });
+
+      if (!rights || (rights.type != "admin" && company != 25)) {
+        throw new Error("You're not an Admin for this company!");
       }
     } catch (err) {
-      throw new Error("You're not an Admin!");
+      throw new Error("You're not an Admin for this company!");
     }
   }
 );
+
+export const requiresVipfyAdmin = requiresAuth.createResolver(async (parent, args, { token }) => {
+  try {
+    const { user: { unitid, company } } = await decode(token);
+    if (company != 25 || unitid != 7 || unitid != 22 || unitid != 67) {
+      throw new Error("You're not a Vipfy Admin");
+    }
+  } catch (err) {
+    throw new Error("You're not a Vipfy Admin!");
+  }
+});

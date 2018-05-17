@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
-import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
-import { createPassword, parentAdminCheck } from "../../helpers/functions";
+import { requiresAuth, requiresAdmin, requiresVipfyAdmin } from "../../helpers/permissions";
+import { createPassword } from "../../helpers/functions";
 import { sendRegistrationEmail } from "../../services/mailjet";
 import { uploadFile, deleteFile } from "../../services/gcloud";
 import { userPicFolder } from "../../constants";
@@ -9,7 +9,7 @@ import { createTokens } from "../../helpers/auth";
 /* eslint-disable no-unused-vars, max-len */
 
 export default {
-  createUser: requiresAdmin.createResolver(async (parent, { user, file }, { models }) => {
+  createUser: requiresVipfyAdmin.createResolver(async (parent, { user, file }, { models }) => {
     const { position, email, ...userData } = user;
     const unitData = { position };
     if (file) {
@@ -69,7 +69,7 @@ export default {
     }
   }),
 
-  adminUpdateUser: requiresAdmin.createResolver(
+  adminUpdateUser: requiresVipfyAdmin.createResolver(
     async (parent, { unitid, user = {}, file }, { models }) => {
       const { password, position, verified, email, banned } = user;
 
@@ -97,7 +97,7 @@ export default {
     }
   ),
 
-  deleteUser: requiresAdmin.createResolver(async (parent, { unitid }, { models, token }) =>
+  deleteUser: requiresVipfyAdmin.createResolver(async (parent, { unitid }, { models, token }) =>
     models.sequelize.transaction(async ta => {
       try {
         const already = await models.Unit.findById(unitid);
@@ -138,7 +138,7 @@ export default {
     })
   ),
 
-  freezeAccount: requiresAdmin.createResolver(async (parent, { unitid }, { models }) => {
+  freezeAccount: requiresVipfyAdmin.createResolver(async (parent, { unitid }, { models }) => {
     const accountExists = await models.Unit.findById(unitid);
 
     if (!accountExists) {
@@ -157,7 +157,12 @@ export default {
     async (parent, { name }, { models, token, SECRET, SECRETTWO }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const { user: { unitid } } = decode(token);
+          const { user: { unitid, company: companyExists } } = decode(token);
+
+          if (companyExists) {
+            throw new Error("This user is already assigned to a company!");
+          }
+
           const company = await models.Unit.create({}, { transaction: ta });
 
           const p1 = models.Right.create(
@@ -189,16 +194,9 @@ export default {
       })
   ),
 
-  updateStatisticData: requiresAuth.createResolver(async (parent, { data }, { models, token }) => {
+  updateStatisticData: requiresAdmin.createResolver(async (parent, { data }, { models, token }) => {
     try {
-      const { user: { unitid, company } } = decode(token);
-      const isAdmin = await models.Right.findOne({
-        where: { holder: unitid, forunit: company, type: "admin" }
-      });
-
-      if (!isAdmin) {
-        throw new Error("User has not the right to add this companies data!");
-      }
+      const { user: { company } } = decode(token);
 
       await models.DepartmentData.update(
         { statisticdata: { ...data } },
@@ -211,15 +209,11 @@ export default {
     }
   }),
 
-  addEmployee: requiresAuth.createResolver(async (parent, { email }, { models, token }) =>
+  addEmployee: requiresAdmin.createResolver(async (parent, { email }, { models, token }) =>
     models.sequelize.transaction(async ta => {
       try {
-        const { user: { unitid, company } } = decode(token);
-        const p1 = models.Right.findOne({ where: { holder: unitid } });
-        const p2 = models.Email.findOne({ where: { email } });
-        const [isAdmin, emailInUse] = Promise.all([p1, p2]);
-
-        if (!isAdmin) throw new Error("User has not the right to add an employee!");
+        const { user: { company } } = decode(token);
+        const emailInUse = await models.Email.findOne({ where: { email } });
         if (emailInUse) throw new Error("Email already in use!");
 
         const passwordhash = await bcrypt.hash("test", 12);

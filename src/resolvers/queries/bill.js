@@ -1,10 +1,10 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
+import { requiresAuth, requiresVipfyAdmin } from "../../helpers/permissions";
 
 /* eslint-disable no-param-reassign, array-callback-return */
 
 export default {
-  fetchBills: async (parent, args, { models, token }) => {
+  fetchBills: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
       const { user: { unitid } } = decode(token);
 
@@ -14,7 +14,7 @@ export default {
     } catch (err) {
       throw new Error(err.message);
     }
-  },
+  }),
 
   boughtPlans: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
@@ -98,7 +98,7 @@ export default {
     }
   }),
 
-  adminFetchLicences: requiresAdmin.createResolver(async (parent, { id }, { models }) => {
+  adminFetchLicences: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
     try {
       const licences = await models.Licence.findAll({ where: { unitid: id } });
 

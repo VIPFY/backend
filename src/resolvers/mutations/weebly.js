@@ -1,9 +1,9 @@
 import weeblyApi from "../../services/weebly";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAdmin } from "../../helpers/permissions";
 import { decode } from "jsonwebtoken";
 
 export default {
-  weeblyCreateLoginLink: requiresAuth.createResolver(
+  weeblyCreateLoginLink: requiresAdmin.createResolver(
     async (parent, { email, domain, plan, agb }) => {
       if (agb) {
         const method = "POST";
