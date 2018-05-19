@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAuth, requiresVipfyAdmin } from "../../helpers/permissions";
 
 export default {
   updateAddress: requiresAuth.createResolver(async (parent, args, { models, token }) => {
@@ -17,5 +17,11 @@ export default {
     } catch ({ message }) {
       throw new Error(message);
     }
+  }),
+
+  adminUpdateAddress: requiresVipfyAdmin.createResolver(async (parent, args, { models }) => {
+    console.log(args);
+
+    return { ok: true };
   })
 };

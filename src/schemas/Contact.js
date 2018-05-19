@@ -40,19 +40,25 @@ export const types = `
   }
 
   input AddressInput {
+    country: String
     street: String
     city: String
     state: String
     zip: String
+    priority: Int
+    tag: String
   }
 `;
 
 export const queries = `
   fetchAddresses: [Address]!
+  # A function only usable by Vipfy admins
+  fetchUserAddresses(unitid: Int!): [Address]!
 `;
 
 export const mutations = `
   # Without the id parameter, a new address will be generated. Otherwise it will be updated.
   updateAddress(id: Int, country: String, address: AddressInput, description: String, priority: Int): Response!
-  #updateContactData(email: String):
+
+  adminUpdateAddress(addressData: AddressInput!): Response!
 `;

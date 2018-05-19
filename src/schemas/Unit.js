@@ -91,6 +91,7 @@ export const types = `
     lastname: String
     password: String
     email: String
+    oldemail: String
     verified: Boolean
     banned: Boolean
     lastname: String

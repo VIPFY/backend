@@ -64,7 +64,7 @@ app.use(
   fileMiddleware,
   graphqlExpress(({ headers }) => {
     const token = headers["x-token"];
-    console.log(token);
+
     return {
       schema,
       context: {

@@ -3,6 +3,7 @@
 * client and destroys them otherwise, fileMiddleware makes it possible to use
 * files to our backend and loggingMiddleWare logs incoming requests and their results.
 */
+
 import jwt from "jsonwebtoken";
 import formidable from "formidable";
 import mkdirp from "mkdirp";
@@ -83,48 +84,64 @@ export const loggingMiddleWare = (req, res, next) => {
     if (restArgs[0]) {
       chunks.push(new Buffer(restArgs[0]));
     }
+
     const body = Buffer.concat(chunks).toString("utf8");
+    const parsedBody = JSON.parse(body);
+    const { variables } = req.body;
     const token = req.headers["x-token"];
     let user = null;
+    let eventtype;
+    let eventdata;
 
-    if (token && token != "null") {
-      const { user: { unitid } } = jwt.decode(token);
-      user = unitid;
-    }
-
-    if (req.body.variables.password) {
-      const encryptedPw = await bcrypt.hash(req.body.variables.password, 12);
-      req.body.variables.password = encryptedPw;
-    }
-
-    const parsedBody = JSON.parse(body);
-
-    if (parsedBody.data) {
-      parsedBody.data.ua = req.headers["user-agent"];
-
-      parsedBody.data.variables = req.body.variables;
-      const { token: bodyToken, refreshToken } = parsedBody.data[Object.keys(parsedBody.data)[0]];
-
-      if (bodyToken && bodyToken != "null") {
-        const encToken = await Utility.generateHmac(bodyToken, SECRET_THREE);
-        const encRefreshToken = await Utility.generateHmac(refreshToken, SECRET_THREE);
-
-        parsedBody.data[Object.keys(parsedBody.data)[0]].token = encToken;
-        parsedBody.data[Object.keys(parsedBody.data)[0]].refreshToken = encRefreshToken;
+    try {
+      if (token && token != "null") {
+        const { user: { unitid } } = jwt.decode(token);
+        user = unitid;
       }
 
-      delete req.body.query;
-    } else if (parsedBody.errors) {
-      parsedBody.errors[0].variables = req.body.variables;
-    }
+      if (variables && variables.password) {
+        variables.password = await bcrypt.hash(variables.password, 12);
+      }
 
-    models.Log.create({
-      time: new Date().toUTCString(),
-      ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress,
-      eventtype: parsedBody.data ? req.body.operationName : `Error: ${req.body.operationName}`,
-      eventdata: parsedBody.data ? parsedBody.data : parsedBody.errors,
-      user
-    });
+      eventtype = Object.keys(parsedBody.data)[0];
+      if (parsedBody.data) {
+        parsedBody.data.ua = req.headers["user-agent"];
+
+        parsedBody.data.variables = variables;
+        const { token: bodyToken, refreshToken } = parsedBody.data[Object.keys(parsedBody.data)[0]];
+
+        if (bodyToken && bodyToken != "null") {
+          const encToken = await Utility.generateHmac(bodyToken, SECRET_THREE);
+          const encRefreshToken = await Utility.generateHmac(refreshToken, SECRET_THREE);
+
+          parsedBody.data[Object.keys(parsedBody.data)[0]].token = encToken;
+          parsedBody.data[Object.keys(parsedBody.data)[0]].refreshToken = encRefreshToken;
+        }
+
+        eventdata = parsedBody.data;
+        delete req.body.query;
+      } else if (parsedBody.errors) {
+        parsedBody.errors[0].variables = variables;
+        eventtype = `Error: ${parsedBody.errors[0].path[0]}`;
+        eventdata = parsedBody.errors;
+      }
+
+      models.Log.create({
+        time: new Date().toUTCString(),
+        ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress,
+        eventtype,
+        eventdata,
+        user
+      });
+    } catch ({ message, name }) {
+      models.Log.create({
+        time: new Date().toUTCString(),
+        ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress,
+        eventtype: "Logging error",
+        eventdata: `${name}: ${message}`,
+        user
+      });
+    }
     oldEnd.apply(res, restArgs);
   };
   next();

@@ -71,7 +71,7 @@ export default {
 
   adminUpdateUser: requiresVipfyAdmin.createResolver(
     async (parent, { unitid, user = {}, file }, { models }) => {
-      const { password, position, verified, email, banned } = user;
+      const { password, position, verified, email, oldemail, banned } = user;
 
       try {
         if (file) {
@@ -82,8 +82,16 @@ export default {
           await models.Human.update({ passwordhash }, { where: { unitid } });
         } else if (position) {
           await models.Unit.update({ ...user }, { where: { id: unitid } });
-        } else if (verified != null) {
+        } else if (verified != null && email) {
           await models.Email.update({ verified }, { where: { email } });
+        } else if (oldemail && email) {
+          const emailExists = await models.Email.findOne({ where: { email } });
+
+          if (emailExists) {
+            throw new Error("This email is already in our database!");
+          }
+
+          await models.Email.update({ email, verified: false }, { where: { email: oldemail } });
         } else if (banned != null) {
           await models.Unit.update({ banned }, { where: { id: unitid } });
         } else {
