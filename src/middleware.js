@@ -7,7 +7,10 @@
 import jwt from "jsonwebtoken";
 import formidable from "formidable";
 import mkdirp from "mkdirp";
+import path from "path";
+import fs from "fs";
 import bcrypt from "bcrypt";
+import moment from "moment";
 import { SECRET, SECRET_TWO, SECRET_THREE } from "./login-data";
 import { refreshTokens } from "./helpers/auth";
 import models from "./models";
@@ -43,7 +46,7 @@ export const authMiddleware = async (req, res, next) => {
 };
 
 export const fileMiddleware = (req, res, next) => {
-  const uploadDir = "files";
+  const uploadDir = "src/files";
 
   if (!req.is("multipart/form-data")) {
     return next();
@@ -61,8 +64,8 @@ export const fileMiddleware = (req, res, next) => {
     const document = JSON.parse(operations);
 
     if (Object.keys(files).length) {
-      const { file: { type, path, size, name } } = files;
-      document.variables.file = { type, path, size, name };
+      const { file: { type, path: thePath, size, name } } = files;
+      document.variables.file = { type, path: thePath, size, name };
     }
     req.body = document;
     next();
@@ -84,6 +87,10 @@ export const loggingMiddleWare = (req, res, next) => {
     if (restArgs[0]) {
       chunks.push(new Buffer(restArgs[0]));
     }
+
+    const now = moment();
+    const date = now.format("DD-MM-YYYY");
+    const logDirectory = path.join(__dirname, "./logs", `${date}.txt`);
 
     const body = Buffer.concat(chunks).toString("utf8");
     const parsedBody = JSON.parse(body);
@@ -117,29 +124,33 @@ export const loggingMiddleWare = (req, res, next) => {
           parsedBody.data[Object.keys(parsedBody.data)[0]].token = encToken;
           parsedBody.data[Object.keys(parsedBody.data)[0]].refreshToken = encRefreshToken;
         }
-
         eventdata = parsedBody.data;
-        delete req.body.query;
       } else if (parsedBody.errors) {
         parsedBody.errors[0].variables = variables;
         eventtype = `Error: ${parsedBody.errors[0].path[0]}`;
         eventdata = parsedBody.errors;
       }
 
-      models.Log.create({
+      const log = {
         time: new Date().toUTCString(),
         ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress,
         eventtype,
         eventdata,
         user
+      };
+
+      fs.appendFile(logDirectory, `${JSON.stringify(log)} \n`, err => {
+        if (err) throw err;
+        eventdata = "Logging Error";
       });
-    } catch ({ message, name }) {
-      models.Log.create({
-        time: new Date().toUTCString(),
-        ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress,
-        eventtype: "Logging error",
-        eventdata: `${name}: ${message}`,
-        user
+
+      if (req.body.query.includes("mutation")) {
+        models.Log.create(log);
+      }
+    } catch ({ name, stack }) {
+      fs.appendFile(logDirectory, JSON.stringify(`${name}: ${stack}`), err => {
+        if (err) throw err;
+        eventdata = "Logging Error";
       });
     }
     oldEnd.apply(res, restArgs);

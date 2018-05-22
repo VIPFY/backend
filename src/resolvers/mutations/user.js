@@ -91,6 +91,8 @@ export default {
             throw new Error("This email is already in our database!");
           }
 
+          // send confirmationEmail
+
           await models.Email.update({ email, verified: false }, { where: { email: oldemail } });
         } else if (banned != null) {
           await models.Unit.update({ banned }, { where: { id: unitid } });
@@ -210,6 +212,16 @@ export default {
         { statisticdata: { ...data } },
         { where: { unitid: company } }
       );
+
+      return { ok: true };
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
+
+  createEmail: requiresVipfyAdmin.createResolver(async (parent, { email, unitid }, { models }) => {
+    try {
+      await models.Email.create({ email, unitid });
 
       return { ok: true };
     } catch (err) {

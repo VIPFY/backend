@@ -2,6 +2,21 @@ import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresVipfyAdmin } from "../../helpers/permissions";
 
 export default {
+  adminCreateAddress: requiresVipfyAdmin.createResolver(
+    async (parent, { addressData, unitid }, { models }) => {
+      try {
+        const { zip, street, city, ...normalData } = addressData;
+        const address = { street, zip, city };
+
+        await models.Address.create({ ...normalData, address, unitid });
+
+        return { ok: true };
+      } catch ({ message }) {
+        throw new Error(message);
+      }
+    }
+  ),
+
   updateAddress: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
       const { user: { unitid } } = decode(token);
@@ -19,9 +34,22 @@ export default {
     }
   }),
 
-  adminUpdateAddress: requiresVipfyAdmin.createResolver(async (parent, args, { models }) => {
-    console.log(args);
+  adminUpdateAddress: requiresVipfyAdmin.createResolver(
+    async (parent, { addressData, id }, { models }) => {
+      const { zip, city, street } = addressData;
 
-    return { ok: true };
-  })
+      try {
+        if (zip || city || street) {
+          const old = await models.Address.findOne({ where: { id } });
+          const newAddress = { ...old.address, ...addressData };
+
+          await models.Address.update({ address: { ...newAddress } }, { where: { id } });
+        } else await models.Address.update({ ...addressData }, { where: { id } });
+
+        return { ok: true };
+      } catch ({ message }) {
+        throw new Error(message);
+      }
+    }
+  )
 };
