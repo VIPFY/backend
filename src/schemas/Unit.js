@@ -139,8 +139,6 @@ export const mutations = `
   updateProfilePic(file: File!): Response!
   deleteUser(unitid: Int!): Response!
 
-  createEmail(email: String!, unitid: Int!): Response!
-
   createCompany(name: String!): RegisterResponse!
   updateStatisticData(data: StatisticData!): Response!
   addEmployee(id: Int!): Response!

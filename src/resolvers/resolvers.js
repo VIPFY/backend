@@ -16,6 +16,7 @@ import dd24Mutations from "./mutations/dd24";
 import weeblyMutations from "./mutations/weebly";
 import billMutations from "./mutations/bill";
 import contactMutations from "./mutations/contact";
+import demoMutations from "./mutations/demo";
 
 import Subscription from "./subscriptions";
 
@@ -41,7 +42,8 @@ const Mutation = Object.assign(
   dd24Mutations,
   weeblyMutations,
   billMutations,
-  contactMutations
+  contactMutations,
+  demoMutations
 );
 
 const unit = { unitid: "Unit" };

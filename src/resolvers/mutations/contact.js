@@ -51,5 +51,26 @@ export default {
         throw new Error(message);
       }
     }
+  ),
+
+  adminCreateEmail: requiresVipfyAdmin.createResolver(
+    async (parent, { email, unitid }, { models }) => {
+      try {
+        const emailExists = await models.Email.findOne({ where: { email } });
+        if (emailExists) {
+          throw new Error("Email already exists!");
+        }
+
+        const userHasAnotherEmail = await models.Email.findAll({ where: { unitid } });
+        if (!userHasAnotherEmail || userHasAnotherEmail.length < 2) {
+          throw new Error("This is the users last email address. He needs at least one!");
+        }
+        await models.Email.create({ email, unitid });
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
   )
 };

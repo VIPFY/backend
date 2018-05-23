@@ -1,6 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { requiresVipfyAdmin, requiresAdmin } from "../../helpers/permissions";
 import { createProduct, createPlan } from "../../services/stripe";
+import { getDate } from "../../helpers/functions";
 
 /* eslint array-callback-return: "off" */
 
@@ -50,11 +51,29 @@ export default {
   buyPlan: requiresAdmin.createResolver(async (parent, { planid, amount }, { models, token }) => {
     try {
       const { user: { unitid, company } } = decode(token);
-      await models.BoughtPlan.create({
+      const boughtplan = await models.BoughtPlan.create({
         buyer: unitid,
         payer: company,
         planid,
         key: { amount }
+      });
+
+      const app = await models.Plan.findOne({ where: { id: planid }, attributes: ["appid"] });
+      let key;
+
+      if (app.appid == 4) {
+        key = { email: "nv@vipfy.vipfy.com", password: "12345678" };
+      } else {
+        key = { email: "jf@vipfy.com", password: "zdwMYqQPE4gSHr3QQSkm" };
+      }
+
+      await models.Licence.create({
+        unitid,
+        boughtplanid: boughtplan.id,
+        starttime: getDate(),
+        agreed: true,
+        disabled: false,
+        key
       });
 
       return { ok: true };

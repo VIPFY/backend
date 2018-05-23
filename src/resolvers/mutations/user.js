@@ -219,16 +219,6 @@ export default {
     }
   }),
 
-  createEmail: requiresVipfyAdmin.createResolver(async (parent, { email, unitid }, { models }) => {
-    try {
-      await models.Email.create({ email, unitid });
-
-      return { ok: true };
-    } catch (err) {
-      throw new Error(err.message);
-    }
-  }),
-
   addEmployee: requiresAdmin.createResolver(async (parent, { email }, { models, token }) =>
     models.sequelize.transaction(async ta => {
       try {
