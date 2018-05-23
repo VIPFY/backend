@@ -11,6 +11,7 @@ export default (sequelize, { TIME, JSONB, NOW, BOOLEAN }) => {
 
   BoughtPlan.associate = ({ Unit, Plan }) => {
     BoughtPlan.belongsTo(Unit, { foreignKey: "buyer" });
+    BoughtPlan.belongsTo(Unit, { foreignKey: "payer" });
     BoughtPlan.belongsTo(Plan, { foreignKey: "planid" });
     BoughtPlan.belongsTo(Plan, { foreignKey: "predecessor" });
   };

@@ -2,10 +2,7 @@ import bcrypt from "bcrypt";
 import { random } from "lodash";
 import moment from "moment";
 
-export const getDate = () => {
-  const time = new Date().getTime();
-  return new Date(time).toString();
-};
+export const getDate = () => new Date().toUTCString();
 
 export const createPassword = async email => {
   // A password musst be created because otherwise the not null rule of the

@@ -66,6 +66,7 @@ export const types = `
     endtime: String
     key: JSON
     buyer: Unit!
+    payer: Unit!
     planid: Plan!
     predecessor: Plan
     licences: [Licence]

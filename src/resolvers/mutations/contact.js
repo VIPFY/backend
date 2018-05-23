@@ -53,6 +53,16 @@ export default {
     }
   ),
 
+  adminDeleteAddress: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
+    try {
+      await models.Address.destroy({ where: { id } });
+
+      return { ok: true };
+    } catch ({ message }) {
+      throw new Error(message);
+    }
+  }),
+
   adminCreateEmail: requiresVipfyAdmin.createResolver(
     async (parent, { email, unitid }, { models }) => {
       try {
@@ -61,11 +71,31 @@ export default {
           throw new Error("Email already exists!");
         }
 
-        const userHasAnotherEmail = await models.Email.findAll({ where: { unitid } });
+        await models.Email.create({ email, unitid });
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
+
+  adminDeleteEmail: requiresVipfyAdmin.createResolver(
+    async (parent, { email, unitid }, { models }) => {
+      try {
+        const p1 = models.Email.findOne({ where: { email, unitid } });
+        const p2 = models.Email.findAll({ where: { unitid } });
+        const [belongsToUser, userHasAnotherEmail] = await Promise.all([p1, p2]);
+
+        if (!belongsToUser) {
+          throw new Error("The emails doesn't belong to this user!");
+        }
+
         if (!userHasAnotherEmail || userHasAnotherEmail.length < 2) {
           throw new Error("This is the users last email address. He needs at least one!");
         }
-        await models.Email.create({ email, unitid });
+
+        await models.Email.destroy({ where: { email } });
 
         return { ok: true };
       } catch (err) {

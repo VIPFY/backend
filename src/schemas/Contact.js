@@ -63,6 +63,8 @@ export const mutations = `
   updateAddress(id: Int, country: String, address: AddressInput, description: String, priority: Int): Response!
 
   adminUpdateAddress(addressData: AddressInput!, id: Int!): Response!
+  adminDeleteAddress(id: Int!): Response!
 
   adminCreateEmail(email: String!, unitid: Int!): Response!
+  adminDeleteEmail(email: String!,unitid: Int!): Response!
 `;

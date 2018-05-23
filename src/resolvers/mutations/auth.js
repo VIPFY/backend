@@ -21,7 +21,11 @@ export default {
 
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create({ unitid: unit.id, passwordhash }, { transaction: ta });
-        const p2 = models.Email.create({ email, unitid: unit.id }, { transaction: ta });
+        // delete verified: true
+        const p2 = models.Email.create(
+          { email, unitid: unit.id, verified: true },
+          { transaction: ta }
+        );
         const [user, emailAddress] = await Promise.all([p1, p2]);
 
         if (newsletter) {

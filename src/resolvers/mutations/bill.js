@@ -1,9 +1,9 @@
 import { decode } from "jsonwebtoken";
-import { requiresVipfyAdmin, requiresAdmin } from "../../helpers/permissions";
+import { requiresVipfyAdmin, requiresAdmin, requiresAuth } from "../../helpers/permissions";
 import { createProduct, createPlan } from "../../services/stripe";
 import { getDate } from "../../helpers/functions";
 
-/* eslint array-callback-return: "off" */
+/* eslint array-callback-return: "off", max-len: "off" */
 
 export default {
   createPlan: requiresAdmin.createResolver(async (parent, { plan }, { models }) => {
@@ -47,40 +47,51 @@ export default {
       }
     }
   ),
+  // Exchange back to requiresAdmin after Metz
+  buyPlan: requiresAuth.createResolver(async (parent, { planid, amount }, { models, token }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const { user: { unitid, company } } = decode(token);
+        const p1 = models.BoughtPlan.create(
+          {
+            buyer: unitid,
+            payer: company,
+            planid,
+            disabled: false,
+            key: { amount }
+          },
+          { transaction: ta }
+        );
 
-  buyPlan: requiresAdmin.createResolver(async (parent, { planid, amount }, { models, token }) => {
-    try {
-      const { user: { unitid, company } } = decode(token);
-      const boughtplan = await models.BoughtPlan.create({
-        buyer: unitid,
-        payer: company,
-        planid,
-        key: { amount }
-      });
+        const p2 = models.Plan.findOne({ where: { id: planid }, attributes: ["appid"] });
+        const [boughtplan, app] = await Promise.all([p1, p2]);
 
-      const app = await models.Plan.findOne({ where: { id: planid }, attributes: ["appid"] });
-      let key;
+        let key;
 
-      if (app.appid == 4) {
-        key = { email: "nv@vipfy.vipfy.com", password: "12345678" };
-      } else {
-        key = { email: "jf@vipfy.com", password: "zdwMYqQPE4gSHr3QQSkm" };
+        if (app.appid == 4) {
+          key = { email: "nv@vipfy.vipfy.com", password: "12345678" };
+        } else {
+          key = { email: "jf@vipfy.com", password: "zdwMYqQPE4gSHr3QQSkm" };
+        }
+
+        await models.Licence.create(
+          {
+            unitid,
+            boughtplanid: boughtplan.id,
+            starttime: getDate(),
+            agreed: true,
+            disabled: false,
+            key
+          },
+          { transaction: ta }
+        );
+
+        return { ok: true };
+      } catch ({ message }) {
+        throw new Error(message);
       }
-
-      await models.Licence.create({
-        unitid,
-        boughtplanid: boughtplan.id,
-        starttime: getDate(),
-        agreed: true,
-        disabled: false,
-        key
-      });
-
-      return { ok: true };
-    } catch ({ message }) {
-      throw new Error(message);
-    }
-  }),
+    })
+  ),
 
   endPlan: requiresAdmin.createResolver(async (parent, { id, enddate }, { models }) => {
     try {
