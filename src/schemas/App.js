@@ -67,7 +67,7 @@ export const queries = `
   fetchAppById(id: Int!): AppDetails
 
   # Returns apps where the given user has an account
-  fetchUserApps: [BoughtPlan]!
+  fetchUserApps: [Licence]!
 
   fetchPrice(appid: Int!): Plan!
 `;

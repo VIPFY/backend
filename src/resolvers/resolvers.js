@@ -5,6 +5,7 @@ import reviewQueries from "./queries/review";
 import billQueries from "./queries/bill";
 import contactQueries from "./queries/contact";
 import authQueries from "./queries/auth";
+import demoQueries from "./queries/demo";
 
 import appMutations from "./mutations/app";
 import messageMutations from "./mutations/message";
@@ -29,7 +30,8 @@ const Query = Object.assign(
   appQueries,
   messageQueries,
   reviewQueries,
-  billQueries
+  billQueries,
+  demoQueries
 );
 
 const Mutation = Object.assign(
