@@ -89,7 +89,7 @@ export const loggingMiddleWare = (req, res, next) => {
     }
 
     const now = moment();
-    const date = now.format("DD-MM-YYYY");
+    const date = now.format("YYYY-MM-DD");
     const logDirectory = path.join(__dirname, "./logs", `${date}.txt`);
 
     const body = Buffer.concat(chunks).toString("utf8");
