@@ -25,11 +25,17 @@ module.exports = {
   deploy : {
     production : {
       user : 'node',
-      host : '212.83.163.1',
+      host : '35.205.22.68',
       ref  : 'origin/master',
-      repo : 'git@github.com:repo.git',
-      path : '/var/www/production',
-      'post-deploy' : 'npm install && rm -rf dist && babel src -d dist --ignore tests && pm2 startOrRestart ecosystem.config.js --env production'
+      repo : 'git@bitbucket.org:vipfymarketplace/vipfy-backend.git',
+      path : '/var/www/vipfy-backend',
+      env: {
+        NODE_ENV: 'production',
+        ENVIRONMENT: 'production',
+        SSL_KEY: '/etc/letsencrypt/live/dev.vipfy.com/privkey.pem',
+        SSL_CERT: '/etc/letsencrypt/live/dev.vipfy.com/cert.pem'
+      },
+      'post-deploy' : 'npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests && pm2 startOrRestart ecosystem.config.js --env production'
     },
     dev : {
       user : 'node',
