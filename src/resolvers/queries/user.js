@@ -35,5 +35,19 @@ export default {
     } catch ({ message }) {
       throw new Error(message);
     }
+  }),
+
+  fetchRecentLogs: requiresVipfyAdmin.createResolver(async (parent, { user }, { models }) => {
+    try {
+      const logs = await models.Log.findAll({
+        where: { user },
+        limit: 5,
+        order: [["time", "DESC"]]
+      });
+
+      return logs;
+    } catch ({ message }) {
+      throw new Error(message);
+    }
   })
 };

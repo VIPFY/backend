@@ -130,6 +130,8 @@ export const queries = `
 
   # Returns the amount of units in a Department
   fetchCompanySize: Int!
+
+  fetchRecentLogs(user: Int!): [Log]!
 `;
 
 export const mutations = `

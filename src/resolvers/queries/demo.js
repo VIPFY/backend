@@ -1,3 +1,4 @@
+import { difference, concat } from "lodash";
 import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 
@@ -5,14 +6,12 @@ export default {
   fetchRecommendedApps: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
       const { user: { unitid } } = decode(token);
-      const licences = await models.Licence.findAll({
-        where: { unitid }
-      });
+      const licences = await models.Licence.findAll({ where: { unitid } });
       const ids = await licences.map(licence => licence.get("boughtplanid"));
 
       const boughtPlans = await models.BoughtPlan.findAll({
         attributes: ["planid"],
-        where: { buyer: unitid, id: [...ids] }
+        where: { id: ids }
       });
 
       const planIds = await boughtPlans.map(bp => bp.get("planid"));
@@ -22,13 +21,28 @@ export default {
         where: { id: filteredIds }
       });
 
-      const appIds = await plans.map(app => app.get("appid"));
+      const myAppIds = await plans.map(app => app.get("appid"));
       const apps = await models.App.findAll();
 
-      const finalIds = await apps.map(app => app.get("id"));
+      const allAppIds = await apps.map(app => app.get("id"));
 
-      const filteredAppIds = finalIds.filter(id => !appIds.includes(id)).slice(0, 3);
-      const filteredApps = await models.App.findAll({ where: { id: filteredAppIds } });
+      const filteredAppIds = [];
+      let endIndex = 3;
+
+      if (myAppIds.includes(4)) {
+        filteredAppIds.push(4);
+        endIndex--;
+      }
+
+      if (myAppIds.includes(18)) {
+        filteredAppIds.push(18);
+        endIndex--;
+      }
+
+      const restAppIds = difference(allAppIds, myAppIds).slice(0, endIndex);
+      const finalAppIds = concat(restAppIds, filteredAppIds);
+      const filteredApps = await models.App.findAll({ where: { id: finalAppIds } });
+
       return filteredApps;
     } catch ({ message }) {
       throw new Error(message);

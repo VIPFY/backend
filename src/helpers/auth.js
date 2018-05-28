@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { pick } from "lodash";
+import { parentAdminCheck } from "../helpers/functions";
 
 export const createTokens = async (user, SECRET, SECRET2) => {
   const createToken = await jwt.sign(
@@ -28,7 +29,7 @@ export const createTokens = async (user, SECRET, SECRET2) => {
 export const refreshTokens = async (token, refreshToken, models, SECRET, SECRET_TWO) => {
   let userId = 0;
   try {
-    const { user: { unitid } } = jwt.decode(refreshToken);
+    const { user: { unitid } } = await jwt.decode(refreshToken);
     userId = unitid;
   } catch (err) {
     return {};
@@ -38,7 +39,9 @@ export const refreshTokens = async (token, refreshToken, models, SECRET, SECRET_
     return {};
   }
 
-  const user = await models.Human.findOne({ where: { unitid: userId }, raw: true });
+  const p1 = await models.Human.findOne({ where: { unitid: userId }, raw: true });
+  const p2 = await models.User.findOne({ where: { id: userId }, raw: true });
+  const [user, basicUser] = await Promise.all([p1, p2]);
 
   if (!user) {
     return {};
@@ -47,15 +50,17 @@ export const refreshTokens = async (token, refreshToken, models, SECRET, SECRET_
   const refreshSecret = user.passwordhash + SECRET_TWO;
 
   try {
-    jwt.verify(refreshToken, refreshSecret);
+    await jwt.verify(refreshToken, refreshSecret);
   } catch (err) {
     return {};
   }
 
-  const [newToken, newRefreshToken] = await createTokens(user, SECRET, refreshSecret);
+  const refreshUser = await parentAdminCheck(models, basicUser);
+
+  const [newToken, newRefreshToken] = await createTokens(refreshUser, SECRET, refreshSecret);
   return {
     token: newToken,
     refreshToken: newRefreshToken,
-    user
+    refreshUser
   };
 };

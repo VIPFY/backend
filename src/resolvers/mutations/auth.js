@@ -36,11 +36,8 @@ export default {
 
         const refreshSecret = user.passwordhash + SECRET_TWO;
         const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);
-        return {
-          ok: true,
-          token,
-          refreshToken
-        };
+
+        return { ok: true, token, refreshToken };
       } catch ({ message }) {
         throw new Error(message);
       }
