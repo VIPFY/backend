@@ -14,6 +14,7 @@ module.exports = {
     "comma-dangle": "off",
     'quotes': [2, 'double', {'allowTemplateLiterals': true}],
     "no-new": "off",
+    "no-plusplus": "off"
   },
   // Allow global functions for testing to avoid unnecessary warnings
   "globals": {

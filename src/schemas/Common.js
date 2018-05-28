@@ -28,9 +28,9 @@ type Newsletter {
 
 type Log {
   id: Int!
-  time: Date!
-  eventtype: String
-  eventdata: String
+  time: String!
+  eventtype: String!
+  eventdata: JSON!
   ip: String
   user: User!
   sudoer: User!

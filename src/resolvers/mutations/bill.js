@@ -47,7 +47,7 @@ export default {
       }
     }
   ),
-  // Exchange back to requiresAdmin after Metz
+  // Exchange back to requiresAdmin after Metz and Lissabon
   buyPlan: requiresAuth.createResolver(async (parent, { planid, amount }, { models, token }) =>
     models.sequelize.transaction(async ta => {
       try {
@@ -74,7 +74,9 @@ export default {
           key = { email: "jf@vipfy.com", password: "zdwMYqQPE4gSHr3QQSkm" };
         }
 
-        await models.Licence.create(
+        const p3 = models.Bill.create({ unitid: company });
+
+        const p4 = models.Licence.create(
           {
             unitid,
             boughtplanid: boughtplan.id,
@@ -86,6 +88,8 @@ export default {
           { transaction: ta }
         );
 
+        await Promise.all([p3, p4]);
+
         return { ok: true };
       } catch ({ message }) {
         throw new Error(message);
@@ -96,6 +100,17 @@ export default {
   endPlan: requiresAdmin.createResolver(async (parent, { id, enddate }, { models }) => {
     try {
       await models.Plan.update({ enddate }, { where: { id } });
+
+      return { ok: true };
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
+
+  addBillPos: requiresAuth.createResolver(async (parent, { bill }, { models, token }) => {
+    try {
+      const { user: { company } } = decode(token);
+      await models.BillPosition.create({ ...bill, unitid: company });
 
       return { ok: true };
     } catch (err) {

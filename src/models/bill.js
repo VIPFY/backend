@@ -1,7 +1,6 @@
-export default (sequelize, { BOOLEAN, TIME }) => {
+export default (sequelize, { TIME, NOW }) => {
   const Bill = sequelize.define("bill_data", {
-    type: BOOLEAN,
-    billtime: TIME,
+    billtime: { type: TIME, defaultValue: NOW() },
     paytime: TIME,
     stornotime: TIME
   });

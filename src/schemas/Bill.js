@@ -1,7 +1,6 @@
 export const types = `
   type Bill {
     id: Int!
-    type: Boolean
     billtime: String
     paytime: String
     stornotime: String
@@ -16,6 +15,17 @@ export const types = `
     billid: Bill!
     planid: Plan!
     vendor: Unit!
+  }
+
+  input BillInput {
+    positiontext: String
+    amount: Float
+    currency: String
+    billid: Int
+    planid: Int
+    vendor: Int
+    paytime: String
+    stornotime: String
   }
 
 # Payment plans for the Apps
@@ -152,4 +162,6 @@ export const mutations = `
   buyPlan(planid: Int!, amount: Int!): Response!
 
   endPlan(id: Int!, enddate: String!): Response!
+
+  addBillPos(bill: BillInput!): Response!
 `;
