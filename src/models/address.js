@@ -4,7 +4,12 @@ export default (sequelize, { TEXT, CHAR, JSONB, INTEGER }) => {
     address: JSONB,
     description: TEXT,
     priority: INTEGER,
-    tag: TEXT
+    tag: {
+      type: TEXT,
+      set(val) {
+        this.setDataValue("tag", val.toLowerCase());
+      }
+    }
   });
 
   Address.associate = ({ Unit }) => {

@@ -4,181 +4,211 @@
         <meta charset="UTF-8">
         <title>Vipfy Invoice</title>
 <style>
-body {
-  padding: 50px;
-}
+  #body {
+    padding: 0 25px;
+  }
 
-div.container {
-  max-width: 1150px;
-  margin: 0 auto;
-  font-family: "Open Sans";
-}
+  div.container {
+    max-width: 1150px;
+    margin: 0 auto;
+    font-family: "Open Sans";
+  }
 
-div.container p {
-  margin: 0;
-  font-size: 12px;
-  float: right;
-}
+  .header {
+    display: -webkit-box;
+    display: -moz-box;
+    display: -ms-flexbox;
+    display: -webkit-flex;
+    display: flex;
+    -webkit-flex-flow: row nowrap;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    margin-top: 20px;
+    font-size: 12px;
+  }
 
-.container h1,
-.container h2 {
-  margin: 0px;
-  color: #2980b9;
-}
+  #logo {
+    width: 50%;
+    height: 10rem;
+    background-image:url('https://vipfy.com/static/media/logo-text.bbad7363.png');
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
 
-.container h1 {
-  font-size: 50px;
-}
+  div.container p {
+    margin: 0;
+  }
 
-hr {
-  border: 1px solid #2980b9;
-  margin: 30px 0;
-}
+  .container h1,
+  .container h2 {
+    margin: 0px;
+    color: #c1272d;
+  }
 
-table.bordered {
-  border-collapse: collapse;
-}
+  #buyer {
+    margin-bottom: 20px;
+  }
 
-table.bordered td,
-table.bordered th,
-table.bordered {
-  border: 2px solid #2980b9;
-}
+  hr {
+    border: 1px solid #c1272d;
+    margin: 20px 0;
+  }
 
-.full-width {
-  width: 100%;
-}
+  table.bordered {
+    border-collapse: collapse;
+  }
 
-.text-center {
-  text-align: center;
-}
+  table.bordered td,
+  table.bordered th,
+  table.bordered {
+    border: 2px solid #c1272d;
+  }
 
-.text-right {
-  text-align: right;
-}
+  .full-width {
+    width: 100%;
+  }
 
-.text-left {
-  text-align: left;
-}
+  .text-center {
+    text-align: center;
+  }
 
-.text-top * {
-  vertical-align: top;
-}
+  .text-right {
+    text-align: right;
+  }
 
-.monospaced {
-  font-family: "Monaco", monospace;
-}
+  .text-left {
+    text-align: left;
+  }
 
-table.padded th,
-table.padded td {
-  padding: 5px;
-}
+  .text-top * {
+    vertical-align: top;
+  }
 
-table th {
-  font-weight: normal;
-}
+  .monospaced {
+    font-family: "Monaco", monospace;
+  }
 
-.mt-s {
-  margin-top: 23px;
-}
+  table.padded th,
+  table.padded td {
+    padding: 5px;
+  }
 
-.mb-s {
-  margin-bottom: 23px;
-}
+  table th {
+    font-weight: normal;
+  }
+
+  .mt-s {
+    margin-top: 23px;
+  }
+
+  .mb-s {
+    margin-bottom: 23px;
+  }
 
 </style>
 </head>
     <body>
         <div class="container">
             <!-- Seller Fields -->
-            <img src="https://vipfy.com/static/media/logo-text.bbad7363.png" style="width:100%; max-width:300px;">
-            <p>Tax Payer's Registration Number: <strong>{{seller.registrationNumber}}</strong></p>
-            <p>Tax ID: <strong>{{seller.taxId}}</strong></p>
-            <p>Address: <strong>{{seller.address.street}} {{seller.address.number}}<br/>
-                    {{seller.address.zip}} {{seller.address.city}}, {{seller.address.region}}, {{seller.address.country}}</strong></p>
-            <p>Phone: <strong>{{seller.phone}}</strong></p>
-            <p>Email: <strong>{{seller.email}}</strong></p>
-            <p>Website: <strong>{{seller.website}}</strong></p>
-            <p>Bank: <strong>{{seller.bank.name}}</strong></p>
-            <p>SWIFT: <strong>{{seller.bank.swift}}</strong></p>
-            <p><strong>IBAN {{seller.bank.currency}}: {{seller.bank.iban}}</strong></p>
+          <div class="header">
+            <div id="logo"></div>
 
+            <div>
+              <p>Tax Payer's Registration Number: <strong>{{seller.registrationNumber}}</strong></p>
+              <p>Tax ID: <strong>{{seller.taxId}}</strong></p>
+              <p>Address: <strong>{{seller.address.street}} {{seller.address.number}}<br/>
+                      {{seller.address.zip}} {{seller.address.city}}, {{seller.address.region}}, {{seller.address.country}}</strong></p>
+              <p>Phone: <strong>{{seller.phone}}</strong></p>
+              <p>Email: <strong>{{seller.email}}</strong></p>
+              <p>Website: <strong>{{seller.website}}</strong></p>
+              <p>Bank: <strong>{{seller.bank.name}}</strong></p>
+              <p>SWIFT: <strong>{{seller.bank.swift}}</strong></p>
+              <p><strong>IBAN {{seller.bank.currency}}: {{seller.bank.iban}}</strong></p>
+            </div>
+          </div>
             <hr>
 
             <!-- Invoice data -->
+          <div id="body">
+            <div class="header">
+           <!-- Seller Fields -->
+          <div id="buyer">
+            <p><strong>Buyer:</strong></p>
+            <h2>{{buyer.company}}</h2>
+            <p>Tax ID: <strong>{{buyer.taxId}}</strong></p>
+            <p>Address: <strong>{{buyer.address.street}}<br/>
+              {{buyer.address.zip}} {{buyer.address.city}}, {{buyer.address.country}}</strong></p>
+              <p>Phone: <strong>{{buyer.phone}}</strong></p>
+              <p>Email: <strong>{{buyer.email}}</strong></p>
+          </div>
+
+          <div style="padding-left: 10px">
+            <p style="color: #fff">.</p>
             <h2>INVOICE</h2>
             <table class="mb-s">
-                <tbody>
-                    <tr>
-                        <td style="width: 290px;">Invoice-Number:</td>
-                        <td>{{invoice.number.series}}{{invoice.number.separator}}{{invoice.number.id}}</td>
-                    </tr>
-                    <tr>
-                        <td>Invoice-Date (dd/mm/yyyy):</td>
-                        <td>{{invoice.date}}</td>
-                    </tr>
-                    <tr>
-                        <td>Due-Date (dd/mm/yyyy):</td>
-                        <td>{{invoice.dueDate}}</td>
-                    </tr>
-                </tbody>
+              <tbody>
+                <tr>
+                  <td>Invoice-Number:</td>
+                  <td>{{invoice.number}}</td>
+                </tr>
+                <tr>
+                  <td>Invoice-Date (yyyy/mm/dd):</td>
+                  <td>{{invoice.date}}</td>
+                </tr>
+                <tr>
+                  <td>Due-Date (yyyy/mm/dd):</td>
+                  <td>{{invoice.dueDate}}</td>
+                </tr>
+              </tbody>
             </table>
-
-            <!-- Seller Fields -->
-            <p><strong>Buyer / Cumpărător:</strong></p>
-            <h1>{{buyer.company}}</h1>
-            <p>Tax ID: <strong>{{buyer.taxId}}</strong></p>
-            <p>Address: <strong>{{buyer.address.street}} {{buyer.address.number}}<br/>
-                    {{buyer.address.zip}} {{buyer.address.city}}, {{buyer.address.country}}</strong></p>
-            <p>Phone: <strong>{{buyer.phone}}</strong></p>
-            <p>Email: <strong>{{buyer.email}}</strong></p>
-            <p>Website: <strong>{{buyer.website}}</strong></p>
+          </div>
+        </div>
 
             <table class="bordered full-width padded mt-s mb-s monospaced">
-                <thead>
-                    <tr>
-                        <th style="width: 30px;"><strong>Nr. crt</strong></th>
-                        <th>
-                            <strong>Description</strong><br>
-                            (Denumirea produselor sau a serviciilor)
-                        </th>
-                        <th>
-                            <strong>Unit</strong><br>
-                            (U. M.)
-                        </th>
-                        <th>
-                            <strong>Qty.</strong><br>
-                            (Cant.)
-                        </th>
-                        <th>
-                            <strong>Unit price.<br>
-                                –{{invoice.currency.main}}–
-                            </strong><br>
-                            –({{invoice.currency.secondary}})–
-                        </th>
-                        <th>
-                            <strong>Total Amount.<br>
-                                –{{invoice.currency.main}}–
-                            </strong><br>
-                            –({{invoice.currency.secondary}})–
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="text-top">
-                    {{{description_rows}}}
-                    <tr>
-                        <td colspan="5" class="text-center">
-                            <strong>Invoice Total –CHF– </strong><br>
-                            (Valoare totală de plată factura curentă –RON–)
-                        </td>
-                        <td class="text-right">
-                            <strong>{{total.main}}</strong><br>
-                            ({{total.secondary}})
-                        </td>
-                    </tr>
-                </tbody>
+              <thead>
+                <tr>
+                  <th style="width: 30px;"><strong>Nr</strong></th>
+                  <th>
+                      <strong>Description</strong><br>
+                  </th>
+                  <th>
+                      <strong>Unit</strong><br>
+                  </th>
+                  <th>
+                      <strong>Qty.</strong><br>
+                  </th>
+                  <th>
+                      <strong>Unit price.<br>
+                          –{{invoice.currency.main}}–
+                      </strong><br>
+                      –({{invoice.currency.secondary}})–
+                  </th>
+                  <th>
+                      <strong>Total Amount.<br>
+                          –{{invoice.currency.main}}–
+                      </strong><br>
+                      –({{invoice.currency.secondary}})–
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="text-top">
+                {{{description_rows}}}
+                <tr>
+                  <td colspan="5" class="text-center">
+                    <strong>Invoice Total –EUR– </strong><br>
+                  </td>
+
+                  <td class="text-right">
+                    <strong>{{total.main}}</strong><br>
+                    ({{total.secondary}})
+                  </td>
+                </tr>
+              </tbody>
             </table>
             {{invoice.explanation}}
         </div>
+      </div>
     </body>
 </html>

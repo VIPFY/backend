@@ -107,8 +107,31 @@ export default {
     }
   }),
 
-  createBill: async (parent, { bill }, { models, token }) => {
+  createBill: async (parent, { monthly }, { models, token }) => {
     try {
+      const bill = { contact: {}, single: true };
+      if (monthly) {
+        bill.single = false;
+      }
+
+      const tag = "billing";
+      const { user: { company: unitid } } = decode(token);
+
+      const p1 = models.Address.findOne({
+        attributes: ["country", "address"],
+        where: { unitid, tag }
+      });
+      const p2 = models.Email.findOne({ attributes: ["email"], where: { unitid, tag } });
+      const p3 = models.Phone.findOne({ attributes: ["number"], where: { unitid, tag } });
+      const p4 = models.Department.findOne({ attributes: ["name"], where: { unitid } });
+      const p5 = models.Bill.create({ unitid });
+      const [address, email, phone, company, id] = await Promise.all([p1, p2, p3, p4, p5]);
+
+      bill.address = address.get();
+      bill.contact.email = email.get().email;
+      bill.contact.phone = phone.get().number;
+      bill.company = company.get().name;
+      bill.id = id.get().id;
       await createBill(bill);
 
       return { ok: true };

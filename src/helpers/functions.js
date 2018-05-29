@@ -4,7 +4,6 @@ import { random } from "lodash";
 import moment from "moment";
 
 export const getDate = () => new Date().toUTCString();
-const date = moment().format("DDMMYYYY");
 
 export const createPassword = async email => {
   // A password musst be created because otherwise the not null rule of the
@@ -35,6 +34,7 @@ export const parentAdminCheck = async (models, user) => {
 };
 
 export const formatFilename = filename => {
+  const date = moment().format("DDMMYYYY");
   const randomString = Math.random()
     .toString(36)
     .substring(2, 7);
@@ -43,7 +43,17 @@ export const formatFilename = filename => {
   return `${date}-${randomString}-${cleanFilename}`;
 };
 
-export const createBill = bill => {
+export const createBill = ({ contact, address, company, id, single }) => {
+  const { country, address: { zip, city, street } } = address;
+  const { email, phone } = contact;
+  const date = moment().format("YYYY-MM-DD");
+  const dueDate = moment()
+    .add(2, "weeks")
+    .format("YYYY-MM-DD");
+  const year = moment().format("YYYY");
+  const number = `V${single ? "S" : "M"}-${year}-${id}-01`;
+  const billName = formatFilename("vipfy-bill");
+
   const vipfyInvoice = new Invoice({
     config: {
       template: `${__dirname}/../templates/invoice.html`,
@@ -55,28 +65,24 @@ export const createBill = bill => {
         secondary: 3.67
       },
       invoice: {
-        number: {
-          series: "PREFIX",
-          separator: "-",
-          id: 1
-        },
+        number,
         date,
-        dueDate: bill,
+        dueDate,
         explanation: "Thank you for your business, dear Vipfy Customer!",
         currency: {
-          main: "XXX",
-          secondary: "ZZZ"
+          main: "USD",
+          secondary: "EUR"
         }
       },
       tasks: [
         {
-          description: "Some interesting task",
+          description: "Some interesting test",
           unit: "Hours",
           quantity: 5,
           unitPrice: 2
         },
         {
-          description: "Another interesting task",
+          description: "Another interesting test",
           unit: "Hours",
           quantity: 10,
           unitPrice: 3
@@ -97,57 +103,47 @@ export const createBill = bill => {
         street: "The Street Name",
         number: "00",
         zip: "000000",
-        city: "Vipfyton",
+        city: "Vipfytown",
         region: "Some Region",
         country: "Kingdom of Vipfy"
       },
-      phone: "+40 726 xxx xxx",
-      email: "me@example.com",
+      phone: "001 234590934234",
+      email: "billing@vipfy.com",
       website: "vipfy.com",
       bank: {
-        name: "Some Bank Name",
+        name: "Cayman Island Bank",
         swift: "XXXXXX",
         currency: "XXX",
         iban: "..."
       }
     },
     buyer: {
-      company: "Another Company GmbH",
+      company,
       taxId: "00000000",
-      address: {
-        street: "The Street Name",
-        number: "00",
-        zip: "000000",
-        city: "Some City",
-        region: "Some Region",
-        country: "Nowhere"
-      },
-      phone: "+40 726 xxx xxx",
-      email: "me@example.com",
-      website: "example.com",
-      bank: {
-        name: "Some Bank Name",
-        swift: "XXXXXX",
-        currency: "XXX",
-        iban: "..."
-      }
+      address: { street, zip, city, country },
+      phone,
+      email
     }
   });
 
-  const billName = formatFilename("vipfy-bill");
-
   // Render invoice as HTML and PDF
   vipfyInvoice
-    .toHtml(`${__dirname}/../files/${billName}.html`, (err, data) => {
-      console.log("Data: ", data);
+    .toHtml(`${__dirname}/../files/${billName}.html`, err => {
       console.log("Error: ", err);
       console.log("Saved HTML file");
     })
-    .toPdf(`${__dirname}/../files/${billName}.pdf`, (err, data) => {
-      console.log("Data: ", data);
-      console.log("Error: ", err);
-      console.log("Saved pdf file");
-    });
+    .toPdf(
+      {
+        output: `${__dirname}/../files/${billName}.pdf`,
+        converter: {
+          fitToPage: true
+        }
+      },
+      err => {
+        console.log("Error: ", err);
+        console.log("Saved pdf file");
+      }
+    );
 
   // Serve the pdf via streams (no files)
   // require("http")
