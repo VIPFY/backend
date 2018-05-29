@@ -1,7 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { requiresVipfyAdmin, requiresAdmin, requiresAuth } from "../../helpers/permissions";
 import { createProduct, createPlan } from "../../services/stripe";
-import { getDate } from "../../helpers/functions";
+import { getDate, createBill } from "../../helpers/functions";
 
 /* eslint array-callback-return: "off", max-len: "off" */
 
@@ -106,6 +106,16 @@ export default {
       throw new Error(err.message);
     }
   }),
+
+  createBill: async (parent, { bill }, { models, token }) => {
+    try {
+      await createBill(bill);
+
+      return { ok: true };
+    } catch ({ message }) {
+      throw new Error(message);
+    }
+  },
 
   addBillPos: requiresAuth.createResolver(async (parent, { bill }, { models, token }) => {
     try {

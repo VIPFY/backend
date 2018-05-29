@@ -163,5 +163,6 @@ export const mutations = `
 
   endPlan(id: Int!, enddate: String!): Response!
 
+  createBill(bill: String): Response!
   addBillPos(bill: BillInput!): Response!
 `;

@@ -28,7 +28,7 @@ export const authMiddleware = async (req, res, next) => {
       if (err.name == "TokenExpiredError") {
         // If the token has expired, we use the refreshToken to assign new ones
         const refreshToken = req.headers["x-refresh-token"];
-        const newTokens = await refreshTokens(token, refreshToken, models, SECRET, SECRET_TWO);
+        const newTokens = await refreshTokens(refreshToken, models, SECRET, SECRET_TWO);
 
         if (newTokens.token && newTokens.refreshToken) {
           res.set("Access-Control-Expose-Headers", "x-token, x-refresh-token");
@@ -90,6 +90,8 @@ export const loggingMiddleWare = (req, res, next) => {
 
     const now = moment();
     const date = now.format("YYYY-MM-DD");
+    const uploadDir = "src/logs";
+    if (uploadDir) mkdirp.sync(uploadDir);
     const logDirectory = path.join(__dirname, "./logs", `${date}.txt`);
 
     const body = Buffer.concat(chunks).toString("utf8");
