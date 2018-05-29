@@ -13,7 +13,8 @@
     "play": "babel-node src/helpers/play.js",
     "prepare-test-db": "./prepare_vipfy_test_db.sh",
     "lint": "eslint .",
-    "publish": "npx pm2 deploy ecosystem.config.js dev update"
+    "publish": "npx pm2 deploy ecosystem.config.js dev update",
+    "publish-prod": "npx pm2 deploy ecosystem.config.js production update"
   },
   "jest": {
     "testEnvironment": "node"
