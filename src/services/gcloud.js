@@ -10,7 +10,7 @@ const storage = new Storage({ projectId });
 
 // The name for the new bucket
 const bucketName = "vipfy-imagestore-01";
-// eslint-disable-next-line
+
 export const uploadFile = async ({ path, name }, folder) => {
   const profilepicture = formatFilename(name);
   const destination = `${folder}/${profilepicture}`;
@@ -32,5 +32,18 @@ export const deleteFile = async (file, folder) => {
     return true;
   } catch (err) {
     throw new Error(err.message);
+  }
+};
+
+export const uploadInvoice = async (path, name, year) => {
+  const destination = `${year}/${name}`;
+
+  try {
+    await storage.bucket("vipfy-invoices").upload(path, { destination, public: false });
+    await fs.unlinkSync(path);
+
+    return true;
+  } catch (err) {
+    return err;
   }
 };

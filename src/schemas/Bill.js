@@ -163,6 +163,7 @@ export const mutations = `
 
   endPlan(id: Int!, enddate: String!): Response!
 
-  createBill(monthly: Boolean): Response!
+  # This function will be used by a cronjob which runs once a month
+  createMonthlyBill: Response!
   addBillPos(bill: BillInput!): Response!
 `;

@@ -109,30 +109,30 @@
 
 </style>
 </head>
-    <body>
-        <div class="container">
-            <!-- Seller Fields -->
-          <div class="header">
-            <div id="logo"></div>
+  <body>
+    <div class="container">
+      <!-- Seller Fields -->
+      <div class="header">
+        <div id="logo"></div>
 
-            <div>
-              <p>Tax Payer's Registration Number: <strong>{{seller.registrationNumber}}</strong></p>
-              <p>Tax ID: <strong>{{seller.taxId}}</strong></p>
-              <p>Address: <strong>{{seller.address.street}} {{seller.address.number}}<br/>
-                      {{seller.address.zip}} {{seller.address.city}}, {{seller.address.region}}, {{seller.address.country}}</strong></p>
-              <p>Phone: <strong>{{seller.phone}}</strong></p>
-              <p>Email: <strong>{{seller.email}}</strong></p>
-              <p>Website: <strong>{{seller.website}}</strong></p>
-              <p>Bank: <strong>{{seller.bank.name}}</strong></p>
-              <p>SWIFT: <strong>{{seller.bank.swift}}</strong></p>
-              <p><strong>IBAN {{seller.bank.currency}}: {{seller.bank.iban}}</strong></p>
-            </div>
-          </div>
-            <hr>
+        <div>
+          <p>Tax Payer's Registration Number: <strong>{{seller.registrationNumber}}</strong></p>
+          <p>Tax ID: <strong>{{seller.taxId}}</strong></p>
+          <p>Address: <strong>{{seller.address.street}} {{seller.address.number}}<br/>
+                  {{seller.address.zip}} {{seller.address.city}}, {{seller.address.region}}, {{seller.address.country}}</strong></p>
+          <p>Phone: <strong>{{seller.phone}}</strong></p>
+          <p>Email: <strong>{{seller.email}}</strong></p>
+          <p>Website: <strong>{{seller.website}}</strong></p>
+          <p>Bank: <strong>{{seller.bank.name}}</strong></p>
+          <p>SWIFT: <strong>{{seller.bank.swift}}</strong></p>
+          <p><strong>IBAN {{seller.bank.currency}}: {{seller.bank.iban}}</strong></p>
+        </div>
+      </div>
+      <hr>
 
-            <!-- Invoice data -->
-          <div id="body">
-            <div class="header">
+        <!-- Invoice data -->
+      <div id="body">
+        <div class="header">
            <!-- Seller Fields -->
           <div id="buyer">
             <p><strong>Buyer:</strong></p>
@@ -154,11 +154,11 @@
                   <td>{{invoice.number}}</td>
                 </tr>
                 <tr>
-                  <td>Invoice-Date (yyyy/mm/dd):</td>
+                  <td>Invoice-Date (yyyy-mm-dd):</td>
                   <td>{{invoice.date}}</td>
                 </tr>
                 <tr>
-                  <td>Due-Date (yyyy/mm/dd):</td>
+                  <td>Due-Date (yyyy-mm-dd):</td>
                   <td>{{invoice.dueDate}}</td>
                 </tr>
               </tbody>
@@ -166,49 +166,34 @@
           </div>
         </div>
 
-            <table class="bordered full-width padded mt-s mb-s monospaced">
-              <thead>
-                <tr>
-                  <th style="width: 30px;"><strong>Nr</strong></th>
-                  <th>
-                      <strong>Description</strong><br>
-                  </th>
-                  <th>
-                      <strong>Unit</strong><br>
-                  </th>
-                  <th>
-                      <strong>Qty.</strong><br>
-                  </th>
-                  <th>
-                      <strong>Unit price.<br>
-                          –{{invoice.currency.main}}–
-                      </strong><br>
-                      –({{invoice.currency.secondary}})–
-                  </th>
-                  <th>
-                      <strong>Total Amount.<br>
-                          –{{invoice.currency.main}}–
-                      </strong><br>
-                      –({{invoice.currency.secondary}})–
-                  </th>
-                </tr>
-              </thead>
-              <tbody class="text-top">
-                {{{description_rows}}}
-                <tr>
-                  <td colspan="5" class="text-center">
-                    <strong>Invoice Total –EUR– </strong><br>
-                  </td>
+        <table class="bordered full-width padded mt-s mb-s monospaced">
+          <thead>
+            <tr>
+              <th style="width: 30px;"><strong>Nr</strong></th>
+              <th><strong>Description</strong><br></th>
+              <th><strong>Qty</strong><br></th>
+              <th>
+                <strong>Total Amount<br>
+                  –{{invoice.currency}}–
+                </strong>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="text-top">
+            {{{description_rows}}}
+            <tr>
+              <td colspan="3" class="text-center">
+                <strong>Invoice Total –USD– </strong>
+              </td>
 
-                  <td class="text-right">
-                    <strong>{{total.main}}</strong><br>
-                    ({{total.secondary}})
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            {{invoice.explanation}}
-        </div>
+              <td class="text-right">
+                <strong>{{total}}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        {{invoice.explanation}}
       </div>
-    </body>
+    </div>
+  </body>
 </html>

@@ -1,9 +1,10 @@
 import { decode } from "jsonwebtoken";
 import { requiresVipfyAdmin, requiresAdmin, requiresAuth } from "../../helpers/permissions";
 import { createProduct, createPlan } from "../../services/stripe";
-import { getDate, createBill } from "../../helpers/functions";
+import { getDate } from "../../helpers/functions";
+import createInvoice from "../../helpers/createInvoice";
 
-/* eslint array-callback-return: "off", max-len: "off" */
+/* eslint-disable array-callback-return, consistent-return */
 
 export default {
   createPlan: requiresAdmin.createResolver(async (parent, { plan }, { models }) => {
@@ -51,7 +52,10 @@ export default {
   buyPlan: requiresAuth.createResolver(async (parent, { planid, amount }, { models, token }) =>
     models.sequelize.transaction(async ta => {
       try {
+        const billItems = [];
+        const billItem = {};
         const { user: { unitid, company } } = decode(token);
+
         const p1 = models.BoughtPlan.create(
           {
             buyer: unitid,
@@ -63,7 +67,10 @@ export default {
           { transaction: ta }
         );
 
-        const p2 = models.Plan.findOne({ where: { id: planid }, attributes: ["appid"] });
+        const p2 = models.Plan.findOne({
+          where: { id: planid },
+          attributes: ["appid", "name", "price"]
+        });
         const [boughtplan, app] = await Promise.all([p1, p2]);
 
         let key;
@@ -74,8 +81,12 @@ export default {
           key = { email: "jf@vipfy.com", password: "zdwMYqQPE4gSHr3QQSkm" };
         }
 
-        const p3 = models.Bill.create({ unitid: company });
+        billItem.description = app.get("name");
+        billItem.quantity = boughtplan.get("key").amount;
+        billItem.unitPrice = app.get("price");
+        billItems.push(billItem);
 
+        const p3 = models.Bill.create({ unitid: company }, { transaction: ta });
         const p4 = models.Licence.create(
           {
             unitid,
@@ -88,9 +99,14 @@ export default {
           { transaction: ta }
         );
 
-        await Promise.all([p3, p4]);
+        const results = await Promise.all([p3, p4]);
+        const billId = await results[0].get("id");
+        const ok = await createInvoice(false, models, company, billId, billItems);
+        if (ok !== true) {
+          throw new Error(ok);
+        }
 
-        return { ok: true };
+        return { ok };
       } catch ({ message }) {
         throw new Error(message);
       }
@@ -107,36 +123,37 @@ export default {
     }
   }),
 
-  createBill: async (parent, { monthly }, { models, token }) => {
+  createMonthlyBill: async (parent, args, { models, token }) => {
     try {
-      const bill = { contact: {}, single: true };
-      if (monthly) {
-        bill.single = false;
+      const { user: { company: unitid } } = decode(token);
+      const bill = await models.Bill.create({ unitid });
+      const billId = bill.get("id");
+      const billItems = [
+        {
+          description: "Some interesting test",
+          quantity: 5,
+          unitPrice: 19.99
+        },
+        {
+          description: "Another interesting test",
+          quantity: 10,
+          unitPrice: 5.99
+        },
+        {
+          description: "The most interesting one",
+          quantity: 3,
+          unitPrice: 9.99
+        }
+      ];
+
+      const ok = await createInvoice(true, models, unitid, billId, billItems);
+      if (ok !== true) {
+        throw new Error(ok);
       }
 
-      const tag = "billing";
-      const { user: { company: unitid } } = decode(token);
-
-      const p1 = models.Address.findOne({
-        attributes: ["country", "address"],
-        where: { unitid, tag }
-      });
-      const p2 = models.Email.findOne({ attributes: ["email"], where: { unitid, tag } });
-      const p3 = models.Phone.findOne({ attributes: ["number"], where: { unitid, tag } });
-      const p4 = models.Department.findOne({ attributes: ["name"], where: { unitid } });
-      const p5 = models.Bill.create({ unitid });
-      const [address, email, phone, company, id] = await Promise.all([p1, p2, p3, p4, p5]);
-
-      bill.address = address.get();
-      bill.contact.email = email.get().email;
-      bill.contact.phone = phone.get().number;
-      bill.company = company.get().name;
-      bill.id = id.get().id;
-      await createBill(bill);
-
-      return { ok: true };
-    } catch ({ message }) {
-      throw new Error(message);
+      return { ok };
+    } catch (err) {
+      throw new Error(err);
     }
   },
 
