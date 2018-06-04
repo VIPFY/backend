@@ -3,6 +3,7 @@ import { requiresVipfyAdmin, requiresAdmin, requiresAuth } from "../../helpers/p
 import { createProduct, createPlan } from "../../services/stripe";
 import { getDate } from "../../helpers/functions";
 import createInvoice from "../../helpers/createInvoice";
+import { createDownloadLink } from "../../services/gcloud";
 
 /* eslint-disable array-callback-return, consistent-return */
 
@@ -76,7 +77,7 @@ export default {
         let key;
 
         if (app.appid == 4) {
-          key = { email: "nv@vipfy.vipfy.com", password: "12345678" };
+          key = { email: "nv@vipfy.vipfy.vipfy.com", password: "12345678" };
         } else {
           key = { email: "jf@vipfy.com", password: "zdwMYqQPE4gSHr3QQSkm" };
         }
@@ -101,12 +102,17 @@ export default {
 
         const results = await Promise.all([p3, p4]);
         const billId = await results[0].get("id");
-        const ok = await createInvoice(false, models, company, billId, billItems);
-        if (ok !== true) {
-          throw new Error(ok);
+        const res = await createInvoice(false, models, company, billId, billItems);
+        if (res.ok !== true) {
+          throw new Error(res.err);
         }
 
-        return { ok };
+        await models.Bill.update(
+          { billname: res.billName },
+          { where: { id: billId }, transaction: ta }
+        );
+
+        return { ok: res.ok };
       } catch ({ message }) {
         throw new Error(message);
       }
@@ -123,7 +129,7 @@ export default {
     }
   }),
 
-  createMonthlyBill: async (parent, args, { models, token }) => {
+  createMonthlyBill: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
       const { user: { company: unitid } } = decode(token);
       const bill = await models.Bill.create({ unitid });
@@ -155,7 +161,7 @@ export default {
     } catch (err) {
       throw new Error(err);
     }
-  },
+  }),
 
   addBillPos: requiresAuth.createResolver(async (parent, { bill }, { models, token }) => {
     try {
@@ -163,6 +169,28 @@ export default {
       await models.BillPosition.create({ ...bill, unitid: company });
 
       return { ok: true };
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
+
+  downloadBill: requiresAuth.createResolver(async (parent, { billid }, { models, token }) => {
+    try {
+      const { user: { company: unitid } } = await decode(token);
+      const bill = await models.Bill.findOne({
+        where: { unitid, id: billid },
+        attributes: ["billname", "billtime"]
+      });
+
+      if (!bill) {
+        throw new Error("Couldn't find invoice!");
+      }
+      const name = bill.get("billname");
+      const time = bill.get("billtime");
+
+      const downloadLink = await createDownloadLink(name, time);
+
+      return downloadLink;
     } catch (err) {
       throw new Error(err.message);
     }

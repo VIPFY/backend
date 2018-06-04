@@ -75,6 +75,7 @@ export default {
   Message: find({ receiver: "Unit" }),
   MessageData: find({ sender: "Unit", receiver: "Unit" }),
   Newsletter: find({ email: "Email" }),
+  ParentUnit: find({ parentunit: "Unit", childunit: "Unit" }),
   Phone: find(unit),
   Plan: find(plans),
   PlansRunning: find({ appid: "App" }),

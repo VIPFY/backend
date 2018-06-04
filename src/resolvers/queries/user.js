@@ -20,6 +20,24 @@ export default {
     }
   }),
 
+  allCompanies: async (parent, args, { models }) => {
+    try {
+      const childunits = await models.ParentUnit.findAll({ attributes: ["childunit"] });
+      const ids = childunits.map(id => id.get("childunit"));
+
+      const roots = await models.ParentUnit.findAll({
+        where: { parentunit: { [models.sequelize.Op.notIn]: ids } }
+      });
+
+      const companyIds = roots.map(root => root.get("parentunit"));
+      const companies = await models.Department.findAll({ where: { unitid: companyIds } });
+
+      return companies;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  },
+
   allDepartments: requiresVipfyAdmin.createResolver(async (parent, args, { models }) =>
     models.Department.findAll({
       where: { deleted: false, banned: false }

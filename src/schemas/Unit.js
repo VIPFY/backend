@@ -126,6 +126,7 @@ export const queries = `
   # Returns all Users for messages
   allUsers: [User]!
 
+  allCompanies: [Department]!
   allDepartments: [Department]!
 
   # Returns the amount of units in a Department

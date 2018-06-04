@@ -91,15 +91,14 @@ export default async (monthly, models, unitid, billId, billItems) => {
       }
 
       const ok = await uploadInvoice(path, billName, year);
-      console.log("upload", ok);
       if (ok !== true) {
         return ok;
       }
 
       return console.log("Saved pdf file");
     });
-    console.log("after InvoicePdf");
-    return true;
+
+    return { ok: true, billName };
 
     // Serve the pdf via streams (no files)
     // require("http")
@@ -108,6 +107,6 @@ export default async (monthly, models, unitid, billId, billItems) => {
     //   })
     //   .listen(8000);
   } catch (err) {
-    return err;
+    return { ok: false, err };
   }
 };

@@ -1,7 +1,8 @@
 export const types = `
   type Bill {
     id: Int!
-    billtime: String
+    billtime: String!
+    billName: String!
     paytime: String
     stornotime: String
     unitid: Unit!
@@ -22,6 +23,7 @@ export const types = `
     amount: Float
     currency: String
     billid: Int
+    billname: String
     planid: Int
     vendor: Int
     paytime: String
@@ -166,4 +168,5 @@ export const mutations = `
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!
   addBillPos(bill: BillInput!): Response!
+  downloadBill(billid: Int!): String!
 `;

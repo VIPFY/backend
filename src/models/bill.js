@@ -1,8 +1,9 @@
-export default (sequelize, { TIME, NOW }) => {
+export default (sequelize, { STRING, TIME, NOW }) => {
   const Bill = sequelize.define("bill_data", {
     billtime: { type: TIME, defaultValue: NOW() },
     paytime: TIME,
-    stornotime: TIME
+    stornotime: TIME,
+    billname: STRING
   });
 
   Bill.associate = ({ Unit }) => {

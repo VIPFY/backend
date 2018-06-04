@@ -6,9 +6,9 @@ import { requiresAuth, requiresVipfyAdmin } from "../../helpers/permissions";
 export default {
   fetchBills: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
-      const { user: { unitid } } = decode(token);
+      const { user: { company: unitid } } = decode(token);
 
-      const bills = await models.Bill.findAll({ where: { unitid } });
+      const bills = await models.Bill.findAll({ where: { unitid }, order: [["billtime", "DESC"]] });
 
       return bills;
     } catch (err) {
