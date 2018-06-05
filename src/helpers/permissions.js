@@ -24,7 +24,6 @@ export const requiresAuth = createResolver(async (parent, args, { models, token 
 
   try {
     const { user: { company, unitid } } = decode(token);
-
     const userExists = await models.Unit.findById(unitid);
     if (!userExists) throw new Error("Couldn't find user in database!");
 

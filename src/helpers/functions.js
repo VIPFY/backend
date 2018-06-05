@@ -2,6 +2,8 @@ import bcrypt from "bcrypt";
 import { random } from "lodash";
 import moment from "moment";
 
+/* eslint-disable no-return-assign */
+
 export const getDate = () => new Date().toUTCString();
 
 export const createPassword = async email => {
@@ -22,12 +24,13 @@ export const parentAdminCheck = async (models, user) => {
       "Select DISTINCT (id) from department_employee_view where id not in (Select childid from department_employee_view where childid is Not null) and employee = ?",
       { replacements: [user.id], type: models.sequelize.QueryTypes.SELECT }
     )
-    .then(roots => roots.map(root => user.set({ company: root.id })));
+    .then(roots => roots.map(root => (user.company = root.id)));
 
   const isAdmin = await models.Right.findOne({
     where: { holder: user.id, forunit: user.company, type: "admin" }
   });
-  await user.set({ admin: !!isAdmin });
+
+  user.admin = !!isAdmin;
 
   return user;
 };

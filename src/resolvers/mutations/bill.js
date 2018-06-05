@@ -1,9 +1,10 @@
 import { decode } from "jsonwebtoken";
 import { requiresVipfyAdmin, requiresAdmin, requiresAuth } from "../../helpers/permissions";
 import { createProduct, createPlan } from "../../services/stripe";
-import { getDate } from "../../helpers/functions";
+import { getDate, formatFilename } from "../../helpers/functions";
 import createInvoice from "../../helpers/createInvoice";
 import { createDownloadLink } from "../../services/gcloud";
+import { createLoginLink } from "../../services/weebly";
 
 /* eslint-disable array-callback-return, consistent-return */
 
@@ -74,11 +75,11 @@ export default {
         });
         const [boughtplan, app] = await Promise.all([p1, p2]);
 
-        let key;
+        let key = {};
 
         if (app.appid == 4) {
           key = { email: "nv@vipfy.vipfy.vipfy.com", password: "12345678" };
-        } else {
+        } else if (app.appid == 18) {
           key = { email: "jf@vipfy.com", password: "zdwMYqQPE4gSHr3QQSkm" };
         }
 
@@ -112,9 +113,33 @@ export default {
           { where: { id: billId }, transaction: ta }
         );
 
+        const p5 = models.App.findOne({
+          where: { id: app.appid },
+          attributes: ["name"]
+        });
+
+        const p6 = models.Department.findOne({ where: { unitid: company }, attributes: ["name"] });
+
+        const [isWeebly, business] = await Promise.all([p5, p6]);
+
+        if (isWeebly.name == "Weebly") {
+          const email = `user${unitid}.boughtplan${boughtplan.id}@users.vipfy.com`;
+          const domain = `${formatFilename(business.name)}.vipfy.com`;
+          // Currently we use as id the free plan we have in the database
+          const result = await createLoginLink(email, domain, "1");
+          key.weeblyid = result.weeblyid;
+
+          await models.Licence.update(
+            { key },
+            { where: { unitid, boughtplanid: boughtplan.id }, transaction: ta }
+          );
+
+          return { ok: true, loginLink: result.loginLink };
+        }
+
         return { ok: res.ok };
-      } catch ({ message }) {
-        throw new Error(message);
+      } catch (err) {
+        throw new Error(err.message);
       }
     })
   ),
