@@ -1,4 +1,5 @@
 import moment from "moment";
+import { uniq } from "lodash";
 import Invoice from "./invoiceGenerator";
 import { formatFilename } from "./functions";
 import { uploadInvoice } from "../services/gcloud";
@@ -15,14 +16,38 @@ export default async (monthly, models, unitid, billId, billItems) => {
       attributes: ["country", "address"],
       where: { unitid, tag }
     });
-    const p2 = models.Email.findOne({ attributes: ["email"], where: { unitid, tag } });
+    const p2 = models.DepartmentEmail.findAll({
+      attributes: ["email"],
+      where: { departmentid: 14 }
+    });
     const p3 = models.Phone.findOne({ attributes: ["number"], where: { unitid, tag } });
     const p4 = models.Department.findOne({ attributes: ["name"], where: { unitid } });
-    let [address, email, phone, company] = await Promise.all([p1, p2, p3, p4]);
+    let [address, emails, phone, company] = await Promise.all([p1, p2, p3, p4]);
 
-    address = address.get();
-    email = email.get().email;
-    phone = phone.get().number;
+    emails = emails.map(email => email.get("email"));
+
+    if (!address) {
+      // This should throw an error later
+      address = {
+        address: {
+          street: "Null Avenue 0",
+          zip: "00000",
+          city: "Null Island"
+        },
+        country: "Liberia"
+      };
+    } else {
+      address = address.get();
+    }
+
+    if (!phone) {
+      phone = "00000000000000";
+    } else {
+      phone = phone.get().number;
+    }
+
+    const email = uniq(emails)[0];
+
     company = company.get().name;
 
     const { country, address: { zip, city, street } } = address;
@@ -87,15 +112,15 @@ export default async (monthly, models, unitid, billId, billItems) => {
     const path = `${__dirname}/../files/${billName}.pdf`;
     await vipfyInvoice.toPdf(path, async err => {
       if (err) {
-        return new Error(err);
+        throw new Error(err);
       }
 
       const ok = await uploadInvoice(path, billName, year);
       if (ok !== true) {
-        return ok;
+        throw new Error(ok);
       }
 
-      return console.log("Saved pdf file");
+      console.log("Saved pdf file");
     });
 
     return { ok: true, billName };

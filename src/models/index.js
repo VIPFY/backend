@@ -41,6 +41,7 @@ const db = {
   BoughtSubplanData: sequelize.import("./boughtSubplanData"),
   Department: sequelize.import("./department"),
   DepartmentData: sequelize.import("./departmentData"),
+  DepartmentEmail: sequelize.import("./departmentEmail"),
   DepartmentEmployee: sequelize.import("./departmentEmployee"),
   Email: sequelize.import("./email"),
   Human: sequelize.import("./human"),

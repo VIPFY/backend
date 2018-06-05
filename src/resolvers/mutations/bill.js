@@ -103,6 +103,7 @@ export default {
 
         const results = await Promise.all([p3, p4]);
         const billId = await results[0].get("id");
+
         const res = await createInvoice(false, models, company, billId, billItems);
         if (res.ok !== true) {
           throw new Error(res.err);

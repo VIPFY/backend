@@ -29,12 +29,12 @@ export default {
       const filteredAppIds = [];
       let endIndex = 3;
 
-      if (myAppIds.includes(4)) {
+      if (!myAppIds.includes("4")) {
         filteredAppIds.push(4);
         endIndex--;
       }
 
-      if (myAppIds.includes(18)) {
+      if (!myAppIds.includes("18")) {
         filteredAppIds.push(18);
         endIndex--;
       }
