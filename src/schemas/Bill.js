@@ -143,6 +143,7 @@ export const queries = `
   boughtPlans: [BoughtPlan]!
   fetchPlan(planid: Int!): Plan!
   fetchPlans(appid: Int!): [Plan]!
+  createLoginLink(boughtplanid: Int!): ProductResponse!
 
   fetchBills: [Bill]!
 

@@ -1,5 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresVipfyAdmin } from "../../helpers/permissions";
+import { weeblyApi } from "../../services/weebly";
 
 /* eslint-disable no-param-reassign, array-callback-return */
 
@@ -137,6 +138,34 @@ export default {
       });
 
       return licences;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
+
+  // change to requiresAdmin in Production!
+  createLoginLink: requiresAuth.createResolver(async (parent, { licenceid }, { models, token }) => {
+    try {
+      const { user: { unitid } } = decode(token);
+      const licenceBelongsToUser = await models.Licence.findOne({
+        where: {
+          unitid,
+          boughtplanid: licenceid
+        }
+      });
+
+      if (!licenceBelongsToUser) {
+        throw new Error("This licence doesn't belong to this user!");
+      }
+
+      const credentials = licenceBelongsToUser.get("key");
+      const endpoint = `user/${credentials.weeblyid}/loginLink`;
+      const res = await weeblyApi("POST", endpoint, "");
+
+      return {
+        ok: true,
+        loginLink: res.link
+      };
     } catch (err) {
       throw new Error(err.message);
     }
