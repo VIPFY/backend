@@ -144,32 +144,31 @@ export default {
   }),
 
   // change to requiresAdmin in Production!
-  createLoginLink: requiresAuth.createResolver(async (parent, { licenceid }, { models, token }) => {
-    try {
-      const { user: { unitid } } = decode(token);
-      const licenceBelongsToUser = await models.Licence.findOne({
-        where: {
-          unitid,
-          boughtplanid: licenceid
+  createLoginLink: requiresAuth.createResolver(
+    async (parent, { boughtplanid }, { models, token }) => {
+      try {
+        const { user: { unitid } } = decode(token);
+        const licenceBelongsToUser = await models.Licence.findOne({
+          where: { unitid, boughtplanid }
+        });
+
+        if (!licenceBelongsToUser) {
+          throw new Error("This licence doesn't belong to this user!");
         }
-      });
 
-      if (!licenceBelongsToUser) {
-        throw new Error("This licence doesn't belong to this user!");
+        const credentials = licenceBelongsToUser.get("key");
+        const endpoint = `user/${credentials.weeblyid}/loginLink`;
+        const res = await weeblyApi("POST", endpoint, "");
+
+        return {
+          ok: true,
+          loginLink: res.link
+        };
+      } catch (err) {
+        throw new Error(err.message);
       }
-
-      const credentials = licenceBelongsToUser.get("key");
-      const endpoint = `user/${credentials.weeblyid}/loginLink`;
-      const res = await weeblyApi("POST", endpoint, "");
-
-      return {
-        ok: true,
-        loginLink: res.link
-      };
-    } catch (err) {
-      throw new Error(err.message);
     }
-  }),
+  ),
 
   fetchPlan: (parent, { planid }, { models }) => models.Plan.findById(planid)
 
