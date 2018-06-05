@@ -126,6 +126,7 @@ export const queries = `
   # Returns all Users for messages
   allUsers: [User]!
 
+  fetchCompany(id: Int!): Department!
   allCompanies: [Department]!
   allDepartments: [Department]!
 
@@ -143,6 +144,7 @@ export const mutations = `
   deleteUser(unitid: Int!): Response!
 
   createCompany(name: String!): RegisterResponse!
+  adminCreateCompany: Response!
   updateStatisticData(data: StatisticData!): Response!
   addEmployee(id: Int!): Response!
 

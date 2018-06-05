@@ -8,5 +8,7 @@ export const types = `
 
 export const mutations = `
   # Creates an user, a site with a plan and generates a loginlink
-  weeblyCreateLoginLink(email: String!, agb: Boolean!, domain: String!, plan: Int!): WeeblyResponse!
+  weeblyCreateLoginLinkNewUser(email: String!, boughtplanid: Int!, domain: String!, plan: Int!): WeeblyResponse!
+
+  weeblyCreateLoginLink(licenceid: Int!): WeeblyResponse!
 `;

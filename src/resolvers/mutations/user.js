@@ -163,6 +163,8 @@ export default {
     }
   }),
 
+  adminCreateCompany: requiresAdmin.createResolver(async (parent, args, { models, token }) => {}),
+
   createCompany: requiresAuth.createResolver(
     async (parent, { name }, { models, token, SECRET, SECRET_TWO }) =>
       models.sequelize.transaction(async ta => {

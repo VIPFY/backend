@@ -20,6 +20,16 @@ export default {
     }
   }),
 
+  fetchCompany: async (parent, { id }, { models }) => {
+    try {
+      const company = await models.Department.findOne({ where: { unitid: id } });
+
+      return company;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  },
+
   allCompanies: async (parent, args, { models }) => {
     try {
       const childunits = await models.ParentUnit.findAll({ attributes: ["childunit"] });
