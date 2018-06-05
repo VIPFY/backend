@@ -40,7 +40,7 @@ module.exports = {
         SSL_KEY: '/etc/letsencrypt/live/vipfy.com/privkey.pem',
         SSL_CERT: '/etc/letsencrypt/live/vipfy.com/cert.pem'
       },
-      'post-deploy' : 'rm -rf node_modules && npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests && pm2 startOrRestart ecosystem.config.js --env production'
+      'post-deploy' : 'rm -rf node_modules && npm install && npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests && pm2 startOrRestart ecosystem.config.js --env production'
     },
     dev : {
       user : 'node',
@@ -54,7 +54,7 @@ module.exports = {
         SSL_KEY: '/etc/letsencrypt/live/dev.vipfy.com/privkey.pem',
         SSL_CERT: '/etc/letsencrypt/live/dev.vipfy.com/cert.pem'
       },
-      'post-deploy' : 'rm -rf node_modules && npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests && pm2 startOrRestart ecosystem.config.js'
+      'post-deploy' : 'rm -rf node_modules && npm install && npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests && pm2 startOrRestart ecosystem.config.js'
     }
   }
 };
