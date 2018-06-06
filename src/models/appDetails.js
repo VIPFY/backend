@@ -5,6 +5,8 @@ export default (sequelize, { TEXT, JSONB, DOUBLE, ARRAY, BOOLEAN }) => {
       unique: true
     },
     commission: JSONB,
+    icon: TEXT,
+    loginurl: TEXT,
     developername: TEXT,
     logo: TEXT,
     description: TEXT,

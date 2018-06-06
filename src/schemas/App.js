@@ -3,6 +3,8 @@ export const types = `
     id: Int!
     name: String!
     commission: JSON
+    icon: String
+    loginurl: String
     description: String
     teaserdescription: String
     website: String
@@ -19,6 +21,8 @@ export const types = `
     id: Int!
     name: String
     developername: String!
+    icon: String
+    loginurl: String
     commission: JSON
     logo: String
     description: String
