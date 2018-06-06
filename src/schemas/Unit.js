@@ -140,6 +140,7 @@ export const queries = `
   fetchCompany(id: Int!): Department!
   allCompanies: [Department]!
   allDepartments: [Department]!
+  fetchEmployees(unitid: Int!): [DepartmentEmployee]!
 
   # Returns the amount of units in a Department
   fetchCompanySize: Int!

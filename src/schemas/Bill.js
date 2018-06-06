@@ -148,7 +148,7 @@ export const queries = `
   fetchBills: [Bill]!
 
   # This mutation checks whether an user has the right to log into an app
-  fetchLicences: [Licence]!
+  fetchLicences(boughtplanid: Int): [Licence]!
   adminFetchLicences(id: Int!): [Licence]!
   # This mutation checks whether an user has the right to log into an app by providing an app id
   fetchLicencesByApp(appid: Int!): [Licence]!

@@ -71,33 +71,41 @@ export default {
     }
   },
 
-  fetchLicences: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    const startTime = Date.now();
-    try {
-      const { user: { unitid } } = decode(token);
-      const licences = await models.Licence.findAll({ where: { unitid } });
+  fetchLicences: requiresAuth.createResolver(
+    async (parent, { boughtplanid }, { models, token }) => {
+      const startTime = Date.now();
+      try {
+        const { user: { unitid } } = decode(token);
+        let licences;
 
-      await licences.map(licence => {
-        if (licence.disabled) {
-          licence.set({ agreed: false, key: null });
+        if (boughtplanid) {
+          licences = await models.Licence.findAll({ where: { unitid, boughtplanid } });
+        } else {
+          licences = await models.Licence.findAll({ where: { unitid } });
         }
 
-        if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
-          licence.set({ key: null });
-        }
+        await licences.map(licence => {
+          if (licence.disabled) {
+            licence.set({ agreed: false, key: null });
+          }
 
-        if (licence.endtime) {
-          if (Date.parse(licence.endtime) < startTime) {
+          if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
             licence.set({ key: null });
           }
-        }
-      });
 
-      return licences;
-    } catch (err) {
-      throw new Error(err);
+          if (licence.endtime) {
+            if (Date.parse(licence.endtime) < startTime) {
+              licence.set({ key: null });
+            }
+          }
+        });
+
+        return licences;
+      } catch (err) {
+        throw new Error(err);
+      }
     }
-  }),
+  ),
 
   adminFetchLicences: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
     try {

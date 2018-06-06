@@ -3,34 +3,31 @@ import { pick } from "lodash";
 import { parentAdminCheck } from "../helpers/functions";
 
 export const createTokens = async (user, SECRET, SECRET2) => {
-  const createToken = await jwt.sign(
-    {
-      user: pick(user, ["unitid", "company"])
-    },
-    SECRET,
-    {
+  try {
+    const createToken = await jwt.sign({ user: pick(user, ["unitid", "company"]) }, SECRET, {
       expiresIn: "12h"
-    }
-  );
+    });
 
-  const createRefreshToken = await jwt.sign(
-    {
-      user: pick(user, ["unitid", "company"])
-    },
-    SECRET2,
-    {
-      expiresIn: "7d"
-    }
-  );
+    const createRefreshToken = await jwt.sign(
+      { user: pick(user, ["unitid", "company"]) },
+      SECRET2,
+      {
+        expiresIn: "7d"
+      }
+    );
 
-  return [createToken, createRefreshToken];
+    return [createToken, createRefreshToken];
+  } catch (err) {
+    throw new Error(err.message);
+  }
 };
 
 export const refreshTokens = async (refreshToken, models, SECRET, SECRET_TWO) => {
   let userId = 0;
-
+  console.log("FIRED");
   try {
     const { user: { unitid } } = await jwt.decode(refreshToken);
+    console.log(unitid);
     userId = unitid;
 
     if (!userId) {

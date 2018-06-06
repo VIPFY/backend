@@ -1,5 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { requiresAdmin, requiresVipfyAdmin } from "../../helpers/permissions";
+import { parentAdminCheck } from "../../helpers/functions";
 
 export default {
   allUsers: requiresVipfyAdmin.createResolver(async (parent, args, { models }) =>
@@ -13,8 +14,9 @@ export default {
   fetchUser: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
     try {
       const user = await models.User.findById(id);
+      const userWithCompany = await parentAdminCheck(models, user);
 
-      return user;
+      return userWithCompany;
     } catch ({ message }) {
       throw new Error(message);
     }
@@ -77,5 +79,19 @@ export default {
     } catch ({ message }) {
       throw new Error(message);
     }
-  })
+  }),
+
+  fetchEmployees: async (parent, { unitid }, { models }) => {
+    const { DepartmentEmployee, sequelize } = models;
+    try {
+      const employees = await DepartmentEmployee.findAll({
+        attributes: [[sequelize.fn("DISTINCT", sequelize.col("employee")), "employee"]],
+        where: { id: unitid }
+      });
+
+      return employees;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }
 };

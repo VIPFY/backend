@@ -67,7 +67,7 @@ export const createLoginLink = async (email, domain, plan) => {
   let endpoint = "user";
   let requestData = {
     language: "en",
-    test_mode: true,
+    test_mode: false,
     email
   };
   let userId;

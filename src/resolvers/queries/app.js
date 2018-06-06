@@ -1,5 +1,4 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
 
 export default {
   allApps: (parent, { first }, { models }) => {
