@@ -12,13 +12,15 @@ module.exports = {
         NODE_ENV: 'production',
         ENVIRONMENT: 'production',
         SSL_KEY: '/etc/letsencrypt/live/dev.vipfy.com/privkey.pem',
-        SSL_CERT: '/etc/letsencrypt/live/dev.vipfy.com/cert.pem'
+        SSL_CERT: '/etc/letsencrypt/live/dev.vipfy.com/cert.pem',
+        GCLOUD_TRACE_NEW_CONTEXT: 1
       },
       env_production : {
         NODE_ENV: 'production',
         ENVIRONMENT: 'production',
         SSL_KEY: '/etc/letsencrypt/live/vipfy.com/privkey.pem',
-        SSL_CERT: '/etc/letsencrypt/live/vipfy.com/cert.pem'
+        SSL_CERT: '/etc/letsencrypt/live/vipfy.com/cert.pem',
+        GCLOUD_TRACE_NEW_CONTEXT: 1
       }
     }
   ],
@@ -38,9 +40,10 @@ module.exports = {
         NODE_ENV: 'production',
         ENVIRONMENT: 'production',
         SSL_KEY: '/etc/letsencrypt/live/vipfy.com/privkey.pem',
-        SSL_CERT: '/etc/letsencrypt/live/vipfy.com/cert.pem'
+        SSL_CERT: '/etc/letsencrypt/live/vipfy.com/cert.pem',
+        GCLOUD_TRACE_NEW_CONTEXT: 1
       },
-      'post-deploy' : 'npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && pm2 startOrRestart ecosystem.config.js --env production'
+      'post-deploy' : 'npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env production'
     },
     dev : {
       user : 'node',
@@ -52,9 +55,10 @@ module.exports = {
         NODE_ENV: 'production',
         ENVIRONMENT: 'production',
         SSL_KEY: '/etc/letsencrypt/live/dev.vipfy.com/privkey.pem',
-        SSL_CERT: '/etc/letsencrypt/live/dev.vipfy.com/cert.pem'
+        SSL_CERT: '/etc/letsencrypt/live/dev.vipfy.com/cert.pem',
+        GCLOUD_TRACE_NEW_CONTEXT: 1
       },
-      'post-deploy' : 'npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && pm2 startOrRestart ecosystem.config.js'
+      'post-deploy' : 'npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js'
     }
   }
 };
