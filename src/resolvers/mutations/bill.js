@@ -220,5 +220,15 @@ export default {
     } catch (err) {
       throw new Error(err.message);
     }
-  })
+  }),
+
+  adminUpdateLicence: async (parent, { unitid, boughtplanid, licenceData }, { models }) => {
+    try {
+      await models.Licence.update({ ...licenceData }, { where: { unitid, boughtplanid } });
+
+      return { ok: true };
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }
 };
