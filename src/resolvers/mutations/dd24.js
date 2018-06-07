@@ -1,24 +1,17 @@
 import dd24Api from "../../services/dd24";
-import { requiresAdmin } from "../../helpers/permissions";
+// import { requiresAdmin } from "../../helpers/permissions";
 
 export default {
-  domainCommands: requiresAdmin.createResolver(async (parent, { command, params, agb }) => {
+  domainCommands: async (parent, { command, params }) => {
     try {
-      if (command != "AddDomain" || (command == "AddDomain" && agb)) {
+      if (command == "AddDomain") {
         const result = await dd24Api(command, params);
         console.log(result);
         return result;
       }
-      return {
-        error: "AGB's not accepted!",
-        code: 600,
-        description: ""
-      };
+      throw new Error("Not implemented now!");
     } catch (err) {
-      return {
-        code: 404,
-        error: err.message
-      };
+      throw new Error(err.message);
     }
-  })
+  }
 };

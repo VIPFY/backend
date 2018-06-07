@@ -24,10 +24,9 @@ export const createTokens = async (user, SECRET, SECRET2) => {
 
 export const refreshTokens = async (refreshToken, models, SECRET, SECRET_TWO) => {
   let userId = 0;
-  console.log("FIRED");
+
   try {
     const { user: { unitid } } = await jwt.decode(refreshToken);
-    console.log(unitid);
     userId = unitid;
 
     if (!userId) {

@@ -116,13 +116,7 @@ if (ENVIRONMENT != "testing") {
                   return { models, token };
                 } catch (err) {
                   if (err.name == "TokenExpiredError") {
-                    const newTokens = await refreshTokens(
-                      token,
-                      refreshToken,
-                      models,
-                      SECRET,
-                      SECRET_TWO
-                    );
+                    const newTokens = await refreshTokens(refreshToken, models, SECRET, SECRET_TWO);
                     return { models, token: newTokens.token };
                   }
                   return {};

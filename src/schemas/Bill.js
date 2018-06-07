@@ -137,6 +137,16 @@ export const types = `
     boughtplanid: BoughtPlan!
     unitid: Unit!
   }
+
+  input LicenceData {
+    options: JSON
+    starttime: String
+    endtime: String
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
+    unitid: Int
+  }
 `;
 
 export const queries = `
@@ -170,4 +180,6 @@ export const mutations = `
   createMonthlyBill: Response!
   addBillPos(bill: BillInput!): Response!
   downloadBill(billid: Int!): String!
+
+  adminUpdateLicence(unitid: Int!, boughtplanid: Int! licenceData: LicenceData!): Response!
 `;
