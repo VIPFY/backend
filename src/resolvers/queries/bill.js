@@ -28,7 +28,7 @@ export default {
 
       const licences = await models.Licence.findAll({
         attributes: { exclude: ["key"] },
-        where: { boughtplanid: { [models.sequelize.Op.or]: [...ids] } }
+        where: { boughtplanid: { [models.sequelize.Op.or]: [...ids] } },
       });
 
       await boughtPlans.map(boughtPlan =>
@@ -36,7 +36,7 @@ export default {
           if (licence.boughtplanid == boughtPlan.id) {
             boughtPlan.licences.push(licence);
           }
-        })
+        }),
       );
 
       return boughtPlans;
@@ -104,7 +104,7 @@ export default {
       } catch (err) {
         throw new Error(err);
       }
-    }
+    },
   ),
 
   adminFetchLicences: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
@@ -117,12 +117,24 @@ export default {
     }
   }),
 
+  adminFetchLicence: requiresVipfyAdmin.createResolver(
+    async (parent, { unitid, boughtplanid }, { models }) => {
+      try {
+        const licence = await models.Licence.findOne({ where: { unitid, boughtplanid } });
+
+        return licence;
+      } catch (err) {
+        throw new Error(err);
+      }
+    },
+  ),
+
   fetchLicencesByApp: requiresAuth.createResolver(async (parent, { appid }, { models, token }) => {
     try {
       const { user: { unitid } } = decode(token);
       const plans = await models.Plan.findAll({
         attributes: ["id"],
-        where: { appid }
+        where: { appid },
       });
       const planIds = plans.map(plan => plan.get("id"));
 
@@ -131,12 +143,12 @@ export default {
       }
 
       const boughtPlans = await models.BoughtPlan.findAll({
-        where: { planid: { [models.sequelize.Op.in]: [...planIds] } }
+        where: { planid: { [models.sequelize.Op.in]: [...planIds] } },
       });
       const boughtPlanIds = boughtPlans.map(pb => pb.get("id"));
 
       const licences = await models.Licence.findAll({
-        where: { unitid, boughtplanid: { [models.sequelize.Op.in]: [...boughtPlanIds] } }
+        where: { unitid, boughtplanid: { [models.sequelize.Op.in]: [...boughtPlanIds] } },
       });
 
       await licences.map(licence => {
@@ -157,7 +169,7 @@ export default {
       try {
         const { user: { unitid } } = decode(token);
         const licenceBelongsToUser = await models.Licence.findOne({
-          where: { unitid, boughtplanid }
+          where: { unitid, boughtplanid },
         });
 
         if (!licenceBelongsToUser) {
@@ -170,15 +182,15 @@ export default {
 
         return {
           ok: true,
-          loginLink: res.link
+          loginLink: res.link,
         };
       } catch (err) {
         throw new Error(err.message);
       }
-    }
+    },
   ),
 
-  fetchPlan: (parent, { planid }, { models }) => models.Plan.findById(planid)
+  fetchPlan: (parent, { planid }, { models }) => models.Plan.findById(planid),
 
   // fetchPayers: requiresAuth.createResolver(async (parent, args, { models, token }) => {
   //   const { user: { unitid } } = decode(token);

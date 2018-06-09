@@ -1,11 +1,11 @@
-export default (sequelize, { JSONB, TIME, BOOLEAN }) => {
+export default (sequelize, { JSONB, DATE, BOOLEAN }) => {
   const Licence = sequelize.define("licence_data", {
     options: JSONB,
-    starttime: TIME,
-    endtime: TIME,
+    starttime: DATE,
+    endtime: DATE,
     agreed: BOOLEAN,
     disabled: BOOLEAN,
-    key: JSONB
+    key: JSONB,
   });
 
   Licence.associate = ({ BoughtPlan, Unit }) => {

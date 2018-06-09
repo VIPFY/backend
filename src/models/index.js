@@ -22,11 +22,11 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT || 5432,
     define: {
       timestamps: false,
-      freezeTableName: true
+      freezeTableName: true,
     },
     // logging: !!process.env.LOGGING
-    logging: false
-  }
+    logging: false,
+  },
 );
 
 // The mapping here will be used in the resolver to access the model.
@@ -63,7 +63,7 @@ const db = {
   Right: sequelize.import("./right"),
   Unit: sequelize.import("./unit"),
   User: sequelize.import("./user"),
-  Website: sequelize.import("./website")
+  Website: sequelize.import("./website"),
 };
 
 Object.keys(db).forEach(modelName => {
