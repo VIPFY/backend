@@ -10,7 +10,7 @@ export default {
         "teaserdescription",
         "features",
         "cheapestprice",
-        "averagestars",
+        "avgstars",
         "cheapestpromo"
       ]
     }),
