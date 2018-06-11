@@ -48,7 +48,7 @@ export default {
       } catch ({ message }) {
         throw new Error(message);
       }
-    },
+    }
   ),
   // Exchange back to requiresAdmin after Metz and Lissabon
   buyPlan: requiresAuth.createResolver(async (parent, { planid, amount }, { models, token }) =>
@@ -64,14 +64,14 @@ export default {
             payer: company,
             planid,
             disabled: false,
-            key: { amount },
+            key: { amount }
           },
-          { transaction: ta },
+          { transaction: ta }
         );
 
         const p2 = models.Plan.findOne({
           where: { id: planid },
-          attributes: ["appid", "name", "price"],
+          attributes: ["appid", "name", "price"]
         });
         const [boughtplan, app] = await Promise.all([p1, p2]);
 
@@ -96,9 +96,9 @@ export default {
             starttime: getDate(),
             agreed: true,
             disabled: false,
-            key,
+            key
           },
-          { transaction: ta },
+          { transaction: ta }
         );
 
         const results = await Promise.all([p3, p4]);
@@ -111,12 +111,12 @@ export default {
 
         await models.Bill.update(
           { billname: res.billName },
-          { where: { id: billId }, transaction: ta },
+          { where: { id: billId }, transaction: ta }
         );
 
         const p5 = models.App.findOne({
           where: { id: app.appid },
-          attributes: ["name"],
+          attributes: ["name"]
         });
 
         const p6 = models.Department.findOne({ where: { unitid: company }, attributes: ["name"] });
@@ -132,7 +132,7 @@ export default {
 
           await models.Licence.update(
             { key },
-            { where: { unitid, boughtplanid: boughtplan.id }, transaction: ta },
+            { where: { unitid, boughtplanid: boughtplan.id }, transaction: ta }
           );
 
           return { ok: true, loginLink: result.loginLink };
@@ -142,7 +142,7 @@ export default {
       } catch (err) {
         throw new Error(err.message);
       }
-    }),
+    })
   ),
 
   endPlan: requiresAdmin.createResolver(async (parent, { id, enddate }, { models }) => {
@@ -164,18 +164,18 @@ export default {
         {
           description: "Some interesting test",
           quantity: 5,
-          unitPrice: 19.99,
+          unitPrice: 19.99
         },
         {
           description: "Another interesting test",
           quantity: 10,
-          unitPrice: 5.99,
+          unitPrice: 5.99
         },
         {
           description: "The most interesting one",
           quantity: 3,
-          unitPrice: 9.99,
-        },
+          unitPrice: 9.99
+        }
       ];
 
       const ok = await createInvoice(true, models, unitid, billId, billItems);
@@ -205,7 +205,7 @@ export default {
       const { user: { company: unitid } } = await decode(token);
       const bill = await models.Bill.findOne({
         where: { unitid, id: billid },
-        attributes: ["billname", "billtime"],
+        attributes: ["billname", "billtime"]
       });
 
       if (!bill) {
@@ -225,13 +225,24 @@ export default {
   adminUpdateLicence: requiresVipfyAdmin.createResolver(
     async (parent, { unitid, boughtplanid, licenceData }, { models }) => {
       try {
-        console.log(licenceData);
         await models.Licence.update({ ...licenceData }, { where: { unitid, boughtplanid } });
 
         return { ok: true };
       } catch (err) {
         throw new Error(err.message);
       }
-    },
+    }
   ),
+
+  adminCreateLicence: requiresVipfyAdmin.createResolver(
+    async (parent, { licenceData }, { models }) => {
+      try {
+        await models.Licence.create({ ...licenceData });
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  )
 };

@@ -1,12 +1,19 @@
 import { decode } from "jsonwebtoken";
 
 export default {
-  allApps: (parent, { first }, { models }) => {
-    if (first) {
-      return models.AppDetails.findAll().then(res => res.slice(0, first));
-    }
-    return models.AppDetails.findAll();
-  },
+  allApps: (parent, args, { models }) =>
+    models.AppDetails.findAll({
+      attributes: [
+        "id",
+        "logo",
+        "name",
+        "teaserdescription",
+        "features",
+        "cheapestprice",
+        "averagestars",
+        "cheapestpromo"
+      ]
+    }),
 
   fetchApp: (parent, { name }, { models }) => models.AppDetails.findOne({ where: { name } }),
   fetchAppById: (parent, { id }, { models }) => models.AppDetails.findById(id),

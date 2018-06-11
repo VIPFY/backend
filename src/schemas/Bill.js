@@ -151,6 +151,8 @@ export const queries = `
   fetchLicences(boughtplanid: Int): [Licence]!
   adminFetchLicence(boughtplanid: Int!, unitid: Int!): Licence!
   adminFetchLicences(id: Int!): [Licence]!
+  adminFetchBoughtPlans(company: Int!, user: Int!): [BoughtPlan]!
+
   # This mutation checks whether an user has the right to log into an app by providing an app id
   fetchLicencesByApp(appid: Int!): [Licence]!
 `;
@@ -172,5 +174,6 @@ export const mutations = `
   addBillPos(bill: BillInput!): Response!
   downloadBill(billid: Int!): String!
 
+  adminCreateLicence(licenceData: JSON!): Response!
   adminUpdateLicence(unitid: Int!, boughtplanid: Int! licenceData: JSON!): Response!
 `;
