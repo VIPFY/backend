@@ -20,7 +20,9 @@ export default {
   boughtPlans: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
       const { user: { company } } = decode(token);
-      const boughtPlans = await models.BoughtPlan.findAll({ where: { payer: company } });
+      const boughtPlans = await models.BoughtPlan.findAll({
+        where: { payer: company }
+      });
       const ids = await boughtPlans.map(bp => bp.get("id"));
       boughtPlans.forEach(bp => {
         bp.licences = [];
@@ -28,7 +30,9 @@ export default {
 
       const licences = await models.Licence.findAll({
         attributes: { exclude: ["key"] },
-        where: { boughtplanid: { [models.sequelize.Op.or]: [...ids] } }
+        where: {
+          boughtplanid: { [models.sequelize.Op.or]: [...ids] }
+        }
       });
 
       await boughtPlans.map(boughtPlan =>
@@ -48,7 +52,9 @@ export default {
   adminFetchBoughtPlans: requiresVipfyAdmin.createResolver(
     async (parent, { company, user }, { models }) => {
       try {
-        const boughtPlans = await models.BoughtPlan.findAll({ where: { payer: company } });
+        const boughtPlans = await models.BoughtPlan.findAll({
+          where: { payer: company }
+        });
         const boughtPlanIds = boughtPlans.map(bP => bP.get("id"));
 
         const usedLicences = await models.Licence.findAll({
@@ -102,7 +108,9 @@ export default {
         if (boughtplanid) {
           licences = await models.Licence.findAll({ where: { unitid, boughtplanid } });
         } else {
-          licences = await models.Licence.findAll({ where: { unitid } });
+          licences = await models.Licence.findAll({
+            where: { unitid }
+          });
         }
 
         await licences.map(licence => {

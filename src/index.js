@@ -18,10 +18,11 @@ import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
 import { makeExecutableSchema } from "graphql-tools";
 import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
-import { SECRET, SECRET_TWO } from "./login-data";
+import { createContext } from "dataloader-sequelize";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import models from "./models";
+import { SECRET, SECRET_TWO } from "./login-data";
 import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware";
 import { refreshTokens } from "./helpers/auth";
 
@@ -45,7 +46,7 @@ if (ENVIRONMENT == "production") {
 
 // eslint-disable-next-line
 export const schema = makeExecutableSchema({ typeDefs, resolvers });
-
+const sequelizeContext = createContext(models.sequelize);
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
   origin:
