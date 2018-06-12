@@ -1,7 +1,7 @@
 import { decode } from "jsonwebtoken";
 
 export default {
-  allApps: (parent, { limit, offset }, { models }) =>
+  allApps: (parent, { limit, offset, sortOptions }, { models }) =>
     models.AppDetails.findAll({
       limit,
       offset,
@@ -15,7 +15,8 @@ export default {
         "cheapestprice",
         "avgstars",
         "cheapestpromo"
-      ]
+      ],
+      order: [[sortOptions.name, sortOptions.order]]
     }),
 
   fetchApp: (parent, { name }, { models }) => models.AppDetails.findOne({ where: { name } }),

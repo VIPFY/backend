@@ -1,18 +1,24 @@
 export const types = `
 # This three sexes are possible
-  enum SEX {
-    m,
-    f,
-    u
-  }
+enum SEX {
+  m,
+  f,
+  u
+}
 
 # An user must have one of these stati
-  enum USER_STATUS {
-    toverify,
-    normal,
-    banned,
-    onlynews
-  }
+enum USER_STATUS {
+  toverify,
+  normal,
+  banned,
+  onlynews
+}
+
+# Directions for sorting
+enum ORDER {
+  ASC,
+  DESC
+}
 
 # Custom Scalar Date
   scalar Date
@@ -50,6 +56,11 @@ input Interval {
   months: String,
   weeks: String,
   days: String
+}
+
+input SortOptions {
+  name: String!
+  order: ORDER!
 }
 `;
 

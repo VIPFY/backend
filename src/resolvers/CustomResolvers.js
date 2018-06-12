@@ -58,12 +58,8 @@ export const implementJSON = {
 export const find = data => {
   const searches = {};
   Object.keys(data).map(search => {
-    searches[search] = (parent, args, { models }) => {
-      console.log([parent.dataValues[search]]);
-      return models[data[search]].findOne({
-        [parent.dataValues[search]]: parent.dataValues[search]
-      });
-    };
+    searches[search] = (parent, args, { models }) =>
+      models[data[search]].findById(parent.dataValues[search]);
   });
 
   return searches;
