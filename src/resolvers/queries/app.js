@@ -16,7 +16,7 @@ export default {
         "avgstars",
         "cheapestpromo"
       ],
-      order: [[sortOptions.name, sortOptions.order]]
+      order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
     }),
 
   fetchApp: (parent, { name }, { models }) => models.AppDetails.findOne({ where: { name } }),
