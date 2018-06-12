@@ -64,7 +64,7 @@ export const types = `
 
 export const queries = `
   # Returns all apps in Vipfy
-  allApps: [AppDetails]!
+  allApps(limit: Int, offset: Int): [AppDetails]!
 
   # Returns a specific app
   fetchApp(name: String!): AppDetails

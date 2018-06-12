@@ -1,10 +1,13 @@
 import { decode } from "jsonwebtoken";
 
 export default {
-  allApps: (parent, args, { models }) =>
+  allApps: (parent, { limit, offset }, { models }) =>
     models.AppDetails.findAll({
+      limit,
+      offset,
       attributes: [
         "id",
+        "icon",
         "logo",
         "name",
         "teaserdescription",

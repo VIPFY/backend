@@ -46,7 +46,7 @@ if (ENVIRONMENT == "production") {
 
 // eslint-disable-next-line
 export const schema = makeExecutableSchema({ typeDefs, resolvers });
-const sequelizeContext = createContext(models.sequelize);
+const seqContext = createContext(models.sequelize);
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
   origin:

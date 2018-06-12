@@ -69,6 +69,7 @@ export const types = `
     suspended: Boolean!
     profilepicture: String
     employees: Int
+    employeedata: [User]!
     payingoptions: JSON
   }
 
@@ -92,7 +93,7 @@ export const types = `
 
   type DepartmentEmployee {
     id: Unit!
-    childid: Unit
+    childid: Department
     employee: User!
   }
 
@@ -135,10 +136,11 @@ export const queries = `
   fetchUserByPassword(password: String!): String!
 
   # Returns all Users for messages
-  allUsers: [User]!
+  allUsers(limit: Int, offset: Int): [User]!
 
   fetchCompany(id: Int!): Department!
   allCompanies: [Department]!
+  fetchDepartments: [DepartmentEmployee]!
   allDepartments: [Department]!
   fetchEmployees(unitid: Int!): [DepartmentEmployee]!
 

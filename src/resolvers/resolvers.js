@@ -66,7 +66,7 @@ export default {
   Department: find(unit),
   DepartmentData: find(unit),
   DepartmentEmail: find({ departmentid: "Unit", emailownerid: "Unit" }),
-  DepartmentEmployee: find({ id: "Unit", childid: "Unit", employee: "User" }),
+  DepartmentEmployee: find({ id: "Unit", childid: "Department", employee: "User" }),
   Email: find(unit),
   Human: find(unit),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),

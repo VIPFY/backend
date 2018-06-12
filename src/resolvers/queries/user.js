@@ -1,10 +1,12 @@
 import { decode } from "jsonwebtoken";
-import { requiresAdmin, requiresVipfyAdmin } from "../../helpers/permissions";
+import { requiresAdmin, requiresVipfyAdmin, requiresAuth } from "../../helpers/permissions";
 import { parentAdminCheck } from "../../helpers/functions";
 
 export default {
-  allUsers: requiresVipfyAdmin.createResolver(async (parent, args, { models }) =>
+  allUsers: requiresVipfyAdmin.createResolver(async (parent, { limit, offset }, { models }) =>
     models.User.findAll({
+      limit,
+      offset,
       order: [
         [models.sequelize.literal(`CASE WHEN firstName = 'Deleted' THEN 1 ELSE 0 END`), "ASC"]
       ]
@@ -81,7 +83,22 @@ export default {
     }
   }),
 
-  fetchEmployees: async (parent, { unitid }, { models }) => {
+  fetchDepartments: async (parent, args, { models, token }) => {
+    const { DepartmentEmployee, sequelize } = models;
+
+    try {
+      // const { user: { company } } = decode(token);
+      const employees = await DepartmentEmployee.findAll({ where: { id: 14 } });
+      const ids = employees.map(em => em.get("employee"));
+      console.log(ids);
+
+      return employees;
+    } catch (err) {
+      throw new Error(err);
+    }
+  },
+
+  fetchEmployees: requiresAuth.createResolver(async (parent, { unitid }, { models }) => {
     const { DepartmentEmployee, sequelize } = models;
     try {
       const employees = await DepartmentEmployee.findAll({
@@ -93,5 +110,5 @@ export default {
     } catch (err) {
       throw new Error(err.message);
     }
-  }
+  })
 };
