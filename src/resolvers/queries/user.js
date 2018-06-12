@@ -88,9 +88,14 @@ export default {
 
     try {
       // const { user: { company } } = decode(token);
-      const employees = await DepartmentEmployee.findAll({ where: { id: 14 } });
-      const ids = employees.map(em => em.get("employee"));
-      console.log(ids);
+      const departments = await DepartmentEmployee.findAll({
+        attributes: [[sequelize.fn("DISTINCT", sequelize.col("childid")), "childid"]],
+        where: { id: 14 }
+      });
+      const departmentIds = departments.map(em => em.get("childid"));
+      const employees = await DepartmentEmployee.findAll({
+        where: { id: departmentIds }
+      });
 
       return employees;
     } catch (err) {

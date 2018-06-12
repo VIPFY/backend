@@ -2,7 +2,7 @@ export const types = `
   type Bill {
     id: Int!
     billtime: String!
-    billName: String!
+    billname: String!
     paytime: String
     stornotime: String
     unitid: Unit!
