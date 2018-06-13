@@ -45,4 +45,18 @@ export const types = `
     ok: Boolean!
     loginLink: String
   }
+
+  type DepartmentResponse {
+    id: Int
+    childids: [Int]
+    department: emp
+    employees: [emp]
+  }
+
+  type emp {
+    employeeid: Int
+    firstname: String
+    lastname: String
+    profilepicture: String
+  }
 `;

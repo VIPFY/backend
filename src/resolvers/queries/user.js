@@ -83,25 +83,20 @@ export default {
     }
   }),
 
-  fetchDepartments: async (parent, args, { models, token }) => {
-    const { DepartmentEmployee, sequelize } = models;
-
+  fetchDepartments: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
-      // const { user: { company } } = decode(token);
-      const departments = await DepartmentEmployee.findAll({
-        attributes: [[sequelize.fn("DISTINCT", sequelize.col("childid")), "childid"]],
-        where: { id: 14 }
-      });
-      const departmentIds = departments.map(em => em.get("childid"));
-      const employees = await DepartmentEmployee.findAll({
-        where: { id: departmentIds }
-      });
+      const { user: { company } } = decode(token);
+      const departments = await models.sequelize
+        .query("Select * from getDepartments(?)", {
+          replacements: [company]
+        })
+        .spread(res => res);
 
-      return employees;
+      return departments;
     } catch (err) {
       throw new Error(err);
     }
-  },
+  }),
 
   fetchEmployees: requiresAuth.createResolver(async (parent, { unitid }, { models }) => {
     const { DepartmentEmployee, sequelize } = models;

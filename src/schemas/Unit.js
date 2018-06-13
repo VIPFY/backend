@@ -140,7 +140,7 @@ export const queries = `
 
   fetchCompany(id: Int!): Department!
   allCompanies: [Department]!
-  fetchDepartments: [DepartmentEmployee]!
+  fetchDepartments: [DepartmentResponse]!
   allDepartments: [Department]!
   fetchEmployees(unitid: Int!): [DepartmentEmployee]!
 
