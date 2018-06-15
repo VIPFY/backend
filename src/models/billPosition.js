@@ -1,7 +1,7 @@
 export default (sequelize, { TEXT, DECIMAL, CHAR }) => {
   const BillPosition = sequelize.define("billposition_data", {
     positiontext: TEXT,
-    amount: { type: DECIMAL(10, 2), allowNull: false },
+    price: { type: DECIMAL(10, 2), allowNull: false },
     currency: {
       type: CHAR(3),
       defaultValue: "USD"

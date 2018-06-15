@@ -137,6 +137,11 @@ export const types = `
     boughtplanid: BoughtPlan!
     unitid: Unit!
   }
+
+  input OptionalPlanData {
+    amount: Int!
+    planid: Int!
+  }
 `;
 
 export const queries = `
@@ -149,9 +154,6 @@ export const queries = `
 
   # This mutation checks whether an user has the right to log into an app
   fetchLicences(boughtplanid: Int): [Licence]!
-  adminFetchLicence(boughtplanid: Int!, unitid: Int!): Licence!
-  adminFetchLicences(id: Int!): [Licence]!
-  adminFetchBoughtPlans(company: Int!, user: Int!): [BoughtPlan]!
 
   # This mutation checks whether an user has the right to log into an app by providing an app id
   fetchLicencesByApp(appid: Int!): [Licence]!
@@ -165,15 +167,12 @@ export const mutations = `
   updatePlan(id: Int!, plan: PlanInput!): Response!
 
   # This allows the user to buy a plan
-  buyPlan(planid: Int!, amount: Int!): ProductResponse!
+  buyPlan(planid: Int!, amount: Int!, optionalPlanData: [OptionalPlanData!]): ProductResponse!
 
   endPlan(id: Int!, enddate: String!): Response!
 
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!
-  addBillPos(bill: BillInput!): Response!
+  addBillPos(bill: BillInput!, billid: Int!): Response!
   downloadBill(billid: Int!): String!
-
-  adminCreateLicence(licenceData: JSON!): Response!
-  adminUpdateLicence(unitid: Int!, boughtplanid: Int! licenceData: JSON!): Response!
 `;

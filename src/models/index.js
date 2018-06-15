@@ -24,8 +24,7 @@ const sequelize = new Sequelize(
       timestamps: false,
       freezeTableName: true
     },
-    // logging: !!process.env.LOGGING
-    logging: true
+    logging: process.env.LOGGING ? data => console.log(data) : false
   }
 );
 
@@ -38,7 +37,6 @@ const db = {
   Bill: sequelize.import("./bill"),
   BillPosition: sequelize.import("./billPosition"),
   BoughtPlan: sequelize.import("./boughtPlan"),
-  BoughtSubplanData: sequelize.import("./boughtSubplanData"),
   Department: sequelize.import("./department"),
   DepartmentData: sequelize.import("./departmentData"),
   DepartmentEmail: sequelize.import("./departmentEmail"),

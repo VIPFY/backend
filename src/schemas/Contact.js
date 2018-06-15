@@ -61,10 +61,4 @@ export const mutations = `
   adminCreateAddress(addressData: AddressInput!, unitid: Int!): Response!
   # Without the id parameter, a new address will be generated. Otherwise it will be updated.
   updateAddress(id: Int, country: String, address: AddressInput, description: String, priority: Int): Response!
-
-  adminUpdateAddress(addressData: AddressInput!, id: Int!): Response!
-  adminDeleteAddress(id: Int!): Response!
-
-  adminCreateEmail(email: String!, unitid: Int!): Response!
-  adminDeleteEmail(email: String!,unitid: Int!): Response!
 `;

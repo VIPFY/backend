@@ -1,7 +1,7 @@
 /*
-This file contains a Higher Order Component which can be used to create
-Authentication logic. The base function lets you stack several permissions,
-they just have to wrapped around the component which shall be protected.
+* This file contains a Higher Order Component which can be used to create
+* Authentication logic. The base function lets you stack several permissions,
+* they just have to wrapped around the component which shall be protected.
 */
 
 import { decode } from "jsonwebtoken";

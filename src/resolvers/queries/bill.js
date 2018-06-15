@@ -1,13 +1,12 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth, requiresVipfyAdmin } from "../../helpers/permissions";
-import { weeblyApi } from "../../services/weebly";
-
-/* eslint-disable no-param-reassign, array-callback-return */
+import { requiresAuth } from "../../helpers/permissions";
 
 export default {
   fetchBills: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
-      const { user: { company: unitid } } = decode(token);
+      const {
+        user: { company: unitid }
+      } = decode(token);
 
       const bills = await models.Bill.findAll({ where: { unitid }, order: [["billtime", "DESC"]] });
 
@@ -19,7 +18,9 @@ export default {
 
   boughtPlans: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
-      const { user: { company } } = decode(token);
+      const {
+        user: { company }
+      } = decode(token);
       const boughtPlans = await models.BoughtPlan.findAll({
         where: { payer: company }
       });
@@ -36,7 +37,7 @@ export default {
       });
 
       await boughtPlans.map(boughtPlan =>
-        licences.map(licence => {
+        licences.forEach(licence => {
           if (licence.boughtplanid == boughtPlan.id) {
             boughtPlan.licences.push(licence);
           }
@@ -48,29 +49,6 @@ export default {
       throw new Error(message);
     }
   }),
-
-  adminFetchBoughtPlans: requiresVipfyAdmin.createResolver(
-    async (parent, { company, user }, { models }) => {
-      try {
-        const boughtPlans = await models.BoughtPlan.findAll({
-          where: { payer: company }
-        });
-        const boughtPlanIds = boughtPlans.map(bP => bP.get("id"));
-
-        const usedLicences = await models.Licence.findAll({
-          where: { unitid: user, boughtplanid: boughtPlanIds }
-        });
-
-        const uLIds = usedLicences.map(uL => uL.get("boughtplanid"));
-
-        const filteredBPs = boughtPlans.filter(boughtPlan => !uLIds.includes(boughtPlan.id));
-
-        return filteredBPs;
-      } catch (err) {
-        throw new Error(err);
-      }
-    }
-  ),
 
   fetchPlans: async (parent, { appid }, { models }) => {
     try {
@@ -98,154 +76,5 @@ export default {
     }
   },
 
-  fetchLicences: requiresAuth.createResolver(
-    async (parent, { boughtplanid }, { models, token }) => {
-      const startTime = Date.now();
-      try {
-        const { user: { unitid } } = decode(token);
-        let licences;
-
-        if (boughtplanid) {
-          licences = await models.Licence.findAll({ where: { unitid, boughtplanid } });
-        } else {
-          licences = await models.Licence.findAll({
-            where: { unitid }
-          });
-        }
-
-        await licences.map(licence => {
-          if (licence.disabled) {
-            licence.set({ agreed: false, key: null });
-          }
-
-          if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
-            licence.set({ key: null });
-          }
-
-          if (licence.endtime) {
-            if (Date.parse(licence.endtime) < startTime) {
-              licence.set({ key: null });
-            }
-          }
-        });
-
-        return licences;
-      } catch (err) {
-        throw new Error(err);
-      }
-    }
-  ),
-
-  adminFetchLicences: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
-    try {
-      const licences = await models.Licence.findAll({ where: { unitid: id } });
-
-      return licences;
-    } catch (err) {
-      throw new Error(err);
-    }
-  }),
-
-  adminFetchLicence: requiresVipfyAdmin.createResolver(
-    async (parent, { unitid, boughtplanid }, { models }) => {
-      try {
-        const licence = await models.Licence.findOne({ where: { unitid, boughtplanid } });
-
-        return licence;
-      } catch (err) {
-        throw new Error(err);
-      }
-    }
-  ),
-
-  fetchLicencesByApp: requiresAuth.createResolver(async (parent, { appid }, { models, token }) => {
-    try {
-      const { user: { unitid } } = decode(token);
-      const plans = await models.Plan.findAll({
-        attributes: ["id"],
-        where: { appid }
-      });
-      const planIds = plans.map(plan => plan.get("id"));
-
-      if (planIds.length == 0) {
-        throw new Error("This App has no plans!");
-      }
-
-      const boughtPlans = await models.BoughtPlan.findAll({
-        where: { planid: { [models.sequelize.Op.in]: [...planIds] } }
-      });
-      const boughtPlanIds = boughtPlans.map(pb => pb.get("id"));
-
-      const licences = await models.Licence.findAll({
-        where: { unitid, boughtplanid: { [models.sequelize.Op.in]: [...boughtPlanIds] } }
-      });
-
-      await licences.map(licence => {
-        if (licence.disabled) {
-          licence.set({ agreed: false, key: null });
-        }
-      });
-
-      return licences;
-    } catch (err) {
-      throw new Error(err.message);
-    }
-  }),
-
-  // change to requiresAdmin in Production!
-  createLoginLink: requiresAuth.createResolver(
-    async (parent, { boughtplanid }, { models, token }) => {
-      try {
-        const { user: { unitid } } = decode(token);
-        const licenceBelongsToUser = await models.Licence.findOne({
-          where: { unitid, boughtplanid }
-        });
-
-        if (!licenceBelongsToUser) {
-          throw new Error("This licence doesn't belong to this user!");
-        }
-
-        const credentials = licenceBelongsToUser.get("key");
-        const endpoint = `user/${credentials.weeblyid}/loginLink`;
-        const res = await weeblyApi("POST", endpoint, "");
-
-        return {
-          ok: true,
-          loginLink: res.link
-        };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
-  ),
-
   fetchPlan: (parent, { planid }, { models }) => models.Plan.findById(planid)
-
-  // fetchPayers: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-  //   const { user: { unitid } } = decode(token);
-  //   const payers = [];
-  //   const directParent = await models.ParentUnit.findOne({
-  //     attributes: ["parentunit"],
-  //     where: { childunit: unitid }
-  //   });
-  //   const findRoot = async unit => {
-  //     if (unit == null) {
-  //       return;
-  //     }
-  //     unit = null;
-  //     unit = await models.ParentUnit.findOne({
-  //       attributes: ["parentunit"],
-  //       where: { childunit: unitid }
-  //     });
-  //
-  //     if (unit != null) {
-  //       payers.push(unit);
-  //     }
-  //     findRoot(unit);
-  //   };
-  //
-  //   findRoot(directParent);
-  //   console.log(payers);
-  //   return payers;
-  // })
 };

@@ -128,37 +128,21 @@ export const queries = `
   # Returns the logged-in user. Used for Authentication
   me: User
 
-  # Checks whether the user is an admin
-  admin: User
-
-  # Returns an user. Should only be usable by an admin
-  fetchUser(id: Int!): User!
   fetchUserByPassword(password: String!): String!
 
-  # Returns all Users for messages
-  allUsers(limit: Int, offset: Int): [User]!
-
-  fetchCompany(id: Int!): Department!
-  allCompanies: [Department]!
   fetchDepartments: [DepartmentResponse]!
-  allDepartments: [Department]!
-  fetchEmployees(unitid: Int!): [DepartmentEmployee]!
 
   # Returns the amount of units in a Department
   fetchCompanySize: Int!
-
-  fetchRecentLogs(user: Int!): [Log]!
 `;
 
 export const mutations = `
   createUser(user: UserInput!, file: File): Response!
   updateUser(user: UserInput!): Response!
-  adminUpdateUser(user: UserInput, file: File, unitid: Int!): Response!
   updateProfilePic(file: File!): Response!
   deleteUser(unitid: Int!): Response!
 
   createCompany(name: String!): RegisterResponse!
-  adminCreateCompany: Response!
   updateStatisticData(data: StatisticData!): Response!
   addEmployee(id: Int!): Response!
 
@@ -176,7 +160,4 @@ export const mutations = `
 
   # Send the user a new link for sign up
   forgotPassword(email: String!): ForgotPwResponse!
-
-  # Freeze the account of an user
-  freezeAccount(unitid: Int!): Response!
 `;
