@@ -84,11 +84,6 @@ export const types = `
     licences: [Licence]
   }
 
-  type BoughtSubplanData {
-    boughtplanid: BoughtPlan!
-    subplanid: Plan!
-  }
-
   type PlansRunning {
     id: Int!
     name: String
@@ -128,14 +123,15 @@ export const types = `
   }
 
   type Licence {
+    id: Int!
     options: JSON
-    starttime: String
+    starttime: String!
     endtime: String
     agreed: Boolean
     disabled: Boolean
     key: JSON
     boughtplanid: BoughtPlan!
-    unitid: Unit!
+    unitid: Unit
   }
 
   input OptionalPlanData {
@@ -153,10 +149,7 @@ export const queries = `
   fetchBills: [Bill]!
 
   # This mutation checks whether an user has the right to log into an app
-  fetchLicences(boughtplanid: Int): [Licence]!
-
-  # This mutation checks whether an user has the right to log into an app by providing an app id
-  fetchLicencesByApp(appid: Int!): [Licence]!
+  fetchLicences(licenceid: Int): [Licence]!
 `;
 
 export const mutations = `
@@ -167,7 +160,7 @@ export const mutations = `
   updatePlan(id: Int!, plan: PlanInput!): Response!
 
   # This allows the user to buy a plan
-  buyPlan(planid: Int!, amount: Int!, optionalPlanData: [OptionalPlanData!]): ProductResponse!
+  buyPlan(planIds: [Int]!): Response!
 
   endPlan(id: Int!, enddate: String!): Response!
 

@@ -26,10 +26,11 @@ export default {
           { email, unitid: unit.id, verified: true, tag: "billing" },
           { transaction: ta }
         );
-        const [user, emailAddress] = await Promise.all([p1, p2]);
+
+        const [user] = await Promise.all([p1, p2]);
 
         if (newsletter) {
-          models.Newsletter.create({ email: emailAddress.email }, { transaction: ta });
+          await models.Newsletter.create({ email }, { transaction: ta });
         }
 
         // sendRegistrationEmail(email, passwordhash);
@@ -108,7 +109,9 @@ export default {
         if (newPw != confirmPw) throw new Error("New passwords don't match!");
         if (pw == newPw) throw new Error("Current and new password can't be the same one!");
 
-        const { user: { unitid } } = await decode(token);
+        const {
+          user: { unitid }
+        } = await decode(token);
         const findOldPassword = await models.Login.findOne({
           where: {
             unitid,

@@ -1,13 +1,12 @@
-export default (sequelize, { DATE, NOW }) => {
+export default (sequelize, { DATE, NOW, STRING }) => {
   const Newsletter = sequelize.define("newsletter_data", {
     activesince: {
       type: DATE,
       defaultValue: NOW()
     },
-    activeuntil: DATE
+    activeuntil: DATE,
+    email: STRING
   });
-
-  // Newsletter.associate = ({ Email }) => Newsletter.belongsTo(Email, { foreignKey: "email" });
 
   Newsletter.removeAttribute("id");
 

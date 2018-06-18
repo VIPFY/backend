@@ -2,6 +2,8 @@ import { decode } from "jsonwebtoken";
 import { weeblyApi } from "../../services/weebly";
 import { requiresAuth } from "../../helpers/permissions";
 
+/* eslint-disable default-case */
+
 export default {
   allApps: (parent, { limit, offset, sortOptions }, { models }) =>
     models.AppDetails.findAll({
@@ -46,15 +48,17 @@ export default {
         const {
           user: { unitid }
         } = decode(token);
-        let licences;
+        let findLicences;
 
         if (boughtplanid) {
-          licences = await models.Licence.findAll({ where: { unitid, boughtplanid } });
+          findLicences = await models.Licence.findAll({ where: { unitid, boughtplanid } });
         } else {
-          licences = await models.Licence.findAll({
+          findLicences = await models.Licence.findAll({
             where: { unitid }
           });
         }
+
+        const licences = findLicences.get();
 
         await licences.forEach(licence => {
           if (licence.disabled) {
@@ -70,6 +74,22 @@ export default {
               licence.set({ key: null });
             }
           }
+
+          if (licence.key.needsloginlink) {
+            switch (licence.key.appid) {
+              case 2: {
+                if (licence.unitid != unitid) {
+                  throw new Error("This licence doesn't belong to this user!");
+                }
+
+                const endpoint = `user/${licence.key.weeblyid}/loginLink`;
+                // res = await weeblyApi("POST", endpoint, "");
+                weeblyApi("POST", endpoint, "")
+                  .then(res => licence.set({ key: { loginlink: res.link } }))
+                  .catch(err => console.log(err));
+              }
+            }
+          }
         });
 
         return licences;
@@ -79,68 +99,35 @@ export default {
     }
   ),
 
-  fetchLicencesByApp: requiresAuth.createResolver(async (parent, { appid }, { models, token }) => {
+  // change to requiresAdmin in Production!
+  createLoginLink: requiresAuth.createResolver(async (parent, { licenceid }, { models, token }) => {
     try {
       const {
         user: { unitid }
       } = decode(token);
-      const plans = await models.Plan.findAll({
-        attributes: ["id"],
-        where: { appid }
-      });
-      const planIds = plans.map(plan => plan.get("id"));
+      let res;
 
-      if (planIds.length == 0) {
-        throw new Error("This App has no plans!");
+      const licenceBelongsToUser = await models.Licence.findOne({
+        where: { unitid, id: licenceid }
+      });
+
+      if (!licenceBelongsToUser) {
+        throw new Error("This licence doesn't belong to this user!");
       }
 
-      const boughtPlans = await models.BoughtPlan.findAll({
-        where: { planid: { [models.sequelize.Op.in]: [...planIds] } }
-      });
-      const boughtPlanIds = boughtPlans.map(pb => pb.get("id"));
+      const credentials = licenceBelongsToUser.get("key");
 
-      const licences = await models.Licence.findAll({
-        where: { unitid, boughtplanid: { [models.sequelize.Op.in]: [...boughtPlanIds] } }
-      });
+      if (credentials.weeblyid) {
+        const endpoint = `user/${credentials.weeblyid}/loginLink`;
+        res = await weeblyApi("POST", endpoint, "");
+      }
 
-      await licences.forEach(licence => {
-        if (licence.disabled) {
-          licence.set({ agreed: false, key: null });
-        }
-      });
-
-      return licences;
+      return {
+        ok: true,
+        loginLink: res.link
+      };
     } catch (err) {
       throw new Error(err.message);
     }
-  }),
-
-  // change to requiresAdmin in Production!
-  createLoginLink: requiresAuth.createResolver(
-    async (parent, { boughtplanid }, { models, token }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(token);
-        const licenceBelongsToUser = await models.Licence.findOne({
-          where: { unitid, boughtplanid }
-        });
-
-        if (!licenceBelongsToUser) {
-          throw new Error("This licence doesn't belong to this user!");
-        }
-
-        const credentials = licenceBelongsToUser.get("key");
-        const endpoint = `user/${credentials.weeblyid}/loginLink`;
-        const res = await weeblyApi("POST", endpoint, "");
-
-        return {
-          ok: true,
-          loginLink: res.link
-        };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
-  )
+  })
 };

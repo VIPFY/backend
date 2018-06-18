@@ -1,19 +1,17 @@
-export default (sequelize, { JSONB, DATE, BOOLEAN }) => {
+export default (sequelize, { JSONB, DATE, BOOLEAN, NOW }) => {
   const Licence = sequelize.define("licence_data", {
     options: JSONB,
-    starttime: DATE,
+    starttime: { type: DATE, defaultValue: NOW() },
     endtime: DATE,
-    agreed: BOOLEAN,
-    disabled: BOOLEAN,
-    key: JSONB,
+    agreed: { type: BOOLEAN, allowNull: false },
+    disabled: { type: BOOLEAN, allowNull: false },
+    key: JSONB
   });
 
   Licence.associate = ({ BoughtPlan, Unit }) => {
     Licence.belongsTo(BoughtPlan, { foreignKey: "boughtplanid" });
     Licence.belongsTo(Unit, { foreignKey: "unitid" });
   };
-
-  Licence.removeAttribute("id");
 
   return Licence;
 };

@@ -1,9 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { requiresAdmin, requiresAuth } from "../../helpers/permissions";
-import { getDate, formatFilename } from "../../helpers/functions";
 import createInvoice from "../../helpers/createInvoice";
 import { createDownloadLink } from "../../services/gcloud";
-import { createLoginLink } from "../../services/weebly";
 
 /* eslint-disable array-callback-return, no-return-await */
 
@@ -28,23 +26,20 @@ export default {
     }
   }),
 
-  buyPlan: async (parent, { planid, amount, optionalPlanData }, { models, token }) =>
+  buyPlan: async (parent, { planIds }, { models }) =>
     models.sequelize.transaction(async ta => {
       try {
         const billItems = [];
-
+        let boughtPlans = [];
         // const {
         //   user: { unitid, company }
         // } = decode(token);
         const unitid = 7;
         const company = 14;
-        // Versuche amount in Plans zu bekommen! Brauchen wir noch numlicences?
-        optionalPlanData.unshift({ amount, planid });
-        const optionalPlanIds = optionalPlanData.map(planData => planData.planid);
 
         const plans = await models.Plan.findAll({
-          where: { id: optionalPlanIds },
-          attributes: ["price", "id", "appid", "name", "numlicences"],
+          where: { id: planIds },
+          attributes: ["price", "id", "name", "numlicences"],
           raw: true
         });
 
@@ -56,58 +51,64 @@ export default {
           });
         });
 
-        const createBoughtPlans = plans.map(
-          async plan =>
-            await models.BoughtPlan.create(
-              {
-                buyer: unitid,
-                payer: company,
-                planid: plan.id,
-                disabled: false,
-                amount: plan.amount,
-                totalprice: plan.price
-              },
-              { transaction: ta }
-            )
+        const mainPlan = plans.shift();
+
+        const createMainBoughtPlan = await models.BoughtPlan.create(
+          {
+            buyer: unitid,
+            payer: company,
+            planid: mainPlan.id,
+            disabled: false,
+            amount: mainPlan.numlicences,
+            totalprice: mainPlan.price
+          },
+          {
+            transaction: ta
+          }
         );
+        const mainBoughtPlan = createMainBoughtPlan.get();
 
-        const boughtPlans = await Promise.all(createBoughtPlans);
-        const boughtPlanIds = boughtPlans.map(bP => bP.get("id", "amount"));
-        /*
-        Kauf eines neuen Plans
+        if (plans.length > 0) {
+          const createSubBoughtPlans = plans.map(
+            async plan =>
+              await models.BoughtPlan.create(
+                {
+                  buyer: unitid,
+                  payer: company,
+                  planid: plan.id,
+                  disabled: false,
+                  amount: plan.numlicences,
+                  totalprice: plan.price,
+                  mainboughtplan: mainBoughtPlan.id
+                },
+                { transaction: ta }
+              )
+          );
 
-        Variablen HauptPlanid, Anzahl und ARRAY optionalPlans
+          const boughtPlansData = await Promise.all(createSubBoughtPlans);
+          boughtPlans = boughtPlansData.map(bP => bP.get());
+        }
 
-        1) Subpläne fetchen
-
-        2) Preis berechnen
-
-        3) Insert into BoughtPlan unter key anzahl und optionen start now totslprice saved
-
-        4) Rechnung erstellen
-
-        5) New Bill_data (generate Name und den Rest halt) -> bekommst billId zurück
-
-        6) BoughtPlan -> planid -> Name, Preis aus DB, amount aus DB
-
-        7) New Bill_position_data
-        positiontext: $Name vom Plan$ ($Anzahl Lizenzen$), amount ist Preis, currency ist currency
-
-        */
+        boughtPlans.splice(0, 0, mainBoughtPlan);
 
         const bill = await models.Bill.create({ unitid: company }, { transaction: ta });
-        const createLicences = boughtPlanIds.map(async boughtplanid =>
-          models.Licence.create(
-            {
-              unitid,
-              boughtplanid,
-              starttime: getDate(),
-              agreed: true,
-              disabled: false
-            },
-            { transaction: ta }
-          )
-        );
+        const createLicences = [];
+
+        await boughtPlans.forEach(plan => {
+          for (let i = 0; i < plan.amount; i++) {
+            createLicences.push(
+              models.Licence.create(
+                {
+                  unitid: null,
+                  boughtplanid: plan.id,
+                  agreed: false,
+                  disabled: false
+                },
+                { transaction: ta }
+              )
+            );
+          }
+        });
 
         await Promise.all(createLicences);
 
@@ -121,34 +122,23 @@ export default {
           { where: { id: bill.id }, transaction: ta }
         );
 
-        const p1 = models.App.findOne({
-          where: { id: plans[0].appid },
-          attributes: ["name"]
-        });
+        const createBillPositions = boughtPlans.map(
+          async plan =>
+            await models.BillPosition.create(
+              {
+                billid: bill.id,
+                positiontext: `Plan ${plan.planid}, Licences ${plan.amount}`,
+                price: plan.totalprice,
+                planid: plan.planid,
+                currency: "USD"
+              },
+              { transaction: ta }
+            )
+        );
 
-        const p2 = models.Department.findOne({
-          where: { unitid: company },
-          attributes: ["name"]
-        });
+        await Promise.all(createBillPositions);
 
-        const [isWeebly, business] = await Promise.all([p1, p2]);
-
-        if (isWeebly.name == "Weebly") {
-          const email = `user${unitid}.boughtplan${mainBoughtPlan.id}@users.vipfy.com`;
-          const domain = `${formatFilename(business.name)}.vipfy.com`;
-          // Currently we use as id the free plan we have in the database
-          const result = await createLoginLink(email, domain, "1");
-          key.weeblyid = result.weeblyid;
-
-          await models.Licence.update(
-            { key },
-            { where: { unitid, boughtplanid: mainBoughtPlan.id }, transaction: ta }
-          );
-
-          return { ok: true, loginLink: result.loginLink };
-        }
-
-        return { ok: res.ok };
+        return { ok: true };
       } catch (err) {
         throw new Error(err.message);
       }
