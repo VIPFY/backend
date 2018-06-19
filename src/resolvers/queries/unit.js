@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { requiresAdmin, requiresAuth } from "../../helpers/permissions";
+import { requiresRight, requiresAuth } from "../../helpers/permissions";
 
 export default {
   fetchCompany: async (parent, { id }, { models }) => {
@@ -12,7 +12,7 @@ export default {
     }
   },
 
-  fetchCompanySize: requiresAdmin.createResolver(async (parent, args, { models, token }) => {
+  fetchCompanySize: requiresRight("A").createResolver(async (parent, args, { models, token }) => {
     try {
       const {
         user: { company }

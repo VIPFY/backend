@@ -71,5 +71,6 @@ Object.keys(db).forEach(modelName => {
 });
 
 db.sequelize = sequelize;
+db.Op = sequelize.Op;
 
 export default db;

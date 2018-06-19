@@ -1,4 +1,4 @@
-import userQueries from "./queries/user";
+import userQueries from "./queries/unit";
 import appQueries from "./queries/app";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
@@ -11,7 +11,7 @@ import demoQueries from "./queries/demo";
 import appMutations from "./mutations/app";
 import messageMutations from "./mutations/message";
 import authMutations from "./mutations/auth";
-import userMutations from "./mutations/user";
+import userMutations from "./mutations/unit";
 import reviewMutations from "./mutations/review";
 import commonMutations from "./mutations/common";
 import dd24Mutations from "./mutations/dd24";

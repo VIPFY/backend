@@ -1,5 +1,5 @@
 import dd24Api from "../../services/dd24";
-// import { requiresAdmin } from "../../helpers/permissions";
+// import { requiresRight("A") } from "../../helpers/permissions";
 
 export default {
   domainCommands: async (parent, { command, params }) => {

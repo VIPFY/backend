@@ -1,12 +1,12 @@
 import { decode } from "jsonwebtoken";
-import { requiresAdmin, requiresAuth } from "../../helpers/permissions";
+import { requiresRight, requiresAuth } from "../../helpers/permissions";
 import createInvoice from "../../helpers/createInvoice";
 import { createDownloadLink } from "../../services/gcloud";
 
 /* eslint-disable array-callback-return, no-return-await */
 
 export default {
-  createPlan: requiresAdmin.createResolver(async (parent, { plan }, { models }) => {
+  createPlan: requiresRight(["admin"]).createResolver(async (parent, { plan }, { models }) => {
     try {
       await models.Plan.create({ ...plan });
 
@@ -16,7 +16,7 @@ export default {
     }
   }),
 
-  updatePlan: requiresAdmin.createResolver(async (parent, { plan, id }, { models }) => {
+  updatePlan: requiresRight("A").createResolver(async (parent, { plan, id }, { models }) => {
     try {
       await models.Plan.update({ ...plan }, { where: { id } });
 
@@ -144,7 +144,7 @@ export default {
       }
     }),
 
-  endPlan: requiresAdmin.createResolver(async (parent, { id, enddate }, { models }) => {
+  endPlan: requiresRight("A").createResolver(async (parent, { id, enddate }, { models }) => {
     try {
       await models.Plan.update({ enddate }, { where: { id } });
 

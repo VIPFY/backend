@@ -21,9 +21,10 @@ const createResolver = resolver => {
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(async (parent, args, { models, token }) => {
   if (!token) throw new Error("Not authenticated!");
-
   try {
-    const { user: { company, unitid } } = decode(token);
+    const {
+      user: { company, unitid }
+    } = decode(token);
     const userExists = await models.Unit.findById(unitid);
     if (!userExists) throw new Error("Couldn't find user in database!");
 
@@ -36,28 +37,32 @@ export const requiresAuth = createResolver(async (parent, args, { models, token 
   }
 });
 
-// These functions can be nested. Here it checks first whether an user
-// is authenticated and then if he has admin status.
-export const requiresAdmin = requiresAuth.createResolver(
-  async (parent, args, { models, token }) => {
+export const requiresRight = rights =>
+  requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
-      const { user: { unitid, company } } = await decode(token);
-      const rights = await models.Right.findOne({
-        where: { holder: unitid, forunit: company }
+      const {
+        user: { unitid: holder, company }
+      } = await decode(token);
+
+      const hasRight = await models.Right.findOne({
+        where: {
+          holder,
+          forunit: company,
+          type: { [models.Op.or]: rights }
+        }
       });
 
-      if (!rights || (rights.type != "admin" && company != 25)) {
-        throw new Error("You're not an Admin for this company!");
-      }
+      if (!hasRight) throw new Error("You don't have the necessary rights!");
     } catch (err) {
-      throw new Error("You're not an Admin for this company!");
+      throw new Error("Opps, something went wrong. Please report this error with id auth_1");
     }
-  }
-);
+  });
 
 export const requiresVipfyAdmin = requiresAuth.createResolver(async (parent, args, { token }) => {
   try {
-    const { user: { unitid } } = decode(token);
+    const {
+      user: { unitid }
+    } = decode(token);
 
     if (unitid != 7 && unitid != 22 && unitid != 67) {
       throw new Error("You're not a Vipfy Admin");

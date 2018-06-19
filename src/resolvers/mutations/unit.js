@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
-import { requiresAuth, requiresAdmin } from "../../helpers/permissions";
+import { requiresAuth, requiresRight } from "../../helpers/permissions";
 // import { sendRegistrationEmail } from "../../services/mailjet";
 import { uploadFile } from "../../services/gcloud";
 import { userPicFolder } from "../../constants";
@@ -88,24 +88,26 @@ export default {
       })
   ),
 
-  updateStatisticData: requiresAdmin.createResolver(async (parent, { data }, { models, token }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
+  updateStatisticData: requiresRight("A").createResolver(
+    async (parent, { data }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
 
-      await models.DepartmentData.update(
-        { statisticdata: { ...data } },
-        { where: { unitid: company } }
-      );
+        await models.DepartmentData.update(
+          { statisticdata: { ...data } },
+          { where: { unitid: company } }
+        );
 
-      return { ok: true };
-    } catch (err) {
-      throw new Error(err.message);
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
     }
-  }),
+  ),
 
-  addEmployee: requiresAdmin.createResolver(async (parent, { email }, { models, token }) =>
+  addEmployee: requiresRight("A").createResolver(async (parent, { email }, { models, token }) =>
     models.sequelize.transaction(async ta => {
       try {
         const {

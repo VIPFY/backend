@@ -42,55 +42,66 @@ export default {
   },
 
   fetchLicences: requiresAuth.createResolver(
-    async (parent, { boughtplanid }, { models, token }) => {
+    async (parent, { licenceid }, { models, token }, info) => {
       const startTime = Date.now();
       try {
         const {
           user: { unitid }
         } = decode(token);
-        let findLicences;
+        let licences;
+        let query =
+          "SELECT licence_data.*, plan_data.appid FROM licence_data JOIN" +
+          " boughtplan_data ON licence_data.boughtplanid = boughtplan_data.id" +
+          " JOIN plan_data ON boughtplan_data.planid = plan_data.id" +
+          " WHERE licence_data.unitid = ?";
 
-        if (boughtplanid) {
-          findLicences = await models.Licence.findAll({ where: { unitid, boughtplanid } });
+        if (licenceid) {
+          query += " AND licence_data.id = ?";
+
+          licences = await models.sequelize
+            .query(query, { replacements: [unitid, licenceid] })
+            .spread(res => res);
         } else {
-          findLicences = await models.Licence.findAll({
-            where: { unitid }
-          });
+          licences = await models.sequelize
+            .query(query, { replacements: [unitid] })
+            .spread(res => res);
         }
 
-        const licences = findLicences.get();
-
-        await licences.forEach(licence => {
-          if (licence.disabled) {
-            licence.set({ agreed: false, key: null });
-          }
-
-          if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
-            licence.set({ key: null });
-          }
-
-          if (licence.endtime) {
-            if (Date.parse(licence.endtime) < startTime) {
-              licence.set({ key: null });
+        if (
+          info.fieldNodes[0].selectionSet.selections.find(item => item.name.value == "key") !==
+          undefined
+        ) {
+          const createLoginLinks = licences.map(async licence => {
+            if (licence.unitid != unitid) {
+              throw new Error("This licence doesn't belong to this user!");
             }
-          }
 
-          if (licence.key.needsloginlink) {
-            switch (licence.key.appid) {
-              case 2: {
-                if (licence.unitid != unitid) {
-                  throw new Error("This licence doesn't belong to this user!");
-                }
+            if (licence.disabled) {
+              licence.agreed = false;
+              licence.key = null;
+            }
 
-                const endpoint = `user/${licence.key.weeblyid}/loginLink`;
-                // res = await weeblyApi("POST", endpoint, "");
-                weeblyApi("POST", endpoint, "")
-                  .then(res => licence.set({ key: { loginlink: res.link } }))
-                  .catch(err => console.log(err));
+            if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
+              licence.key = null;
+            }
+
+            if (licence.endtime) {
+              if (Date.parse(licence.endtime) < startTime) {
+                licence.key = null;
               }
             }
-          }
-        });
+
+            if (licence.key && licence.key.needsloginlink) {
+              if (licence.appid == 2) {
+                const endpoint = `user/${licence.key.weeblyid}/loginLink`;
+                const res = await weeblyApi("POST", endpoint, "");
+                licence.key.loginlink = res.link;
+              }
+            }
+          });
+
+          await Promise.all(createLoginLinks);
+        }
 
         return licences;
       } catch (err) {
@@ -99,7 +110,7 @@ export default {
     }
   ),
 
-  // change to requiresAdmin in Production!
+  // change to requiresRight("A") in Production!
   createLoginLink: requiresAuth.createResolver(async (parent, { licenceid }, { models, token }) => {
     try {
       const {
