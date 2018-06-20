@@ -91,12 +91,10 @@ export default {
               }
             }
 
-            if (licence.key && licence.key.needsloginlink) {
-              if (licence.appid == 2) {
-                const endpoint = `user/${licence.key.weeblyid}/loginLink`;
-                const res = await weeblyApi("POST", endpoint, "");
-                licence.key.loginlink = res.link;
-              }
+            if (licence.appid == 2) {
+              const endpoint = `user/${licence.key.weeblyid}/loginLink`;
+              const res = await weeblyApi("POST", endpoint, "");
+              licence.key.loginlink = res.link;
             }
           });
 

@@ -82,25 +82,29 @@ export default {
 
   signIn: async (parent, { email, password }, { models, SECRET, SECRET_TWO }) => {
     const error = "Email or Password incorrect!";
-    const emailExists = await models.Login.findOne({ where: { email }, raw: true });
-    if (!emailExists) throw new Error(error);
-    if (emailExists.verified == false) throw new Error("Sorry, this email isn't verified yet.");
-    if (emailExists.banned == true) throw new Error("Sorry, this account is banned!");
-    if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended!");
-    if (emailExists.deleted == true) throw new Error("Sorry, this account doesn't exist anymore.");
+    try {
+      const emailExists = await models.Login.findOne({ where: { email }, raw: true });
+      if (!emailExists) throw new Error(error);
+      if (emailExists.verified == false) throw new Error("Sorry, this email isn't verified yet.");
+      if (emailExists.banned == true) throw new Error("Sorry, this account is banned!");
+      if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended!");
+      if (emailExists.deleted == true) { throw new Error("Sorry, this account doesn't exist anymore."); }
 
-    const basicUser = await models.User.findOne({ where: { id: emailExists.unitid } });
-    const valid = await bcrypt.compare(password, emailExists.passwordhash);
-    if (!valid) throw new Error(error);
+      const basicUser = await models.User.findOne({ where: { id: emailExists.unitid } });
+      const valid = await bcrypt.compare(password, emailExists.passwordhash);
+      if (!valid) throw new Error(error);
 
-    const refreshTokenSecret = emailExists.passwordhash + SECRET_TWO;
-    const user = await parentAdminCheck(models, basicUser);
-    // User doesn't have the property unitid, so we have to pass emailExists for
-    // the token creation
-    emailExists.company = user.company;
-    const [token, refreshToken] = await createTokens(emailExists, SECRET, refreshTokenSecret);
+      const refreshTokenSecret = emailExists.passwordhash + SECRET_TWO;
+      const user = await parentAdminCheck(models, basicUser);
+      // User doesn't have the property unitid, so we have to pass emailExists for
+      // the token creation
+      emailExists.company = user.company;
+      const [token, refreshToken] = await createTokens(emailExists, SECRET, refreshTokenSecret);
 
-    return { ok: true, user, token, refreshToken };
+      return { ok: true, user, token, refreshToken };
+    } catch (err) {
+      throw new Error(err);
+    }
   },
 
   changePassword: requiresAuth.createResolver(

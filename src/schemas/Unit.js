@@ -56,7 +56,9 @@ export const types = `
     createdate: String
     payingoptions: JSON
     company: Department
-    admin: Boolean!
+    teams: Boolean
+    marketplace: Boolean
+    billing: Boolean
   }
 
   type Department {

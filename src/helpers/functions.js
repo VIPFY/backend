@@ -26,12 +26,6 @@ export const parentAdminCheck = async (models, user) => {
     )
     .then(roots => roots.map(root => (user.company = root.id)));
 
-  const isAdmin = await models.Right.findOne({
-    where: { holder: user.id, forunit: user.company, type: "admin" }
-  });
-
-  user.admin = !!isAdmin;
-
   return user;
 };
 

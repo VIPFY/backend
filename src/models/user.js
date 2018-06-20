@@ -21,7 +21,9 @@ export default (
     position: TEXT,
     emails: { type: JSONB, allowNull: false },
     company: VIRTUAL,
-    admin: VIRTUAL
+    teams: BOOLEAN,
+    marketplace: BOOLEAN,
+    billing: BOOLEAN
   });
 
   return User;
