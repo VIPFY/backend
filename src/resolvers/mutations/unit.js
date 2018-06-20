@@ -88,7 +88,7 @@ export default {
       })
   ),
 
-  updateStatisticData: requiresRight("A").createResolver(
+  updateStatisticData: requiresRight(["admin"]).createResolver(
     async (parent, { data }, { models, token }) => {
       try {
         const {
@@ -107,13 +107,26 @@ export default {
     }
   ),
 
-  addCreateEmployee: requiresRight(["admin"]).createResolver(
+  addEmployee: async (parent, { unitid, departmentid }, { token, models }) => {
+    try {
+      const {
+        user: { company }
+      } = decode(token);
+
+      return { ok: true };
+    } catch (err) {
+      throw new Error(err);
+    }
+  },
+
+  addCreateEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
     async (parent, { email, departmentid: id }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company }
           } = decode(token);
+
           const emailInUse = await models.Email.findOne({ where: { email } });
           if (emailInUse) throw new Error("Email already in use!");
 

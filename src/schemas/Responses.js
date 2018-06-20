@@ -51,6 +51,7 @@ export const types = `
     childids: [Int]
     department: Department
     employees: [emp]
+    level: Int
   }
 
   type emp {
