@@ -16,7 +16,7 @@ export default {
     }
   }),
 
-  updatePlan: requiresRight("A").createResolver(async (parent, { plan, id }, { models }) => {
+  updatePlan: requiresRight(["admin"]).createResolver(async (parent, { plan, id }, { models }) => {
     try {
       await models.Plan.update({ ...plan }, { where: { id } });
 
@@ -26,123 +26,123 @@ export default {
     }
   }),
 
-  buyPlan: async (parent, { planIds }, { models }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const billItems = [];
-        let boughtPlans = [];
-        // const {
-        //   user: { unitid, company }
-        // } = decode(token);
-        const unitid = 7;
-        const company = 14;
+  buyPlan: requiresRight(["admin", "buyApps"]).createResolver(
+    async (parent, { planIds }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const billItems = [];
+          let boughtPlans = [];
+          const {
+            user: { unitid, company }
+          } = decode(token);
 
-        const plans = await models.Plan.findAll({
-          where: { id: planIds },
-          attributes: ["price", "id", "name", "numlicences"],
-          raw: true
-        });
-
-        plans.forEach(({ price, name, numlicences }) => {
-          billItems.push({
-            description: name,
-            quantity: numlicences,
-            unitPrice: price
+          const plans = await models.Plan.findAll({
+            where: { id: planIds },
+            attributes: ["price", "id", "appid", "name", "numlicences"],
+            raw: true
           });
-        });
 
-        const mainPlan = plans.shift();
+          plans.forEach(({ price, name, numlicences }) => {
+            billItems.push({
+              description: name,
+              quantity: numlicences,
+              unitPrice: price
+            });
+          });
 
-        const createMainBoughtPlan = await models.BoughtPlan.create(
-          {
-            buyer: unitid,
-            payer: company,
-            planid: mainPlan.id,
-            disabled: false,
-            amount: mainPlan.numlicences,
-            totalprice: mainPlan.price
-          },
-          {
-            transaction: ta
+          const mainPlan = plans.shift();
+
+          const createMainBoughtPlan = await models.BoughtPlan.create(
+            {
+              buyer: unitid,
+              payer: company,
+              planid: mainPlan.id,
+              disabled: false,
+              amount: mainPlan.numlicences,
+              totalprice: mainPlan.price
+            },
+            {
+              transaction: ta
+            }
+          );
+          const mainBoughtPlan = createMainBoughtPlan.get();
+
+          if (plans.length > 0) {
+            const createSubBoughtPlans = plans.map(
+              async plan =>
+                await models.BoughtPlan.create(
+                  {
+                    buyer: unitid,
+                    payer: company,
+                    planid: plan.id,
+                    disabled: false,
+                    amount: plan.numlicences,
+                    totalprice: plan.price,
+                    mainboughtplan: mainBoughtPlan.id
+                  },
+                  { transaction: ta }
+                )
+            );
+
+            const boughtPlansData = await Promise.all(createSubBoughtPlans);
+            boughtPlans = boughtPlansData.map(bP => bP.get());
           }
-        );
-        const mainBoughtPlan = createMainBoughtPlan.get();
 
-        if (plans.length > 0) {
-          const createSubBoughtPlans = plans.map(
+          boughtPlans.splice(0, 0, mainBoughtPlan);
+
+          const bill = await models.Bill.create({ unitid: company }, { transaction: ta });
+          const createLicences = [];
+
+          await boughtPlans.forEach(plan => {
+            for (let i = 0; i < plan.amount; i++) {
+              createLicences.push(
+                models.Licence.create(
+                  {
+                    unitid: null,
+                    boughtplanid: plan.id,
+                    agreed: false,
+                    disabled: false
+                  },
+                  { transaction: ta }
+                )
+              );
+            }
+          });
+
+          await Promise.all(createLicences);
+
+          const res = await createInvoice(false, models, company, bill.id, billItems);
+          if (res.ok !== true) {
+            throw new Error(res.err);
+          }
+
+          await models.Bill.update(
+            { billname: res.billName },
+            { where: { id: bill.id }, transaction: ta }
+          );
+
+          const createBillPositions = boughtPlans.map(
             async plan =>
-              await models.BoughtPlan.create(
+              await models.BillPosition.create(
                 {
-                  buyer: unitid,
-                  payer: company,
-                  planid: plan.id,
-                  disabled: false,
-                  amount: plan.numlicences,
-                  totalprice: plan.price,
-                  mainboughtplan: mainBoughtPlan.id
+                  billid: bill.id,
+                  positiontext: `Plan ${plan.planid}, Licences ${plan.amount}`,
+                  price: plan.totalprice,
+                  planid: plan.planid,
+                  currency: "USD"
                 },
                 { transaction: ta }
               )
           );
 
-          const boughtPlansData = await Promise.all(createSubBoughtPlans);
-          boughtPlans = boughtPlansData.map(bP => bP.get());
+          await Promise.all(createBillPositions);
+
+          return { ok: true };
+        } catch (err) {
+          throw new Error(err.message);
         }
-
-        boughtPlans.splice(0, 0, mainBoughtPlan);
-
-        const bill = await models.Bill.create({ unitid: company }, { transaction: ta });
-        const createLicences = [];
-
-        await boughtPlans.forEach(plan => {
-          for (let i = 0; i < plan.amount; i++) {
-            createLicences.push(
-              models.Licence.create(
-                {
-                  unitid: null,
-                  boughtplanid: plan.id,
-                  agreed: false,
-                  disabled: false
-                },
-                { transaction: ta }
-              )
-            );
-          }
-        });
-
-        await Promise.all(createLicences);
-
-        const res = await createInvoice(false, models, company, bill.id, billItems);
-        if (res.ok !== true) {
-          throw new Error(res.err);
-        }
-
-        await models.Bill.update(
-          { billname: res.billName },
-          { where: { id: bill.id }, transaction: ta }
-        );
-
-        const createBillPositions = boughtPlans.map(
-          async plan =>
-            await models.BillPosition.create(
-              {
-                billid: bill.id,
-                positiontext: `Plan ${plan.planid}, Licences ${plan.amount}`,
-                price: plan.totalprice,
-                planid: plan.planid,
-                currency: "USD"
-              },
-              { transaction: ta }
-            )
-        );
-
-        await Promise.all(createBillPositions);
-
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }),
+      })
+  ),
 
   endPlan: requiresRight("A").createResolver(async (parent, { id, enddate }, { models }) => {
     try {
