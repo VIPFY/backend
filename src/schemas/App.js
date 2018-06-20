@@ -52,6 +52,7 @@ export const types = `
     developerwebsite: String
     description: String
     teaserdescription: String
+    loginurl: String
     website: String
     images: [String]
     features: JSON

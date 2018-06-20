@@ -12,24 +12,27 @@ export default {
     }
   },
 
-  fetchCompanySize: requiresRight(["admin"]).createResolver(async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
-      const size = await models.Department.findOne({ where: { unitid: company } });
+  fetchCompanySize: requiresRight(["admin"]).createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+        const size = await models.Department.findOne({ where: { unitid: company } });
 
-      return size.employees;
-    } catch ({ message }) {
-      throw new Error(message);
+        return size.employees;
+      } catch ({ message }) {
+        throw new Error(message);
+      }
     }
-  }),
+  ),
 
   fetchDepartments: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
       const {
         user: { company }
       } = decode(token);
+
       const departments = await models.sequelize
         .query("Select * from getDepartments(?)", {
           replacements: [company]

@@ -49,7 +49,7 @@ export const types = `
   type DepartmentResponse {
     id: Int
     childids: [Int]
-    department: emp
+    department: Department
     employees: [emp]
   }
 
