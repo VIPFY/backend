@@ -47,7 +47,7 @@ export const requiresRight = rights =>
       const hasRight = await models.Right.findOne({
         where: {
           holder,
-          forunit: company,
+          forunit: { [models.Op.or]: [company, null] },
           type: { [models.Op.or]: rights }
         }
       });

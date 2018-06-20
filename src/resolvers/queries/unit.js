@@ -12,7 +12,7 @@ export default {
     }
   },
 
-  fetchCompanySize: requiresRight("A").createResolver(async (parent, args, { models, token }) => {
+  fetchCompanySize: requiresRight(["admin"]).createResolver(async (parent, args, { models, token }) => {
     try {
       const {
         user: { company }
