@@ -107,28 +107,33 @@ export default {
     }
   ),
 
-  addEmployee: requiresRight("A").createResolver(async (parent, { email }, { models, token }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { company }
-        } = decode(token);
-        const emailInUse = await models.Email.findOne({ where: { email } });
-        if (emailInUse) throw new Error("Email already in use!");
+  addCreateEmployee: requiresRight(["admin"]).createResolver(
+    async (parent, { email, departmentid: id }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(token);
+          const emailInUse = await models.Email.findOne({ where: { email } });
+          if (emailInUse) throw new Error("Email already in use!");
 
-        const passwordhash = await bcrypt.hash("test", 12);
+          const passwordhash = await bcrypt.hash("test", 12);
 
-        const unit = await models.Unit.create({}, { transaction: ta });
-        const p3 = models.Human.create({ unitid: unit.id, passwordhash }, { transaction: ta });
-        const p4 = models.Email.create({ email, unitid: unit.id }, { transaction: ta });
-        const [user, emailAddress] = await Promise.all([p3, p4]);
+          const unit = await models.Unit.create({}, { transaction: ta });
+          const p1 = models.Human.create({ unitid: unit.id, passwordhash }, { transaction: ta });
+          const p2 = models.Email.create({ email, unitid: unit.id }, { transaction: ta });
+          const p3 = models.DepartmentEmployee.create(
+            { id, employee: unit.id },
+            { transaction: ta }
+          );
+          await Promise.all([p1, p2, p3]);
 
-        // sendRegistrationEmail(email, passwordhash);
+          // sendRegistrationEmail(email, passwordhash);
 
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    })
+          return { ok: true };
+        } catch (err) {
+          throw new Error(err.message);
+        }
+      })
   )
 };

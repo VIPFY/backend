@@ -38,7 +38,7 @@ export default {
           replacements: [company]
         })
         .spread(res => res);
-
+      console.log(departments);
       return departments;
     } catch (err) {
       throw new Error(err);

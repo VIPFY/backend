@@ -73,6 +73,7 @@ export const types = `
     employees: Int
     employeedata: [User]!
     payingoptions: JSON
+    manageemployees:
   }
 
   type DepartmentData {
@@ -146,7 +147,7 @@ export const mutations = `
 
   createCompany(name: String!): RegisterResponse!
   updateStatisticData(data: StatisticData!): Response!
-  addEmployee(id: Int!): Response!
+  addCreateEmployee(email: String!, departmentid: Int!): Response!
 
   # Only an email is required for the signup
   signUp(email: String!, newsletter: Boolean): RegisterResponse!
