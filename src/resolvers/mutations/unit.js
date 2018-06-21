@@ -123,7 +123,7 @@ export default {
       if (!departments.includes(departmentid)) {
         throw new Error("This department doesn't belong to the users company!");
       }
-      await models.DepartmentEmployee.create({ parentunit: departmentid, childunit: unitid });
+      await models.ParentUnit.create({ parentunit: departmentid, childunit: unitid });
 
       return { ok: true };
     } catch (err) {
