@@ -138,15 +138,21 @@ export default {
           const {
             user: { company }
           } = decode(token);
-
+          const firstname = email.slice(0, email.indexOf("@"));
           const emailInUse = await models.Email.findOne({ where: { email } });
           if (emailInUse) throw new Error("Email already in use!");
 
           const passwordhash = await bcrypt.hash("test", 12);
 
           const unit = await models.Unit.create({}, { transaction: ta });
-          const p1 = models.Human.create({ unitid: unit.id, passwordhash }, { transaction: ta });
-          const p2 = models.Email.create({ email, unitid: unit.id }, { transaction: ta });
+          const p1 = models.Human.create(
+            { firstname, unitid: unit.id, passwordhash },
+            { transaction: ta }
+          );
+          const p2 = models.Email.create(
+            { email, unitid: unit.id, verified: true },
+            { transaction: ta }
+          );
           const p3 = models.ParentUnit.create(
             { parentunit: departmentid, childunit: unit.id },
             { transaction: ta }
