@@ -53,20 +53,38 @@ export const fileMiddleware = (req, res, next) => {
   }
 
   if (uploadDir) mkdirp.sync(uploadDir);
-
   const form = formidable.IncomingForm({ uploadDir });
 
+  form.multiples = true;
   form.parse(req, (error, { operations }, files) => {
     if (error) {
       console.log(error);
     }
 
     const document = JSON.parse(operations);
-
     if (Object.keys(files).length) {
-      const { file: { type, path: thePath, size, name } } = files;
-      document.variables.file = { type, path: thePath, size, name };
+      if (files.file) {
+        const {
+          file: { type, path: thePath, size, name }
+        } = files;
+        document.variables.file = { type, path: thePath, size, name };
+      }
+
+      if (files.file2) {
+        const {
+          file2: { type, path: thePath, size, name }
+        } = files;
+        document.variables.file2 = { type, path: thePath, size, name };
+      }
+
+      if (files.files) {
+        document.variables.files = Object.values(files.files).map(fi => {
+          const { type, path: thePath, size, name } = fi;
+          return { type, path: thePath, size, name };
+        });
+      }
     }
+
     req.body = document;
     next();
   });
@@ -104,7 +122,9 @@ export const loggingMiddleWare = (req, res, next) => {
 
     try {
       if (token && token != "null") {
-        const { user: { unitid } } = jwt.decode(token);
+        const {
+          user: { unitid }
+        } = jwt.decode(token);
         user = unitid;
       }
 

@@ -78,7 +78,7 @@ export const queries = `
 `;
 
 export const mutations = `
-  createApp(app: AppInput!, file: File): Response!
+  createApp(app: AppInput!, file: File, file2: File, files: [File]): Response!
   updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, file: File): Response!
   deleteApp(id: Int!): Response!
   toggleAppStatus(id: Int!): Response!

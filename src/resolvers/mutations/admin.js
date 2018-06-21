@@ -52,30 +52,45 @@ export default {
     }
   ),
 
-  createApp: requiresVipfyAdmin.createResolver(async (parent, { app, file }, { models }) => {
-    try {
-      const nameExists = await models.App.findOne({ where: { name: app.name } });
-      if (nameExists) throw new Error("Name is already in Database!");
+  createApp: requiresVipfyAdmin.createResolver(
+    async (parent, { app, file, file2, files }, { models }) => {
+      try {
+        const nameExists = await models.App.findOne({ where: { name: app.name } });
+        if (nameExists) throw new Error("Name is already in Database!");
 
-      const developerExists = await models.Unit.findOne({
-        where: { id: app.developer, deleted: false, banned: false }
-      });
-      if (!developerExists) throw new Error("Developer doesn't exist!");
-      if (app.supportunit == app.developer) {
-        throw new Error("Developer and Supportunit can't be the same one!");
+        const developerExists = await models.Unit.findOne({
+          where: { id: app.developer, deleted: false, banned: false }
+        });
+
+        if (!developerExists) throw new Error("Developer doesn't exist!");
+        if (app.supportunit == app.developer) {
+          throw new Error("Developer and Supportunit can't be the same one!");
+        }
+
+        if (file) {
+          const logo = await uploadFile(file, appPicFolder);
+          app.logo = logo;
+        }
+
+        if (file2) {
+          const icon = await uploadFile(file2, "icons");
+          app.icon = icon;
+        }
+
+        if (files) {
+          // eslint-disable-next-line
+          const imagesToUpload = files.map(async fi => await uploadFile(fi, app.name));
+          const images = await Promise.all(imagesToUpload);
+          app.images = images;
+        }
+
+        await models.App.create({ ...app });
+        return { ok: true };
+      } catch ({ message }) {
+        throw new Error(message);
       }
-
-      if (file) {
-        const logo = await uploadFile(file, appPicFolder);
-        app.logo = logo;
-      }
-
-      await models.App.create({ ...app });
-      return { ok: true };
-    } catch ({ message }) {
-      throw new Error(message);
     }
-  }),
+  ),
 
   updateApp: requiresVipfyAdmin.createResolver(
     async (parent, { supportid, developerid, appid, app = {}, file }, { models }) =>
