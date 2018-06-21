@@ -2,7 +2,7 @@ export default (sequelize, { TEXT, STRING, DATEONLY, TIME, INTEGER, ENUM }) => {
   const Human = sequelize.define("human_data", {
     firstname: { type: STRING, defaultValue: "John" },
     middlename: STRING,
-    lastname: STRING,
+    lastname: { type: STRING, defaultValue: " " },
     title: STRING,
     sex: ENUM("m", "w", "u"),
     passwordhash: TEXT,
