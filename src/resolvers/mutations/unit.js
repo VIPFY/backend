@@ -107,7 +107,7 @@ export default {
     }
   ),
 
-  addEmployee: async (parent, { unitid, departmentid: id }, { token, models }) => {
+  addEmployee: async (parent, { unitid, departmentid }, { token, models }) => {
     try {
       const {
         user: { company }
@@ -120,10 +120,10 @@ export default {
         .spread(res => res)
         .map(department => parseInt(department.id));
 
-      if (!departments.includes(id)) {
+      if (!departments.includes(departmentid)) {
         throw new Error("This department doesn't belong to the users company!");
       }
-      await models.DepartmentEmployee.create({ id, employee: unitid });
+      await models.DepartmentEmployee.create({ parentunit: departmentid, childunit: unitid });
 
       return { ok: true };
     } catch (err) {
@@ -132,7 +132,7 @@ export default {
   },
 
   addCreateEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
-    async (parent, { email, departmentid: id }, { models, token }) =>
+    async (parent, { email, departmentid }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -147,8 +147,8 @@ export default {
           const unit = await models.Unit.create({}, { transaction: ta });
           const p1 = models.Human.create({ unitid: unit.id, passwordhash }, { transaction: ta });
           const p2 = models.Email.create({ email, unitid: unit.id }, { transaction: ta });
-          const p3 = models.DepartmentEmployee.create(
-            { id, employee: unit.id },
+          const p3 = models.ParentUnit.create(
+            { parentunit: departmentid, childunit: unit.id },
             { transaction: ta }
           );
           await Promise.all([p1, p2, p3]);
