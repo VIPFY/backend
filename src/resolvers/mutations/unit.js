@@ -107,11 +107,23 @@ export default {
     }
   ),
 
-  addEmployee: async (parent, { unitid, departmentid }, { token, models }) => {
+  addEmployee: async (parent, { unitid, departmentid: id }, { token, models }) => {
     try {
       const {
         user: { company }
       } = decode(token);
+
+      const departments = await models.sequelize
+        .query("Select * from getDepartments(?)", {
+          replacements: [company]
+        })
+        .spread(res => res)
+        .map(department => parseInt(department.id));
+
+      if (!departments.includes(id)) {
+        throw new Error("This department doesn't belong to the users company!");
+      }
+      await models.DepartmentEmployee.create({ id, employee: unitid });
 
       return { ok: true };
     } catch (err) {

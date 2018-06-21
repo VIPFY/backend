@@ -1,13 +1,13 @@
-export default (sequelize, { TEXT, CHAR, JSONB, INTEGER }) => {
+export default (sequelize, { TEXT, CHAR, JSONB, INTEGER, ARRAY }) => {
   const Address = sequelize.define("address_data", {
     country: { type: CHAR(2), allowNull: false },
     address: JSONB,
     description: TEXT,
     priority: INTEGER,
-    tag: {
-      type: TEXT,
+    tags: {
+      type: ARRAY(TEXT),
       set(val) {
-        this.setDataValue("tag", val.toLowerCase());
+        this.setDataValue("tags", val.toLowerCase());
       }
     }
   });

@@ -6,7 +6,7 @@ import { uploadInvoice } from "../services/gcloud";
 
 export default async (monthly, models, unitid, billId, billItems) => {
   try {
-    const tag = "billing";
+    const tags = ["billing"];
     let single = true;
     if (monthly) {
       single = false;
@@ -14,13 +14,13 @@ export default async (monthly, models, unitid, billId, billItems) => {
 
     const p1 = models.Address.findOne({
       attributes: ["country", "address"],
-      where: { unitid, tag }
+      where: { unitid, tags }
     });
     const p2 = models.DepartmentEmail.findAll({
       attributes: ["email"],
       where: { departmentid: 14 }
     });
-    const p3 = models.Phone.findOne({ attributes: ["number"], where: { unitid, tag } });
+    const p3 = models.Phone.findOne({ attributes: ["number"], where: { unitid, tags } });
     const p4 = models.Department.findOne({ attributes: ["name"], where: { unitid } });
     let [address, emails, phone, company] = await Promise.all([p1, p2, p3, p4]);
 
@@ -50,7 +50,10 @@ export default async (monthly, models, unitid, billId, billItems) => {
 
     company = company.get().name;
 
-    const { country, address: { zip, city, street } } = address;
+    const {
+      country,
+      address: { zip, city, street }
+    } = address;
     const date = moment().format("YYYY-MM-DD");
     const dueDate = moment()
       .add(2, "weeks")

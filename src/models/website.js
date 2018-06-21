@@ -1,7 +1,12 @@
-export default (sequelize, { TEXT, BOOLEAN, INTEGER }) => {
+export default (sequelize, { TEXT, BOOLEAN, INTEGER, ARRAY }) => {
   const Website = sequelize.define("website_data", {
     website: TEXT,
-    tag: TEXT,
+    tags: {
+      type: ARRAY(TEXT),
+      set(val) {
+        this.setDataValue("tags", val.toLowerCase());
+      }
+    },
     verified: {
       type: BOOLEAN,
       defaulValue: false

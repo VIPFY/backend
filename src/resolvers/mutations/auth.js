@@ -4,7 +4,7 @@ import { decode } from "jsonwebtoken";
 import { createTokens } from "../../helpers/auth";
 import { sendRegistrationEmail } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
-import { createPassword, parentAdminCheck } from "../../helpers/functions";
+import { parentAdminCheck } from "../../helpers/functions";
 
 export default {
   signUp: async (parent, { email, newsletter }, { models, SECRET, SECRET_TWO }) =>
@@ -20,10 +20,13 @@ export default {
         const passwordhash = await bcrypt.hash("test", 12);
 
         const unit = await models.Unit.create({}, { transaction: ta });
-        const p1 = models.Human.create({ unitid: unit.id, passwordhash }, { transaction: ta });
+        const p1 = models.Human.create(
+          { unitid: unit.id, passwordhash, firstname: email },
+          { transaction: ta }
+        );
         // delete verified: true
         const p2 = models.Email.create(
-          { email, unitid: unit.id, verified: true, tag: "billing" },
+          { email, unitid: unit.id, verified: true, tags: ["billing"] },
           { transaction: ta }
         );
 
@@ -88,7 +91,9 @@ export default {
       if (emailExists.verified == false) throw new Error("Sorry, this email isn't verified yet.");
       if (emailExists.banned == true) throw new Error("Sorry, this account is banned!");
       if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended!");
-      if (emailExists.deleted == true) { throw new Error("Sorry, this account doesn't exist anymore."); }
+      if (emailExists.deleted == true) {
+        throw new Error("Sorry, this account doesn't exist anymore.");
+      }
 
       const basicUser = await models.User.findOne({ where: { id: emailExists.unitid } });
       const valid = await bcrypt.compare(password, emailExists.passwordhash);

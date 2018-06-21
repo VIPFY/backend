@@ -15,7 +15,8 @@ module.exports = {
     'quotes': [2, 'double', {'allowTemplateLiterals': true}],
     "no-new": "off",
     "no-plusplus": "off",
-    "no-param-reassign": "off"
+    "no-param-reassign": "off",
+    "radix": "off"
   },
   // Allow global functions for testing to avoid unnecessary warnings
   "globals": {

@@ -7,7 +7,12 @@ export default (sequelize, { DATE, NOW, TEXT, ARRAY }) => {
     readtime: DATE,
     archivetimesender: DATE,
     archivetimereceiver: DATE,
-    tag: ARRAY(TEXT),
+    tags: {
+      type: ARRAY(TEXT),
+      set(val) {
+        this.setDataValue("tags", val.toLowerCase());
+      }
+    },
     messagetext: {
       type: TEXT,
       allowNull: false

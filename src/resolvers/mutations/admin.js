@@ -78,51 +78,67 @@ export default {
   }),
 
   updateApp: requiresVipfyAdmin.createResolver(
-    async (parent, { supportid, developerid, appid, app = {}, file }, { models }) => {
-      const tag = "SUPPORT";
+    async (parent, { supportid, developerid, appid, app = {}, file }, { models }) =>
+      models.sequelize.transaction(async ta => {
+        const tags = ["support"];
 
-      try {
-        if (file) {
-          const logo = await uploadFile(file, appPicFolder);
-          app.logo = logo;
+        try {
+          if (file) {
+            const logo = await uploadFile(file, appPicFolder);
+            app.logo = logo;
+          }
+
+          if (app.developerwebsite) {
+            const siteExists = await models.Website.findOne({ where: { unitid: developerid } });
+            const website = app.developerwebsite;
+
+            if (siteExists) {
+              await models.Website.update(
+                { website },
+                { where: { unitid: developerid }, transaction: ta }
+              );
+            } else {
+              await models.Website.create({ website, unitid: developerid }, { transaction: ta });
+            }
+          } else if (app.supportwebsite) {
+            const siteExists = await models.Website.findOne({ where: { unitid: supportid } });
+            const website = app.supportwebsite;
+
+            if (siteExists) {
+              await models.Website.update(
+                { website },
+                { where: { unitid: supportid }, transaction: ta }
+              );
+            } else {
+              await models.Website.create(
+                { website, unitid: supportid, tags },
+                { transaction: ta }
+              );
+            }
+          } else if (app.supportphone) {
+            const unitid = supportid;
+            const phoneExists = await models.Phone.findOne({ where: { unitid } });
+
+            if (phoneExists) {
+              await models.Phone.update(
+                { number: app.supportphone },
+                { where: { unitid }, transaction: ta }
+              );
+            } else {
+              await models.Phone.create(
+                { number: app.supportphone, unitid, tags },
+                { transaction: ta }
+              );
+            }
+          }
+
+          await models.App.update({ ...app }, { where: { id: appid }, transaction: ta });
+
+          return { ok: true };
+        } catch ({ message }) {
+          throw new Error(message);
         }
-
-        if (app.developerwebsite) {
-          const siteExists = await models.Website.findOne({ where: { unitid: developerid } });
-          const website = app.developerwebsite;
-
-          if (siteExists) {
-            await models.Website.update({ website }, { where: { unitid: developerid } });
-          } else {
-            await models.Website.create({ website, unitid: developerid });
-          }
-        } else if (app.supportwebsite) {
-          const siteExists = await models.Website.findOne({ where: { unitid: supportid } });
-          const website = app.supportwebsite;
-
-          if (siteExists) {
-            await models.Website.update({ website }, { where: { unitid: supportid } });
-          } else {
-            await models.Website.create({ website, unitid: supportid, tag });
-          }
-        } else if (app.supportphone) {
-          const unitid = supportid;
-          const phoneExists = await models.Phone.findOne({ where: { unitid } });
-
-          if (phoneExists) {
-            await models.Phone.update({ number: app.supportphone }, { where: { unitid } });
-          } else {
-            await models.Phone.create({ number: app.supportphone, unitid, tag });
-          }
-        }
-
-        await models.App.update({ ...app }, { where: { id: appid } });
-
-        return { ok: true };
-      } catch ({ message }) {
-        throw new Error(message);
-      }
-    }
+      })
   ),
 
   deleteApp: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {

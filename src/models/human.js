@@ -1,8 +1,8 @@
 export default (sequelize, { TEXT, STRING, DATEONLY, TIME, INTEGER, ENUM }) => {
   const Human = sequelize.define("human_data", {
-    firstname: { type: STRING, defaultValue: "not specified yet" },
+    firstname: { type: STRING, defaultValue: "John" },
     middlename: STRING,
-    lastname: { type: STRING, defaultValue: "not specified yet" },
+    lastname: STRING,
     title: STRING,
     sex: ENUM("m", "w", "u"),
     passwordhash: TEXT,
