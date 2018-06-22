@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
 // import { sendRegistrationEmail } from "../../services/mailjet";
-import { uploadFile } from "../../services/gcloud";
+import { uploadFile, deleteFile } from "../../services/gcloud";
 import { userPicFolder } from "../../constants";
 import { createTokens } from "../../helpers/auth";
 /* eslint-disable no-unused-vars, max-len */
@@ -186,5 +186,53 @@ export default {
         throw new Error(err.message);
       }
     }
+  ),
+
+  fireEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
+    async (parent, { unitid }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(token);
+          const already = await models.Unit.findById(unitid);
+          if (already.deleted) throw new Error("User already deleted!");
+
+          const p1 = models.Unit.update(
+            { deleted: true, profilepicture: "" },
+            { where: { id: unitid } },
+            { transaction: ta }
+          );
+
+          const p2 = models.Human.update(
+            { firstname: "Deleted", middlename: "", lastname: "User" },
+            { where: { unitid } },
+            { transaction: ta }
+          );
+
+          const p3 = models.Email.destroy({ where: { unitid } }, { transaction: ta });
+
+          const p4 = models.Address.update(
+            { address: { city: "deleted" }, description: "deleted" },
+            { where: { unitid } },
+            { transaction: ta }
+          );
+
+          const p5 = models.ParentUnit.destroy(
+            { where: { childunit: unitid, parentunit: company } },
+            { transaction: ta }
+          );
+
+          await Promise.all([p1, p2, p3, p4, p5]);
+
+          if (already.profilepicture) {
+            await deleteFile(already.profilepicture, userPicFolder);
+          }
+
+          return { ok: true };
+        } catch ({ message }) {
+          throw new Error(message);
+        }
+      })
   )
 };
