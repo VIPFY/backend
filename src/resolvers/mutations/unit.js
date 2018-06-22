@@ -107,29 +107,31 @@ export default {
     }
   ),
 
-  addEmployee: async (parent, { unitid, departmentid }, { token, models }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
+  addEmployee: requiresRight(["admin", "manageemployees"])(
+    async (parent, { unitid, departmentid }, { token, models }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
 
-      const departments = await models.sequelize
-        .query("Select * from getDepartments(?)", {
-          replacements: [company]
-        })
-        .spread(res => res)
-        .map(department => parseInt(department.id));
+        const departments = await models.sequelize
+          .query("Select * from getDepartments(?)", {
+            replacements: [company]
+          })
+          .spread(res => res)
+          .map(department => parseInt(department.id));
 
-      if (!departments.includes(departmentid)) {
-        throw new Error("This department doesn't belong to the users company!");
+        if (!departments.includes(departmentid)) {
+          throw new Error("This department doesn't belong to the users company!");
+        }
+        await models.ParentUnit.create({ parentunit: departmentid, childunit: unitid });
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err);
       }
-      await models.ParentUnit.create({ parentunit: departmentid, childunit: unitid });
-
-      return { ok: true };
-    } catch (err) {
-      throw new Error(err);
     }
-  },
+  ),
 
   addCreateEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
     async (parent, { email, departmentid }, { models, token }) =>
@@ -166,5 +168,23 @@ export default {
           throw new Error(err.message);
         }
       })
+  ),
+
+  removeEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
+    async (parent, { unitid, departmentid }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        await models.ParentUnit.destroy({
+          where: { parentunit: departmentid, childunit: unitid }
+        });
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
   )
 };

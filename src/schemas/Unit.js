@@ -150,6 +150,7 @@ export const mutations = `
   updateStatisticData(data: StatisticData!): Response!
   addEmployee(unitid: Int!, departmentid: Int!): Response!
   addCreateEmployee(email: String!, departmentid: Int!): Response!
+  removeEmployee(unitid: Int!, departmentid: Int!): Response!
 
   # Only an email is required for the signup
   signUp(email: String!, newsletter: Boolean): RegisterResponse!
