@@ -175,5 +175,15 @@ export default {
         throw new Error(err.message);
       }
     }
-  )
+  ),
+
+  freeUsers: requiresVipfyAdmin.createResolver(async (parent, args, { models }) => {
+    try {
+      const employees = await models.User.findAll({ where: {} });
+
+      return employees;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  })
 };

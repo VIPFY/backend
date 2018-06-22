@@ -388,13 +388,34 @@ export default {
     }
   }),
 
-  adminCreateCompany: requiresVipfyAdmin.createResolver(async (parent, args, { models }) => {
-    try {
-      await models.Unit.create({});
+  adminCreateCompany: requiresVipfyAdmin.createResolver(
+    async (parent, { company, file }, { models }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          let unit;
+          const { user, ...data } = company;
 
-      return { ok: true };
-    } catch (err) {
-      throw new Error(err);
-    }
-  })
+          if (file) {
+            const profilepicture = await uploadFile(file, userPicFolder);
+            unit = await models.Unit.create({ profilepicture }, { transaction: ta });
+          } else {
+            unit = await models.Unit.create({}, { transaction: ta });
+          }
+
+          const p1 = models.DepartmentData.create(
+            { unitid: unit.id, ...data },
+            { transaction: ta }
+          );
+          const p2 = models.ParentUnit.create(
+            { parentunit: unit.id, childunit: user },
+            { transaction: ta }
+          );
+          await Promise.all([p1, p2]);
+
+          return { ok: true };
+        } catch (err) {
+          throw new Error(err);
+        }
+      })
+  )
 };

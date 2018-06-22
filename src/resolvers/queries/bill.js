@@ -21,6 +21,7 @@ export default {
       const {
         user: { company }
       } = decode(token);
+
       const boughtPlans = await models.BoughtPlan.findAll({
         where: { payer: company }
       });

@@ -38,6 +38,7 @@ const db = {
   BillPosition: sequelize.import("./billPosition"),
   BoughtPlan: sequelize.import("./boughtPlan"),
   Department: sequelize.import("./department"),
+  DepartmentApp: sequelize.import("./departmentApp"),
   DepartmentData: sequelize.import("./departmentData"),
   DepartmentEmail: sequelize.import("./departmentEmail"),
   DepartmentEmployee: sequelize.import("./departmentEmployee"),

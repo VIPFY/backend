@@ -118,13 +118,10 @@ export const types = `
     language: String
   }
 
-  input StatisticData {
-    name: String
-    companysize: String
-    industry: String
-    revenue: String
-    companyage: String
-    ageofowner: String
+  input CompanyInput {
+    name: String!
+    user: Int!
+    statisticdata: JSON
   }
 `;
 
@@ -147,7 +144,7 @@ export const mutations = `
   deleteUser(unitid: Int!): Response!
 
   createCompany(name: String!): RegisterResponse!
-  updateStatisticData(data: StatisticData!): Response!
+  updateStatisticData(data: JSON!): Response!
   addEmployee(unitid: Int!, departmentid: Int!): Response!
   addCreateEmployee(email: String!, departmentid: Int!): Response!
   removeEmployee(unitid: Int!, departmentid: Int!): Response!

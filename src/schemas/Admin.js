@@ -15,6 +15,7 @@ export const queries = `
   adminFetchEmployees(unitid: Int!, limit: Int, offset: Int): [DepartmentEmployee]!
   fetchCompany(id: Int!): Department!
   allCompanies(limit: Int, offset: Int): [Department]!
+  freeUsers: [User]!
 `;
 
 export const mutations = `
@@ -25,7 +26,7 @@ export const mutations = `
 
   adminCreateEmail(email: String!, unitid: Int!): Response!
   adminDeleteEmail(email: String!,unitid: Int!): Response!
-  adminCreateCompany: Response!
+  adminCreateCompany(company: CompanyInput!, file: File): Response!
   adminUpdateUser(user: UserInput, file: File, unitid: Int!): Response!
 
   # Freeze the account of an user

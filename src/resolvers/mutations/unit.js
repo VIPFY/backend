@@ -92,12 +92,18 @@ export default {
     async (parent, { data }, { models, token }) => {
       try {
         const {
-          user: { company }
+          user: { company: unitid }
         } = decode(token);
 
+        const currentData = await models.DepartmentData.findOne({
+          where: { unitid },
+          include: ["statisticdata"],
+          raw: true
+        });
+
         await models.DepartmentData.update(
-          { statisticdata: { ...data } },
-          { where: { unitid: company } }
+          { statisticdata: { ...currentData, ...data } },
+          { where: { unitid } }
         );
 
         return { ok: true };

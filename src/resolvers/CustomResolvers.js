@@ -61,6 +61,7 @@ export const find = data => {
     searches[search] = (parent, args, { models }) => {
       switch (data[search]) {
         case "Department":
+          console.log("Fire");
           return models[data[search]].findOne({
             where: { unitid: parent.dataValues[search] }
           });
