@@ -8,7 +8,6 @@ export const types = `
     profilepicture: String
     riskvalue: Int
     createdate: String!
-    position: String
   }
 
   type ParentUnit {
@@ -51,7 +50,6 @@ export const types = `
     suspended: Boolean!
     profilepicture: String
     riskvalue: Int
-    position: String
     emails: JSON
     createdate: String
     payingoptions: JSON
@@ -114,7 +112,6 @@ export const types = `
     title: String
     sex: SEX
     birthday: Date
-    position: String
     language: String
   }
 

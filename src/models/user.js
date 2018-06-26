@@ -18,7 +18,6 @@ export default (
     riskvalue: INTEGER,
     createdate: DATE,
     payingoptions: JSONB,
-    position: TEXT,
     emails: { type: JSONB, allowNull: false },
     company: VIRTUAL,
     teams: BOOLEAN,

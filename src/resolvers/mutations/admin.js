@@ -267,8 +267,8 @@ export default {
   ),
 
   createUser: requiresVipfyAdmin.createResolver(async (parent, { user, file }, { models }) => {
-    const { position, email, ...userData } = user;
-    const unitData = { position };
+    const { email, ...userData } = user;
+    const unitData = {};
 
     if (file) {
       const profilepicture = await uploadFile(file, userPicFolder);
@@ -296,7 +296,7 @@ export default {
 
   adminUpdateUser: requiresVipfyAdmin.createResolver(
     async (parent, { unitid, user = {}, file }, { models }) => {
-      const { password, position, verified, email, oldemail, banned } = user;
+      const { password, verified, email, oldemail, banned } = user;
 
       try {
         if (file) {
@@ -305,8 +305,6 @@ export default {
         } else if (password) {
           const passwordhash = await bcrypt.hash(password, 12);
           await models.Human.update({ passwordhash }, { where: { unitid } });
-        } else if (position) {
-          await models.Unit.update({ ...user }, { where: { id: unitid } });
         } else if (verified != null && email) {
           await models.Email.update({ verified }, { where: { email } });
         } else if (oldemail && email) {
@@ -394,23 +392,23 @@ export default {
         try {
           let unit;
           const { user, ...data } = company;
-
-          if (file) {
-            const profilepicture = await uploadFile(file, userPicFolder);
-            unit = await models.Unit.create({ profilepicture }, { transaction: ta });
-          } else {
-            unit = await models.Unit.create({}, { transaction: ta });
-          }
-
-          const p1 = models.DepartmentData.create(
-            { unitid: unit.id, ...data },
-            { transaction: ta }
-          );
-          const p2 = models.ParentUnit.create(
-            { parentunit: unit.id, childunit: user },
-            { transaction: ta }
-          );
-          await Promise.all([p1, p2]);
+          console.log(company);
+          // if (file) {
+          //   const profilepicture = await uploadFile(file, userPicFolder);
+          //   unit = await models.Unit.create({ profilepicture }, { transaction: ta });
+          // } else {
+          //   unit = await models.Unit.create({}, { transaction: ta });
+          // }
+          //
+          // const p1 = models.DepartmentData.create(
+          //   { unitid: unit.id, ...data },
+          //   { transaction: ta }
+          // );
+          // const p2 = models.ParentUnit.create(
+          //   { parentunit: unit.id, childunit: user },
+          //   { transaction: ta }
+          // );
+          // await Promise.all([p1, p2]);
 
           return { ok: true };
         } catch (err) {

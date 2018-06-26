@@ -24,17 +24,13 @@ export default {
 
   updateUser: requiresAuth.createResolver(async (parent, { user }, { models, token }) => {
     try {
-      const { position, password, ...human } = user;
+      const { password, ...human } = user;
       const {
         user: { unitid }
       } = decode(token);
 
       if (password) {
         throw new Error("You can't update the password this way!");
-      }
-
-      if (position) {
-        await models.Unit.update({ position }, { where: { id: unitid } });
       }
 
       await models.Human.update({ ...human }, { where: { unitid } });

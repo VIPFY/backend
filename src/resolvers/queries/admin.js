@@ -179,36 +179,14 @@ export default {
 
   freeUsers: async (parent, args, { models }) => {
     try {
-      // const allUsers = await models.Human.findAll({
-      //   where: { firstname: { [models.Op.ne]: "Deleted" } },
-      //   attributes: ["unitid", "firstname", "lastname"]
-      // });
-      // const allUserIds = allUsers.map(e => e.get("unitid"));
-      //
-      // const employees = await models.DepartmentEmployee.findAll({
-      //   attributes: [
-      //     [models.sequelize.fn("DISTINCT", models.sequelize.col("employee")), "employee"]
-      //   ],
-      //   where: { employee: { [models.Op.in]: allUserIds } }
-      // });
-      // const employeeIds = employees.map(employee => employee.get("employee"));
-      //
-      // const freeUsers = allUsers.filter(user => !employeeIds.includes(user.unitid.toString()));
-
-      const employees = await models.DepartmentEmployee.findAll({
-        attributes: [
-          [models.sequelize.fn("DISTINCT", models.sequelize.col("employee")), "employee"]
-        ]
-      });
-      const employeeIds = employees.map(employee => employee.get("employee"));
-
-      const freeUsers = await models.Human.findAll({
-        where: {
-          firstname: { [models.Op.ne]: "Deleted" },
-          unitid: { [models.Op.notIn]: employeeIds }
-        },
-        attributes: ["unitid", "firstname", "lastname"]
-      });
+      const freeUsers = await models.sequelize
+        .query(
+          "Select id, firstname, middlename, lastname from users_view where " +
+            "id not in (select employee from department_employee_view where " +
+            "department_employee_view.id <> department_employee_view.employee)" +
+            " AND users_view.deleted != true"
+        )
+        .spread(res => res);
 
       return freeUsers;
     } catch (err) {
