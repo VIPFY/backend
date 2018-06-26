@@ -96,7 +96,7 @@ export const types = `
   type DepartmentEmployee {
     id: Unit!
     childid: Department
-    employee: User!
+    employee: User
   }
 
   input UserInput {

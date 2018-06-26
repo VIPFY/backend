@@ -31,4 +31,5 @@ export const mutations = `
 
   # Freeze the account of an user
   freezeAccount(unitid: Int!): Response!
+  adminAddEmployee(unitid: Int!, company: Int!): Response!
 `;

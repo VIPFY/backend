@@ -165,7 +165,7 @@ export default {
       try {
         const employees = await DepartmentEmployee.findAll({
           attributes: [[sequelize.fn("DISTINCT", sequelize.col("employee")), "employee"]],
-          where: { id: unitid },
+          where: { id: unitid, employee: { [models.Op.not]: null } },
           limit,
           offset
         });
