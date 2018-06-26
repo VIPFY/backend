@@ -15,7 +15,7 @@ export const queries = `
   adminFetchEmployees(unitid: Int!, limit: Int, offset: Int): [DepartmentEmployee]!
   fetchCompany(id: Int!): Department!
   allCompanies(limit: Int, offset: Int): [Department]!
-  freeUsers: [User]!
+  freeUsers: [Human]!
 `;
 
 export const mutations = `

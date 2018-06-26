@@ -177,13 +177,42 @@ export default {
     }
   ),
 
-  freeUsers: requiresVipfyAdmin.createResolver(async (parent, args, { models }) => {
+  freeUsers: async (parent, args, { models }) => {
     try {
-      const employees = await models.User.findAll({ where: {} });
+      // const allUsers = await models.Human.findAll({
+      //   where: { firstname: { [models.Op.ne]: "Deleted" } },
+      //   attributes: ["unitid", "firstname", "lastname"]
+      // });
+      // const allUserIds = allUsers.map(e => e.get("unitid"));
+      //
+      // const employees = await models.DepartmentEmployee.findAll({
+      //   attributes: [
+      //     [models.sequelize.fn("DISTINCT", models.sequelize.col("employee")), "employee"]
+      //   ],
+      //   where: { employee: { [models.Op.in]: allUserIds } }
+      // });
+      // const employeeIds = employees.map(employee => employee.get("employee"));
+      //
+      // const freeUsers = allUsers.filter(user => !employeeIds.includes(user.unitid.toString()));
 
-      return employees;
+      const employees = await models.DepartmentEmployee.findAll({
+        attributes: [
+          [models.sequelize.fn("DISTINCT", models.sequelize.col("employee")), "employee"]
+        ]
+      });
+      const employeeIds = employees.map(employee => employee.get("employee"));
+
+      const freeUsers = await models.Human.findAll({
+        where: {
+          firstname: { [models.Op.ne]: "Deleted" },
+          unitid: { [models.Op.notIn]: employeeIds }
+        },
+        attributes: ["unitid", "firstname", "lastname"]
+      });
+
+      return freeUsers;
     } catch (err) {
       throw new Error(err.message);
     }
-  })
+  }
 };

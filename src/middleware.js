@@ -169,6 +169,10 @@ export const loggingMiddleWare = (req, res, next) => {
       if (req.body.query.includes("mutation")) {
         models.Log.create(log);
       }
+
+      if (user) {
+        models.Human.update({ lastactive: new Date().toUTCString() }, { where: { unitid: user } });
+      }
     } catch ({ name, stack }) {
       fs.appendFile(logDirectory, JSON.stringify(`${name}: ${stack}`), err => {
         if (err) throw err;
