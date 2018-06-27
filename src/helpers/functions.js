@@ -38,3 +38,16 @@ export const formatFilename = filename => {
 
   return `${date}-${randomString}-${cleanFilename}`;
 };
+
+export const checkDepartment = async (models, company, departmentid) => {
+  const departments = await models.sequelize
+    .query("Select * from getDepartments(?)", {
+      replacements: [company]
+    })
+    .spread(res => res)
+    .map(department => parseInt(department.id));
+
+  if (!departments.includes(departmentid)) return false;
+
+  return true;
+};

@@ -417,13 +417,29 @@ export default {
       })
   ),
 
-  adminAddEmployee: async (parent, { unitid, company }, { models }) => {
-    try {
-      await models.ParentUnit.create({ parentunit: company, childunit: unitid });
+  adminAddEmployee: requiresVipfyAdmin.createResolver(
+    async (parent, { unitid, company }, { models }) => {
+      try {
+        await models.ParentUnit.create({ parentunit: company, childunit: unitid });
 
-      return { ok: true };
-    } catch (err) {
-      throw new Error(err);
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err);
+      }
     }
-  }
+  ),
+
+  adminRemoveEmployee: requiresVipfyAdmin.createResolver(
+    async (parent, { unitid, company }, { models }) => {
+      try {
+        await models.ParentUnit.destroy({
+          where: { parentunit: company, childunit: unitid }
+        });
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  )
 };

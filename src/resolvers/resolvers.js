@@ -1,4 +1,4 @@
-import userQueries from "./queries/unit";
+import departmentQueries from "./queries/department";
 import appQueries from "./queries/app";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
@@ -15,6 +15,7 @@ import userMutations from "./mutations/unit";
 import reviewMutations from "./mutations/review";
 import commonMutations from "./mutations/common";
 import dd24Mutations from "./mutations/dd24";
+import departmentMutations from "./mutations/department";
 import billMutations from "./mutations/bill";
 import contactMutations from "./mutations/contact";
 import adminMutations from "./mutations/admin";
@@ -27,7 +28,7 @@ import { find, findDepartment, implementDate, implementJSON } from "./CustomReso
 const Query = Object.assign(
   authQueries,
   adminQueries,
-  userQueries,
+  departmentQueries,
   contactQueries,
   appQueries,
   messageQueries,
@@ -40,6 +41,7 @@ const Mutation = Object.assign(
   appMutations,
   adminMutations,
   authMutations,
+  departmentMutations,
   messageMutations,
   userMutations,
   reviewMutations,
