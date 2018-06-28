@@ -440,7 +440,7 @@ export default {
 
         return { ok: true };
       } catch (err) {
-        throw new Error(err);
+        throw new Error(err.message);
       }
     }
   ),
@@ -451,6 +451,18 @@ export default {
         await models.ParentUnit.destroy({
           where: { parentunit: company, childunit: unitid }
         });
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
+
+  adminRemoveLicence: requiresVipfyAdmin.createResolver(
+    async (parent, { licenceid }, { models }) => {
+      try {
+        await models.Licence.update({ unitid: null }, { where: { id: licenceid } });
 
         return { ok: true };
       } catch (err) {

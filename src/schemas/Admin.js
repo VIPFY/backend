@@ -1,5 +1,5 @@
 export const queries = `
-  adminFetchLicence(boughtplanid: Int!, unitid: Int!): Licence!
+  adminFetchLicence(licenceid: Int!): Licence!
   adminFetchLicences(id: Int!, limit: Int, offset: Int): [Licence]!
   adminFetchBoughtPlans(company: Int!, user: Int!): [BoughtPlan]!
 
@@ -35,4 +35,6 @@ export const mutations = `
   freezeAccount(unitid: Int!): Response!
   adminAddEmployee(unitid: Int!, company: Int!): Response!
   adminRemoveEmployee(unitid: Int!, company: Int!): Response!
+
+  adminRemoveLicence(licenceid: Int!): Response!
 `;

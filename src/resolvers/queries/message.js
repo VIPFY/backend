@@ -5,7 +5,9 @@ import { requiresAuth } from "../../helpers/permissions";
 export default {
   fetchMessages: requiresAuth.createResolver(async (parent, { read }, { models, token }) => {
     let messages;
-    const { user: { unitid } } = decode(token);
+    const {
+      user: { unitid }
+    } = decode(token);
 
     try {
       if (read === true) {
@@ -32,6 +34,48 @@ export default {
           order: [["sendtime", "DESC"]]
         });
       }
+
+      return messages;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
+
+  fetchLastDialogMessage: requiresAuth.createResolver(
+    async (parent, { sender }, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        const messages = await models.MessageData.findAll({
+          where: {
+            [models.Op.or]: [{ sender }, { receiver: unitid }]
+          }
+        });
+
+        const lastMessage = messages.sort((a, b) => a.sendtime - b.sendtime).pop();
+
+        return lastMessage;
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
+
+  fetchDialog: requiresAuth.createResolver(async (parent, { sender }, { models, token }) => {
+    try {
+      const {
+        user: { unitid }
+      } = decode(token);
+
+      const messages = await models.MessageData.findAll({
+        where: {
+          sender,
+          receiver: unitid
+        },
+        group: ["id"]
+      });
 
       return messages;
     } catch (err) {

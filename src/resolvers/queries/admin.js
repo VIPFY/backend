@@ -62,9 +62,9 @@ export default {
   ),
 
   adminFetchLicence: requiresVipfyAdmin.createResolver(
-    async (parent, { unitid, boughtplanid }, { models }) => {
+    async (parent, { licenceid }, { models }) => {
       try {
-        const licence = await models.Licence.findOne({ where: { unitid, boughtplanid } });
+        const licence = await models.Licence.findById(licenceid);
 
         return licence;
       } catch (err) {

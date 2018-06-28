@@ -43,5 +43,23 @@ export default {
     } catch (err) {
       throw new Error(err);
     }
+  }),
+
+  fetchDepartmentsData: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { company }
+      } = decode(token);
+
+      const departments = await models.sequelize
+        .query("Select * from getDepartmentsData(?)", {
+          replacements: [company]
+        })
+        .spread(res => res);
+
+      return departments;
+    } catch (err) {
+      throw new Error(err);
+    }
   })
 };

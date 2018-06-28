@@ -22,8 +22,8 @@ export const types = `
     archivetimereceiver: Date
     tags: [String]
     messagetext: String!
-    receiver: Unit!
-    sender: Unit!
+    receiver: User!
+    sender: User!
   }
 
   enum MESSAGE_COLUMN {
@@ -35,6 +35,8 @@ export const types = `
 export const queries = `
 # All messages an user received - either from apps or other users
   fetchMessages(read: Boolean): [Message]
+  fetchLastDialogMessage(sender: Int!): MessageData
+  fetchDialog(sender: Int!): [MessageData]
 `;
 
 export const mutations = `

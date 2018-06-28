@@ -46,6 +46,16 @@ export const types = `
     loginLink: String
   }
 
+  type DepartmentDataResponse {
+    id: Int
+    children: [Int]
+    children_data: JSON
+    departments: [Department]
+    employees: [User]
+    level: Int
+    parent: Int
+  }
+
   type DepartmentResponse {
     id: Int
     childids: [Int]

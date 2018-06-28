@@ -78,7 +78,7 @@ export default {
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),
   Log: find({ user: "User", sudoer: "User" }),
   Message: find({ receiver: "Unit" }),
-  MessageData: find({ sender: "Unit", receiver: "Unit" }),
+  MessageData: find({ sender: "User", receiver: "User" }),
   Newsletter: find({ email: "Email" }),
   ParentUnit: find({ parentunit: "Unit", childunit: "Unit" }),
   Phone: find(unit),

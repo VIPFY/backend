@@ -59,6 +59,7 @@ export const types = `
 
 export const queries = `
   fetchDepartments: [DepartmentResponse]!
+  fetchDepartmentsData: [DepartmentDataResponse]!
 
 # Returns the amount of units in a Department
   fetchCompanySize: Int!
