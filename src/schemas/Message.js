@@ -22,8 +22,20 @@ export const types = `
     archivetimereceiver: Date
     tags: [String]
     messagetext: String!
-    receiver: User!
-    sender: User!
+    receiver: PublicUser!
+    sender: PublicUser!
+  }
+
+  type PublicUser{
+    id: Int!
+    firstname: String
+    middlename: String
+    lastname: String
+    title: String
+    sex: SEX
+    birthday: Date
+    language: String
+    profilepicture: String
   }
 
   enum MESSAGE_COLUMN {
