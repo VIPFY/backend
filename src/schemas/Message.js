@@ -35,7 +35,7 @@ export const types = `
 export const queries = `
 # All messages an user received - either from apps or other users
   fetchMessages(read: Boolean): [Message]
-  fetchLastDialogMessage(sender: Int!): MessageData
+  fetchLastDialogMessages: [MessageData]
   fetchDialog(sender: Int!): [MessageData]
 `;
 
