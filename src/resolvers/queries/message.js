@@ -71,8 +71,13 @@ export default {
 
       const messages = await models.MessageData.findAll({
         where: {
-          sender,
-          receiver: unitid
+          [models.Op.or]: [
+            {
+              sender,
+              receiver: unitid
+            },
+            { receiver: sender, sender: unitid }
+          ]
         },
         group: ["id"]
       });
