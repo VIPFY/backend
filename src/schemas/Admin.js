@@ -28,6 +28,8 @@ export const mutations = `
   adminDeleteEmail(email: String!,unitid: Int!): Response!
   adminCreateCompany(company: CompanyInput!, file: File): Response!
   adminUpdateUser(user: UserInput, file: File, unitid: Int!): Response!
+  # Deletes an unit, checks if unit is an user or a company
+  adminDeleteUnit(unitid: Int!): Response!
 
   # Freeze the account of an user
   freezeAccount(unitid: Int!): Response!

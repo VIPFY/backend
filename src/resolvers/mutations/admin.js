@@ -330,7 +330,7 @@ export default {
     }
   ),
 
-  deleteUser: requiresVipfyAdmin.createResolver(async (parent, { unitid }, { models }) =>
+  adminDeleteUnit: requiresVipfyAdmin.createResolver(async (parent, { unitid }, { models }) =>
     models.sequelize.transaction(async ta => {
       try {
         const already = await models.Unit.findById(unitid);
@@ -342,21 +342,37 @@ export default {
           { transaction: ta }
         );
 
-        const p2 = models.Human.update(
-          { firstname: "Deleted", middlename: "", lastname: "User" },
-          { where: { unitid } },
-          { transaction: ta }
-        );
+        let p2;
+        const isHuman = await models.User.findById(unitid);
+
+        if (isHuman) {
+          p2 = models.Human.update(
+            { firstname: "Deleted", middlename: "", lastname: "User" },
+            { where: { unitid } },
+            { transaction: ta }
+          );
+        } else {
+          p2 = models.DepartmentData.destroy({ where: { unitid } }, { transaction: ta });
+        }
 
         const p3 = models.Email.destroy({ where: { unitid } }, { transaction: ta });
 
-        const p4 = models.Address.update(
-          { address: { city: "deleted" }, description: "deleted" },
-          { where: { unitid } },
-          { transaction: ta }
-        );
+        const p4 = models.Address.destroy({ where: { unitid } }, { transaction: ta });
 
-        const p5 = models.ParentUnit.destroy({ where: { childunit: unitid } }, { transaction: ta });
+        let p5;
+
+        if (isHuman) {
+          p5 = models.ParentUnit.destroy({ where: { childunit: unitid } }, { transaction: ta });
+        } else {
+          p5 = models.ParentUnit.destroy(
+            {
+              where: {
+                [models.Op.or]: [{ parentunit: unitid }, { childunit: unitid }]
+              }
+            },
+            { transaction: ta }
+          );
+        }
 
         await Promise.all([p1, p2, p3, p4, p5]);
 
