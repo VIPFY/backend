@@ -50,7 +50,7 @@ export default {
       const query =
         "SELECT * FROM message_data JOIN (SELECT max(id) id FROM message_data " +
         "WHERE sender = :unitid OR receiver = :unitid GROUP BY CASE WHEN " +
-        "sender = :unitid THEN receiver ELSE sender END) t ON t.id=message_data.id";
+        "sender = :unitid THEN receiver ELSE sender END) t ON t.id = message_data.id";
 
       const lastMessages = await models.sequelize
         .query(query, { replacements: { unitid } })

@@ -50,7 +50,7 @@ export const types = `
     id: Int
     children: [Int]
     children_data: JSON
-    departments: [Department]
+    department: Department
     employees: [User]
     level: Int
     parent: Int
