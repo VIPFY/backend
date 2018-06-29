@@ -469,5 +469,23 @@ export default {
         throw new Error(err.message);
       }
     }
-  )
+  ),
+
+  adminFetchUnit: async (parent, { unitid }, { models }) => {
+    try {
+      const unit = await models.sequelize
+        .query(
+          "SELECT unit.id, unit.profilepicture, human.firstname, human.middlename, " +
+            "human.lastname, dep.name FROM unit_data AS unit LEFT OUTER JOIN " +
+            "human_data human on unit.id = human.unitid LEFT OUTER JOIN " +
+            "department_data dep on unit.id = dep.unitid WHERE unit.id = ?;",
+          { replacements: [unitid] }
+        )
+        .spread(res => res);
+
+      return unit;
+    } catch (err) {
+      throw new Error(err);
+    }
+  }
 };

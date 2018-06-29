@@ -37,4 +37,6 @@ export const mutations = `
   adminRemoveEmployee(unitid: Int!, company: Int!): Response!
 
   adminRemoveLicence(licenceid: Int!): Response!
+
+  adminFetchUnit(unitid: Int!): Response!
 `;
