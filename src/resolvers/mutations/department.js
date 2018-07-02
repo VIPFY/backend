@@ -208,6 +208,7 @@ export default {
           const {
             user: { company }
           } = decode(token);
+          const options = { transaction: ta, raw: true };
 
           const ok = await checkDepartment(models, company, departmentid);
 
@@ -215,21 +216,41 @@ export default {
             throw new Error("This department doesn't belong to the users company!");
           }
 
-          const p1 = models.DepartmentData.destroy(
-            { where: { unitid: departmentid } },
-            { transaction: ta, raw: true }
+          const p1 = models.Unit.update(
+            { deleted: true },
+            { where: { id: departmentid }, ...options }
           );
 
-          const p2 = models.ParentUnit.destroy(
+          const p2 = models.DepartmentData.update(
+            { name: "Deleted Department" },
+            { where: { unitid: departmentid }, ...options }
+          );
+
+          const p3 = models.Email.destroy({
+            where: { unitid: departmentid },
+            options
+          });
+
+          const p4 = models.Address.destroy({
+            where: { unitid: departmentid },
+            options
+          });
+
+          const p5 = models.Phone.destroy({
+            where: { unitid: departmentid },
+            options
+          });
+
+          const p6 = models.ParentUnit.destroy(
             {
               where: {
                 [models.Op.or]: [{ childunit: departmentid }, { parentunit: departmentid }]
               }
             },
-            { transaction: ta, raw: true }
+            options
           );
 
-          await Promise.all([p1, p2]);
+          await Promise.all([p1, p2, p3, p4, p5, p6]);
 
           return { ok: true };
         } catch (err) {
