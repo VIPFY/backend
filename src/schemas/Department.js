@@ -70,7 +70,7 @@ export const mutations = `
   updateStatisticData(data: JSON!): Response!
 
   addSubDepartment(departmentid: Int! ,name: String!): Response!
-  editDepartmentName(name: String!): Response!
+  editDepartmentName(departmentid: Int!, name: String!): Response!
   deleteSubDepartment(departmentid: Int!): Response!
 
   addEmployee(unitid: Int!, departmentid: Int!): Response!

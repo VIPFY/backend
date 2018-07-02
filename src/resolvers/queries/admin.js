@@ -132,7 +132,7 @@ export default {
     }
   }),
 
-  allUsers: async (parent, { limit, offset }, { models }) => {
+  allUsers: requiresVipfyAdmin.createResolver(async (parent, { limit, offset }, { models }) => {
     try {
       const users = await models.User.findAll({
         limit,
@@ -148,7 +148,7 @@ export default {
     } catch (err) {
       throw new Error(err);
     }
-  },
+  }),
 
   fetchUser: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
     try {
