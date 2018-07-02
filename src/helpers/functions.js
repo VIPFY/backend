@@ -47,7 +47,7 @@ export const checkDepartment = async (models, company, departmentid) => {
       replacements: [company]
     })
     .spread(res => res)
-    .map(department => parseInt(department.id));
+    .map(department => parseInt(department.childid));
   console.log(departments);
   if (!departments.includes(departmentid)) return false;
 
