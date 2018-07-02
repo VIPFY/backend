@@ -157,15 +157,17 @@ export default {
           }
 
           const unit = await models.Unit.create({}, { transaction: ta, raw: true });
-          const department = await models.DepartmentData.create(
+
+          const p1 = models.DepartmentData.create(
             { unitid: unit.id, name },
             { transaction: ta, raw: true }
           );
-          console.log(department);
-          await models.ParentUnit.create(
-            { parentunit: departmentid, childunit: department.id },
+          const p2 = models.ParentUnit.create(
+            { parentunit: departmentid, childunit: unit.id },
             { transaction: ta, raw: true }
           );
+
+          await Promise.all([p1, p2]);
 
           return { ok: true };
         } catch (err) {
