@@ -157,7 +157,7 @@ export default {
           }
 
           const unit = await models.Unit.create({}, { transaction: ta, raw: true });
-          const department = await models.Department.create(
+          const department = await models.DepartmentData.create(
             { unitid: unit.id, name },
             { transaction: ta, raw: true }
           );
@@ -187,7 +187,10 @@ export default {
           throw new Error("This department doesn't belong to the users company!");
         }
 
-        await models.Department.update({ name }, { where: { unitid: departmentid }, raw: true });
+        await models.DepartmentData.update(
+          { name },
+          { where: { unitid: departmentid }, raw: true }
+        );
 
         return { ok: true };
       } catch (err) {
@@ -210,7 +213,7 @@ export default {
             throw new Error("This department doesn't belong to the users company!");
           }
 
-          const p1 = models.Department.destroy(
+          const p1 = models.DepartmentData.destroy(
             { where: { unitid: departmentid } },
             { transaction: ta, raw: true }
           );
