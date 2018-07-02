@@ -142,9 +142,7 @@ export default {
         ]
       });
 
-      const amount = await models.User.count();
-
-      return { amount, users };
+      return users;
     } catch (err) {
       throw new Error(err);
     }

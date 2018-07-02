@@ -4,7 +4,7 @@ export const queries = `
   adminFetchBoughtPlans(company: Int!, user: Int!): [BoughtPlan]!
 
   # Returns all Users for messages
-  allUsers(limit: Int, offset: Int): ListResponse!
+  allUsers(limit: Int, offset: Int): [User]!
   # Checks whether the user is an admin
   admin: User
 
