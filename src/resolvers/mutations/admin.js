@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import { split } from "lodash";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { createProduct, createPlan } from "../../services/stripe";
 import { uploadFile, deleteFile } from "../../services/gcloud";
@@ -471,19 +472,39 @@ export default {
     }
   ),
 
-  adminFetchUnit: async (parent, { unitid }, { models }) => {
+  adminFetchUser: async (parent, { name }, { models }) => {
     try {
-      const unit = await models.sequelize
-        .query(
-          "SELECT unit.id, unit.profilepicture, human.firstname, human.middlename, " +
-            "human.lastname, dep.name FROM unit_data AS unit LEFT OUTER JOIN " +
-            "human_data human on unit.id = human.unitid LEFT OUTER JOIN " +
-            "department_data dep on unit.id = dep.unitid WHERE unit.id = ?;",
-          { replacements: [unitid] }
-        )
-        .spread(res => res);
+      const nameForSearch = split(name, " ");
+      let searchParams;
 
-      return unit;
+      switch (nameForSearch.length) {
+        case 1:
+          searchParams = {
+            [models.Op.or]: [
+              { firstname: { [models.Op.iLike]: `%${nameForSearch[0]}%` } },
+              { lastname: { [models.Op.iLike]: `%${nameForSearch[0]}%` } }
+            ]
+          };
+          break;
+
+        case 2:
+          searchParams = {
+            firstname: { [models.Op.iLike]: `%${nameForSearch[0]}%` },
+            lastname: { [models.Op.iLike]: `%${nameForSearch[1]}%` }
+          };
+          break;
+
+        default:
+          searchParams = {
+            firstname: { [models.Op.iLike]: `%${nameForSearch[0]}%` },
+            middlename: { [models.Op.iLike]: `%${nameForSearch[1]}%` },
+            lastname: { [models.Op.iLike]: `%${nameForSearch[2]}%` }
+          };
+      }
+
+      const user = await models.User.findAll({ where: searchParams });
+
+      return user;
     } catch (err) {
       throw new Error(err);
     }

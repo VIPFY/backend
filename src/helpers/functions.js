@@ -43,12 +43,12 @@ export const formatFilename = filename => {
 
 export const checkDepartment = async (models, company, departmentid) => {
   const departments = await models.sequelize
-    .query("Select * from getDepartments(?)", {
+    .query("SELECT childid FROM department_tree_view WHERE id = ? AND level > 1", {
       replacements: [company]
     })
     .spread(res => res)
     .map(department => parseInt(department.id));
-
+  console.log(departments);
   if (!departments.includes(departmentid)) return false;
 
   return true;

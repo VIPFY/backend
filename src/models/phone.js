@@ -7,8 +7,9 @@ export default (sequelize, { BOOLEAN, TEXT, INTEGER, ARRAY }) => {
     priority: INTEGER,
     tags: {
       type: ARRAY(TEXT),
-      set(val) {
-        this.setDataValue("tags", val.toLowerCase());
+      set(values) {
+        const normalizedValues = values.map(value => value.toLowerCase());
+        this.setDataValue("tags", normalizedValues);
       }
     }
   });

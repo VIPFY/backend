@@ -38,5 +38,5 @@ export const mutations = `
 
   adminRemoveLicence(licenceid: Int!): Response!
 
-  adminFetchUnit(unitid: Int!): Response!
+  adminFetchUser(name: String!): [User!]
 `;
