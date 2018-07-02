@@ -3,6 +3,52 @@ import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { parentAdminCheck } from "../../helpers/functions";
 
 export default {
+  adminFetchListLength: requiresVipfyAdmin.createResolver(
+    async (parent, { listname }, { models }) => {
+      try {
+        let amount;
+        switch (listname) {
+          case "allUsers":
+            amount = await models.User.count();
+            break;
+
+          case "allApps":
+            amount = await models.App.count();
+            break;
+
+          case "allCompanies":
+            {
+              const childunits = await models.ParentUnit.findAll({
+                attributes: ["childunit"],
+                raw: true
+              });
+              const ids = childunits.map(id => id.childunit);
+
+              const roots = await models.ParentUnit.findAll({
+                where: { parentunit: { [models.sequelize.Op.notIn]: ids } },
+                attributes: ["parentunit"],
+                raw: true
+              });
+
+              const companyIds = roots.map(root => root.parentunit);
+
+              amount = await models.Department.count({
+                where: { unitid: companyIds }
+              });
+            }
+            break;
+
+          default:
+            throw new Error(`Couldn't find a matching table for ${listname}`);
+        }
+
+        return amount;
+      } catch (err) {
+        throw new Error(err);
+      }
+    }
+  ),
+
   admin: requiresVipfyAdmin.createResolver(async (parent, args, { models, token }) => {
     // they are logged in
     if (token && token != "null") {
@@ -86,15 +132,23 @@ export default {
     }
   }),
 
-  allUsers: requiresVipfyAdmin.createResolver(async (parent, { limit, offset }, { models }) =>
-    models.User.findAll({
-      limit,
-      offset,
-      order: [
-        [models.sequelize.literal(`CASE WHEN firstName = 'Deleted' THEN 1 ELSE 0 END`), "ASC"]
-      ]
-    })
-  ),
+  allUsers: async (parent, { limit, offset }, { models }) => {
+    try {
+      const users = await models.User.findAll({
+        limit,
+        offset,
+        order: [
+          [models.sequelize.literal(`CASE WHEN firstName = 'Deleted' THEN 1 ELSE 0 END`), "ASC"]
+        ]
+      });
+
+      const amount = await models.User.count();
+
+      return { amount, users };
+    } catch (err) {
+      throw new Error(err);
+    }
+  },
 
   fetchUser: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
     try {

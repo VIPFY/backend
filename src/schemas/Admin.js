@@ -4,7 +4,7 @@ export const queries = `
   adminFetchBoughtPlans(company: Int!, user: Int!): [BoughtPlan]!
 
   # Returns all Users for messages
-  allUsers(limit: Int, offset: Int): [User]!
+  allUsers(limit: Int, offset: Int): ListResponse!
   # Checks whether the user is an admin
   admin: User
 
@@ -16,6 +16,7 @@ export const queries = `
   fetchCompany(id: Int!): Department!
   allCompanies(limit: Int, offset: Int): [Department]!
   freeUsers: [User]!
+  adminFetchListLength(listname: String!): Int!
 `;
 
 export const mutations = `

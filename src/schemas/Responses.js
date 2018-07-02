@@ -12,6 +12,13 @@ export const types = `
       id: Int
     }
 
+    type ListResponse {
+      amount: Int!
+      users: [User]
+      companies: [Department]
+      apps: [App]
+    }
+
   # Contains the id of the Message
     type MessageResponse {
       ok: Boolean!

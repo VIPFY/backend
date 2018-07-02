@@ -161,7 +161,7 @@ export default {
             { unitid: unit.id, name },
             { transaction: ta, raw: true }
           );
-
+          console.log(department);
           await models.ParentUnit.create(
             { parentunit: departmentid, childunit: department.id },
             { transaction: ta, raw: true }
