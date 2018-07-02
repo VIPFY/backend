@@ -68,9 +68,13 @@ export const queries = `
 export const mutations = `
   createCompany(name: String!): RegisterResponse!
   updateStatisticData(data: JSON!): Response!
+
+  addSubDepartment(departmentid: Int! ,name: String!): Response!
+  editDepartmentName(name: String!): Response!
+  deleteSubDepartment(departmentid: Int!): Response!
+
   addEmployee(unitid: Int!, departmentid: Int!): Response!
   addCreateEmployee(email: String!, departmentid: Int!): Response!
-  addSubDepartment(departmentid: Int!): Response!
   removeEmployee(unitid: Int!, departmentid: Int!): Response!
   fireEmployee(unitid: Int!): Response!
 `;

@@ -142,25 +142,92 @@ export default {
       })
   ),
 
-  addSubDepartment: async (parent, { departmentid }, { models, token }) => {
-    try {
-      const {
-        user: { company, unitid }
-      } = decode(token);
+  addSubDepartment: requiresRight(["admin", "manageemployees"]).createResolver(
+    async (parent, { departmentid, name }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(token);
 
-      const ok = await checkDepartment(models, company, departmentid);
+          const ok = await checkDepartment(models, company, departmentid);
 
-      if (!ok) {
-        throw new Error("This department doesn't belong to the users company!");
+          if (!ok) {
+            throw new Error("This department doesn't belong to the users company!");
+          }
+
+          const unit = await models.Unit.create({}, { transaction: ta, raw: true });
+          const department = await models.Department.create(
+            { unitid: unit.id, name },
+            { transaction: ta, raw: true }
+          );
+
+          await models.ParentUnit.create(
+            { parentunit: departmentid, childunit: department.id },
+            { transaction: ta, raw: true }
+          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new Error(err);
+        }
+      })
+  ),
+
+  editDepartmentName: requiresRight(["admin", "manageemployees"]).createResolver(
+    async (parent, { departmentid, name }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const ok = await checkDepartment(models, company, departmentid);
+
+        if (!ok) {
+          throw new Error("This department doesn't belong to the users company!");
+        }
+
+        await models.Department.update({ name }, { where: { unitid: departmentid }, raw: true });
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err);
       }
-
-      await models.ParentUnit.create({ parentunit: departmentid, childunit: unitid });
-
-      return { ok: true };
-    } catch (err) {
-      throw new Error(err);
     }
-  },
+  ),
+
+  deleteSubDepartment: requiresRight(["admin", "manageemployees"]).createResolver(
+    async (parent, { departmentid }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(token);
+
+          const ok = await checkDepartment(models, company, departmentid);
+
+          if (!ok) {
+            throw new Error("This department doesn't belong to the users company!");
+          }
+
+          const p1 = models.Department.destroy(
+            { where: { unitid: departmentid } },
+            { transaction: ta, raw: true }
+          );
+
+          const p2 = models.ParentUnit.destroy(
+            { parentunit: company, childunit: departmentid },
+            { transaction: ta, raw: true }
+          );
+
+          await Promise.all([p1, p2]);
+
+          return { ok: true };
+        } catch (err) {
+          throw new Error(err);
+        }
+      })
+  ),
 
   removeEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
     async (parent, { unitid, departmentid }, { models, token }) => {
