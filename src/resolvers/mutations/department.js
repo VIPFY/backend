@@ -221,7 +221,11 @@ export default {
           );
 
           const p2 = models.ParentUnit.destroy(
-            { where: { parentunit: company, childunit: departmentid } },
+            {
+              where: {
+                [models.Op.or]: [{ childunit: departmentid }, { parentunit: departmentid }]
+              }
+            },
             { transaction: ta, raw: true }
           );
 
