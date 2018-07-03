@@ -12,6 +12,13 @@ export const types = `
       id: Int
     }
 
+  # Contains the amount of the respective Unit
+    type ListCountResponse {
+      users: Int!
+      apps: Int!
+      companies: Int!
+    }
+
   # Contains the id of the Message
     type MessageResponse {
       ok: Boolean!

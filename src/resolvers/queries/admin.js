@@ -3,51 +3,37 @@ import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { parentAdminCheck } from "../../helpers/functions";
 
 export default {
-  adminFetchListLength: requiresVipfyAdmin.createResolver(
-    async (parent, { listname }, { models }) => {
-      try {
-        let amount;
-        switch (listname) {
-          case "allUsers":
-            amount = await models.User.count();
-            break;
+  adminFetchListLength: requiresVipfyAdmin.createResolver(async (parent, args, { models }) => {
+    try {
+      const p1 = models.User.count();
 
-          case "allApps":
-            amount = await models.App.count();
-            break;
+      const p2 = models.App.count();
 
-          case "allCompanies":
-            {
-              const childunits = await models.ParentUnit.findAll({
-                attributes: ["childunit"],
-                raw: true
-              });
-              const ids = childunits.map(id => id.childunit);
+      const childunits = await models.ParentUnit.findAll({
+        attributes: ["childunit"],
+        raw: true
+      });
+      const ids = childunits.map(id => id.childunit);
 
-              const roots = await models.ParentUnit.findAll({
-                where: { parentunit: { [models.sequelize.Op.notIn]: ids } },
-                attributes: ["parentunit"],
-                raw: true
-              });
+      const roots = await models.ParentUnit.findAll({
+        where: { parentunit: { [models.sequelize.Op.notIn]: ids } },
+        attributes: ["parentunit"],
+        raw: true
+      });
 
-              const companyIds = roots.map(root => root.parentunit);
+      const companyIds = roots.map(root => root.parentunit);
 
-              amount = await models.Department.count({
-                where: { unitid: companyIds }
-              });
-            }
-            break;
+      const p3 = models.Department.count({
+        where: { unitid: companyIds }
+      });
 
-          default:
-            throw new Error(`Couldn't find a matching table for ${listname}`);
-        }
+      const [users, apps, companies] = await Promise.all([p1, p2, p3]);
 
-        return amount;
-      } catch (err) {
-        throw new Error(err);
-      }
+      return { users, apps, companies };
+    } catch (err) {
+      throw new Error(err);
     }
-  ),
+  }),
 
   admin: requiresVipfyAdmin.createResolver(async (parent, args, { models, token }) => {
     // they are logged in

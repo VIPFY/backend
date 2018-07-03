@@ -16,7 +16,7 @@ export const queries = `
   fetchCompany(id: Int!): Department!
   allCompanies(limit: Int, offset: Int): [Department]!
   freeUsers: [User]!
-  adminFetchListLength(listname: String!): Int!
+  adminFetchListLength: ListCountResponse!
 `;
 
 export const mutations = `

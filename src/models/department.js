@@ -8,7 +8,8 @@ export default (sequelize, { STRING, JSONB, INTEGER, BOOLEAN }) => {
     deleted: BOOLEAN,
     suspended: BOOLEAN,
     employees: INTEGER,
-    payingoptions: JSONB
+    payingoptions: JSONB,
+    apps: JSONB
   });
 
   Department.associate = ({ Unit }) => {

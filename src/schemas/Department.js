@@ -24,6 +24,7 @@ export const types = `
     payingoptions: JSON
     manageemployees: Boolean
     managelicences: Boolean
+    apps: JSON
   }
 
   type DepartmentData {
