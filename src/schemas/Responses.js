@@ -14,9 +14,9 @@ export const types = `
 
   # Contains the amount of the respective Unit
     type ListCountResponse {
-      users: Int!
-      apps: Int!
-      companies: Int!
+      allUsers: Int!
+      allApps: Int!
+      allCompanies: Int!
     }
 
   # Contains the id of the Message
@@ -76,5 +76,15 @@ export const types = `
     firstname: String
     lastname: String
     profilepicture: String
+  }
+
+  type DistributeResponse {
+    ok: Boolean
+    error: Error
+  }
+
+  type Error {
+    code: Int!
+    message: String!
   }
 `;

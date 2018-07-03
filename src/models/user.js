@@ -20,6 +20,7 @@ export default (
     payingoptions: JSONB,
     emails: { type: JSONB, allowNull: false },
     company: VIRTUAL,
+    length: VIRTUAL,
     teams: BOOLEAN,
     marketplace: BOOLEAN,
     billing: BOOLEAN

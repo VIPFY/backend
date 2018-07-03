@@ -168,4 +168,6 @@ export const mutations = `
   createMonthlyBill: Response!
   addBillPos(bill: BillInput!, billid: Int!): Response!
   downloadBill(billid: Int!): String!
+
+  distributeLicenceToDepartment(departmentid: Int!, boughtplanid: Int!, licencetype: String!): DistributeResponse!
 `;

@@ -27,9 +27,9 @@ export default {
         where: { unitid: companyIds }
       });
 
-      const [users, apps, companies] = await Promise.all([p1, p2, p3]);
+      const [allUsers, allApps, allCompanies] = await Promise.all([p1, p2, p3]);
 
-      return { users, apps, companies };
+      return { allUsers, allApps, allCompanies };
     } catch (err) {
       throw new Error(err);
     }

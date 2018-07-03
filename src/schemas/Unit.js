@@ -29,6 +29,7 @@ export const types = `
     firstname: String
     middlename: String
     lastname: String
+    length: Int
     title: String
     sex: SEX
     birthday: String
