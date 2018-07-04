@@ -5,6 +5,7 @@
 */
 
 import { decode } from "jsonwebtoken";
+import { checkDepartment } from "./functions";
 
 const createResolver = resolver => {
   const baseResolver = resolver;
@@ -25,6 +26,7 @@ export const requiresAuth = createResolver(async (parent, args, { models, token 
     const {
       user: { company, unitid }
     } = decode(token);
+
     const userExists = await models.Unit.findById(unitid);
     if (!userExists) throw new Error("Couldn't find user in database!");
 
@@ -37,8 +39,26 @@ export const requiresAuth = createResolver(async (parent, args, { models, token 
   }
 });
 
+export const requiresDepartmentCheck = requiresAuth.createResolver(
+  async (parent, args, { models, token }) => {
+    try {
+      if (args.departmentid) {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const ok = await checkDepartment(models, company, args.departmentid);
+
+        if (!ok) throw new Error("This department doesn't belong to the users company!");
+      }
+    } catch (err) {
+      throw new Error(err);
+    }
+  }
+);
+
 export const requiresRight = rights =>
-  requiresAuth.createResolver(async (parent, args, { models, token }) => {
+  requiresDepartmentCheck.createResolver(async (parent, args, { models, token }) => {
     try {
       const {
         user: { unitid: holder, company }
