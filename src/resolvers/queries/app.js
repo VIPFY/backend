@@ -133,7 +133,7 @@ export default {
         const userApps = await models.sequelize
           .query(
             "SELECT DISTINCT bp.usedby, bp.id AS boughtplan, bp.description, " +
-              "a.name AS appname, p.appid, a.icon AS appicon a.logo AS applogo " +
+              "a.name AS appname, p.appid, a.icon AS appicon, a.logo AS applogo " +
               "FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit = bp.usedby AND " +
               "r.type = 'canuselicences' AND r.holder = :departmentid) " +
               "OR bp.usedby = :departmentid INNER JOIN plan_data p " +
