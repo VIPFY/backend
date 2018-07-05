@@ -71,9 +71,6 @@ export const queries = `
   fetchApp(name: String!): AppDetails
   fetchAppById(id: Int!): AppDetails
 
-  # Returns apps where the given user has an account
-  fetchUnitApps(departmentid: Int!): [AppBoughtPlanResponse]!
-
   fetchPrice(appid: Int!): Plan!
 `;
 
@@ -82,4 +79,5 @@ export const mutations = `
   updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, file: File): Response!
   deleteApp(id: Int!): Response!
   toggleAppStatus(id: Int!): Response!
+  fetchUnitApps(departmentid: Int!): [AppBoughtPlanResponse]!
 `;
