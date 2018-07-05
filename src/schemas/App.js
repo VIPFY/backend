@@ -72,6 +72,7 @@ export const queries = `
   fetchAppById(id: Int!): AppDetails
 
   fetchPrice(appid: Int!): Plan!
+  fetchUnitApps(departmentid: Int!): [AppBoughtPlanResponse]!
 `;
 
 export const mutations = `
@@ -79,5 +80,4 @@ export const mutations = `
   updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, file: File): Response!
   deleteApp(id: Int!): Response!
   toggleAppStatus(id: Int!): Response!
-  fetchUnitApps(departmentid: Int!): [AppBoughtPlanResponse]!
 `;
