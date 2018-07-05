@@ -42,13 +42,15 @@ export const formatFilename = filename => {
 };
 
 export const checkDepartment = async (models, company, departmentid) => {
+  if (company == departmentid) return true;
+
   const departments = await models.sequelize
     .query("SELECT childid FROM department_tree_view WHERE id = ? AND level > 1", {
       replacements: [company]
     })
     .spread(res => res)
     .map(department => parseInt(department.childid));
-  console.log(departments);
+
   if (!departments.includes(departmentid)) {
     throw new Error("This department doesn't belong to the users company!");
   }
