@@ -62,7 +62,7 @@ export default {
     async (parent, { company, user }, { models }) => {
       try {
         const boughtPlans = await models.BoughtPlan.findAll({
-          where: { payer: company }
+          where: { usedby: company }
         });
         const boughtPlanIds = boughtPlans.map(bP => bP.get("id"));
 
@@ -202,7 +202,11 @@ export default {
       const { DepartmentEmployee, sequelize } = models;
       try {
         const employees = await DepartmentEmployee.findAll({
-          attributes: [[sequelize.fn("DISTINCT", sequelize.col("employee")), "employee"]],
+          attributes: [
+            [sequelize.fn("DISTINCT", sequelize.col("employee")), "employee"],
+            "childid",
+            "id"
+          ],
           where: { id: unitid, employee: { [models.Op.not]: null } },
           limit,
           offset
@@ -215,7 +219,7 @@ export default {
     }
   ),
 
-  freeUsers: async (parent, args, { models }) => {
+  freeUsers: requiresVipfyAdmin.createResolver(async (parent, args, { models }) => {
     try {
       const freeUsers = await models.sequelize
         .query(
@@ -230,5 +234,5 @@ export default {
     } catch (err) {
       throw new Error(err.message);
     }
-  }
+  })
 };

@@ -87,4 +87,13 @@ export const types = `
     code: Int!
     message: String!
   }
+
+  type AppBoughtPlanResponse {
+    usedby: Unit
+    boughtplan: BoughtPlan!
+    description: String
+    appname: String!
+    applogo: String
+    appid: Int!
+  }
 `;

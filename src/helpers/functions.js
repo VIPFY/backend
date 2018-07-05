@@ -49,7 +49,9 @@ export const checkDepartment = async (models, company, departmentid) => {
     .spread(res => res)
     .map(department => parseInt(department.childid));
   console.log(departments);
-  if (!departments.includes(departmentid)) return false;
+  if (!departments.includes(departmentid)) {
+    throw new Error("This department doesn't belong to the users company!");
+  }
 
   return true;
 };

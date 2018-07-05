@@ -46,8 +46,8 @@ export const types = `
   }
 
   type DepartmentEmployee {
-    id: Unit!
-    childid: Department
+    id: Department!
+    childid: Unit
     employee: User
   }
 

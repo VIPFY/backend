@@ -23,7 +23,7 @@ import demoMutations from "./mutations/demo";
 
 import Subscription from "./subscriptions";
 
-import { find, findDepartment, implementDate, implementJSON } from "./CustomResolvers";
+import { find, implementDate, implementJSON } from "./CustomResolvers";
 
 const Query = Object.assign(
   authQueries,
@@ -68,11 +68,11 @@ export default {
   AppDetails: find(developerAndSupport),
   Bill: find(unit),
   BillPosition: find({ vendor: "Unit", billid: "Bill", planid: "Plan" }),
-  BoughtPlan: find({ buyer: "Unit", planid: "Plan", payer: "Unit" }),
+  BoughtPlan: find({ buyer: "Unit", usedby: "Unit", planid: "Plan", payer: "Unit" }),
   Department: find(unit),
   DepartmentData: find(unit),
-  DepartmentEmail: find({ departmentid: "Unit", emailownerid: "Unit" }),
-  DepartmentEmployee: find({ id: "Unit", childid: "Department", employee: "User" }),
+  DepartmentEmail: find({ departmentid: "Department", emailownerid: "Unit" }),
+  DepartmentEmployee: find({ id: "Department", childid: "Unit", employee: "User" }),
   Email: find(unit),
   Human: find(unit),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),
@@ -87,8 +87,9 @@ export default {
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
   Review: find({ reviewer: "User", appid: "App", answerto: "Review" }),
+  AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   ReviewHelpful: find({ reviewer: "User", reviewid: "Review" }),
-  Right: find({ holder: "User", forunit: "User" }),
-  User: findDepartment({ company: "Department" }),
+  Right: find({ holder: "Unit", forunit: "Unit" }),
+  User: find({ company: "Department" }),
   Website: find(unit)
 };

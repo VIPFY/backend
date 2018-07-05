@@ -4,7 +4,6 @@ import { userPicFolder } from "../../constants";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
 import { deleteFile } from "../../services/gcloud";
 import { createTokens } from "../../helpers/auth";
-import { checkDepartment } from "../../helpers/functions";
 // import { sendRegistrationEmail } from "../../services/mailjet";
 
 export default {
@@ -83,12 +82,6 @@ export default {
           user: { company }
         } = decode(token);
 
-        const ok = await checkDepartment(models, company, departmentid);
-
-        if (!ok) {
-          throw new Error("This department doesn't belong to the users company!");
-        }
-
         await models.ParentUnit.create({ parentunit: departmentid, childunit: unitid });
 
         return { ok: true };
@@ -105,12 +98,6 @@ export default {
           const {
             user: { company }
           } = decode(token);
-
-          const ok = await checkDepartment(models, company, departmentid);
-
-          if (!ok) {
-            throw new Error("This department doesn't belong to the users company!");
-          }
 
           const firstname = email.slice(0, email.indexOf("@"));
           const emailInUse = await models.Email.findOne({ where: { email } });
@@ -150,12 +137,6 @@ export default {
             user: { company }
           } = decode(token);
 
-          const ok = await checkDepartment(models, company, departmentid);
-
-          if (!ok) {
-            throw new Error("This department doesn't belong to the users company!");
-          }
-
           const unit = await models.Unit.create({}, { transaction: ta, raw: true });
 
           const p1 = models.DepartmentData.create(
@@ -183,12 +164,6 @@ export default {
           user: { company }
         } = decode(token);
 
-        const ok = await checkDepartment(models, company, departmentid);
-
-        if (!ok) {
-          throw new Error("This department doesn't belong to the users company!");
-        }
-
         await models.DepartmentData.update(
           { name },
           { where: { unitid: departmentid }, raw: true }
@@ -215,12 +190,6 @@ export default {
             where: { unitid: departmentid },
             options
           };
-
-          const ok = await checkDepartment(models, company, departmentid);
-
-          if (!ok) {
-            throw new Error("This department doesn't belong to the users company!");
-          }
 
           const p1 = models.Unit.update({ deleted: true }, updateOptions);
 
@@ -256,12 +225,6 @@ export default {
         const {
           user: { company }
         } = decode(token);
-
-        const ok = await checkDepartment(models, company, departmentid);
-
-        if (!ok) {
-          throw new Error("This department doesn't belong to the users company!");
-        }
 
         await models.ParentUnit.destroy({
           where: { parentunit: departmentid, childunit: unitid }

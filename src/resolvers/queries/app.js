@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { weeblyApi } from "../../services/weebly";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAuth, requiresRight } from "../../helpers/permissions";
 
 /* eslint-disable default-case */
 
@@ -28,18 +28,25 @@ export default {
   fetchAppById: (parent, { id }, { models }) => models.AppDetails.findById(id),
 
   // Not needed till now, maybe delete
-  fetchUserApps: async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { unitid }
-      } = decode(token);
-      const licences = await models.Licence.findAll({ where: { unitid } });
+  fetchUnitApps: requiresRight(["distributelicences", "admin"]).createResolver(
+    async (parent, { departmentid }, { models }) => {
+      try {
+        const userApps = await models.sequelize
+          .query(
+            "SELECT bp.usedby, bp.id AS boughtplan, bp.description, a.name AS appname, " +
+              "p.appid, a.logo AS applogo FROM right_data AS r INNER JOIN boughtplan_data bp " +
+              "ON (r.holder = bp.usedby OR bp.usedby = :departmentid) AND r.type = 'canuselicences' " +
+              "INNER JOIN plan_data p on bp.planid = p.id INNER JOIN app_data a on p.appid = a.id",
+            { replacements: { departmentid } }
+          )
+          .spread(res => res);
 
-      return licences;
-    } catch ({ message }) {
-      throw new Error(message);
+        return userApps;
+      } catch ({ message }) {
+        throw new Error(message);
+      }
     }
-  },
+  ),
 
   fetchLicences: requiresAuth.createResolver(
     async (parent, { licenceid }, { models, token }, info) => {
@@ -49,6 +56,7 @@ export default {
           user: { unitid }
         } = decode(token);
         let licences;
+
         let query =
           "SELECT licence_data.*, plan_data.appid FROM licence_data JOIN" +
           " boughtplan_data ON licence_data.boughtplanid = boughtplan_data.id" +

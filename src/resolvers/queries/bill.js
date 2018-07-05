@@ -23,8 +23,9 @@ export default {
       } = decode(token);
 
       const boughtPlans = await models.BoughtPlan.findAll({
-        where: { payer: company }
+        where: { usedby: company }
       });
+
       const ids = await boughtPlans.map(bp => bp.get("id"));
       boughtPlans.forEach(bp => {
         bp.licences = [];

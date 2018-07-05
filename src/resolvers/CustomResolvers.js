@@ -60,8 +60,8 @@ export const find = data => {
   Object.keys(data).map(search => {
     searches[search] = (parent, args, { models }) => {
       switch (data[search]) {
+        case "Human":
         case "Department":
-          console.log("Fire");
           return models[data[search]].findOne({
             where: { unitid: parent.dataValues[search] }
           });
@@ -75,8 +75,3 @@ export const find = data => {
 
   return searches;
 };
-
-export const findDepartment = () => ({
-  company: (parent, args, { models }) =>
-    models.Department.findOne({ where: { unitid: parent.company } })
-});

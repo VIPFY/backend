@@ -47,9 +47,7 @@ export const requiresDepartmentCheck = requiresAuth.createResolver(
           user: { company }
         } = decode(token);
 
-        const ok = await checkDepartment(models, company, args.departmentid);
-
-        if (!ok) throw new Error("This department doesn't belong to the users company!");
+        await checkDepartment(models, company, args.departmentid);
       }
     } catch (err) {
       throw new Error(err);
