@@ -93,6 +93,7 @@ export const types = `
     boughtplan: BoughtPlan!
     description: String
     appname: String!
+    appicon: String
     applogo: String
     appid: Int!
   }
