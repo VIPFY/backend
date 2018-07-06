@@ -200,14 +200,15 @@ export default {
   adminUpdateAddress: requiresVipfyAdmin.createResolver(
     async (parent, { addressData, id }, { models }) => {
       const { zip, city, street } = addressData;
+      const options = { where: { id }, raw: true };
 
       try {
         if (zip || city || street) {
-          const old = await models.Address.findOne({ where: { id } });
+          const old = await models.Address.findOne(options);
           const newAddress = { ...old.address, ...addressData };
 
-          await models.Address.update({ address: { ...newAddress } }, { where: { id } });
-        } else await models.Address.update({ ...addressData }, { where: { id } });
+          await models.Address.update({ address: { ...newAddress } }, options);
+        } else await models.Address.update({ ...addressData }, options);
 
         return { ok: true };
       } catch ({ message }) {

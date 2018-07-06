@@ -11,7 +11,7 @@ export const types = `
   type BillPosition {
     id: Int!
     positiontext: String
-    amount: Float
+    price: Float
     currency: String!
     billid: Bill!
     planid: Plan!
@@ -20,7 +20,7 @@ export const types = `
 
   input BillInput {
     positiontext: String
-    amount: Float
+    price: Float
     currency: String
     billid: Int
     billname: String
@@ -149,9 +149,6 @@ export const queries = `
   createLoginLink(boughtplanid: Int!): ProductResponse!
 
   fetchBills: [Bill]!
-
-  # This mutation checks whether an user has the right to log into an app
-  fetchLicences(licenceid: Int): [Licence]!
 `;
 
 export const mutations = `
@@ -168,8 +165,6 @@ export const mutations = `
 
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!
-  addBillPos(bill: BillInput!, billid: Int!): Response!
+  addBillPos(bill: BillInput!, billid: Int): Response!
   downloadBill(billid: Int!): String!
-
-  distributeLicenceToDepartment(departmentid: Int!, boughtplanid: Int!, licencetype: String!): DistributeResponse!
 `;

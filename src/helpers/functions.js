@@ -23,8 +23,8 @@ export const parentAdminCheck = async (models, user) => {
     .query(
       "Select DISTINCT (id) from department_employee_view where " +
         "id not in (Select childid from department_employee_view where " +
-        "childid is Not null) and employee = ?",
-      { replacements: [user.id], type: models.sequelize.QueryTypes.SELECT }
+        "childid is Not null) and employee = :userId",
+      { replacements: { userId: user.id }, type: models.sequelize.QueryTypes.SELECT }
     )
     .then(roots => roots.map(root => (user.company = root.id)));
 

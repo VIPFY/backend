@@ -21,6 +21,14 @@ export const fetchOrganization = organization => {
   });
 };
 
+export const fetchOrganizations = (params = {}) => {
+  pipedrive.Organizations.getAll(params, (err, res) => {
+    if (err) throw err;
+
+    console.log(res);
+  });
+};
+
 export const deleteOrganization = organization => {
   pipedrive.Organizations.remove(organization.id, (err, res) => {
     if (err) throw err;
@@ -32,8 +40,8 @@ export const deleteOrganization = organization => {
 export const createSubscription = ({ initiator, primaryUser, company, order }) => {
   const options = {
     method: "POST",
-    url: "https://provisioning-api.pipedrive.com/v1/subscriptions",
-    // baseURL: "https://provisioning-api.pipedrive.com/v1",
+    baseURL: "https://provisioning-api.pipedrive.com/v1",
+    url: "/subscriptions",
     headers: {
       "Content-type": "application/json",
       Authorization: PIPEDRIVE_KEY

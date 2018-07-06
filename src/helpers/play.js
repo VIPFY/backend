@@ -1,60 +1,44 @@
-import weeblyApi from "../services/weebly";
-
-async function testWeebly() {
-  const email = "dummy@vipfy.com";
-  const userId = "117405276";
-  const domain = "test1.vipfy.com";
-  const siteId = "711807005615386732";
-  const planId = 2;
-
-  const requestData = {
-    language: "en",
-    test_mode: true,
-    email
-  };
-  const method = "POST";
-  const endpoint = "user";
-
-  try {
-    const result = await weeblyApi(requestData, method, endpoint);
-    console.log(result);
-  } catch (err) {
-    console.log(err);
-  }
-}
-
-testWeebly();
-// ===========================================================================
-// import {
-//   fetchOrganization,
-//   deleteOrganization,
-//   createSubscription
-// } from "../services/pipedrive";
-
-// const testCompany = {
-//   initiator: {
-//     ref: "bla",
-//     email: "test@tester.de",
-//     phone: "3458908234234",
-//     fullName: "Text company"
-//   },
-//   primaryUser: {
-//     ref: "bla",
-//     email: "testUser@test.com",
-//     phone: "3463452345345",
-//     fullName: "Test User"
-//   },
-//   company: {
-//     country: "DE",
-//     name: "New Company"
-//   },
-//   order: {
-//     subscriptionPlan: "silver",
-//     seats: 0
+// import weeblyApi from "../services/weebly";
+//
+// async function testWeebly() {
+//   const email = "dummy@vipfy.com";
+//   const userId = "117405276";
+//   const domain = "test1.vipfy.com";
+//   const siteId = "711807005615386732";
+//   const planId = 2;
+//
+//   const requestData = {
+//     language: "en",
+//     test_mode: true,
+//     email
+//   };
+//   const method = "POST";
+//   const endpoint = "user";
+//
+//   try {
+//     const result = await weeblyApi(requestData, method, endpoint);
+//     console.log(result);
+//   } catch (err) {
+//     console.log(err);
 //   }
 // }
 //
-// createSubscription(testCompany);
+// testWeebly();
+// ===========================================================================
+import {
+  fetchOrganization,
+  fetchOrganizations,
+  addOrganization,
+  deleteOrganization,
+  createSubscription,
+} from "../services/pipedrive";
+
+const testCompany = {
+  name: "Another Vipfy Customer Company",
+  visible_to: 1,
+}
+
+fetchOrganizations();
 //=============================================================================
 // import axios from "axios";
 // import { SHOPIFY_KEY, SHOPIFY_SECRET } from "../login-data";

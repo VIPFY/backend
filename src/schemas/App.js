@@ -73,6 +73,8 @@ export const queries = `
 
   fetchPrice(appid: Int!): Plan!
   fetchUnitApps(departmentid: Int!): [AppBoughtPlanResponse]!
+
+  fetchLicences(licenceid: Int): [Licence]!
 `;
 
 export const mutations = `
@@ -80,4 +82,9 @@ export const mutations = `
   updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, file: File): Response!
   deleteApp(id: Int!): Response!
   toggleAppStatus(id: Int!): Response!
+
+  distributeLicenceToDepartment(departmentid: Int!, boughtplanid: Int!, licencetype: String!): DistributeResponse!
+  revokeLicencesFromDepartment(departmentid: Int!, boughtplanid: Int!): Response!
+  distributeLicence(boughtplanid: Int!, unitid: Int!, departmentid: Int!): DistributeResponse!
+  revokeLicence(licenceid: Int!): Response!
 `;

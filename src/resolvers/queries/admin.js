@@ -118,7 +118,7 @@ export default {
     }
   }),
 
-  allUsers: requiresVipfyAdmin.createResolver(async (parent, { limit, offset }, { models }) => {
+  allUsers: async (parent, { limit, offset }, { models }) => {
     try {
       const users = await models.User.findAll({
         limit,
@@ -132,7 +132,7 @@ export default {
     } catch (err) {
       throw new Error(err);
     }
-  }),
+  },
 
   fetchUser: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
     try {
@@ -198,19 +198,13 @@ export default {
   }),
 
   adminFetchEmployees: requiresVipfyAdmin.createResolver(
-    async (parent, { unitid, limit, offset }, { models }) => {
-      const { DepartmentEmployee, sequelize } = models;
+    async (parent, { unitid, limit, offset = 0 }, { models }) => {
       try {
-        const employees = await DepartmentEmployee.findAll({
-          attributes: [
-            [sequelize.fn("DISTINCT", sequelize.col("employee")), "employee"],
-            "childid",
-            "id"
-          ],
-          where: { id: unitid, employee: { [models.Op.not]: null } },
-          limit,
-          offset
-        });
+        const employees = await models.sequelize.query(
+          `SELECT DISTINCT id, childid, employee FROM department_employee_view
+           WHERE id = :unitid AND employee NOTNULL LIMIT :limit OFFSET :offset`,
+          { replacements: { unitid, limit, offset }, type: models.sequelize.QueryTypes.SELECT }
+        );
 
         return employees;
       } catch (err) {
@@ -221,18 +215,35 @@ export default {
 
   freeUsers: requiresVipfyAdmin.createResolver(async (parent, args, { models }) => {
     try {
-      const freeUsers = await models.sequelize
-        .query(
-          "Select id, firstname, middlename, lastname from users_view where " +
-            "id not in (select employee from department_employee_view where " +
-            "department_employee_view.id <> department_employee_view.employee)" +
-            " AND users_view.deleted != true"
-        )
-        .spread(res => res);
+      const freeUsers = await models.sequelize.query(
+        `SELECT id, firstname, middlename, lastname FROM users_view WHERE
+         id NOT IN (SELECT employee FROM department_employee_view WHERE
+         department_employee_view.id <> department_employee_view.employee)
+         AND users_view.deleted != true`,
+        { type: models.sequelize.QueryTypes.SELECT }
+      );
 
       return freeUsers;
     } catch (err) {
       throw new Error(err.message);
     }
-  })
+  }),
+
+  adminFetchDepartments: requiresVipfyAdmin.createResolver(
+    async (parent, { company, limit, offset = 0 }, { models }) => {
+      try {
+        const departments = await models.sequelize.query(
+          "Select * from getDepartments(:company) LIMIT :limit OFFSET :offset",
+          {
+            replacements: { company, limit, offset },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+
+        return departments;
+      } catch (err) {
+        throw new Error(err);
+      }
+    }
+  )
 };

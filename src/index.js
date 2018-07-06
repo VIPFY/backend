@@ -22,7 +22,7 @@ import { createContext } from "dataloader-sequelize";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import models from "./models";
-import { SECRET, SECRET_TWO } from "./login-data";
+import { SECRET, SECRET_TWO, TOKEN_DEVELOPMENT } from "./login-data";
 import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware";
 import { refreshTokens } from "./helpers/auth";
 
@@ -71,7 +71,7 @@ app.use(
       schema,
       context: {
         models,
-        token,
+        token: ENVIRONMENT == "development" ? TOKEN_DEVELOPMENT : token,
         SECRET,
         SECRET_TWO
       },
