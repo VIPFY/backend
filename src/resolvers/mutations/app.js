@@ -152,31 +152,39 @@ export default {
   ),
 
   revokeLicencesFromDepartment: requiresDepartmentCheck.createResolver(
-    async (parent, { departmentid, boughtplanid }, { models }) => {
-      try {
-        const belongsToDepartment = await models.BoughtPlan.findOne({
-          where: {
-            id: boughtplanid,
-            usedby: departmentid
+    async (parent, { departmentid, boughtplanid }, { models }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const belongsToDepartment = await models.BoughtPlan.findOne({
+            where: {
+              id: boughtplanid,
+              usedby: departmentid
+            }
+          });
+
+          if (!belongsToDepartment) {
+            throw new Error("This plan doesn't belong to the department!");
           }
-        });
 
-        if (!belongsToDepartment) {
-          throw new Error("This plan doesn't belong to the department!");
+          const p1 = models.DepartmentApp.destroy(
+            { where: { departmentid, boughtplanid } },
+            { transaction: ta }
+          );
+
+          const p2 = models.sequelize.query(
+            `UPDATE licence_data SET unitid = null WHERE unitid IN (SELECT
+             employee FROM department_employee_view WHERE id = :departmentid) AND
+             (endtime > NOW() OR endtime ISNULL) AND boughtplanid = :boughtplanid`,
+            { replacements: { departmentid, boughtplanid }, transaction: ta }
+          );
+
+          await Promise.all([p1, p2]);
+
+          return { ok: true };
+        } catch (err) {
+          throw new Error(err);
         }
-
-        await models.sequelize.query(
-          "UPDATE licence_data SET unitid = null WHERE unitid IN (SELECT employee " +
-            "FROM department_employee_view WHERE id = :departmentid) AND " +
-            "(endtime > NOW() OR endtime ISNULL) AND boughtplanid = :boughtplanid",
-          { replacements: { departmentid, boughtplanid } }
-        );
-
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err);
-      }
-    }
+      })
   ),
 
   distributeLicence: requiresDepartmentCheck.createResolver(
