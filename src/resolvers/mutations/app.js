@@ -124,6 +124,14 @@ export default {
             };
           }
 
+          await models.DepartmentApp.create(
+            {
+              departmentid,
+              boughtplanid
+            },
+            { transaction: ta }
+          );
+
           const takeLicences = employees.map(
             async (employee, i) =>
               await models.Licence.update(
