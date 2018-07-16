@@ -3,7 +3,7 @@ import { requiresRight, requiresAuth } from "../../helpers/permissions";
 import createInvoice from "../../helpers/createInvoice";
 import { createDownloadLink } from "../../services/gcloud";
 
-/* eslint-disable array-callback-return, no-return-await */
+/* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
 export default {
   createPlan: requiresRight(["admin"]).createResolver(async (parent, { plan }, { models }) => {
@@ -92,7 +92,7 @@ export default {
           boughtPlans.splice(0, 0, mainBoughtPlan);
 
           switch (mainPlan.appid) {
-            case 25:
+            case 26:
               console.log("SendinBlue");
               break;
 

@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { requiresDepartmentCheck } from "../../helpers/permissions";
+import { requiresDepartmentCheck, requiresRight } from "../../helpers/permissions";
 
 /* eslint-disable no-return-await */
 
@@ -69,10 +69,6 @@ export default {
           ]);
           const employees = haveNoLicence.map(licence => licence.employee);
 
-          console.log("Plan: ", validPlan);
-          console.log("Have no Licence", employees);
-          console.log("Open Licences: ", openLicences);
-
           if (openLicences.length == 0) {
             return {
               error: {
@@ -119,18 +115,12 @@ export default {
             return {
               error: {
                 code: 6,
-                message: "The plan is expired."
+                message: "The plan expired."
               }
             };
           }
 
-          await models.DepartmentApp.create(
-            {
-              departmentid,
-              boughtplanid
-            },
-            { transaction: ta }
-          );
+          await models.DepartmentApp.create({ departmentid, boughtplanid }, { transaction: ta });
 
           const takeLicences = employees.map(
             async (employee, i) =>
@@ -151,21 +141,10 @@ export default {
       })
   ),
 
-  revokeLicencesFromDepartment: requiresDepartmentCheck.createResolver(
+  revokeLicencesFromDepartment: requiresRight(["distributelicences", "admin"]).createResolver(
     async (parent, { departmentid, boughtplanid }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const belongsToDepartment = await models.BoughtPlan.findOne({
-            where: {
-              id: boughtplanid,
-              usedby: departmentid
-            }
-          });
-
-          if (!belongsToDepartment) {
-            throw new Error("This plan doesn't belong to the department!");
-          }
-
           const p1 = models.DepartmentApp.destroy(
             { where: { departmentid, boughtplanid } },
             { transaction: ta }

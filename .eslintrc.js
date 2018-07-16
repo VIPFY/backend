@@ -7,7 +7,9 @@ module.exports = {
   },
   rules: {
     "implicit-arrow-linebreak": "off",
+    "function-paren-newline": "off",
     "no-else-return": "off",
+    "operator-linebreak": "off",
     "object-curly-newline": "off",
     eqeqeq: "off",
     "func-names": "off",

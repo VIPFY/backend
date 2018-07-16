@@ -52,8 +52,8 @@ export default {
       } = decode(token);
 
       const departments = await models.sequelize
-        .query("Select * from getDepartmentsData(?)", {
-          replacements: [company]
+        .query("Select * from getDepartmentsData(:company)", {
+          replacements: { company }
         })
         .spread(res => res);
 

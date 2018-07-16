@@ -34,25 +34,19 @@ export default {
         const {
           user: { unitid }
         } = decode(token);
-        let licences;
 
-        let query =
-          "SELECT licence_data.*, plan_data.appid FROM licence_data JOIN" +
-          " boughtplan_data ON licence_data.boughtplanid = boughtplan_data.id" +
-          " JOIN plan_data ON boughtplan_data.planid = plan_data.id" +
-          " WHERE licence_data.unitid = ?";
+        let query = `SELECT licence_data.*, plan_data.appid FROM licence_data JOIN
+           boughtplan_data ON licence_data.boughtplanid = boughtplan_data.id
+           JOIN plan_data ON boughtplan_data.planid = plan_data.id
+           WHERE licence_data.unitid = :unitid`;
+
+        const replacements = { unitid };
 
         if (licenceid) {
-          query += " AND licence_data.id = ?";
-
-          licences = await models.sequelize
-            .query(query, { replacements: [unitid, licenceid] })
-            .spread(res => res);
-        } else {
-          licences = await models.sequelize
-            .query(query, { replacements: [unitid] })
-            .spread(res => res);
+          query += " AND licence_data.id = :licenceid";
+          replacements.licenceid = licenceid;
         }
+        const licences = await models.sequelize.query(query, { replacements }).spread(res => res);
 
         if (
           info.fieldNodes[0].selectionSet.selections.find(item => item.name.value == "key") !==
@@ -132,12 +126,12 @@ export default {
       try {
         const userApps = await models.sequelize
           .query(
-            "SELECT DISTINCT bp.usedby, bp.id AS boughtplan, bp.description, " +
-              "a.name AS appname, p.appid, a.icon AS appicon, a.logo AS applogo " +
-              "FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit = bp.usedby AND " +
-              "r.type = 'canuselicences' AND r.holder = :departmentid) " +
-              "OR bp.usedby = :departmentid INNER JOIN plan_data p " +
-              "on bp.planid = p.id INNER JOIN app_data a on p.appid = a.id ",
+            `SELECT DISTINCT bp.usedby, bp.id AS boughtplan, bp.description,
+              a.name AS appname, p.appid, a.icon AS appicon, a.logo AS applogo
+              FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit =
+              bp.usedby AND r.type = 'canuselicences' AND r.holder = :departmentid)
+              OR bp.usedby = :departmentid INNER JOIN plan_data p
+              on bp.planid = p.id INNER JOIN app_data a on p.appid = a.id`,
             { replacements: { departmentid } }
           )
           .spread(res => res);
