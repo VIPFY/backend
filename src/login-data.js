@@ -17,3 +17,5 @@ export const DD24_SECRET = "ImSureMyDegreeWillTotallyHelpMeWithThis>.<";
 export const PIPEDRIVE_KEY = "fe533d70bda3149654dcb33b97b3e2b1f346852b";
 export const STRIPE_PUBLIC_KEY = "pk_test_W9VDDvYKZqcmbgaz7iAcUR9j";
 export const STRIPE_SECRET_KEY = "sk_test_FUWxIU2DGb5C8nWynrnG7Nvf";
+export const SIB_KEY =
+  "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";

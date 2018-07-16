@@ -15,8 +15,28 @@ export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, STRING, BOOLEA
       defaultValue: "USD"
     },
     options: JSONB,
-    payperiod: JSONB,
-    cancelperiod: JSONB,
+    payperiod: {
+      type: JSONB,
+      set(period) {
+        const testValue = Object.keys(period)[0];
+        const interval = `${testValue == "years" ? period.years : 0} years, ${
+          testValue == "mons" ? period.months : 0
+        } mons, ${testValue == "days" ? period.days : 0} days, 0 hours, 0 mins, 0 secs`;
+
+        this.setDataValue("payperiod", interval);
+      }
+    },
+    cancelperiod: {
+      type: JSONB,
+      set(period) {
+        const testValue = Object.keys(period)[0];
+        const interval = `${testValue == "years" ? period.years : 0} years, ${
+          testValue == "mons" ? period.months : 0
+        } mons, ${testValue == "days" ? period.days : 0} days, 0 hours, 0 mins, 0 secs`;
+
+        this.setDataValue("payperiod", interval);
+      }
+    },
     optional: { type: BOOLEAN, defaultValue: false },
     gototime: TEXT
   });

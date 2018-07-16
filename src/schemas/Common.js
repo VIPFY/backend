@@ -53,7 +53,7 @@ input File {
 # Interval
 input Interval {
   years: String,
-  months: String,
+  mons: String,
   weeks: String,
   days: String
 }

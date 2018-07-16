@@ -32,11 +32,11 @@ export default {
           });
 
           const p2 = models.sequelize.query(
-            "SELECT DISTINCT employee FROM department_employee_view WHERE id = :departmentid " +
-              "and employee NOT IN (SELECT DISTINCT ld.unitid FROM licence_data " +
-              "AS ld INNER JOIN department_employee_view dev ON dev.employee = ld.unitid " +
-              "AND boughtplanid = :boughtplanid AND (ld.endtime IS NULL OR ld.endtime > NOW()) " +
-              "AND ld.options @> :type AND ld.disabled = false AND dev.id = :departmentid)",
+            `SELECT DISTINCT employee FROM department_employee_view WHERE
+            id = :departmentid and employee NOT IN (SELECT DISTINCT ld.unitid FROM licence_data
+            AS ld INNER JOIN department_employee_view dev ON dev.employee = ld.unitid
+            AND boughtplanid = :boughtplanid AND (ld.endtime IS NULL OR ld.endtime > NOW())
+            AND ld.options @> :type AND ld.disabled = false AND dev.id = :departmentid)`,
             {
               replacements: {
                 boughtplanid,

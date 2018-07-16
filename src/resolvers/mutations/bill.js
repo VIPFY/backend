@@ -91,6 +91,14 @@ export default {
 
           boughtPlans.splice(0, 0, mainBoughtPlan);
 
+          switch (mainPlan.appid) {
+            case 25:
+              console.log("SendinBlue");
+              break;
+
+            default:
+              console.log("Not specified yet");
+          }
           const bill = await models.Bill.create({ unitid: company }, { transaction: ta });
           const createLicences = [];
 

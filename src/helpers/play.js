@@ -24,22 +24,27 @@
 // }
 //
 // testWeebly();
-// ===========================================================================
-import {
-  fetchOrganization,
-  fetchOrganizations,
-  addOrganization,
-  deleteOrganization,
-  createSubscription,
-} from "../services/pipedrive";
+// ============================================================================
+import {getVipfyAccountData, createAccount} from "../services/sendinblue"
 
-const testCompany = {
-  name: "Another Vipfy Customer Company",
-  visible_to: 1,
-}
-
-fetchOrganizations();
-//=============================================================================
+createAccount("pc@vipfy.com", "Pascal", "Cousland", "Vipfy")
+// ============================================================================
+// import {
+//   fetchOrganization,
+//   fetchOrganizations,
+//   addOrganization,
+//   deleteOrganization,
+//   createSubscription,
+//   getToken
+// } from "../services/pipedrive";
+//
+// const testCompany = {
+//   name: "Another Vipfy Customer Company",
+//   visible_to: 1,
+// }
+//
+// getToken("development@vipfy.com", "0892309jJSfjspjf?9f9rewj9fgjwa");
+// ============================================================================
 // import axios from "axios";
 // import { SHOPIFY_KEY, SHOPIFY_SECRET } from "../login-data";
 //

@@ -1,9 +1,18 @@
 import axios from "axios";
-import { Client } from "pipedrive";
+import Pipedrive, { Client } from "pipedrive";
 import { PIPEDRIVE_KEY } from "../login-data";
 
 // Connect to Pipedrive via their custom library
 const pipedrive = new Client(PIPEDRIVE_KEY, { strictMode: true });
+
+export const getToken = (email, password) => {
+  Pipedrive.authenticate({ email, password }, (error, data, addData) => {
+    if (error) throw new Error(error);
+
+    console.log(data[0]);
+    console.log(addData);
+  });
+};
 
 export const addOrganization = organization => {
   pipedrive.Organizations.add(organization, (err, res) => {
