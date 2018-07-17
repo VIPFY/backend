@@ -76,12 +76,8 @@ export default {
   ),
 
   addEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
-    async (parent, { unitid, departmentid }, { token, models }) => {
+    async (parent, { unitid, departmentid }, { models }) => {
       try {
-        const {
-          user: { company }
-        } = decode(token);
-
         await models.ParentUnit.create({ parentunit: departmentid, childunit: unitid });
 
         return { ok: true };
@@ -92,13 +88,9 @@ export default {
   ),
 
   addCreateEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
-    async (parent, { email, departmentid }, { models, token }) =>
+    async (parent, { email, departmentid }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const {
-            user: { company }
-          } = decode(token);
-
           const firstname = email.slice(0, email.indexOf("@"));
           const emailInUse = await models.Email.findOne({ where: { email } });
           if (emailInUse) throw new Error("Email already in use!");
@@ -130,13 +122,9 @@ export default {
   ),
 
   addSubDepartment: requiresRight(["admin", "manageemployees"]).createResolver(
-    async (parent, { departmentid, name }, { models, token }) =>
+    async (parent, { departmentid, name }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const {
-            user: { company }
-          } = decode(token);
-
           const unit = await models.Unit.create({}, { transaction: ta, raw: true });
 
           const p1 = models.DepartmentData.create(
@@ -158,12 +146,8 @@ export default {
   ),
 
   editDepartmentName: requiresRight(["admin", "manageemployees"]).createResolver(
-    async (parent, { departmentid, name }, { models, token }) => {
+    async (parent, { departmentid, name }, { models }) => {
       try {
-        const {
-          user: { company }
-        } = decode(token);
-
         await models.DepartmentData.update(
           { name },
           { where: { unitid: departmentid }, raw: true }
@@ -177,13 +161,9 @@ export default {
   ),
 
   deleteSubDepartment: requiresRight(["admin", "manageemployees"]).createResolver(
-    async (parent, { departmentid }, { models, token }) =>
+    async (parent, { departmentid }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const {
-            user: { company }
-          } = decode(token);
-
           const options = { transaction: ta, raw: true };
           const updateOptions = { where: { id: departmentid }, ...options };
           const destroyData = {
@@ -192,15 +172,10 @@ export default {
           };
 
           const p1 = models.Unit.update({ deleted: true }, updateOptions);
-
           const p2 = models.DepartmentData.update({ name: "Deleted Department" }, updateOptions);
-
           const p3 = models.Email.destroy(destroyData);
-
           const p4 = models.Address.destroy(destroyData);
-
           const p5 = models.Phone.destroy(destroyData);
-
           const p6 = models.ParentUnit.destroy(
             {
               where: {
@@ -220,12 +195,8 @@ export default {
   ),
 
   removeEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
-    async (parent, { unitid, departmentid }, { models, token }) => {
+    async (parent, { unitid, departmentid }, { models }) => {
       try {
-        const {
-          user: { company }
-        } = decode(token);
-
         await models.ParentUnit.destroy({
           where: { parentunit: departmentid, childunit: unitid }
         });
