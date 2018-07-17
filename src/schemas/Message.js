@@ -17,13 +17,38 @@ export const types = `
   type MessageData {
     id: Int!
     sendtime: Date!
-    readtime: Date
-    archivetimesender: Date
-    archivetimereceiver: Date
-    tags: [String]
     messagetext: String!
     receiver: PublicUser!
     sender: PublicUser!
+    payload: JSON
+    deletedat: Date
+  }
+
+  type MessageGroup {
+    id: Int!
+    image: String!
+    name: String!
+    foundingdate: Date!
+  }
+
+  type MessageGroupMembership {
+    id: Int!
+    groupid: MessageGroup!
+    unitid: Unit!
+    visibletimestart: Date
+    visibletimeend: Date
+    rights: [String]
+    lastreadmessageid: Int
+    archived: Boolean
+  }
+
+  type MessageTag {
+    id: Int!
+    unitid: Unit!
+    messageid: Message!
+    tag: String
+    public: Boolean
+    createdat: Date
   }
 
   type PublicUser{

@@ -1,27 +1,20 @@
-export default (sequelize, { DATE, NOW, TEXT, ARRAY }) => {
+export default (sequelize, { DATE, NOW, TEXT, JSONB }) => {
   const MessageData = sequelize.define("message_data", {
     sendtime: {
       type: DATE,
-      defaultValue: NOW
-    },
-    readtime: DATE,
-    archivetimesender: DATE,
-    archivetimereceiver: DATE,
-    tags: {
-      type: ARRAY(TEXT),
-      set(val) {
-        this.setDataValue("tags", val.toLowerCase());
-      }
+      defaultValue: NOW()
     },
     messagetext: {
       type: TEXT,
       allowNull: false
-    }
+    },
+    payload: JSONB,
+    deletedat: DATE
   });
 
-  MessageData.associate = ({ User }) => {
-    MessageData.belongsTo(User, { foreignKey: "receiver" });
-    MessageData.belongsTo(User, { foreignKey: "sender" });
+  MessageData.associate = ({ Unit, MessageGroup }) => {
+    MessageData.belongsTo(MessageGroup, { foreignKey: "receiver" });
+    MessageData.belongsTo(Unit, { foreignKey: "sender" });
   };
 
   return MessageData;
