@@ -16,7 +16,7 @@ import { refreshTokens } from "./helpers/auth";
 import models from "./models";
 import Utility from "./helpers/createHmac";
 
-/* eslint-disable consistent-return */
+/* eslint-disable consistent-return, prefer-destructuring */
 export const authMiddleware = async (req, res, next) => {
   const token = req.headers["x-token"];
   if (token != "null" && token) {
@@ -113,14 +113,16 @@ export const loggingMiddleWare = (req, res, next) => {
     const logDirectory = path.join(__dirname, "./logs", `${date}.txt`);
 
     const body = Buffer.concat(chunks).toString("utf8");
-    const parsedBody = JSON.parse(body);
-    const { variables } = req.body;
-    const token = req.headers["x-token"];
+
     let user = null;
     let eventtype;
     let eventdata;
 
     try {
+      const parsedBody = JSON.parse(body);
+      const { variables } = req.body;
+      const token = req.headers["x-token"];
+
       if (token && token != "null") {
         const {
           user: { unitid }

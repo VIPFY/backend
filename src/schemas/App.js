@@ -75,6 +75,7 @@ export const queries = `
   fetchUnitApps(departmentid: Int!): [AppBoughtPlanResponse]!
 
   fetchLicences(licenceid: Int): [Licence]!
+  fetchUsersOwnLicences(unitid: Int!): [Licence]
 `;
 
 export const mutations = `

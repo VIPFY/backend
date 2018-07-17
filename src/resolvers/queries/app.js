@@ -46,7 +46,9 @@ export default {
           query += " AND licence_data.id = :licenceid";
           replacements.licenceid = licenceid;
         }
-        const licences = await models.sequelize.query(query, { replacements }).spread(res => res);
+        const licences = await models.sequelize
+          .query(query, { replacements, type: models.sequelize.QueryTypes.SELECT })
+          .spread(res => res);
 
         if (
           info.fieldNodes[0].selectionSet.selections.find(item => item.name.value == "key") !==
@@ -88,6 +90,39 @@ export default {
       }
     }
   ),
+
+  fetchUsersOwnLicences: async (parent, { unitid }, { models, token }) => {
+    try {
+      const {
+        user: { company }
+      } = decode(token);
+
+      const departments = await models.sequelize.query("Select id from getDepartments(:company)", {
+        replacements: { company },
+        type: models.sequelize.QueryTypes.SELECT,
+        raw: true
+      });
+
+      const departmentIds = Object.values(departments).map(dp => dp.id);
+
+      // filter DepartmentApp
+      const boughtPlans = await models.BoughtPlan.findAll({
+        attributes: ["id"],
+        where: { usedby: { [models.Op.notIn]: departmentIds } },
+        raw: true
+      });
+
+      const bpIds = Object.values(boughtPlans).map(bp => bp.id);
+
+      const licences = await models.Licence.findAll({
+        where: { unitid, boughtplanid: { [models.Op.notIn]: bpIds } }
+      });
+
+      return licences;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  },
 
   // change to requiresRight("A") in Production!
   createLoginLink: requiresAuth.createResolver(async (parent, { licenceid }, { models, token }) => {
@@ -132,7 +167,7 @@ export default {
               bp.usedby AND r.type = 'canuselicences' AND r.holder = :departmentid)
               OR bp.usedby = :departmentid INNER JOIN plan_data p
               on bp.planid = p.id INNER JOIN app_data a on p.appid = a.id`,
-            { replacements: { departmentid } }
+            { replacements: { departmentid }, type: models.sequelize.QueryTypes.SELECT }
           )
           .spread(res => res);
 
