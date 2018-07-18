@@ -47,10 +47,9 @@ export default {
         user: { unitid }
       } = decode(token);
 
-      const query =
-        "SELECT * FROM message_data JOIN (SELECT max(id) id FROM message_data " +
-        "WHERE sender = :unitid OR receiver = :unitid GROUP BY CASE WHEN " +
-        "sender = :unitid THEN receiver ELSE sender END) t ON t.id = message_data.id";
+      const query = `SELECT * FROM message_data JOIN (SELECT max(id) id FROM message_data
+        WHERE sender = :unitid OR receiver = :unitid GROUP BY CASE WHEN
+        sender = :unitid THEN receiver ELSE sender END) t ON t.id = message_data.id`;
 
       const lastMessages = await models.sequelize
         .query(query, { replacements: { unitid } })
@@ -62,23 +61,20 @@ export default {
     }
   }),
 
-  fetchDialog: requiresAuth.createResolver(async (parent, { sender }, { models, token }) => {
+  fetchDialog: requiresAuth.createResolver(async (parent, { groupid }, { models, token }) => {
     try {
       const {
         user: { unitid }
       } = decode(token);
-
-      const messages = await models.MessageData.findAll({
+      // get Timestamps
+      const getTimestamps = await models.MessageGroupMembership.findAll({
+        attributes: ["visibletimestart", "visibletimeend"],
         where: {
-          [models.Op.or]: [
-            {
-              sender,
-              receiver: unitid
-            },
-            { receiver: sender, sender: unitid }
-          ]
+          groupid,
+          unitid
         },
-        group: ["id"]
+        raw: true
+        // group: ["id"]
       });
 
       return messages;

@@ -51,7 +51,7 @@ export const types = `
     createdat: Date
   }
 
-  type PublicUser{
+  type PublicUser {
     id: Int!
     firstname: String
     middlename: String
@@ -73,7 +73,7 @@ export const queries = `
 # All messages an user received - either from apps or other users
   fetchMessages(read: Boolean): [Message]
   fetchLastDialogMessages: [MessageData]
-  fetchDialog(sender: Int!): [MessageData]
+  fetchDialog(groupid: Int!): [MessageData]
 `;
 
 export const mutations = `

@@ -46,9 +46,7 @@ export default {
           query += " AND licence_data.id = :licenceid";
           replacements.licenceid = licenceid;
         }
-        const licences = await models.sequelize
-          .query(query, { replacements, type: models.sequelize.QueryTypes.SELECT })
-          .spread(res => res);
+        const licences = await models.sequelize.query(query, { replacements }).spread(res => res);
 
         if (
           info.fieldNodes[0].selectionSet.selections.find(item => item.name.value == "key") !==
@@ -83,7 +81,7 @@ export default {
 
           await Promise.all(createLoginLinks);
         }
-
+        console.log(licences);
         return licences;
       } catch (err) {
         throw new Error(err);
