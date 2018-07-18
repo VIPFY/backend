@@ -81,7 +81,7 @@ export default {
 
           await Promise.all(createLoginLinks);
         }
-        console.log(licences);
+
         return licences;
       } catch (err) {
         throw new Error(err);
@@ -165,7 +165,7 @@ export default {
               bp.usedby AND r.type = 'canuselicences' AND r.holder = :departmentid)
               OR bp.usedby = :departmentid INNER JOIN plan_data p
               on bp.planid = p.id INNER JOIN app_data a on p.appid = a.id`,
-            { replacements: { departmentid }, type: models.sequelize.QueryTypes.SELECT }
+            { replacements: { departmentid } }
           )
           .spread(res => res);
 

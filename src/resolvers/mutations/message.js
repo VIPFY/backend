@@ -38,45 +38,66 @@ export default {
     }
   }),
 
-  sendMessage: requiresAuth.createResolver(
-    async (parent, { touser, message }, { models, token }) => {
-      const { user: { unitid } } = decode(token);
-      const p1 = models.User.findById(unitid);
-      const p2 = models.User.findById(touser);
-      const [sender, receiver] = await Promise.all([p1, p2]);
+  sendMessage: async (parent, { groupid, message }, { models, token }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
+        const p1 = models.User.findById(unitid);
+        const p2 = models.MessageGroup.findById(groupid);
 
-      if (!sender || !receiver) {
-        throw new Error("User doesn't exist!");
-      } else if (sender.id == receiver.id) {
-        throw new Error("Sender and Receiver can't be the same User!");
-      } else if (message && sender && receiver) {
-        try {
+        const [sender, group] = await Promise.all([p1, p2]);
+
+        if (!sender) {
+          throw new Error("User doesn't exist!");
+        } else if (message && sender && group) {
           const createMessage = await models.MessageData.create({
             sender: unitid,
-            receiver: touser,
+            receiver: groupid,
             messagetext: message
           });
 
           const newMessage = {
             ...createMessage.dataValues,
-            sender: sender.dataValues,
-            receiver: receiver.dataValues
+            sender: sender.dataValues
+            // receiver: receiver.dataValues
           };
 
           pubsub.publish(NEW_MESSAGE, {
-            userId: receiver.dataValues.unitid,
+            // userId: receiver.dataValues.unitid,
             newMessage
           });
+        } else if (message && sender && !group) {
+          const newGroup = await models.MessageGroup.create({}, { raw: true, transaction: ta });
 
-          return {
-            ok: true,
-            id: newMessage.id,
-            message
+          const createMessage = await models.MessageData.create(
+            {
+              sender: unitid,
+              receiver: newGroup.id,
+              messagetext: message
+            },
+            { transaction: ta }
+          );
+
+          const newMessage = {
+            ...createMessage.dataValues,
+            sender: sender.dataValues
+            // receiver: receiver.dataValues
           };
-        } catch (err) {
-          throw new Error(err.message);
+
+          pubsub.publish(NEW_MESSAGE, {
+            // userId: receiver.dataValues.unitid,
+            newMessage
+          });
         }
-      } else throw new Error("Empty Message!");
-    }
-  )
+        return {
+          ok: true,
+          id: group.id,
+          message
+        };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    })
 };

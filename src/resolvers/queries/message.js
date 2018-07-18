@@ -66,16 +66,15 @@ export default {
       const {
         user: { unitid }
       } = decode(token);
-      // get Timestamps
-      const getTimestamps = await models.MessageGroupMembership.findAll({
-        attributes: ["visibletimestart", "visibletimeend"],
-        where: {
-          groupid,
-          unitid
-        },
-        raw: true
-        // group: ["id"]
-      });
+
+      const messages = await models.sequelize
+        .query(
+          `SELECT md.* FROM message_data AS md INNER JOIN messagegroupmembership_data
+        mgmd ON md.sendtime BETWEEN mgmd.visibletimestart AND mgmd.visibletimeend
+        WHERE mgmd.unitid = :unitid AND mgmd.groupid = :groupid`,
+          { replacements: { unitid, groupid } }
+        )
+        .spread(res => res);
 
       return messages;
     } catch (err) {
