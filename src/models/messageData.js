@@ -9,7 +9,8 @@ export default (sequelize, { DATE, NOW, TEXT, JSONB }) => {
       allowNull: false
     },
     payload: JSONB,
-    deletedat: DATE
+    deletedat: DATE,
+    modified: DATE
   });
 
   MessageData.associate = ({ Unit, MessageGroup }) => {

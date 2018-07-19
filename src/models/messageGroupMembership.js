@@ -1,15 +1,8 @@
-export default (sequelize, { DATE, TEXT, INTEGER, BOOLEAN, ARRAY }) => {
+export default (sequelize, { DATE, INTEGER }) => {
   const MessageGroupMembership = sequelize.define("messagegroupmembership_data", {
     visibletimestart: DATE,
     visibletimeend: DATE,
-    rights: {
-      type: ARRAY(TEXT),
-      set(val) {
-        this.setDataValue("rights", val.toLowerCase());
-      }
-    },
-    lastreadmessageid: INTEGER,
-    archived: BOOLEAN
+    lastreadmessageid: INTEGER
   });
 
   MessageGroupMembership.associate = ({ Unit, MessageGroup }) => {

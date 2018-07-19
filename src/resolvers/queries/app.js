@@ -113,7 +113,7 @@ export default {
       const bpIds = Object.values(boughtPlans).map(bp => bp.id);
 
       const licences = await models.Licence.findAll({
-        where: { unitid, boughtplanid: { [models.Op.notIn]: bpIds } }
+        where: { unitid, boughtplanid: bpIds }
       });
 
       return licences;

@@ -91,6 +91,12 @@ export default {
     async (parent, { email, departmentid }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
+          const isEmail = email.indexOf("@");
+
+          if (isEmail < 0) {
+            throw new Error("Please enter a valid Email!");
+          }
+
           const firstname = email.slice(0, email.indexOf("@"));
           const emailInUse = await models.Email.findOne({ where: { email } });
           if (emailInUse) throw new Error("Email already in use!");

@@ -84,7 +84,9 @@ export const mutations = `
   setReadtime(id: Int!): MessageResponse!
 
 # Send a message to another user
-  sendMessage(touser: Int!, message: String!): MessageResponse!
+  sendMessage(groupid: Int!, message: String!): MessageResponse!
+
+  startConversation(receiver: Int!, defaultrights: [String]!): Response!
 `;
 
 export const subscriptions = `
