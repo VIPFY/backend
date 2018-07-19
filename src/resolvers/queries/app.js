@@ -97,8 +97,7 @@ export default {
 
       const departments = await models.sequelize.query("Select id from getDepartments(:company)", {
         replacements: { company },
-        type: models.sequelize.QueryTypes.SELECT,
-        raw: true
+        type: models.sequelize.QueryTypes.SELECT
       });
 
       const departmentIds = Object.values(departments).map(dp => dp.id);
@@ -106,12 +105,15 @@ export default {
       const departmentPlans = await models.DepartmentApp.findAll({
         where: {
           departmentid: departmentIds
-        }
+        },
+        raw: true
       });
+
+      const departmentPlanIds = Object.values(departmentPlans).map(dp => dp.boughtplanid);
 
       const boughtPlans = await models.BoughtPlan.findAll({
         attributes: ["id"],
-        where: { usedby: { [models.Op.notIn]: departmentPlans } },
+        where: { usedby: { [models.Op.notIn]: departmentPlanIds } },
         raw: true
       });
 
