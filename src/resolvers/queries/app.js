@@ -103,10 +103,15 @@ export default {
 
       const departmentIds = Object.values(departments).map(dp => dp.id);
 
-      // filter DepartmentApp
+      const departmentPlans = await models.DepartmentApp.findAll({
+        where: {
+          departmentid: departmentIds
+        }
+      });
+
       const boughtPlans = await models.BoughtPlan.findAll({
         attributes: ["id"],
-        where: { usedby: { [models.Op.notIn]: departmentIds } },
+        where: { usedby: { [models.Op.notIn]: departmentPlans } },
         raw: true
       });
 
