@@ -91,10 +91,10 @@ export default {
 
   fetchUsersOwnLicences: async (parent, { unitid }, { models, token }) => {
     try {
-      const {
-        user: { company }
-      } = decode(token);
-
+      // const {
+      //   user: { company }
+      // } = decode(token);
+      const company = 14;
       const departments = await models.sequelize.query("Select id from getDepartments(:company)", {
         replacements: { company },
         type: models.sequelize.QueryTypes.SELECT
@@ -113,7 +113,7 @@ export default {
 
       const boughtPlans = await models.BoughtPlan.findAll({
         attributes: ["id"],
-        where: { usedby: { [models.Op.notIn]: departmentPlanIds } },
+        where: { id: { [models.Op.notIn]: departmentPlanIds } },
         raw: true
       });
 
