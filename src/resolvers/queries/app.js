@@ -91,10 +91,10 @@ export default {
 
   fetchUsersOwnLicences: async (parent, { unitid }, { models, token }) => {
     try {
-      // const {
-      //   user: { company }
-      // } = decode(token);
-      const company = 14;
+      const {
+        user: { company }
+      } = decode(token);
+
       const departments = await models.sequelize.query("Select id from getDepartments(:company)", {
         replacements: { company },
         type: models.sequelize.QueryTypes.SELECT
