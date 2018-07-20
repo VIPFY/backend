@@ -14,6 +14,7 @@ export default {
     { receiver, defaultrights },
     { models, token }
   ) => {
+    console.log("a");
     if (
       !superset(
         [
@@ -29,6 +30,7 @@ export default {
     ) {
       throw new Error("defaultrights contains illegal right");
     }
+    console.log("b");
     try {
       models.sequelize.transaction(async ta => {
         const {
@@ -53,6 +55,7 @@ export default {
           throw new Error("Sender and receiver are not in the same Company!");
         }
 
+        console.log("c");
         const group = await models.MessageGroup.create({}, { transaction: ta });
         const dbqueries = [];
         // create MessageGroupMembership for sender and receiver
@@ -112,8 +115,10 @@ export default {
             public: "true"
           })
         );
+        console.log("d");
 
         await Promise.all(dbqueries);
+        console.log("e");
         return {
           ok: true
         };
