@@ -5,14 +5,29 @@ import { parentAdminCheck, superset } from "../../helpers/functions";
 
 /* eslint-disable no-unused-vars */
 export default {
-
   /**
    * Create a new group between two people. This is only possible if the current user and
    * the receiver are in the same company. Return an error otherwise
    */
-  startConversation: async (parent, { receiver, defaultrights }, { models, token }) => {
-    if(!superset(["speak", "upload", "highlight", "modifyown", "deleteown", "deleteother"], defaultrights)) {
-      throw new Error("defaultrights contains illegal right")
+  startConversation: async (
+    parent,
+    { receiver, defaultrights },
+    { models, token }
+  ) => {
+    if (
+      !superset(
+        [
+          "speak",
+          "upload",
+          "highlight",
+          "modifyown",
+          "deleteown",
+          "deleteother"
+        ],
+        defaultrights
+      )
+    ) {
+      throw new Error("defaultrights contains illegal right");
     }
     try {
       models.sequelize.transaction(async ta => {
@@ -39,16 +54,42 @@ export default {
         }
 
         const group = await models.MessageGroup.create({}, { transaction: ta });
+        const dbqueries = [];
         // create MessageGroupMembership for sender and receiver
-        const p4 = models.MessageGroupMembership.create({groupid: group, unitid: unitid}, { transaction: ta });
-        const p5 = models.MessageGroupMembership.create({groupid: group, unitid: receiver}, { transaction: ta });
+        dbqueries.push(
+          models.MessageGroupMembership.create(
+            { groupid: group, unitid },
+            { transaction: ta }
+          )
+        );
+        dbqueries.push(
+          models.MessageGroupMembership.create(
+            { groupid: group, unitid: receiver },
+            { transaction: ta }
+          )
+        );
 
-        //create default rights
-        const p6 = models.MessageGroupRight.bulkCreate(defaultrights.map(right => {return {unitid: null, groupid: group, right: right}}), { transaction: ta });
+        // create default rights
+        dbqueries.push(
+          models.MessageGroupRight.bulkCreate(
+            defaultrights.map(right => ({ unitid: null, groupid: group, right })),
+            { transaction: ta }
+          )
+        );
 
-        //create rights for sender and receiver
-        const p7 = models.MessageGroupRight.bulkCreate(defaultrights.map(right => {return {unitid: unitid, groupid: group, right: right}}), { transaction: ta });
-        const p8 = models.MessageGroupRight.bulkCreate(defaultrights.map(right => {return {unitid: receiver, groupid: group, right: right}}), { transaction: ta });
+        // create rights for sender and receiver
+        dbqueries.push(
+          models.MessageGroupRight.bulkCreate(
+            defaultrights.map(right => ({ unitid: unitid, groupid: group, right })),
+            { transaction: ta }
+          )
+        );
+        dbqueries.push(
+          models.MessageGroupRight.bulkCreate(
+            defaultrights.map(right => ({ unitid: receiver, groupid: group, right })),
+            { transaction: ta }
+          )
+        );
 
         // system message erstellen sender null, messagetext leer, payload object system message
         const payload = {
@@ -56,11 +97,23 @@ export default {
             type: "groupcreated",
             actor: unitid
           }
-        }
-        const message = await models.MessageData.create({messagetext: "", receiver: group, sender: null, payload: payload})
-        const p9 = models.MessageTag.create({unitid, messageid: message, tag: "system", public: "true"});
+        };
+        const message = await models.MessageData.create({
+          messagetext: "",
+          receiver: group,
+          sender: null,
+          payload
+        });
+        dbqueries.push(
+          models.MessageTag.create({
+            unitid,
+            messageid: message,
+            tag: "system",
+            public: "true"
+          })
+        );
 
-        await Promise.all([p4, p5, p6, p7, p8, p9])
+        await Promise.all(dbqueries);
       });
     } catch (err) {
       throw new Error(err.message);
@@ -75,39 +128,43 @@ export default {
   // deleteown
   // deleteother
 
-  setDeleteStatus: requiresAuth.createResolver(async (parent, { id, type }, { models }) => {
-    const messageExists = await models.MessageData.findById(id);
-    if (!messageExists) throw new Error("Message doesn't exist!");
+  setDeleteStatus: requiresAuth.createResolver(
+    async (parent, { id, type }, { models }) => {
+      const messageExists = await models.MessageData.findById(id);
+      if (!messageExists) throw new Error("Message doesn't exist!");
 
-    try {
-      await models.MessageData.update({ [type]: true }, { where: { id } });
-      return {
-        ok: true
-      };
-    } catch (err) {
-      throw new Error(err.message);
-    }
-  }),
-
-  setReadtime: requiresAuth.createResolver(async (parent, { id }, { models }) => {
-    try {
-      const message = await models.MessageData.findById(id);
-      const { readtime } = message;
-
-      if (!readtime) {
-        const now = Date.now();
-        await models.MessageData.update({ readtime: now }, { where: { id } });
+      try {
+        await models.MessageData.update({ [type]: true }, { where: { id } });
         return {
-          ok: true,
-          id,
-          message: now
+          ok: true
         };
+      } catch (err) {
+        throw new Error(err.message);
       }
-      throw new Error("Message already read");
-    } catch (err) {
-      throw new Error(err.message);
     }
-  }),
+  ),
+
+  setReadtime: requiresAuth.createResolver(
+    async (parent, { id }, { models }) => {
+      try {
+        const message = await models.MessageData.findById(id);
+        const { readtime } = message;
+
+        if (!readtime) {
+          const now = Date.now();
+          await models.MessageData.update({ readtime: now }, { where: { id } });
+          return {
+            ok: true,
+            id,
+            message: now
+          };
+        }
+        throw new Error("Message already read");
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
 
   sendMessage: async (parent, { groupid, message }, { models, token }) => {
     try {
