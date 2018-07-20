@@ -77,7 +77,7 @@ export default {
         console.log("BULK1", defaultrights.map(right => ({ unitid: null, groupid: groupId, right })));
 
         // create default rights
-        /*dbqueries.push(
+        dbqueries.push(
           models.MessageGroupRight.bulkCreate(
             defaultrights.map(right => ({ unitid: null, groupid: groupId, right })),
             { transaction: ta }
@@ -119,7 +119,7 @@ export default {
             public: "true"
           })
         );
-        console.log("d");*/
+        console.log("d");
 
         await Promise.all(dbqueries);
         console.log("e");
