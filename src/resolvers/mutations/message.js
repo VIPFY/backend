@@ -62,13 +62,13 @@ export default {
         // create MessageGroupMembership for sender and receiver
         dbqueries.push(
           models.MessageGroupMembership.create(
-            { groupid: group, unitid },
+            { groupid: group.id, unitid },
             { transaction: ta }
           )
         );
         dbqueries.push(
           models.MessageGroupMembership.create(
-            { groupid: group, unitid: receiver },
+            { groupid: group.id, unitid: receiver },
             { transaction: ta }
           )
         );
