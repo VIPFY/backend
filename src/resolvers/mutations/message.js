@@ -46,8 +46,8 @@ export default {
           throw new Error("The receiver doesn't exist!");
         }
 
-        const p3 = parentAdminCheck(models, unitid);
-        const p4 = parentAdminCheck(models, receiver);
+        const p3 = parentAdminCheck(models, senderExists);
+        const p4 = parentAdminCheck(models, receiverExists);
 
         const [senderHas, receiverHas] = await Promise.all([p3, p4]);
 
