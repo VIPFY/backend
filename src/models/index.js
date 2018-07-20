@@ -51,6 +51,7 @@ const db = {
   MessageData: sequelize.import("./messageData"),
   MessageGroup: sequelize.import("./messageGroup"),
   MessageGroupMembership: sequelize.import("./messageGroupMembership"),
+  MessageGroupRight: sequelize.import("./messageGroupRight"),
   MessageTag: sequelize.import("./messageTag"),
   Newsletter: sequelize.import("./newsletter"),
   ParentUnit: sequelize.import("./parentUnit"),
