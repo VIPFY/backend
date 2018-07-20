@@ -18,6 +18,12 @@ export const createPassword = async email => {
   return newHash;
 };
 
+/**
+ * Add the property company to the user object and set it to the companyid of the user
+ * 
+ * @param {*} models 
+ * @param {*} user 
+ */
 export const parentAdminCheck = async (models, user) => {
   await models.sequelize
     .query(
@@ -57,3 +63,27 @@ export const checkDepartment = async (models, company, departmentid) => {
 
   return true;
 };
+
+
+/**
+ * check if sup is a superset of sub, i.e. if each element of sub is in sup
+ * @param {*} sup 
+ * @param {*} sub 
+ */
+export const superset = (sup, sub) => {
+  sup.sort();
+  sub.sort();
+  var i, j;
+  for (i=0,j=0; i<sup.length && j<sub.length;) {
+      if (sup[i] < sub[j]) {
+          ++i;
+      } else if (sup[i] == sub[j]) {
+          ++i; ++j;
+      } else {
+          // sub[j] not in sup, so sub not subbag
+          return false;
+      }
+  }
+  // make sure there are no elements left in sub
+  return j == sub.length;
+}

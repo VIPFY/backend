@@ -1,43 +1,67 @@
 import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 import { NEW_MESSAGE, pubsub } from "../../constants";
-import { parentAdminCheck } from "../../helpers/functions";
+import { parentAdminCheck, superset } from "../../helpers/functions";
 
 /* eslint-disable no-unused-vars */
 export default {
+
+  /**
+   * Create a new group between two people. This is only possible if the current user and
+   * the receiver are in the same company. Return an error otherwise
+   */
   startConversation: async (parent, { receiver, defaultrights }, { models, token }) => {
+    if(!superset(["speak", "upload", "highlight", "modifyown", "deleteown", "deleteother"], defaultrights)) {
+      throw new Error("defaultrights contains illegal right")
+    }
     try {
-      const {
-        user: { unitid, company }
-      } = decode(token);
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid, company }
+        } = decode(token);
 
-      const p1 = models.User.findById(unitid);
-      const p2 = models.User.findById(receiver);
+        const p1 = models.User.findById(unitid, { transaction: ta });
+        const p2 = models.User.findById(receiver, { transaction: ta });
 
-      const [senderExists, receiverExists] = await Promise.all([p1, p2]);
+        const [senderExists, receiverExists] = await Promise.all([p1, p2]);
 
-      if (!receiverExists) {
-        throw new Error("The receiver doesn't exist!");
-      }
+        if (!receiverExists) {
+          throw new Error("The receiver doesn't exist!");
+        }
 
-      const p3 = parentAdminCheck(models, sender);
-      const p4 = parentAdminCheck(models, group);
+        const p3 = parentAdminCheck(models, unitid);
+        const p4 = parentAdminCheck(models, receiver);
 
-      const [senderHas, receiverHas] = await Promise.all([p3, p4]);
+        const [senderHas, receiverHas] = await Promise.all([p3, p4]);
 
-      if (senderHas.company != receiverHas.company) {
-        throw new Error("Sender and receiver are not in the same Company!");
-      }
+        if (senderHas.company != receiverHas.company) {
+          throw new Error("Sender and receiver are not in the same Company!");
+        }
 
-      const group = await models.MessageGroup.create();
-      // create MessageGroupMembership for sender and receiver
-      const messageGroup = models.MessageGroupMembership.create();
-      // default Rechte anlegen
-      // const
+        const group = await models.MessageGroup.create({}, { transaction: ta });
+        // create MessageGroupMembership for sender and receiver
+        const p4 = models.MessageGroupMembership.create({groupid: group, unitid: unitid}, { transaction: ta });
+        const p5 = models.MessageGroupMembership.create({groupid: group, unitid: receiver}, { transaction: ta });
 
-      // system message erstellen sender null, messagetext leer, payload object system message
+        //create default rights
+        const p6 = models.MessageGroupRight.bulkCreate(defaultrights.map(right => {return {unitid: null, groupid: group, right: right}}), { transaction: ta });
 
-      // tag für system message
+        //create rights for sender and receiver
+        const p7 = models.MessageGroupRight.bulkCreate(defaultrights.map(right => {return {unitid: unitid, groupid: group, right: right}}), { transaction: ta });
+        const p8 = models.MessageGroupRight.bulkCreate(defaultrights.map(right => {return {unitid: receiver, groupid: group, right: right}}), { transaction: ta });
+
+        // system message erstellen sender null, messagetext leer, payload object system message
+        const payload = {
+          systemmessage: {
+            type: "groupcreated",
+            actor: unitid
+          }
+        }
+        const message = await models.MessageData.create({messagetext: "", receiver: group, sender: null, payload: payload})
+        const p9 = models.MessageTag.create({unitid, messageid: message, tag: "system", public: "true"});
+
+        await Promise.all([p4, p5, p6, p7, p8, p9])
+      });
     } catch (err) {
       throw new Error(err.message);
     }
@@ -47,7 +71,7 @@ export default {
   // speak
   // upload
   // highlight
-  // modifiyown
+  // modifyown
   // deleteown
   // deleteother
 
