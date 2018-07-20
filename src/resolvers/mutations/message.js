@@ -57,6 +57,7 @@ export default {
 
         console.log("c");
         const group = await models.MessageGroup.create({}, { transaction: ta });
+        console.log("GROUP", group);
         const dbqueries = [];
         // create MessageGroupMembership for sender and receiver
         dbqueries.push(
@@ -71,6 +72,8 @@ export default {
             { transaction: ta }
           )
         );
+
+        console.log("BULK1", defaultrights.map(right => ({ unitid: null, groupid: group, right })));
 
         // create default rights
         dbqueries.push(
