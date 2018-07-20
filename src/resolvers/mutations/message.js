@@ -77,7 +77,7 @@ export default {
         console.log("BULK1", defaultrights.map(right => ({ unitid: null, groupid: groupId, right })));
 
         // create default rights
-        dbqueries.push(
+        /*dbqueries.push(
           models.MessageGroupRight.bulkCreate(
             defaultrights.map(right => ({ unitid: null, groupid: groupId, right })),
             { transaction: ta }
@@ -99,7 +99,7 @@ export default {
         );
 
         // system message erstellen sender null, messagetext leer, payload object system message
-        /*const payload = {
+        const payload = {
           systemmessage: {
             type: "groupcreated",
             actor: unitid
