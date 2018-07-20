@@ -114,6 +114,9 @@ export default {
         );
 
         await Promise.all(dbqueries);
+        return {
+          ok: true
+        };
       });
     } catch (err) {
       throw new Error(err.message);
