@@ -57,7 +57,7 @@ export default {
 
         console.log("c");
         const group = await models.MessageGroup.create({}, { transaction: ta });
-        const groupId = group.dataValues.id;
+        const groupId = group.messagegroup_data.dataValues.id;
         console.log("GROUP", group);
         const dbqueries = [];
         // create MessageGroupMembership for sender and receiver
