@@ -61,6 +61,12 @@ export default {
     }
   }),
 
+
+  /**
+   * Return all messages the current user can see from the messagegroup "group"
+   * (i.e. all messages between visibletimestart and visibletimeend of all group memberships
+   * of the user for that group), sorted by sendtime.
+   */
   fetchDialog: requiresAuth.createResolver(async (parent, { groupid }, { models, token }) => {
     try {
       const {
@@ -71,7 +77,7 @@ export default {
         .query(
           `SELECT md.* FROM message_data AS md INNER JOIN messagegroupmembership_data
         mgmd ON md.sendtime BETWEEN mgmd.visibletimestart AND mgmd.visibletimeend
-        WHERE mgmd.unitid = :unitid AND mgmd.groupid = :groupid`,
+        WHERE mgmd.unitid = :unitid AND mgmd.groupid = :groupid ORDER BY md.sendtime`,
           { replacements: { unitid, groupid } }
         )
         .spread(res => res);
