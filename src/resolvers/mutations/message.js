@@ -57,28 +57,29 @@ export default {
 
         console.log("c");
         const group = await models.MessageGroup.create({}, { transaction: ta });
+        const groupId = group.dataValues.id;
         console.log("GROUP", group);
         const dbqueries = [];
         // create MessageGroupMembership for sender and receiver
         dbqueries.push(
           models.MessageGroupMembership.create(
-            { groupid: group.id, unitid },
+            { groupid: groupId, unitid },
             { transaction: ta }
           )
         );
         dbqueries.push(
           models.MessageGroupMembership.create(
-            { groupid: group.id, unitid: receiver },
+            { groupid: groupId, unitid: receiver },
             { transaction: ta }
           )
         );
 
-        console.log("BULK1", defaultrights.map(right => ({ unitid: null, groupid: group.id, right })));
+        console.log("BULK1", defaultrights.map(right => ({ unitid: null, groupid: groupId, right })));
 
         // create default rights
         dbqueries.push(
           models.MessageGroupRight.bulkCreate(
-            defaultrights.map(right => ({ unitid: null, groupid: group.id, right })),
+            defaultrights.map(right => ({ unitid: null, groupid: groupId, right })),
             { transaction: ta }
           )
         );
@@ -86,13 +87,13 @@ export default {
         // create rights for sender and receiver
         dbqueries.push(
           models.MessageGroupRight.bulkCreate(
-            defaultrights.map(right => ({ unitid: unitid, groupid: group.id, right })),
+            defaultrights.map(right => ({ unitid: unitid, groupid: groupId, right })),
             { transaction: ta }
           )
         );
         dbqueries.push(
           models.MessageGroupRight.bulkCreate(
-            defaultrights.map(right => ({ unitid: receiver, groupid: group.id, right })),
+            defaultrights.map(right => ({ unitid: receiver, groupid: groupId, right })),
             { transaction: ta }
           )
         );
@@ -106,7 +107,7 @@ export default {
         };
         const message = await models.MessageData.create({
           messagetext: "",
-          receiver: group.id,
+          receiver: groupId,
           sender: null,
           payload
         });
