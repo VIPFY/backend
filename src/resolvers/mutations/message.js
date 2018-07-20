@@ -73,12 +73,12 @@ export default {
           )
         );
 
-        console.log("BULK1", defaultrights.map(right => ({ unitid: null, groupid: group, right })));
+        console.log("BULK1", defaultrights.map(right => ({ unitid: null, groupid: group.id, right })));
 
         // create default rights
         dbqueries.push(
           models.MessageGroupRight.bulkCreate(
-            defaultrights.map(right => ({ unitid: null, groupid: group, right })),
+            defaultrights.map(right => ({ unitid: null, groupid: group.id, right })),
             { transaction: ta }
           )
         );
@@ -86,13 +86,13 @@ export default {
         // create rights for sender and receiver
         dbqueries.push(
           models.MessageGroupRight.bulkCreate(
-            defaultrights.map(right => ({ unitid: unitid, groupid: group, right })),
+            defaultrights.map(right => ({ unitid: unitid, groupid: group.id, right })),
             { transaction: ta }
           )
         );
         dbqueries.push(
           models.MessageGroupRight.bulkCreate(
-            defaultrights.map(right => ({ unitid: receiver, groupid: group, right })),
+            defaultrights.map(right => ({ unitid: receiver, groupid: group.id, right })),
             { transaction: ta }
           )
         );
@@ -106,13 +106,13 @@ export default {
         };
         const message = await models.MessageData.create({
           messagetext: "",
-          receiver: group,
+          receiver: group.id,
           sender: null,
           payload
         });
         dbqueries.push(
           models.MessageTag.create({
-            unitid,
+            unitid: null,
             messageid: message,
             tag: "system",
             public: "true"
