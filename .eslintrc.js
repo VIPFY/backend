@@ -22,7 +22,8 @@ module.exports = {
     "no-new": "off",
     "no-plusplus": "off",
     "no-param-reassign": "off",
-    radix: "off"
+    radix: "off",
+    "linebreak-style": "off"
   },
   globals: {
     describe: 1,
