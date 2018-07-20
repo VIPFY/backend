@@ -99,7 +99,7 @@ export default {
         );
 
         // system message erstellen sender null, messagetext leer, payload object system message
-        const payload = {
+        /*const payload = {
           systemmessage: {
             type: "groupcreated",
             actor: unitid
@@ -119,7 +119,7 @@ export default {
             public: "true"
           })
         );
-        console.log("d");
+        console.log("d");*/
 
         await Promise.all(dbqueries);
         console.log("e");
