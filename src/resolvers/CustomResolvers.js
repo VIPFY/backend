@@ -67,6 +67,7 @@ export const find = data => {
           });
 
         default: {
+          console.log("FIND", seach, data, parent);
           return models[data[search]].findById(parent[search]);
         }
       }
