@@ -1,4 +1,4 @@
-export default (sequelize, { DATE, NOW, TEXT, JSONB }) => {
+export default (sequelize, { DATE, NOW, TEXT, JSONB, BIGINT }) => {
   const MessageData = sequelize.define("message_data", {
     sendtime: {
       type: DATE,
@@ -10,7 +10,9 @@ export default (sequelize, { DATE, NOW, TEXT, JSONB }) => {
     },
     payload: JSONB,
     deletedat: DATE,
-    modified: DATE
+    modified: DATE,
+    receiver: BIGINT,
+    sender: BIGINT
   });
 
   MessageData.associate = ({ Unit, MessageGroup }) => {
