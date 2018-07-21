@@ -110,6 +110,7 @@ export default {
       Promise.all(dbqueries);
       dbqueries.length = 0;
       console.log("c5");
+      
 
       // system message erstellen sender null, messagetext leer, payload object system message
       const payload = {
@@ -118,6 +119,12 @@ export default {
           actor: unitid
         }
       };
+      console.log({
+        messagetext: "",
+        receiver: groupId,
+        sender: null,
+        payload
+      });
       const message = await models.MessageData.create({
         messagetext: "",
         receiver: groupId,
@@ -125,6 +132,7 @@ export default {
         payload
       },
       { /*transaction: ta*/ });
+      console.log(message);
       console.log("c6");
       console.log({
         unitid: null,
