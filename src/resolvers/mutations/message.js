@@ -121,8 +121,8 @@ export default {
             messageid: message.dataValues.id,
             tag: "system",
             public: "true"
-          }),
-          { transaction: ta }
+          },
+          { transaction: ta })
         );
 
         await Promise.all(dbqueries);
