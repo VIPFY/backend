@@ -59,6 +59,8 @@ export const find = data => {
   const searches = {};
   Object.keys(data).map(search => {
     searches[search] = (parent, args, { models }) => {
+      console.error("FIND");
+      console.error("FIND", search, data, parent);
       switch (data[search]) {
         case "Human":
         case "Department":
