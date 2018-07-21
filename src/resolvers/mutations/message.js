@@ -3,7 +3,6 @@ import { requiresAuth } from "../../helpers/permissions";
 import { NEW_MESSAGE, pubsub } from "../../constants";
 import { parentAdminCheck, superset } from "../../helpers/functions";
 
-/* eslint-disable no-unused-vars */
 export default {
   /**
    * Create a new group between two people. This is only possible if the current user and
@@ -33,6 +32,7 @@ export default {
     try {
       models.sequelize.transaction(async ta => {
         const {
+          /* eslint-disable no-unused-vars */
           user: { unitid, company }
         } = decode(token);
 
@@ -45,7 +45,7 @@ export default {
           throw new Error("The receiver doesn't exist!");
         }
 
-        //annotate users with their company
+        // annotate users with their company
         const p3 = parentAdminCheck(models, senderExists);
         const p4 = parentAdminCheck(models, receiverExists);
         const [senderHas, receiverHas] = await Promise.all([p3, p4]);
@@ -74,25 +74,37 @@ export default {
         // create default rights
         dbqueries.push(
           models.MessageGroupRight.bulkCreate(
-            defaultrights.map(right => ({ unitid: null, groupid: groupId, right })),
+            defaultrights.map(right => ({
+              unitid: null,
+              groupid: groupId,
+              right
+            })),
             { transaction: ta }
           )
         );
 
         // create rights for sender and receiver
+        /* eslint-disable object-shorthand */
         dbqueries.push(
           models.MessageGroupRight.bulkCreate(
-            defaultrights.map(right => ({ unitid: unitid, groupid: groupId, right })),
+            defaultrights.map(right => ({
+              unitid: unitid,
+              groupid: groupId,
+              right
+            })),
             { transaction: ta }
           )
         );
         dbqueries.push(
           models.MessageGroupRight.bulkCreate(
-            defaultrights.map(right => ({ unitid: receiver, groupid: groupId, right })),
+            defaultrights.map(right => ({
+              unitid: receiver,
+              groupid: groupId,
+              right
+            })),
             { transaction: ta }
           )
         );
-        
 
         // system message erstellen sender null, messagetext leer, payload object system message
         const payload = {
@@ -107,22 +119,26 @@ export default {
           sender: null,
           payload
         });
-        const message = await models.MessageData.create({
-          messagetext: "",
-          receiver: groupId,
-          sender: null,
-          payload
-        },
-        { transaction: ta });
+        const message = await models.MessageData.create(
+          {
+            messagetext: "",
+            receiver: groupId,
+            sender: null,
+            payload
+          },
+          { transaction: ta }
+        );
 
         dbqueries.push(
-          models.MessageTag.create({
-            unitid: null,
-            messageid: message.dataValues.id,
-            tag: "system",
-            public: "true"
-          },
-          { transaction: ta })
+          models.MessageTag.create(
+            {
+              unitid: null,
+              messageid: message.dataValues.id,
+              tag: "system",
+              public: "true"
+            },
+            { transaction: ta }
+          )
         );
 
         await Promise.all(dbqueries);
