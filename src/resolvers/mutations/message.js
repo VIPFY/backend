@@ -128,7 +128,7 @@ export default {
       dbqueries.push(
         models.MessageTag.create({
           unitid: null,
-          messageid: message,
+          messageid: message.dataValues.id,
           tag: "system",
           public: "true"
         }),
