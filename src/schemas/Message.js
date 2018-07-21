@@ -24,13 +24,6 @@ export const types = `
     deletedat: Date
   }
 
-  type MessageGroup {
-    id: ID!
-    image: String!
-    name: String!
-    foundingdate: Date!
-  }
-
   type MessageGroupMembership {
     id: ID!
     groupid: MessageGroup!
@@ -68,7 +61,7 @@ export const types = `
     name: String
     image: String
     foundingdate: Date!
-    lastmmessage: MessageData
+    lastmessage: MessageData
     memberships: [MessageGroupMembership]
   }
 

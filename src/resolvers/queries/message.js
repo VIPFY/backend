@@ -70,7 +70,7 @@ export default {
               AND md.sendtime BETWEEN mgmd.visibletimestart AND mgmd.visibletimeend
             ORDER BY sendtime DESC LIMIT 1
           ) as lastmessage,
-          (SELECT array_agg(id) FROM messagegroupmembership_data WHERE groupid = messagegroup_data.id)
+          (SELECT array_agg(id) FROM messagegroupmembership_data WHERE groupid = messagegroup_data.id) as memberships
         FROM messagegroup_data`,
           { replacements: { unitid } }
         )
