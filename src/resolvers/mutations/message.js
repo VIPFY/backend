@@ -126,6 +126,12 @@ export default {
       },
       { /*transaction: ta*/ });
       console.log("c6");
+      console.log({
+        unitid: null,
+        messageid: message.dataValues.id,
+        tag: "system",
+        public: "true"
+      });
       dbqueries.push(
         models.MessageTag.create({
           unitid: null,
