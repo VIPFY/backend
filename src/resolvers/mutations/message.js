@@ -125,6 +125,7 @@ export default {
         payload
       },
       { /*transaction: ta*/ });
+      console.log("c6");
       dbqueries.push(
         models.MessageTag.create({
           unitid: null,
