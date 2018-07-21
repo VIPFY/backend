@@ -90,7 +90,7 @@ export default {
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
   Review: find({ reviewer: "User", appid: "App", answerto: "Review" }),
-  AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
+  AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "[BoughtPlan]" }),
   ReviewHelpful: find({ reviewer: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),
   User: find({ company: "Department" }),

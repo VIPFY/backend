@@ -67,8 +67,14 @@ export const find = data => {
           });
 
         default: {
-          console.log("FIND", seach, data, parent);
-          return models[data[search]].findById(parent[search]);
+          if (data[search][0] == "[") {
+            // return array of objects
+            data[search] = data[search].substring(1, data[search].length - 1);
+            return models[data[search]].findAll({ where: { id: parent[search] } });
+          } else {
+            // single object
+            return models[data[search]].findById(parent[search]);
+          }
         }
       }
     };
