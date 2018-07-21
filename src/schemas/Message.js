@@ -15,24 +15,24 @@ export const types = `
 
 # The original table which contains the messages
   type MessageData {
-    id: Int!
+    id: ID!
     sendtime: Date!
     messagetext: String!
-    receiver: PublicUser!
+    receiver: MessageGroup!
     sender: PublicUser!
     payload: JSON
     deletedat: Date
   }
 
   type MessageGroup {
-    id: Int!
+    id: ID!
     image: String!
     name: String!
     foundingdate: Date!
   }
 
   type MessageGroupMembership {
-    id: Int!
+    id: ID!
     groupid: MessageGroup!
     unitid: Unit!
     visibletimestart: Date
@@ -43,7 +43,7 @@ export const types = `
   }
 
   type MessageTag {
-    id: Int!
+    id: ID!
     unitid: Unit!
     messageid: Message!
     tag: String
@@ -52,7 +52,7 @@ export const types = `
   }
 
   type PublicUser {
-    id: Int!
+    id: ID!
     firstname: String
     middlename: String
     lastname: String
@@ -61,6 +61,15 @@ export const types = `
     birthday: Date
     language: String
     profilepicture: String
+  }
+
+  type MessageGroup {
+    id: ID!
+    name: String
+    image: String
+    foundingdate: Date!
+    lastmmessage: MessageData
+    memberships: [MessageGroupMembership]
   }
 
   enum MESSAGE_COLUMN {
@@ -74,6 +83,7 @@ export const queries = `
   fetchMessages(read: Boolean): [Message]
   fetchLastDialogMessages: [MessageData]
   fetchDialog(groupid: Int!): [MessageData]
+  fetchGroups: [MessageGroup]
 `;
 
 export const mutations = `

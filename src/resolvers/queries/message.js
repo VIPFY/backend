@@ -49,5 +49,36 @@ export default {
     } catch (err) {
       throw new Error(err.message);
     }
-  })
+  }),
+
+  fetchGroups: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { unitid }
+      } = decode(token);
+
+      const groups = await models.sequelize
+        .query(
+          `SELECT
+          messagegroup_data.*,
+          (
+            SELECT md.id
+            FROM message_data md
+              INNER JOIN messagegroupmembership_data mgmd ON (mgmd.unitid = :unitid AND mgmd.groupid = messagegroup_data.id)
+            WHERE
+              receiver = messagegroup_data.id
+              AND md.sendtime BETWEEN mgmd.visibletimestart AND mgmd.visibletimeend
+            ORDER BY sendtime DESC LIMIT 1
+          ) as lastmessage,
+          (SELECT array_agg(id) FROM messagegroupmembership_data WHERE groupid = messagegroup_data.id)
+        FROM messagegroup_data`,
+          { replacements: { unitid } }
+        )
+        .spread(res => res);
+
+      return groups;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
 };
