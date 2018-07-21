@@ -16,12 +16,13 @@ export const types = `
 # The original table which contains the messages
   type MessageData {
     id: ID!
-    sendtime: Date!
-    messagetext: String!
     receiver: MessageGroup!
     sender: PublicUser!
+    sendtime: Date!
+    messagetext: String!
     payload: JSON
     deletedat: Date
+    modifiedat: Date
   }
 
   type MessageGroupMembership {
@@ -30,9 +31,7 @@ export const types = `
     unitid: Unit!
     visibletimestart: Date
     visibletimeend: Date
-    rights: [String]
     lastreadmessageid: Int
-    archived: Boolean
   }
 
   type MessageTag {

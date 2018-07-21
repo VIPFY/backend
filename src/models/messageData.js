@@ -10,7 +10,7 @@ export default (sequelize, { DATE, NOW, TEXT, JSONB, BIGINT }) => {
     },
     payload: JSONB,
     deletedat: DATE,
-    modified: DATE,
+    modifiedat: DATE,
     receiver: BIGINT,
     sender: BIGINT
   });
