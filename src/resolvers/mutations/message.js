@@ -14,7 +14,6 @@ export default {
     { receiver, defaultrights },
     { models, token }
   ) => {
-    console.log("a");
     if (
       !superset(
         [
@@ -73,11 +72,6 @@ export default {
             { transaction: ta }
           )
         );
-        Promise.all(dbqueries);
-        dbqueries.length = 0;
-        console.log("c2");
-
-        console.log("BULK1", defaultrights.map(right => ({ unitid: null, groupid: groupId, right })));
 
         // create default rights
         dbqueries.push(
@@ -86,9 +80,6 @@ export default {
             { transaction: ta }
           )
         );
-        Promise.all(dbqueries);
-        dbqueries.length = 0;
-        console.log("c3");
 
         // create rights for sender and receiver
         dbqueries.push(
@@ -97,19 +88,12 @@ export default {
             { transaction: ta }
           )
         );
-        Promise.all(dbqueries);
-        dbqueries.length = 0;
-        console.log("c4");
         dbqueries.push(
           models.MessageGroupRight.bulkCreate(
             defaultrights.map(right => ({ unitid: receiver, groupid: groupId, right })),
             { transaction: ta }
           )
         );
-
-        Promise.all(dbqueries);
-        dbqueries.length = 0;
-        console.log("c5");
         
 
         // system message erstellen sender null, messagetext leer, payload object system message
