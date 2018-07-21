@@ -71,6 +71,7 @@ export const find = data => {
           if (data[search][0] == "[") {
             // return array of objects
             modelName = data[search].substring(1, data[search].length - 1);
+            console.error(modelName);
             return models[modelName].findAll({ where: { id: { $in: parent[search] } } });
           } else {
             // single object
