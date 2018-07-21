@@ -70,7 +70,7 @@ export const find = data => {
           if (data[search][0] == "[") {
             // return array of objects
             data[search] = data[search].substring(1, data[search].length - 1);
-            return models[data[search]].findAll({ where: { id: parent[search] } });
+            return models[data[search]].findAll({ where: { id: { $in: parent[search] } } });
           } else {
             // single object
             return models[data[search]].findById(parent[search]);
