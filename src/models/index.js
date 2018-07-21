@@ -24,7 +24,8 @@ const sequelize = new Sequelize(
       timestamps: false,
       freezeTableName: true
     },
-    logging: process.env.LOGGING ? data => console.log(data) : false
+    /* logging: process.env.LOGGING ? data => console.log(data) : false */
+    logging: data => console.log(data)
   }
 );
 
