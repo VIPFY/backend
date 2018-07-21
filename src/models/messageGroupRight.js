@@ -1,6 +1,8 @@
-export default (sequelize, { TEXT }) => {
+export default (sequelize, { TEXT, BIGINT }) => {
   const MessageGroupRight = sequelize.define("messagegroupright_data", {
-    right: TEXT
+    right: TEXT,
+    unitid: BIGINT,
+    groupid: BIGINT
   });
 
   MessageGroupRight.associate = ({ Unit, MessageGroup }) => {
