@@ -45,19 +45,17 @@ export default {
           throw new Error("The receiver doesn't exist!");
         }
 
+        //annotate users with their company
         const p3 = parentAdminCheck(models, senderExists);
         const p4 = parentAdminCheck(models, receiverExists);
-
         const [senderHas, receiverHas] = await Promise.all([p3, p4]);
 
         if (senderHas.company != receiverHas.company) {
           throw new Error("Sender and receiver are not in the same Company!");
         }
 
-        console.log("c");
         const group = await models.MessageGroup.create({}, { transaction: ta });
         const groupId = group.dataValues.id;
-        console.log("GROUP", group);
         const dbqueries = [];
         // create MessageGroupMembership for sender and receiver
         dbqueries.push(
@@ -116,14 +114,7 @@ export default {
           payload
         },
         { transaction: ta });
-        console.log(message);
-        console.log("c6");
-        console.log({
-          unitid: null,
-          messageid: message.dataValues.id,
-          tag: "system",
-          public: "true"
-        });
+
         dbqueries.push(
           models.MessageTag.create({
             unitid: null,
@@ -133,10 +124,8 @@ export default {
           }),
           { transaction: ta }
         );
-        console.log("d");
 
         await Promise.all(dbqueries);
-        console.log("e");
         return {
           ok: true
         };
