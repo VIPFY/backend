@@ -76,6 +76,43 @@ export const requiresRight = rights =>
     }
   });
 
+export const requiresMessageGroupRights = rights =>
+  requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { unitid: unit }
+      } = await decode(token);
+
+      let group;
+      if ("group" in args) {
+        group = args.group;
+      } else if ("groupid" in args) {
+        group = args.groupid;
+      } else if ("message" in args) {
+        const message = await models.MessageData.findById(args.message, { raw: true });
+        console.log("MESSAGErights", message);
+        group = message.receiver;
+      } else {
+        throw new Error("can't find group to check permission against");
+      }
+
+      const hasRights = await models.MessageGroupRight.findAll({
+        where: {
+          right: rights,
+          unit,
+          group,
+        },
+        raw: true
+      });
+
+      if (hasRights.length !== rights.length) {
+        throw new Error("You don't have the necessary rights!");
+      }
+    } catch (err) {
+      throw new Error("Opps, something went wrong. Please report this error with id auth_2");
+    }
+  });
+
 export const requiresVipfyAdmin = requiresAuth.createResolver(async (parent, args, { token }) => {
   try {
     const {
