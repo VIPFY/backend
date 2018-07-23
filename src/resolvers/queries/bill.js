@@ -56,7 +56,9 @@ export default {
     try {
       const allPlans = await models.Plan.findAll({ where: { appid }, order: [["price", "ASC"]] });
       // Filter out the main plans
-      const mainPlans = allPlans.filter(plan => plan.mainplan == null);
+      const mainPlans = allPlans.filter(
+        plan => plan.mainplan == null && (plan.enddate > Date.now() || plan.enddate == null)
+      );
       // Add to each main plan a property sub plan to store them later
       mainPlans.forEach(mainPlan => {
         mainPlan.subplans = [];
@@ -65,11 +67,16 @@ export default {
       const subPlans = allPlans.filter(plan => plan.mainplan != null);
       // Add the sub plans to it's main plan
       subPlans.forEach(subPlan => {
-        mainPlans.forEach(mainPlan => {
-          if (subPlan.mainplan == mainPlan.id) {
-            mainPlan.subplans.push(subPlan);
-          }
-        });
+        if (subPlan.enddate == null || subPlan.enddate > Date.now()) {
+          mainPlans.forEach(mainPlan => {
+            if (
+              subPlan.mainplan == mainPlan.id &&
+              (mainPlan.enddate == null || mainPlan.enddate > Date.now())
+            ) {
+              mainPlan.subplans.push(subPlan);
+            }
+          });
+        }
       });
 
       return mainPlans;
