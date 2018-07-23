@@ -38,11 +38,14 @@ export default {
 
           const plans = await models.Plan.findAll({
             where: { id: planIds },
-            attributes: ["price", "id", "appid", "name", "numlicences"],
+            attributes: ["price", "id", "appid", "name", "numlicences", "enddate"],
             raw: true
           });
 
-          plans.forEach(({ price, name, numlicences }) => {
+          plans.forEach(({ price, name, numlicences, enddate }) => {
+            if (enddate < Date.now()) {
+              throw new Error(`The plan ${name} has already expired!`);
+            }
             billItems.push({
               description: name,
               quantity: numlicences,

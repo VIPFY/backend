@@ -93,14 +93,14 @@ export const requiresMessageGroupRights = rights =>
         console.log("MESSAGErights", message);
         group = message.receiver;
       } else {
-        throw new Error("can't find group to check permission against");
+        throw new Error("Can't find group to check permission against");
       }
 
       const hasRights = await models.MessageGroupRight.findAll({
         where: {
           right: rights,
           unit,
-          group,
+          group
         },
         raw: true
       });
@@ -109,7 +109,7 @@ export const requiresMessageGroupRights = rights =>
         throw new Error("You don't have the necessary rights!");
       }
     } catch (err) {
-      throw new Error("Opps, something went wrong. Please report this error with id auth_2");
+      throw new Error("Oops, something went wrong. Please report this error with id auth_2");
     }
   });
 

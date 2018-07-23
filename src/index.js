@@ -71,8 +71,8 @@ app.use(
       schema,
       context: {
         models,
-        // token: ENVIRONMENT == "development" ? TOKEN_DEVELOPMENT : token,
-        token,
+        token: ENVIRONMENT == "development" ? TOKEN_DEVELOPMENT : token,
+        // token,
         SECRET,
         SECRET_TWO
       },
