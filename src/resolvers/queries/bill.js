@@ -54,7 +54,7 @@ export default {
 
   fetchPlans: async (parent, { appid }, { models }) => {
     try {
-      const allPlans = await models.Plan.findAll({ where: { appid } });
+      const allPlans = await models.Plan.findAll({ where: { appid }, order: [["price", "ASC"]] });
       // Filter out the main plans
       const mainPlans = allPlans.filter(plan => plan.mainplan == null);
       // Add to each main plan a property sub plan to store them later

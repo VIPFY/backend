@@ -1,8 +1,5 @@
 import { decode } from "jsonwebtoken";
-import {
-  requiresAuth,
-  requiresMessageGroupRights
-} from "../../helpers/permissions";
+import { requiresAuth, requiresMessageGroupRights } from "../../helpers/permissions";
 import { NEW_MESSAGE, pubsub } from "../../constants";
 import { parentAdminCheck, superset } from "../../helpers/functions";
 
@@ -15,14 +12,7 @@ export default {
     async (parent, { receiver, defaultrights }, { models, token }) => {
       if (
         !superset(
-          [
-            "speak",
-            "upload",
-            "highlight",
-            "modifyown",
-            "deleteown",
-            "deleteother"
-          ],
+          ["speak", "upload", "highlight", "modifyown", "deleteown", "deleteother"],
           defaultrights
         )
       ) {
@@ -54,18 +44,12 @@ export default {
             throw new Error("Sender and receiver are not in the same Company!");
           }
 
-          const group = await models.MessageGroup.create(
-            {},
-            { transaction: ta }
-          );
+          const group = await models.MessageGroup.create({}, { transaction: ta });
           const groupId = group.dataValues.id;
           const dbqueries = [];
           // create MessageGroupMembership for sender and receiver
           dbqueries.push(
-            models.MessageGroupMembership.create(
-              { groupid: groupId, unitid },
-              { transaction: ta }
-            )
+            models.MessageGroupMembership.create({ groupid: groupId, unitid }, { transaction: ta })
           );
           dbqueries.push(
             models.MessageGroupMembership.create(
@@ -155,79 +139,69 @@ export default {
     }
   ),
 
-  // rights
-  // speak
-  // upload
-  // highlight
-  // modifyown
-  // deleteown
-  // deleteother
-
   /**
    * post a message to the group with the supplied message,
    * and call markAsRead with the id of the new message.
    * also sanitzes the message before posting
    */
-  sendMessage: requiresAuth
-    .requiresMessageGroupRights(["speak"])
-    .createResolver(async (parent, { group, message }, { models, token }) => {
-      try {
-        const {
-          /* eslint-disable no-unused-vars */
-          user: { unitid, company }
-        } = decode(token);
+  sendMessage: requiresAuth.createResolver(
+    requiresMessageGroupRights(["speak"]).createResolver(
+      async (parent, { group, message }, { models, token }) => {
+        try {
+          const {
+            /* eslint-disable no-unused-vars */
+            user: { unitid, company }
+          } = decode(token);
 
-        message = sanitizeMessage(message);
-        message = await models.MessageData.create({
-          messagetext: message,
-          sender: unitid,
-          receiver: group,
-          payload: {}
-        });
+          message = sanitizeMessage(message);
+          message = await models.MessageData.create({
+            messagetext: message,
+            sender: unitid,
+            receiver: group,
+            payload: {}
+          });
 
-        await updateLastReadMessage(models, unitid, group, message.dataValues.id);
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }),
-
-  setDeleteStatus: requiresAuth.createResolver(
-    async (parent, { id, type }, { models }) => {
-      const messageExists = await models.MessageData.findById(id);
-      if (!messageExists) throw new Error("Message doesn't exist!");
-
-      try {
-        await models.MessageData.update({ [type]: true }, { where: { id } });
-        return {
-          ok: true
-        };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
-  ),
-
-  setReadtime: requiresAuth.createResolver(
-    async (parent, { id }, { models }) => {
-      try {
-        const message = await models.MessageData.findById(id);
-        const { readtime } = message;
-
-        if (!readtime) {
-          const now = Date.now();
-          await models.MessageData.update({ readtime: now }, { where: { id } });
-          return {
-            ok: true,
-            id,
-            message: now
-          };
+          await updateLastReadMessage(models, unitid, group, message.dataValues.id);
+        } catch (err) {
+          throw new Error(err.message);
         }
-        throw new Error("Message already read");
-      } catch (err) {
-        throw new Error(err.message);
       }
-    }
+    )
   ),
+
+  setDeleteStatus: requiresAuth.createResolver(async (parent, { id, type }, { models }) => {
+    const messageExists = await models.MessageData.findById(id);
+    if (!messageExists) throw new Error("Message doesn't exist!");
+
+    try {
+      await models.MessageData.update({ [type]: true }, { where: { id } });
+      return {
+        ok: true
+      };
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
+
+  setReadtime: requiresAuth.createResolver(async (parent, { id }, { models }) => {
+    try {
+      const message = await models.MessageData.findById(id);
+      const { readtime } = message;
+
+      if (!readtime) {
+        const now = Date.now();
+        await models.MessageData.update({ readtime: now }, { where: { id } });
+        return {
+          ok: true,
+          id,
+          message: now
+        };
+      }
+      throw new Error("Message already read");
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
 
   sendMessage: async (parent, { groupid, message }, { models, token }) => {
     try {

@@ -3,6 +3,7 @@ import { weeblyApi } from "../../services/weebly";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
 
 /* eslint-disable default-case */
+const startTime = Date.now();
 
 export default {
   allApps: (parent, { limit, offset, sortOptions }, { models }) =>
@@ -29,7 +30,6 @@ export default {
 
   fetchLicences: requiresAuth.createResolver(
     async (parent, { licenceid }, { models, token }, info) => {
-      const startTime = Date.now();
       try {
         const {
           user: { unitid }
@@ -123,7 +123,25 @@ export default {
         where: { unitid, boughtplanid: bpIds }
       });
 
-      return licences;
+      // eslint-disable-next-line
+      const filteredLicences = licences.map(licence => {
+        if (licence.disabled) {
+          licence.agreed = false;
+          licence.key = null;
+        }
+
+        if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
+          licence.key = null;
+        }
+
+        if (licence.endtime) {
+          if (Date.parse(licence.endtime) < startTime) {
+            licence.key = null;
+          }
+        }
+      });
+
+      return filteredLicences;
     } catch (err) {
       throw new Error(err.message);
     }
@@ -176,7 +194,14 @@ export default {
           )
           .spread(res => res);
 
-        return userApps;
+        const sanitizedApps = [];
+        userApps.forEach(app => {
+          if (sanitizedApps.find(item => item.appid == app.appid) == undefined) {
+            sanitizedApps.push(app);
+          }
+        });
+
+        return sanitizedApps;
       } catch ({ message }) {
         throw new Error(message);
       }
