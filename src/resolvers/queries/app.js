@@ -176,7 +176,14 @@ export default {
           )
           .spread(res => res);
 
-        return userApps;
+        const sanitizedApps = [];
+        userApps.forEach(app => {
+          if (sanitizedApps.find(item => item.appid == app.appid) == undefined) {
+            sanitizedApps.push(app);
+          }
+        });
+
+        return sanitizedApps;
       } catch ({ message }) {
         throw new Error(message);
       }
