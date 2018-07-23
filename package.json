@@ -9,7 +9,7 @@
     "serve": "ENVIRONMENT=production node dist/index.js",
     "build": "rm -rf dist && babel src -d dist --ignore 'tests' --copy-files",
     "start": "ENVIRONMENT=development nodemon --exec babel-node src/index.js",
-    "start-token": "ENVIRONMENT=token nodemon --exec babel-node src/index.js",
+    "start-token": "ENVIRONMENT=development TOKEN_SET=TRUE nodemon --exec babel-node src/index.js",
     "test": "npm run prepare-test-db && ENVIRONMENT=testing jest --verbose --no-cache --forceExit",
     "play": "babel-node src/helpers/play.js",
     "prepare-test-db": "./prepare_vipfy_test_db.sh",

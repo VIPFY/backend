@@ -27,7 +27,7 @@ import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware"
 import { refreshTokens } from "./helpers/auth";
 
 const app = express();
-const ENVIRONMENT = process.env.ENVIRONMENT;
+const { ENVIRONMENT, TOKEN_SET } = process.env;
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
 let server;
@@ -71,7 +71,7 @@ app.use(
       schema,
       context: {
         models,
-        token: ENVIRONMENT == "token" ? TOKEN_DEVELOPMENT : token,
+        token: TOKEN_SET ? TOKEN_DEVELOPMENT : token,
         SECRET,
         SECRET_TWO
       },
