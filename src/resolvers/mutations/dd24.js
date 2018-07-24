@@ -6,9 +6,14 @@ export default {
     try {
       if (command == "AddDomain") {
         const result = await dd24Api(command, params);
-        console.log(result);
+
         return result;
+      } else if (command == "CheckDomain") {
+        const res = await dd24Api(command, params);
+
+        return res;
       }
+
       throw new Error("Not implemented now!");
     } catch (err) {
       throw new Error(err.message);

@@ -43,7 +43,7 @@ export default {
           });
 
           plans.forEach(({ price, name, numlicences, enddate }) => {
-            if (enddate < Date.now()) {
+            if (enddate && enddate < Date.now()) {
               throw new Error(`The plan ${name} has already expired!`);
             }
             billItems.push({

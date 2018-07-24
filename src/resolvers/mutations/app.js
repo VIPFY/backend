@@ -114,6 +114,7 @@ export default {
           } else if (validPlan && validPlan.endtime && validPlan.endtime < Date.now()) {
             return {
               error: {
+                ok: false,
                 code: 6,
                 message: "The plan expired."
               }

@@ -6,8 +6,8 @@ const apiWSDL = "https://api-ote-2.domaindiscount24.com:4424/?wsdl";
 const auth = {
   params: {
     reseller: DD24_KEY,
-    password: DD24_SECRET,
-  },
+    password: DD24_SECRET
+  }
 };
 
 export default async (command, parameter) => {
@@ -16,15 +16,17 @@ export default async (command, parameter) => {
   // Eleminate copying mistakes
   const properCommand = `${command}Async`;
   try {
-    const result = await soap.createClientAsync(apiWSDL).then(client => client[properCommand](args)
-      .then((res) => {
-        console.log(res[`${command}Result`]);
-        return res[`${command}Result`];
-      })
-      .catch((err) => {
-        console.log(err);
-        return err;
-      }));
+    const result = await soap.createClientAsync(apiWSDL).then(client =>
+      client[properCommand](args)
+        .then(res => {
+          console.log(res[0][`${command}Result`]);
+          return res[0][`${command}Result`];
+        })
+        .catch(err => {
+          console.log(err);
+          return err;
+        })
+    );
 
     return result;
   } catch (err) {

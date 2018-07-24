@@ -47,6 +47,9 @@ export const formatFilename = filename => {
   return `${date}-${randomString}-${cleanFilename}`;
 };
 
+/*
+* Check whether the department belongs to the company
+*/
 export const checkDepartment = async (models, company, departmentid) => {
   if (company == departmentid) return true;
 

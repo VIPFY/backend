@@ -23,6 +23,7 @@ export default (
     length: VIRTUAL,
     teams: BOOLEAN,
     marketplace: BOOLEAN,
+    domains: BOOLEAN,
     billing: BOOLEAN
   });
 

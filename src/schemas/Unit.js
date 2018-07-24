@@ -45,6 +45,7 @@ export const types = `
     payingoptions: JSON
     company: Department
     teams: Boolean
+    domains: Boolean
     marketplace: Boolean
     billing: Boolean
   }
