@@ -14,7 +14,6 @@ import authMutations from "./mutations/auth";
 import userMutations from "./mutations/unit";
 import reviewMutations from "./mutations/review";
 import commonMutations from "./mutations/common";
-import dd24Mutations from "./mutations/dd24";
 import departmentMutations from "./mutations/department";
 import billMutations from "./mutations/bill";
 import contactMutations from "./mutations/contact";
@@ -46,7 +45,6 @@ const Mutation = Object.assign(
   userMutations,
   reviewMutations,
   commonMutations,
-  dd24Mutations,
   billMutations,
   contactMutations,
   demoMutations

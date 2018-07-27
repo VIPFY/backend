@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import dd24Api from "../../services/dd24";
 import { requiresRight, requiresAuth } from "../../helpers/permissions";
 import createInvoice from "../../helpers/createInvoice";
 import { createDownloadLink } from "../../services/gcloud";
@@ -27,7 +28,7 @@ export default {
   }),
 
   buyPlan: requiresRight(["admin", "buyApps"]).createResolver(
-    async (parent, { planIds }, { models, token }) =>
+    async (parent, { planIds, options }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const billItems = [];
@@ -54,7 +55,6 @@ export default {
           });
 
           const mainPlan = plans.shift();
-
           const createMainBoughtPlan = await models.BoughtPlan.create(
             {
               buyer: unitid,
@@ -93,10 +93,20 @@ export default {
           }
 
           boughtPlans.splice(0, 0, mainBoughtPlan);
-
           switch (mainPlan.appid) {
             case 26:
               console.log("SendinBlue");
+              break;
+
+            case "11":
+              {
+                const checkDomain = await dd24Api("CheckDomain", options);
+                if (checkDomain.code != 200) {
+                  throw new Error(checkDomain.description);
+                } else if (checkDomain.availability != 1) {
+                  throw new Error("The domain is already registered!");
+                }
+              }
               break;
 
             default:

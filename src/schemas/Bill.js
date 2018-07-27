@@ -159,7 +159,7 @@ export const mutations = `
   updatePlan(id: Int!, plan: PlanInput!): Response!
 
   # This allows the user to buy a plan
-  buyPlan(planIds: [Int]!): Response!
+  buyPlan(planIds: [Int]!, options: Options): Response!
 
   endPlan(id: Int!, enddate: String!): Response!
 

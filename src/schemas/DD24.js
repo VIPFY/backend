@@ -1,3 +1,4 @@
+/* eslint-disable-next-line */
 export const types = `
 # The Api-Resonse from DD24
 type dd24Response {
@@ -95,13 +96,4 @@ input rrInput {
 input extensionInput {
   x_de_accept_trustee_tac: Int
 }
-`;
-
-export const queries = `
-
-`;
-
-export const mutations = `
-# Command has to be written like this: CheckDomain, params should be an Object
-domainCommands(command: String!, params: dd24): dd24Response!
 `;

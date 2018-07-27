@@ -62,6 +62,10 @@ input SortOptions {
   name: String!
   order: ORDER!
 }
+
+input Options {
+  domain: String
+}
 `;
 
 export const mutations = `
