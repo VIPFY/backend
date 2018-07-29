@@ -124,18 +124,6 @@ export const types = `
     sponsor: Unit!
   }
 
-  type Licence {
-    id: Int!
-    options: JSON
-    starttime: String!
-    endtime: String
-    agreed: Boolean
-    disabled: Boolean
-    key: JSON
-    boughtplanid: BoughtPlan!
-    unitid: Unit
-  }
-
   input OptionalPlanData {
     amount: Int!
     planid: Int!

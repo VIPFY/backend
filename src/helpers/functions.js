@@ -91,3 +91,17 @@ export const superset = (sup, sub) => {
   // make sure there are no elements left in sub
   return j == sub.length;
 };
+
+export const recursiveAddressCheck = (accountData, iterator = 0) => {
+  if (!accountData[iterator]) {
+    return null;
+  }
+
+  const { address } = accountData[iterator];
+
+  if (!address.street || !address.zip || !address.city) {
+    return recursiveAddressCheck(accountData, iterator + 1);
+  }
+
+  return accountData[iterator];
+};

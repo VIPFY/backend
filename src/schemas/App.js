@@ -61,6 +61,18 @@ export const types = `
     developer: Int
     supportunit: Int
   }
+
+  type Licence {
+    id: Int!
+    options: JSON
+    starttime: String!
+    endtime: String
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
+    boughtplanid: BoughtPlan!
+    unitid: Unit
+  }
 `;
 
 export const queries = `
@@ -76,6 +88,7 @@ export const queries = `
 
   fetchLicences(licenceid: Int): [Licence]!
   fetchUsersOwnLicences(unitid: Int!): [Licence]
+  fetchDomains: [Licence]!
 `;
 
 export const mutations = `
