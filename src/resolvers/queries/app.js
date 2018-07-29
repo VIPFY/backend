@@ -216,15 +216,13 @@ export default {
 
       const domains = await models.sequelize
         .query(
-          `
-        SELECT ld.* FROM licence_data ld INNER JOIN boughtplan_data bpd on
-        ld.boughtplanid = bpd.id WHERE bpd.planid IN (25, 48, 51, 50, 49)
-        AND ld.unitid = :unitid;
-      `,
+          `SELECT ld.*, ld.endtime::date, ld.starttime::date FROM licence_data ld
+           INNER JOIN boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
+           bpd.planid IN (25, 48, 51, 50, 49) AND ld.unitid = :unitid;`,
           { replacements: { unitid } }
         )
         .spread(res => res);
-      console.log(domains);
+
       return domains;
     } catch (err) {
       throw new Error(err);

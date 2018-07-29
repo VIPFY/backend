@@ -36,6 +36,7 @@ export default {
           const billItems = [];
           let boughtPlans = [];
           const key = {};
+
           const {
             user: { unitid, company }
           } = decode(token);
@@ -66,6 +67,10 @@ export default {
 
             case "11":
               {
+                if (options.whoisprivacy) {
+                  key.whoisPrivacy = true;
+                }
+
                 const checkDomain = await dd24Api("CheckDomain", options);
 
                 if (checkDomain.code != 200) {
