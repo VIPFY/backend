@@ -137,6 +137,7 @@ export const queries = `
   createLoginLink(boughtplanid: Int!): ProductResponse!
 
   fetchBills: [Bill]!
+  fetchPayingOptions: [Address]!
 `;
 
 export const mutations = `

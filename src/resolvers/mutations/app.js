@@ -259,13 +259,17 @@ export default {
       const domain = await models.sequelize.query(
         `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
           boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
-          bpd.planid IN (25, 48, 51, 50, 49) AND ld.unitid = :unitid;`,
+          bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid LIMIT 1;`,
         { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
       );
 
-      const accountData = await dd24Api("GetOneTimePassword", { cid: domain[0].key.cid });
+      if (domain.code == 200) {
+        const accountData = await dd24Api("GetOneTimePassword", { cid: domain[0].key.cid });
 
-      return accountData;
+        return accountData;
+      } else {
+        throw new Error(domain.description);
+      }
     } catch (err) {
       throw new Error(err);
     }
