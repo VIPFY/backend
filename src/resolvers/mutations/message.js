@@ -144,29 +144,27 @@ export default {
    * and call markAsRead with the id of the new message.
    * also sanitzes the message before posting
    */
-  sendMessage: requiresAuth.createResolver(
-    requiresMessageGroupRights(["speak"]).createResolver(
-      async (parent, { group, message }, { models, token }) => {
-        try {
-          const {
-            /* eslint-disable no-unused-vars */
-            user: { unitid, company }
-          } = decode(token);
+  sendMessage: requiresMessageGroupRights(["speak"]).createResolver(
+    async (parent, { group, message }, { models, token }) => {
+      try {
+        const {
+          /* eslint-disable no-unused-vars */
+          user: { unitid, company }
+        } = decode(token);
 
-          message = sanitizeMessage(message);
-          message = await models.MessageData.create({
-            messagetext: message,
-            sender: unitid,
-            receiver: group,
-            payload: {}
-          });
+        message = sanitizeMessage(message);
+        message = await models.MessageData.create({
+          messagetext: message,
+          sender: unitid,
+          receiver: group,
+          payload: {}
+        });
 
-          await updateLastReadMessage(models, unitid, group, message.dataValues.id);
-        } catch (err) {
-          throw new Error(err.message);
-        }
+        await updateLastReadMessage(models, unitid, group, message.dataValues.id);
+      } catch (err) {
+        throw new Error(err.message);
       }
-    )
+    }
   ),
 
   setDeleteStatus: requiresAuth.createResolver(async (parent, { id, type }, { models }) => {
@@ -203,46 +201,4 @@ export default {
     }
   }),
 
-  sendMessage: async (parent, { groupid, message }, { models, token }) => {
-    try {
-      const {
-        user: { unitid }
-      } = decode(token);
-      const p1 = models.User.findById(unitid);
-      const p2 = models.MessageGroup.findById(groupid);
-
-      const [sender, group] = await Promise.all([p1, p2]);
-
-      if (!sender) {
-        throw new Error("User doesn't exist!");
-      } else if (!group) {
-        throw new Error("The user doesn't belong to this group!");
-      } else if (message && sender && group) {
-        const createMessage = await models.MessageData.create({
-          sender: unitid,
-          receiver: groupid,
-          messagetext: message
-        });
-
-        const newMessage = {
-          ...createMessage.dataValues,
-          sender: sender.dataValues
-          // receiver: receiver.dataValues
-        };
-
-        pubsub.publish(NEW_MESSAGE, {
-          // userId: receiver.dataValues.unitid,
-          newMessage
-        });
-      }
-
-      return {
-        ok: true,
-        id: group.id,
-        message
-      };
-    } catch (err) {
-      throw new Error(err.message);
-    }
-  }
 };
