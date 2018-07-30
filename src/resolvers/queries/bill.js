@@ -87,7 +87,7 @@ export default {
 
   fetchPlan: (parent, { planid }, { models }) => models.Plan.findById(planid),
 
-  fetchPayingOptions: requiresRight(["buyapps", "admin"]).createResolver(
+  fetchBillingAddresses: requiresRight(["buyapps", "admin"]).createResolver(
     async (parent, args, { models, token }) => {
       try {
         const {
