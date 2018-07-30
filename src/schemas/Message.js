@@ -68,6 +68,11 @@ export const types = `
     archivetimesender,
     archivetimereceiver
   }
+
+  type StartGroupResponse {
+    ok: Bool!
+    messagegroup: MessageGroup
+  }
 `;
 
 export const queries = `
@@ -88,7 +93,8 @@ export const mutations = `
 # Send a message to another user
   sendMessage(groupid: Int!, message: String!): MessageResponse!
 
-  startConversation(receiver: Int!, defaultrights: [String]!): Response!
+  startConversation(receiver: Int!, defaultrights: [String]!): StartGroupResponse!
+  startGroup(receivers: [Int], defaultrights: [String]!, groupname: String!): StartGroupResponse!
 `;
 
 export const subscriptions = `
