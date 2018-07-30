@@ -97,4 +97,34 @@ export const types = `
     applogo: String
     appid: Int!
   }
+
+  # The Api-Resonse from DD24
+  type DD24Response {
+    code: Int!
+    description: String!
+    availability: Int
+    alternative: [String]
+    extension: String
+    realtime: Int
+    cid: String
+    status: String
+    renewalmode: String
+    transferlock: Int
+    whoisprivacy: Int
+    trustee: Int
+    reserveduntil: String
+    nameserver: [String]
+    ttl: Int
+    rr: [rr]
+    vatvalid: Int
+    event: [Int]
+    parameter: eventResponse
+    class: String
+    subclass: String
+    object: String
+    objecttype: String
+    onetimepassword: String
+    loginuri: String
+    error: String
+  }
 `;

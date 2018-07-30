@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import dd24Api from "../../services/dd24";
 import { requiresDepartmentCheck, requiresRight } from "../../helpers/permissions";
 
 /* eslint-disable no-return-await */
@@ -247,5 +248,26 @@ export default {
         throw new Error(err);
       }
     }
-  )
+  ),
+
+  getDD24Login: async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { unitid }
+      } = decode(token);
+
+      const domain = await models.sequelize.query(
+        `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
+          boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
+          bpd.planid IN (25, 48, 51, 50, 49) AND ld.unitid = :unitid;`,
+        { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
+      );
+
+      const accountData = await dd24Api("GetOneTimePassword", { cid: domain[0].key.cid });
+
+      return accountData;
+    } catch (err) {
+      throw new Error(err);
+    }
+  }
 };

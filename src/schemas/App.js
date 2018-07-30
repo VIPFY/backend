@@ -96,6 +96,7 @@ export const mutations = `
   updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, file: File): Response!
   deleteApp(id: Int!): Response!
   toggleAppStatus(id: Int!): Response!
+  getDD24Login: DD24Response!
 
   distributeLicenceToDepartment(departmentid: Int!, boughtplanid: Int!, licencetype: String!): DistributeResponse!
   revokeLicencesFromDepartment(departmentid: Int!, boughtplanid: Int!): Response!
