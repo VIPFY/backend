@@ -70,7 +70,7 @@ export const types = `
   }
 
   type StartGroupResponse {
-    ok: Bool!
+    ok: Boolean!
     messagegroup: MessageGroup
   }
 `;
