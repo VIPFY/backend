@@ -1,6 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { parentAdminCheck } from "../../helpers/functions";
+import { createPlan } from "../../services/stripe";
 
 export default {
   adminFetchListLength: requiresVipfyAdmin.createResolver(async (parent, args, { models }) => {

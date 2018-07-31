@@ -70,7 +70,7 @@ import {createProduct, createCustomer} from "../services/stripe"
 
 const doStuff = async (name) => {
   try {
-    const res = await createCustomer({id: 2, lastname: "Nils Testbein"})
+    const res = await createCustomer({id: 2, lastname: "Jannis Froetest"})
 
       console.log(res)
   } catch (err) {

@@ -2,7 +2,6 @@ export const types = `
   type App {
     id: Int!
     name: String!
-    commission: JSON
     icon: String
     loginurl: String
     description: String
@@ -23,7 +22,6 @@ export const types = `
     developername: String!
     icon: String
     loginurl: String
-    commission: JSON
     logo: String
     description: String
     teaserdescription: String

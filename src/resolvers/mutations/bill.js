@@ -10,26 +10,6 @@ import { createDownloadLink } from "../../services/gcloud";
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
 export default {
-  createPlan: requiresRight(["admin"]).createResolver(async (parent, { plan }, { models }) => {
-    try {
-      await models.Plan.create({ ...plan });
-
-      return { ok: true };
-    } catch (err) {
-      throw new Error(err);
-    }
-  }),
-
-  updatePlan: requiresRight(["admin"]).createResolver(async (parent, { plan, id }, { models }) => {
-    try {
-      await models.Plan.update({ ...plan }, { where: { id } });
-
-      return { ok: true };
-    } catch (err) {
-      throw new Error(err.message);
-    }
-  }),
-
   buyPlan: requiresRight(["admin", "buyApps"]).createResolver(
     async (parent, { planIds, options }, { models, token }) =>
       models.sequelize.transaction(async ta => {

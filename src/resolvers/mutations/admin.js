@@ -7,6 +7,63 @@ import { appPicFolder, userPicFolder } from "../../constants";
 import { createPassword } from "../../helpers/functions";
 
 export default {
+  addAppToStride: requiresVipfyAdmin.createResolver(
+    async (parent, { appId, appName }, { models }) => {
+      try {
+        const product = await createProduct(appName);
+        const { id, active, created, name, type, updated } = product;
+
+        await models.App.update(
+          {
+            internaldata: { stride: { id, active, created, name, type, updated } }
+          },
+          { where: { id: appId }, raw: true }
+        );
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
+
+  adminCreatePlan: requiresVipfyAdmin.createResolver(
+    async (parent, { plan, appId, appName }, { models }) => {
+      try {
+        const hasStrideProduct = await models.App.findOne({
+          where: { id: appId, internaldata: { stride: { id: { [models.Op.not]: null } } } },
+          raw: true,
+          attributes: ["internaldata"]
+        });
+
+        if (!hasStrideProduct) {
+          const product = await createProduct(appName);
+          const { id, active, created, name, type, updated } = product;
+
+          await models.App.update(
+            {
+              internaldata: { stride: { id, active, created, name, type, updated } }
+            },
+            { where: { id: appId }, raw: true }
+          );
+        }
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
+
+  adminUpdatePlan: requiresVipfyAdmin.createResolver(async (parent, { plan, id }, { models }) => {
+    try {
+      await models.Plan.update({ ...plan }, { where: { id } });
+
+      return { ok: true };
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
+
   createStripePlan: requiresVipfyAdmin.createResolver(
     async (parent, { name, productid, amount }) => {
       let product;

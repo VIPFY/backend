@@ -6,6 +6,7 @@ export default (sequelize, { BOOLEAN, STRING, TEXT, JSONB, ARRAY }) => {
       allowNull: false
     },
     icon: STRING,
+    internaldata: JSONB,
     loginurl: STRING,
     commission: JSONB,
     logo: TEXT,
