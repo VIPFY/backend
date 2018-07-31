@@ -74,50 +74,62 @@ export default {
             return {
               error: {
                 ok: false,
-                code: 1,
-                message: "There are no licences to distribute for this plan."
+                error: {
+                  code: 1,
+                  message: "There are no licences to distribute for this plan."
+                }
               }
             };
           } else if (!hasRight && openLicences.length < employees.length) {
             return {
               error: {
                 ok: false,
-                code: 2,
-                message: `There are ${employees.length -
-                  openLicences.length} Licences missing for this department and you don't have the right to distribute them for this department.`
+                error: {
+                  code: 2,
+                  message: `There are ${employees.length -
+                    openLicences.length} Licences missing for this department and you don't have the right to distribute them for this department.`
+                }
               }
             };
           } else if (hasRight && openLicences.length < employees.length) {
             return {
               error: {
                 ok: false,
-                code: 3,
-                message: `There are ${employees.length -
-                  openLicences.length} Licences missing for this department.`
+                error: {
+                  code: 3,
+                  message: `There are ${employees.length -
+                    openLicences.length} Licences missing for this department.`
+                }
               }
             };
           } else if (!hasRight) {
             return {
               error: {
                 ok: false,
-                code: 4,
-                message: "You don't have the right to distribute licences."
+                error: {
+                  code: 4,
+                  message: "You don't have the right to distribute licences."
+                }
               }
             };
           } else if (!validPlan || (validPlan && validPlan.disabled)) {
             return {
               error: {
                 ok: false,
-                code: 5,
-                message: "The plan is disabled."
+                error: {
+                  code: 5,
+                  message: "The plan is disabled."
+                }
               }
             };
           } else if (validPlan && validPlan.endtime && validPlan.endtime < Date.now()) {
             return {
               error: {
                 ok: false,
-                code: 6,
-                message: "The plan expired."
+                error: {
+                  code: 6,
+                  message: "The plan expired."
+                }
               }
             };
           }
@@ -194,27 +206,38 @@ export default {
         });
 
         const [openLicences, hasRight] = await Promise.all([p1, p2]);
-
         if (!openLicences) {
           return {
             ok: false,
-            code: 1,
-            message: "There are no open Licences to distribute for this plan!"
+            error: {
+              code: 1,
+              message: "There are no open Licences to distribute for this plan!"
+            }
           };
         } else if (!openLicences && !hasRight) {
           return {
             ok: false,
-            code: 2,
-            message: "There are no open Licences and you don't have the right to distribute!"
+            error: {
+              code: 2,
+              message: "There are no open Licences and you don't have the right to distribute!"
+            }
           };
         } else if (!openLicences && hasRight) {
           return {
             ok: false,
-            code: 3,
-            message: "There is no open Licence to distribute for this plan!"
+            error: {
+              code: 3,
+              message: "There is no open Licence to distribute for this plan!"
+            }
           };
         } else if (!hasRight) {
-          return { ok: false, code: 4, message: "You don't have the right to distribute Licences" };
+          return {
+            ok: false,
+            error: {
+              code: 4,
+              message: "You don't have the right to distribute Licences"
+            }
+          };
         }
 
         await models.Licence.update(
@@ -226,6 +249,7 @@ export default {
 
         return { ok: true };
       } catch (err) {
+        console.log(err);
         throw new Error(err);
       }
     }

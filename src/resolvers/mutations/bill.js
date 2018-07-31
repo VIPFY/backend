@@ -83,6 +83,7 @@ export default {
                 options.renewalmode = "autorenew";
 
                 key.domain = options.domain.toLowerCase();
+                key.renewalmode = true;
                 let registerDomain;
 
                 if (hasAccount.length > 0) {
@@ -175,8 +176,7 @@ export default {
 
           if (mainPlan.appid == 11) {
             const endtime = moment(Date.now()).add(1, "year");
-            // TODO Turn into Promise.all
-            const domainLicence = await models.Licence.create(
+            const domainLicence = models.Licence.create(
               {
                 unitid,
                 boughtplanid: boughtPlans[0].id,
@@ -187,10 +187,17 @@ export default {
               },
               { transaction: ta }
             );
-            // TODO Enter the proper rights data
-            // const right = models.Right.create({}, { transaction: ta });
-            //
-            // await Promise.all[(domainLicence, right)];
+
+            const right = models.Right.create(
+              {
+                holder: unitid,
+                forunit: company,
+                type: "managedomains"
+              },
+              { transaction: ta }
+            );
+
+            await Promise.all[(domainLicence, right)];
           } else {
             await boughtPlans.forEach(plan => {
               for (let i = 0; i < plan.amount; i++) {
