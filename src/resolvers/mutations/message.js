@@ -152,7 +152,7 @@ export default {
    * also sanitzes the message before posting
    */
   sendMessage: requiresMessageGroupRights(["speak"]).createResolver(
-    async (parent, { group, message }, { models, token }) => {
+    async (parent, { groupid, message }, { models, token }) => {
       try {
         const {
           /* eslint-disable no-unused-vars */
@@ -163,17 +163,17 @@ export default {
         console.log({
           messagetext: message,
           sender: unitid,
-          receiver: group,
+          receiver: groupid,
           payload: {}
         });
         message = await models.MessageData.create({
           messagetext: message,
           sender: unitid,
-          receiver: group,
+          receiver: groupid,
           payload: {}
         });
 
-        await updateLastReadMessage(models, unitid, group, message.dataValues.id);
+        await updateLastReadMessage(models, unitid, groupid, message.dataValues.id);
         return {
           ok: true,
           message: message.dataValues.id,
