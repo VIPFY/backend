@@ -10,7 +10,7 @@ export const types = `
     archivetimereceiver: Date
     tags: [String]
     messagetext: String!
-    receiver: Unit!
+    receiver: PublicUser!
   }
 
 # The original table which contains the messages
@@ -28,7 +28,7 @@ export const types = `
   type MessageGroupMembership {
     id: ID!
     groupid: MessageGroup!
-    unitid: Unit!
+    unitid: PublicUser!
     visibletimestart: Date
     visibletimeend: Date
     lastreadmessageid: Int
@@ -36,7 +36,7 @@ export const types = `
 
   type MessageTag {
     id: ID!
-    unitid: Unit!
+    unitid: PublicUser!
     messageid: Message!
     tag: String
     public: Boolean
