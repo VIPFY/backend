@@ -17,7 +17,7 @@ export const types = `
   type MessageData {
     id: ID!
     receiver: MessageGroup!
-    sender: PublicUser!
+    sender: PublicUser
     sendtime: Date!
     messagetext: String!
     payload: JSON
