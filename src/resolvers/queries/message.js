@@ -40,10 +40,12 @@ export default {
         .query(
           `SELECT md.* FROM message_data AS md INNER JOIN messagegroupmembership_data
         mgmd ON md.sendtime BETWEEN mgmd.visibletimestart AND mgmd.visibletimeend
-        WHERE mgmd.unitid = :unitid AND mgmd.groupid = :groupid ORDER BY md.sendtime`,
-          { replacements: { unitid, groupid } }
+        WHERE mgmd.unitid = :unitid AND mgmd.groupid = :groupid AND md.receiver = :groupid ORDER BY md.sendtime`,
+          { replacements: { unitid, groupid }, raw: true }
         )
         .spread(res => res);
+
+      console.log(messages);
 
       return messages;
     } catch (err) {
