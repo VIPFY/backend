@@ -83,4 +83,14 @@ export default {
       throw new Error(err.message);
     }
   }),
+
+  fetchUser: requiresAuth.createResolver(async (parent, { userid }, { models, token }) => {
+    try {
+      const user = await models.User.findById(userid);
+
+      return user;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
 };
