@@ -19,13 +19,6 @@ export const types = `
       allCompanies: Int!
     }
 
-  # Contains the id of the Message
-    type MessageResponse {
-      ok: Boolean!
-      message: String
-      id: Int
-    }
-
   # If the registration was successful, a boolean will be given back
     type RegisterResponse {
       ok: Boolean!

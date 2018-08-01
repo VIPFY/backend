@@ -73,6 +73,11 @@ export const types = `
     ok: Boolean!
     messagegroup: MessageGroup
   }
+
+  type MessageResponse {
+    ok: Boolean!
+    message: ID
+  }
 `;
 
 export const queries = `

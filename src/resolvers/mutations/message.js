@@ -168,6 +168,10 @@ export default {
         });
 
         await updateLastReadMessage(models, unitid, group, message.dataValues.id);
+        return {
+          ok: true,
+          message: message.dataValues.id,
+        };
       } catch (err) {
         throw new Error(err.message);
       }
