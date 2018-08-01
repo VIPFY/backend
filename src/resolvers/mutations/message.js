@@ -2,6 +2,7 @@ import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresMessageGroupRights } from "../../helpers/permissions";
 import { NEW_MESSAGE, pubsub } from "../../constants";
 import { parentAdminCheck, superset } from "../../helpers/functions";
+import { sanitizeMessage, updateLastReadMessage } from "../../helpers/messages";
 
 export default {
   /**
@@ -129,6 +130,10 @@ export default {
           );
 
           await Promise.all(dbqueries);
+          console.log({
+            ok: true,
+            messagegroup: groupId,
+          });
           return {
             ok: true,
             messagegroup: groupId,
