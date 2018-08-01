@@ -79,22 +79,22 @@ export const queries = `
 # All messages an user received - either from apps or other users
   fetchMessages(read: Boolean): [Message]
   fetchLastDialogMessages: [MessageData]
-  fetchDialog(groupid: Int!): [MessageData]
+  fetchDialog(groupid: ID!): [MessageData]
   fetchGroups: [MessageGroup]
 `;
 
 export const mutations = `
 # Sender or Receiver can delete a message here
-  setDeleteStatus(id: Int!, type: MESSAGE_COLUMN!): Response!
+  setDeleteStatus(id: ID!, type: MESSAGE_COLUMN!): Response!
 
 # The time an user opened a message
-  setReadtime(id: Int!): MessageResponse!
+  setReadtime(id: ID!): MessageResponse!
 
 # Send a message to another user
-  sendMessage(groupid: Int!, message: String!): MessageResponse!
+  sendMessage(groupid: ID!, message: String!): MessageResponse!
 
-  startConversation(receiver: Int!, defaultrights: [String]!): StartGroupResponse!
-  startGroup(receivers: [Int], defaultrights: [String]!, groupname: String!): StartGroupResponse!
+  startConversation(receiver: ID!, defaultrights: [String]!): StartGroupResponse!
+  startGroup(receivers: [ID], defaultrights: [String]!, groupname: String!): StartGroupResponse!
 `;
 
 export const subscriptions = `
