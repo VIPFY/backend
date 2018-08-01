@@ -137,14 +137,12 @@ export const queries = `
   createLoginLink(boughtplanid: Int!): ProductResponse!
 
   fetchBills: [Bill]!
+  fetchBillingAddresses: [Address]!
 `;
 
 export const mutations = `
   # This creates a product which can be linked to a plan
   createStripePlan(name: String, productid: String, amount: Int!): Response!
-
-  createPlan(plan: PlanInput!): Response!
-  updatePlan(id: Int!, plan: PlanInput!): Response!
 
   # This allows the user to buy a plan
   buyPlan(planIds: [Int]!, options: Options): Response!

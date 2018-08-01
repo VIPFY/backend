@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import dd24Api from "../../services/dd24";
 import { requiresDepartmentCheck, requiresRight } from "../../helpers/permissions";
 
 /* eslint-disable no-return-await */
@@ -73,50 +74,62 @@ export default {
             return {
               error: {
                 ok: false,
-                code: 1,
-                message: "There are no licences to distribute for this plan."
+                error: {
+                  code: 1,
+                  message: "There are no licences to distribute for this plan."
+                }
               }
             };
           } else if (!hasRight && openLicences.length < employees.length) {
             return {
               error: {
                 ok: false,
-                code: 2,
-                message: `There are ${employees.length -
-                  openLicences.length} Licences missing for this department and you don't have the right to distribute them for this department.`
+                error: {
+                  code: 2,
+                  message: `There are ${employees.length -
+                    openLicences.length} Licences missing for this department and you don't have the right to distribute them for this department.`
+                }
               }
             };
           } else if (hasRight && openLicences.length < employees.length) {
             return {
               error: {
                 ok: false,
-                code: 3,
-                message: `There are ${employees.length -
-                  openLicences.length} Licences missing for this department.`
+                error: {
+                  code: 3,
+                  message: `There are ${employees.length -
+                    openLicences.length} Licences missing for this department.`
+                }
               }
             };
           } else if (!hasRight) {
             return {
               error: {
                 ok: false,
-                code: 4,
-                message: "You don't have the right to distribute licences."
+                error: {
+                  code: 4,
+                  message: "You don't have the right to distribute licences."
+                }
               }
             };
           } else if (!validPlan || (validPlan && validPlan.disabled)) {
             return {
               error: {
                 ok: false,
-                code: 5,
-                message: "The plan is disabled."
+                error: {
+                  code: 5,
+                  message: "The plan is disabled."
+                }
               }
             };
           } else if (validPlan && validPlan.endtime && validPlan.endtime < Date.now()) {
             return {
               error: {
                 ok: false,
-                code: 6,
-                message: "The plan expired."
+                error: {
+                  code: 6,
+                  message: "The plan expired."
+                }
               }
             };
           }
@@ -193,27 +206,38 @@ export default {
         });
 
         const [openLicences, hasRight] = await Promise.all([p1, p2]);
-
         if (!openLicences) {
           return {
             ok: false,
-            code: 1,
-            message: "There are no open Licences to distribute for this plan!"
+            error: {
+              code: 1,
+              message: "There are no open Licences to distribute for this plan!"
+            }
           };
         } else if (!openLicences && !hasRight) {
           return {
             ok: false,
-            code: 2,
-            message: "There are no open Licences and you don't have the right to distribute!"
+            error: {
+              code: 2,
+              message: "There are no open Licences and you don't have the right to distribute!"
+            }
           };
         } else if (!openLicences && hasRight) {
           return {
             ok: false,
-            code: 3,
-            message: "There is no open Licence to distribute for this plan!"
+            error: {
+              code: 3,
+              message: "There is no open Licence to distribute for this plan!"
+            }
           };
         } else if (!hasRight) {
-          return { ok: false, code: 4, message: "You don't have the right to distribute Licences" };
+          return {
+            ok: false,
+            error: {
+              code: 4,
+              message: "You don't have the right to distribute Licences"
+            }
+          };
         }
 
         await models.Licence.update(
@@ -225,6 +249,7 @@ export default {
 
         return { ok: true };
       } catch (err) {
+        console.log(err);
         throw new Error(err);
       }
     }
@@ -247,5 +272,30 @@ export default {
         throw new Error(err);
       }
     }
-  )
+  ),
+
+  getDD24Login: async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { unitid }
+      } = decode(token);
+
+      const domain = await models.sequelize.query(
+        `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
+          boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
+          bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid LIMIT 1;`,
+        { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
+      );
+
+      if (domain.code == 200) {
+        const accountData = await dd24Api("GetOneTimePassword", { cid: domain[0].key.cid });
+
+        return accountData;
+      } else {
+        throw new Error(domain.description);
+      }
+    } catch (err) {
+      throw new Error(err);
+    }
+  }
 };

@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAuth, requiresRight } from "../../helpers/permissions";
 
 export default {
   fetchBills: requiresAuth.createResolver(async (parent, args, { models, token }) => {
@@ -85,5 +85,23 @@ export default {
     }
   },
 
-  fetchPlan: (parent, { planid }, { models }) => models.Plan.findById(planid)
+  fetchPlan: (parent, { planid }, { models }) => models.Plan.findById(planid),
+
+  fetchBillingAddresses: requiresRight(["buyapps", "admin"]).createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const addresses = await models.Address.findAll({
+          where: { unitid: company, tags: ["billing"] }
+        });
+
+        return addresses;
+      } catch (err) {
+        throw new Error(err);
+      }
+    }
+  )
 };

@@ -25,9 +25,9 @@
 //
 // testWeebly();
 // ============================================================================
-import {getVipfyAccountData, createAccount} from "../services/sendinblue"
-
-createAccount("pc@vipfy.com", "Pascal", "Cousland", "Vipfy")
+// import {getVipfyAccountData, createAccount} from "../services/sendinblue"
+//
+// createAccount("pc@vipfy.com", "Pascal", "Cousland", "Vipfy")
 // ============================================================================
 // import {
 //   fetchOrganization,
@@ -65,3 +65,17 @@ createAccount("pc@vipfy.com", "Pascal", "Cousland", "Vipfy")
 // axios(config)
 //   .then(res => console.log(res.data.products))
 //   .catch(err => console.log(err.response.data));
+// ============================================================================
+import {createProduct, createCustomer} from "../services/stripe"
+
+const doStuff = async (name) => {
+  try {
+    const res = await createCustomer({id: 2, lastname: "Jannis Froetest"})
+
+      console.log(res)
+  } catch (err) {
+    console.log(err)
+  }
+}
+
+doStuff("Pipedrive")

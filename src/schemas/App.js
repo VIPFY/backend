@@ -2,7 +2,6 @@ export const types = `
   type App {
     id: Int!
     name: String!
-    commission: JSON
     icon: String
     loginurl: String
     description: String
@@ -23,7 +22,6 @@ export const types = `
     developername: String!
     icon: String
     loginurl: String
-    commission: JSON
     logo: String
     description: String
     teaserdescription: String
@@ -96,6 +94,7 @@ export const mutations = `
   updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, file: File): Response!
   deleteApp(id: Int!): Response!
   toggleAppStatus(id: Int!): Response!
+  getDD24Login: DD24Response!
 
   distributeLicenceToDepartment(departmentid: Int!, boughtplanid: Int!, licencetype: String!): DistributeResponse!
   revokeLicencesFromDepartment(departmentid: Int!, boughtplanid: Int!): Response!

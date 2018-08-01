@@ -21,10 +21,14 @@ export const queries = `
 `;
 
 export const mutations = `
+  addAppToStride(appId: Int!, appName: String!): Response!
   adminCreateLicence(licenceData: JSON!): Response!
   adminUpdateLicence(unitid: Int!, boughtplanid: Int! licenceData: JSON!): Response!
   adminUpdateAddress(addressData: AddressInput!, id: Int!): Response!
   adminDeleteAddress(id: Int!): Response!
+
+  adminCreatePlan(plan: PlanInput!, appId: Int!, appName: String!): Response!
+  adminUpdatePlan(id: Int!, plan: PlanInput!): Response!
 
   adminCreateEmail(email: String!, unitid: Int!): Response!
   adminDeleteEmail(email: String!,unitid: Int!): Response!
