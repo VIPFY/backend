@@ -2,8 +2,7 @@ export default (sequelize, { DATE, NOW, TEXT, BIGINT }) => {
   const MessageGroup = sequelize.define("messagegroup_data", {
     id: {
       type: BIGINT,
-      primaryKey: true,
-      autoIncrement: true
+      primaryKey: true
     },
     image: TEXT,
     name: TEXT,

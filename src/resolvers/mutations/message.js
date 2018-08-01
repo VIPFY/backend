@@ -22,7 +22,7 @@ export default {
       console.log("b");
       try {
         let groupId;
-        models.sequelize.transaction(async ta => {
+        await models.sequelize.transaction(async ta => {
           const {
             /* eslint-disable no-unused-vars */
             user: { unitid, company }
