@@ -130,7 +130,8 @@ export default {
 
           await Promise.all(dbqueries);
           return {
-            ok: true
+            ok: true,
+            MessageGroup: groupId,
           };
         });
       } catch (err) {
