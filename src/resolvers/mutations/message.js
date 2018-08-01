@@ -21,6 +21,7 @@ export default {
       }
       console.log("b");
       try {
+        let groupId;
         models.sequelize.transaction(async ta => {
           const {
             /* eslint-disable no-unused-vars */
@@ -46,7 +47,7 @@ export default {
           }
 
           const group = await models.MessageGroup.create({}, { transaction: ta });
-          const groupId = group.dataValues.id;
+          groupId = group.dataValues.id;
           const dbqueries = [];
           // create MessageGroupMembership for sender and receiver
           dbqueries.push(
@@ -134,11 +135,11 @@ export default {
             ok: true,
             messagegroup: groupId,
           });
-          return {
-            ok: true,
-            messagegroup: groupId,
-          };
         });
+        return {
+          ok: true,
+          messagegroup: groupId,
+        };
       } catch (err) {
         throw new Error(err.message);
       }
