@@ -86,7 +86,7 @@ export const queries = `
   fetchLastDialogMessages: [MessageData]
   fetchDialog(groupid: ID!): [MessageData]
   fetchGroups: [MessageGroup]
-  fetchUser(userid: ID!): PublicUser
+  fetchPublicUser(userid: ID!): PublicUser
 `;
 
 export const mutations = `

@@ -84,7 +84,7 @@ export default {
     }
   }),
 
-  fetchUser: requiresAuth.createResolver(async (parent, { userid }, { models, token }) => {
+  fetchPublicUser: requiresAuth.createResolver(async (parent, { userid }, { models, token }) => {
     try {
       const user = await models.User.findById(userid);
 
