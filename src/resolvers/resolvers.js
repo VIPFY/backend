@@ -80,6 +80,7 @@ export default {
   MessageGroupMembership: find({ groupid: "MessageGroup", unitid: "Unit" }),
   MessageTag: find({ unitid: "Unit", messageid: "MessageTag" }),
   MessageGroup: find({ lastmessage: "MessageData", memberships: "[MessageGroupMembership]" }),
+  StartGroupResponse: find({ messagegroup: "MessageGroup" }),
   Newsletter: find({ email: "Email" }),
   ParentUnit: find({ parentunit: "Unit", childunit: "Unit" }),
   Phone: find(unit),
