@@ -24,11 +24,19 @@ export const createProduct = async app => {
 
 export const createPlan = async data => {
   try {
-    const res = await stripe.plans.create({ ...data });
+    const res = await stripe.plans.create(data);
 
     return res;
   } catch (err) {
     throw new Error(err.message);
+  }
+};
+
+export const updatePlan = async (id, data) => {
+  try {
+    const res = await stripe.plans.update(id, data);
+  } catch (err) {
+    throw new Error(err);
   }
 };
 

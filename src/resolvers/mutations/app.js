@@ -72,64 +72,52 @@ export default {
 
           if (openLicences.length == 0) {
             return {
+              ok: false,
               error: {
-                ok: false,
-                error: {
-                  code: 1,
-                  message: "There are no licences to distribute for this plan."
-                }
+                code: 1,
+                message: "There are no licences to distribute for this plan."
               }
             };
           } else if (!hasRight && openLicences.length < employees.length) {
             return {
+              ok: false,
               error: {
-                ok: false,
-                error: {
-                  code: 2,
-                  message: `There are ${employees.length -
-                    openLicences.length} Licences missing for this department and you don't have the right to distribute them for this department.`
-                }
+                code: 2,
+                message: `There are ${employees.length -
+                  openLicences.length} Licences missing for this department and you don't have the right to distribute them for this department.`
               }
             };
           } else if (hasRight && openLicences.length < employees.length) {
             return {
+              ok: false,
               error: {
-                ok: false,
-                error: {
-                  code: 3,
-                  message: `There are ${employees.length -
-                    openLicences.length} Licences missing for this department.`
-                }
+                code: 3,
+                message: `There are ${employees.length -
+                  openLicences.length} Licences missing for this department.`
               }
             };
           } else if (!hasRight) {
             return {
+              ok: false,
               error: {
-                ok: false,
-                error: {
-                  code: 4,
-                  message: "You don't have the right to distribute licences."
-                }
+                code: 4,
+                message: "You don't have the right to distribute licences."
               }
             };
           } else if (!validPlan || (validPlan && validPlan.disabled)) {
             return {
+              ok: false,
               error: {
-                ok: false,
-                error: {
-                  code: 5,
-                  message: "The plan is disabled."
-                }
+                code: 5,
+                message: "The plan is disabled."
               }
             };
           } else if (validPlan && validPlan.endtime && validPlan.endtime < Date.now()) {
             return {
+              ok: false,
               error: {
-                ok: false,
-                error: {
-                  code: 6,
-                  message: "The plan expired."
-                }
+                code: 6,
+                message: "The plan expired."
               }
             };
           }
@@ -147,10 +135,15 @@ export default {
           );
 
           await Promise.all(takeLicences);
-
-          return { ok: true };
+          return { ok: true, error: null };
         } catch (err) {
-          throw new Error(err);
+          return {
+            ok: false,
+            error: {
+              code: 0,
+              message: err.message
+            }
+          };
         }
       })
   ),
