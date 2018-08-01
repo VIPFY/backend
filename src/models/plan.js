@@ -22,7 +22,6 @@ export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, STRING, BOOLEA
         const interval = `${testValue == "years" ? period.years : 0} years, ${
           testValue == "mons" ? period.months : 0
         } mons, ${testValue == "days" ? period.days : 0} days, 0 hours, 0 mins, 0 secs`;
-
         this.setDataValue("payperiod", interval);
       }
     },
@@ -34,11 +33,12 @@ export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, STRING, BOOLEA
           testValue == "mons" ? period.months : 0
         } mons, ${testValue == "days" ? period.days : 0} days, 0 hours, 0 mins, 0 secs`;
 
-        this.setDataValue("payperiod", interval);
+        this.setDataValue("cancelperiod", interval);
       }
     },
     optional: { type: BOOLEAN, defaultValue: false },
-    gototime: TEXT
+    gototime: TEXT,
+    stridedata: JSONB
   });
 
   Plan.associate = ({ App }) => {

@@ -22,14 +22,9 @@ export const createProduct = async app => {
   }
 };
 
-export const createPlan = async (product, amount) => {
+export const createPlan = async data => {
   try {
-    const res = await stripe.plans.create({
-      currency: "USD",
-      interval: "month",
-      product,
-      amount
-    });
+    const res = await stripe.plans.create({ ...data });
 
     return res;
   } catch (err) {

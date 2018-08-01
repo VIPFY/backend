@@ -27,7 +27,7 @@ export const mutations = `
   adminUpdateAddress(addressData: AddressInput!, id: Int!): Response!
   adminDeleteAddress(id: Int!): Response!
 
-  adminCreatePlan(plan: PlanInput!, appId: Int!, appName: String!): Response!
+  adminCreatePlan(plan: PlanInput!, appId: Int!): Response!
   adminUpdatePlan(id: Int!, plan: PlanInput!): Response!
 
   adminCreateEmail(email: String!, unitid: Int!): Response!

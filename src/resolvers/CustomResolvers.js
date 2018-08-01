@@ -59,7 +59,6 @@ export const find = data => {
   const searches = {};
   Object.keys(data).map(search => {
     searches[search] = (parent, args, { models }) => {
-      console.error("FIND", search, data, parent);
       switch (data[search]) {
         case "Human":
         case "Department":
@@ -71,7 +70,6 @@ export const find = data => {
           if (data[search][0] == "[") {
             // return array of objects
             const modelName = data[search].substring(1, data[search].length - 1);
-            console.error(modelName);
             return models[modelName].findAll({ where: { id: { $in: parent[search] } } });
           } else {
             // single object

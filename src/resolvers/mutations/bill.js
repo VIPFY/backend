@@ -117,6 +117,7 @@ export default {
             {
               buyer: unitid,
               payer: company,
+              usedBy: company,
               planid: mainPlan.id,
               disabled: false,
               amount: mainPlan.numlicences,

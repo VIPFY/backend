@@ -6,52 +6,77 @@ import { uploadFile, deleteFile } from "../../services/gcloud";
 import { appPicFolder, userPicFolder } from "../../constants";
 import { createPassword } from "../../helpers/functions";
 
+/* eslint-disable default-case */
+
 export default {
-  addAppToStride: requiresVipfyAdmin.createResolver(
-    async (parent, { appId, appName }, { models }) => {
+  adminCreatePlan: requiresVipfyAdmin.createResolver(async (parent, { plan, appId }, { models }) =>
+    models.sequelize.transaction(async ta => {
       try {
-        const product = await createProduct(appName);
-        const { id, active, created, name, type, updated } = product;
-
-        await models.App.update(
-          {
-            internaldata: { stride: { id, active, created, name, type, updated } }
-          },
-          { where: { id: appId }, raw: true }
-        );
-
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
-  ),
-
-  adminCreatePlan: requiresVipfyAdmin.createResolver(
-    async (parent, { plan, appId, appName }, { models }) => {
-      try {
-        const hasStrideProduct = await models.App.findOne({
-          where: { id: appId, internaldata: { stride: { id: { [models.Op.not]: null } } } },
+        const app = await models.App.findOne({
+          where: { id: appId },
           raw: true,
-          attributes: ["internaldata"]
+          attributes: ["internaldata", "name"]
         });
+        let product;
 
-        if (!hasStrideProduct) {
-          const product = await createProduct(appName);
-          const { id, active, created, name, type, updated } = product;
+        if (!app.internaldata || !app.internaldata.stride) {
+          const productData = await createProduct(app.name);
+          const { id, active, created, name, type, updated } = productData;
 
           await models.App.update(
             {
               internaldata: { stride: { id, active, created, name, type, updated } }
             },
-            { where: { id: appId }, raw: true }
+            { where: { id: appId }, raw: true, transaction: ta }
           );
+
+          product = id;
+        } else {
+          product = app.internaldata.stride.id;
         }
+        let interval = "year";
+
+        switch (Object.keys(plan.payperiod)[0]) {
+          case "days":
+            interval = "day";
+            break;
+
+          case "mons":
+            interval = "month";
+        }
+        const priceInCents = Math.ceil(plan.price * 100);
+
+        const planData = {
+          currency: plan.currency,
+          interval,
+          product,
+          amount: priceInCents
+        };
+
+        const stripePlan = await createPlan(planData);
+
+        const { active, amount, created, currency } = stripePlan;
+
+        await models.Plan.create(
+          {
+            ...plan,
+            stridedata: {
+              id: stripePlan.id,
+              active,
+              amount,
+              created,
+              product: stripePlan.product,
+              currency,
+              interval: stripePlan.interval
+            }
+          },
+          { transaction: ta, raw: true }
+        );
         return { ok: true };
       } catch (err) {
         throw new Error(err.message);
       }
-    }
+    })
   ),
 
   adminUpdatePlan: requiresVipfyAdmin.createResolver(async (parent, { plan, id }, { models }) => {
@@ -63,28 +88,6 @@ export default {
       throw new Error(err.message);
     }
   }),
-
-  createStripePlan: requiresVipfyAdmin.createResolver(
-    async (parent, { name, productid, amount }) => {
-      let product;
-      if (name && !productid) {
-        try {
-          const newProduct = await createProduct(name);
-          product = newProduct.id;
-          console.log({ newProduct });
-        } catch ({ message }) {
-          throw new Error(message);
-        }
-      } else product = productid;
-
-      try {
-        await createPlan(product, amount);
-        return { ok: true };
-      } catch ({ message }) {
-        throw new Error(message);
-      }
-    }
-  ),
 
   adminUpdateLicence: requiresVipfyAdmin.createResolver(
     async (parent, { unitid, boughtplanid, licenceData }, { models }) => {
