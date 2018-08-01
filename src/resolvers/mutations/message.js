@@ -160,6 +160,12 @@ export default {
         } = decode(token);
 
         message = sanitizeMessage(message);
+        console.log({
+          messagetext: message,
+          sender: unitid,
+          receiver: group,
+          payload: {}
+        });
         message = await models.MessageData.create({
           messagetext: message,
           sender: unitid,
