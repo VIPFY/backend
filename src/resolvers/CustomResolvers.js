@@ -69,11 +69,35 @@ export const find = data => {
         default: {
           if (data[search][0] == "[") {
             // return array of objects
-            const modelName = data[search].substring(1, data[search].length - 1);
-            return models[modelName].findAll({ where: { id: { $in: parent[search] } } });
+            const modelName = data[search].substring(
+              1,
+              data[search].length - 1
+            );
+            return models[modelName].findAll({
+              where: { id: { $in: parent[search] } }
+            });
           } else {
             // single object
-            console.error("FIND", search, data[search], parent[search], "INFO", info, "SET", info.fieldNodes[0].selectionSet, "S", info.fieldNodes[0].selectionSet.selections);
+            console.error(
+              "FIND",
+              search,
+              data[search],
+              parent[search],
+              "INFO",
+              info,
+              "SET",
+              info.fieldNodes[0].selectionSet,
+              "S",
+              info.fieldNodes[0].selectionSet.selections
+            );
+            if (
+              info.fieldNodes[0].selectionSet.selections.filter(
+                selection =>
+                  !selection.name || (selection.name.value != "id" && selection.name.value != "__typename")
+              ).length == 0
+            ) {
+              return { id: parent[search] };
+            }
             return models[data[search]].findById(parent[search]);
           }
         }
