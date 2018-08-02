@@ -78,7 +78,7 @@ export const find = data => {
             });
           } else {
             // single object
-            console.error(
+            /*console.error(
               "FIND",
               search,
               data[search],
@@ -89,15 +89,16 @@ export const find = data => {
               info.fieldNodes[0].selectionSet,
               "S",
               info.fieldNodes[0].selectionSet.selections
-            );
-            if (
+            );*/
+            /*if (
               info.fieldNodes[0].selectionSet.selections.filter(
                 selection =>
                   !selection.name || (selection.name.value != "id" && selection.name.value != "__typename")
               ).length == 0
             ) {
               return { id: parent[search] };
-            }
+            }*/
+            console.error(models[data[search]].findById(parent[search]));
             return models[data[search]].findById(parent[search]);
           }
         }
