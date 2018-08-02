@@ -80,18 +80,18 @@ export const requiresMessageGroupRights = rights =>
   requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
       const {
-        user: { unitid: unit }
+        user: { unitid }
       } = await decode(token);
 
-      let group;
+      let groupid;
       if ("group" in args) {
-        group = args.group;
+        groupid = args.group;
       } else if ("groupid" in args) {
-        group = args.groupid;
+        groupid = args.groupid;
       } else if ("message" in args) {
         const message = await models.MessageData.findById(args.message, { raw: true });
         console.log("MESSAGErights", message);
-        group = message.receiver;
+        groupid = message.receiver;
       } else {
         throw new Error("Can't find group to check permission against");
       }
@@ -99,8 +99,8 @@ export const requiresMessageGroupRights = rights =>
       const hasRights = await models.MessageGroupRight.findAll({
         where: {
           right: rights,
-          unit,
-          group
+          unitid,
+          groupid
         },
         raw: true
       });
@@ -109,6 +109,7 @@ export const requiresMessageGroupRights = rights =>
         throw new Error("You don't have the necessary rights!");
       }
     } catch (err) {
+      console.log(err.message);
       throw new Error("Oops, something went wrong. Please report this error with id auth_2");
     }
   });

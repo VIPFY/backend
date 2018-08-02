@@ -2,6 +2,7 @@ import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresMessageGroupRights } from "../../helpers/permissions";
 import { NEW_MESSAGE, pubsub } from "../../constants";
 import { parentAdminCheck, superset } from "../../helpers/functions";
+import { sanitizeMessage, updateLastReadMessage } from "../../helpers/messages";
 
 export default {
   /**
@@ -20,7 +21,8 @@ export default {
       }
       console.log("b");
       try {
-        models.sequelize.transaction(async ta => {
+        let groupId;
+        await models.sequelize.transaction(async ta => {
           const {
             /* eslint-disable no-unused-vars */
             user: { unitid, company }
@@ -45,7 +47,7 @@ export default {
           }
 
           const group = await models.MessageGroup.create({}, { transaction: ta });
-          const groupId = group.dataValues.id;
+          groupId = group.dataValues.id;
           const dbqueries = [];
           // create MessageGroupMembership for sender and receiver
           dbqueries.push(
@@ -129,11 +131,15 @@ export default {
           );
 
           await Promise.all(dbqueries);
-          return {
+          console.log({
             ok: true,
-            MessageGroup: groupId,
-          };
+            messagegroup: groupId,
+          });
         });
+        return {
+          ok: true,
+          messagegroup: groupId,
+        };
       } catch (err) {
         throw new Error(err.message);
       }
@@ -146,7 +152,7 @@ export default {
    * also sanitzes the message before posting
    */
   sendMessage: requiresMessageGroupRights(["speak"]).createResolver(
-    async (parent, { group, message }, { models, token }) => {
+    async (parent, { groupid, message }, { models, token }) => {
       try {
         const {
           /* eslint-disable no-unused-vars */
@@ -154,14 +160,24 @@ export default {
         } = decode(token);
 
         message = sanitizeMessage(message);
+        console.log({
+          messagetext: message,
+          sender: unitid,
+          receiver: groupid,
+          payload: {}
+        });
         message = await models.MessageData.create({
           messagetext: message,
           sender: unitid,
-          receiver: group,
+          receiver: groupid,
           payload: {}
         });
 
-        await updateLastReadMessage(models, unitid, group, message.dataValues.id);
+        await updateLastReadMessage(models, unitid, groupid, message.dataValues.id);
+        return {
+          ok: true,
+          message: message.dataValues.id,
+        };
       } catch (err) {
         throw new Error(err.message);
       }

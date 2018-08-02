@@ -10,14 +10,14 @@ export const types = `
     archivetimereceiver: Date
     tags: [String]
     messagetext: String!
-    receiver: Unit!
+    receiver: PublicUser!
   }
 
 # The original table which contains the messages
   type MessageData {
     id: ID!
     receiver: MessageGroup!
-    sender: PublicUser!
+    sender: PublicUser
     sendtime: Date!
     messagetext: String!
     payload: JSON
@@ -28,15 +28,15 @@ export const types = `
   type MessageGroupMembership {
     id: ID!
     groupid: MessageGroup!
-    unitid: Unit!
+    unitid: PublicUser!
     visibletimestart: Date
     visibletimeend: Date
-    lastreadmessageid: Int
+    lastreadmessageid: ID
   }
 
   type MessageTag {
     id: ID!
-    unitid: Unit!
+    unitid: PublicUser!
     messageid: Message!
     tag: String
     public: Boolean
@@ -73,6 +73,11 @@ export const types = `
     ok: Boolean!
     messagegroup: MessageGroup
   }
+
+  type MessageResponse {
+    ok: Boolean!
+    message: ID
+  }
 `;
 
 export const queries = `
@@ -81,6 +86,7 @@ export const queries = `
   fetchLastDialogMessages: [MessageData]
   fetchDialog(groupid: ID!): [MessageData]
   fetchGroups: [MessageGroup]
+  fetchPublicUser(userid: ID!): PublicUser
 `;
 
 export const mutations = `
