@@ -1,8 +1,8 @@
-export default (sequelize, { DATE, INTEGER }) => {
+export default (sequelize, { DATE, BIGINT }) => {
   const MessageGroupMembership = sequelize.define("messagegroupmembership_data", {
     visibletimestart: DATE,
     visibletimeend: DATE,
-    lastreadmessageid: INTEGER
+    lastreadmessageid: BIGINT
   });
 
   MessageGroupMembership.associate = ({ Unit, MessageGroup }) => {

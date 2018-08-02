@@ -31,7 +31,7 @@ export const types = `
     unitid: PublicUser!
     visibletimestart: Date
     visibletimeend: Date
-    lastreadmessageid: Int
+    lastreadmessageid: ID
   }
 
   type MessageTag {
