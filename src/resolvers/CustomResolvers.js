@@ -58,7 +58,7 @@ export const implementJSON = {
 export const find = data => {
   const searches = {};
   Object.keys(data).map(search => {
-    searches[search] = (parent, args, { models }) => {
+    searches[search] = (parent, args, { models }, info) => {
       switch (data[search]) {
         case "Human":
         case "Department":
@@ -73,7 +73,7 @@ export const find = data => {
             return models[modelName].findAll({ where: { id: { $in: parent[search] } } });
           } else {
             // single object
-            console.error("FIND", search, data[search], parent[search], "ARGS", args);
+            console.error("FIND", search, data[search], parent[search], "INFO", info);
             return models[data[search]].findById(parent[search]);
           }
         }
