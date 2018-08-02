@@ -90,14 +90,14 @@ export const find = data => {
               "S",
               info.fieldNodes[0].selectionSet.selections
             );*/
-            if (
+            /*if (
               info.fieldNodes[0].selectionSet.selections.filter(
                 selection =>
                   !selection.name || (selection.name.value != "id" && selection.name.value != "__typename")
               ).length == 0
             ) {
               return Promise.resolve({ id: parent[search] });
-            }
+            }*/
             console.error(models[data[search]].findById(parent[search]));
             return models[data[search]].findById(parent[search]);
           }
