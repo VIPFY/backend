@@ -90,7 +90,7 @@ export const find = data => {
               "S",
               info.fieldNodes[0].selectionSet.selections
             );*/
-            models[data[search]].findById(parent[search], { raw: true }).then(a => console.error(a));
+            models[data[search]].findById(parent[search], { raw: true }).then(a => console.error(parent[search], a));
             if (
               info.fieldNodes[0].selectionSet.selections.filter(
                 selection =>
