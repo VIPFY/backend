@@ -8,6 +8,7 @@ export const queries = `
   # Checks whether the user is an admin
   admin: User
 
+  adminFetchPlans(appid: Int!): [Plan]!
   # Returns an user. Should only be usable by an admin
   fetchUser(id: Int!): User!
   fetchRecentLogs(user: Int!): [Log]!
@@ -21,7 +22,6 @@ export const queries = `
 `;
 
 export const mutations = `
-  addAppToStride(appId: Int!, appName: String!): Response!
   adminCreateLicence(licenceData: JSON!): Response!
   adminUpdateLicence(unitid: Int!, boughtplanid: Int! licenceData: JSON!): Response!
   adminUpdateAddress(addressData: AddressInput!, id: Int!): Response!
@@ -29,11 +29,13 @@ export const mutations = `
 
   adminCreatePlan(plan: PlanInput!, appId: Int!): Response!
   adminUpdatePlan(id: Int!, plan: PlanInput!): Response!
+  adminEndPlan(id: Int!, enddate: String!): Response!
 
   adminCreateEmail(email: String!, unitid: Int!): Response!
   adminDeleteEmail(email: String!,unitid: Int!): Response!
   adminCreateCompany(company: CompanyInput!, file: File): Response!
   adminUpdateUser(user: UserInput, file: File, unitid: Int!): Response!
+
   # Deletes an unit, checks if unit is an user or a company
   adminDeleteUnit(unitid: Int!): Response!
 

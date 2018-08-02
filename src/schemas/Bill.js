@@ -141,13 +141,9 @@ export const queries = `
 `;
 
 export const mutations = `
-  # This creates a product which can be linked to a plan
-  createStripePlan(name: String, productid: String, amount: Int!): Response!
-
-  # This allows the user to buy a plan
+  addPaymentData(data: String!, departmentid: Int!): Response!
+  # The buying process
   buyPlan(planIds: [Int]!, options: Options): Response!
-
-  endPlan(id: Int!, enddate: String!): Response!
 
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!

@@ -6,10 +6,60 @@ import { requiresRight, requiresAuth } from "../../helpers/permissions";
 import { recursiveAddressCheck } from "../../helpers/functions";
 import createInvoice from "../../helpers/createInvoice";
 import { createDownloadLink } from "../../services/gcloud";
+import { createCustomer, listCards, addCard } from "../../services/stripe";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
 export default {
+  /**
+   * Add a credit card to a department. We will only save a token representation
+   * from stride.
+   * @param data: string
+   * @param departmentid: integer
+   */
+  addPaymentData: requiresRight(["admin", "addPayment"]).createResolver(
+    async (parent, { data, departmentid }, { models }) => {
+      try {
+        const department = await models.Department.findById(departmentid, { raw: true });
+
+        if (
+          !department.internaldata ||
+          !department.internaldata.stride ||
+          !department.internaldata.stride.source
+        ) {
+          const stripeCustomer = await createCustomer(department, data);
+
+          const card = await listCards(stripeCustomer.id);
+
+          await models.Department.update({
+            internaldata: {
+              stride: {
+                id: stripeCustomer.id,
+                created: stripeCustomer.created,
+                currency: stripeCustomer.currency,
+                cards: [{ ...card.data[0] }]
+              }
+            }
+          });
+        } else {
+          const card = await addCard(department.internaldata.stripe.id, data);
+          await models.Department.update({
+            internaldata: {
+              stride: {
+                ...department.internaldata.stride,
+                cards: [...department.internaldata.stride.cards, { ...card }]
+              }
+            }
+          });
+        }
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
+
   buyPlan: requiresRight(["admin", "buyApps"]).createResolver(
     async (parent, { planIds, options }, { models, token }) =>
       models.sequelize.transaction(async ta => {
@@ -21,6 +71,16 @@ export default {
           const {
             user: { unitid, company }
           } = decode(token);
+
+          const department = await models.Department.findById(company, { raw: true });
+
+          if (
+            !department.internaldata ||
+            !department.internaldata.stride ||
+            !department.internaldata.stride.source
+          ) {
+            throw new Error("Missing payment information!");
+          }
 
           const plans = await models.Plan.findAll({
             where: { id: planIds },
@@ -232,16 +292,6 @@ export default {
         }
       })
   ),
-
-  endPlan: requiresRight("admin").createResolver(async (parent, { id, enddate }, { models }) => {
-    try {
-      await models.Plan.update({ enddate }, { where: { id } });
-
-      return { ok: true };
-    } catch (err) {
-      throw new Error(err.message);
-    }
-  }),
 
   createMonthlyBill: async (parent, args, { models, token }) => {
     try {

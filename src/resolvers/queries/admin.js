@@ -1,7 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { parentAdminCheck } from "../../helpers/functions";
-import { createPlan } from "../../services/stripe";
 
 export default {
   adminFetchListLength: requiresVipfyAdmin.createResolver(async (parent, args, { models }) => {
@@ -197,6 +196,32 @@ export default {
       throw new Error(message);
     }
   }),
+
+  adminFetchPlans: async (parent, { appid }, { models }) => {
+    try {
+      const allPlans = await models.Plan.findAll({ where: { appid }, order: [["price", "ASC"]] });
+      // Filter out the main plans
+      const mainPlans = allPlans.filter(plan => plan.mainplan == null);
+      // Add to each main plan a property sub plan to store them later
+      mainPlans.forEach(mainPlan => {
+        mainPlan.subplans = [];
+      });
+      // Filter out the sub plans
+      const subPlans = allPlans.filter(plan => plan.mainplan != null);
+      // Add the sub plans to it's main plan
+      subPlans.forEach(subPlan => {
+        mainPlans.forEach(mainPlan => {
+          if (subPlan.mainplan == mainPlan.id) {
+            mainPlan.subplans.push(subPlan);
+          }
+        });
+      });
+
+      return mainPlans;
+    } catch ({ message }) {
+      throw new Error(message);
+    }
+  },
 
   adminFetchEmployees: requiresVipfyAdmin.createResolver(
     async (parent, { unitid, limit, offset = 0 }, { models }) => {
