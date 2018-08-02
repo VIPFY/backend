@@ -90,6 +90,7 @@ export const find = data => {
               "S",
               info.fieldNodes[0].selectionSet.selections
             );*/
+            models[data[search]].findById(parent[search]).then(a => console.error(a));
             if (
               info.fieldNodes[0].selectionSet.selections.filter(
                 selection =>
@@ -98,7 +99,6 @@ export const find = data => {
             ) {
               return Promise.resolve({ id: parent[search] });
             }
-            console.error(models[data[search]].findById(parent[search]));
             return models[data[search]].findById(parent[search]);
           }
         }
