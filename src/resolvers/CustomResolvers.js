@@ -73,6 +73,7 @@ export const find = data => {
             return models[modelName].findAll({ where: { id: { $in: parent[search] } } });
           } else {
             // single object
+            console.error("FIND", search, data[search], parent[search], "ARGS", args);
             return models[data[search]].findById(parent[search]);
           }
         }
