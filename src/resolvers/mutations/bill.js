@@ -20,18 +20,24 @@ export default {
   addPaymentData: requiresRight(["admin", "addPayment"]).createResolver(
     async (parent, { data, departmentid }, { models }) => {
       try {
-        const department = await models.Department.findById(departmentid, { raw: true });
-
+        const department = await models.Department.findOne({
+          where: { unitid: departmentid },
+          raw: true
+        });
+        console.log(data);
         if (
           !department.internaldata ||
           !department.internaldata.stride ||
           !department.internaldata.stride.source
         ) {
-          const stripeCustomer = await createCustomer(department, data);
+          const stripeCustomer = await createCustomer(department, {
+            name: data.card.name,
+            id: data.id
+          });
 
           const card = await listCards(stripeCustomer.id);
 
-          await models.Department.update({
+          await models.DepartmentData.update({
             internaldata: {
               stride: {
                 id: stripeCustomer.id,
@@ -43,7 +49,7 @@ export default {
           });
         } else {
           const card = await addCard(department.internaldata.stripe.id, data);
-          await models.Department.update({
+          await models.DepartmentData.update({
             internaldata: {
               stride: {
                 ...department.internaldata.stride,

@@ -141,7 +141,7 @@ export const queries = `
 `;
 
 export const mutations = `
-  addPaymentData(data: String!, departmentid: Int!): Response!
+  addPaymentData(data: JSON, departmentid: Int!): Response!
   # The buying process
   buyPlan(planIds: [Int]!, options: Options): Response!
 
