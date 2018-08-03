@@ -56,7 +56,7 @@
     "querystring": "^0.2.0",
     "read-utf8": "^1.2.8",
     "same-time": "^2.3.3",
-    "sanitize-html": "^1.18.2",
+    "sanitize-html": "^1.18.3",
     "sequelize": "^4.32.6",
     "sib-api-v3-sdk": "^7.0.1",
     "soap": "^0.24.0",

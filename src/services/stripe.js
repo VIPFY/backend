@@ -24,7 +24,29 @@ export const createProduct = async app => {
 
 export const createPlan = async data => {
   try {
-    const res = await stripe.plans.create({ ...data });
+    const res = await stripe.plans.create(data);
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+// The plan’s ID, amount, currency, or billing cycle can't be changed
+export const updatePlan = async (id, data) => {
+  try {
+    const res = await stripe.plans.update(id, data);
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+// Deleting plans means new subscribers can’t be added. Existing subscribers aren’t affected.
+export const deletePlan = async id => {
+  try {
+    const res = await stripe.plans.delete(id);
 
     return res;
   } catch (err) {
@@ -41,9 +63,39 @@ export const createPlan = async data => {
 export const createCustomer = async (customer, source) => {
   try {
     const res = await stripe.customers.create({
-      description: `${customer.id} ${customer.lastname}`,
+      description: `${customer.id} ${customer.name}`,
       source
     });
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * List the cards from a stride customer
+ * @param id: string
+ */
+export const listCards = async id => {
+  try {
+    const res = await stripe.customers.listCards(id);
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * Adds a card to a stride customer
+ * The source is a token created from a Stripe library in the Frontend
+ * @param id: string
+ * @param source: string
+ */
+export const addCard = async (id, source) => {
+  try {
+    const res = await stripe.customers.createSource(id, { source });
 
     return res;
   } catch (err) {

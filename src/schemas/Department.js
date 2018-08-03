@@ -13,7 +13,6 @@ export const types = `
   type Department {
     name: String!
     legalinformation: JSON
-    statisticdata: JSON
     unitid: Unit!
     banned: Boolean!
     deleted: Boolean!
@@ -30,7 +29,6 @@ export const types = `
   type DepartmentData {
     name: String!
     legalinformation: JSON
-    statisticdata: JSON
     unitid: Unit!
   }
 

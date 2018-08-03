@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { split } from "lodash";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
-import { createProduct, createPlan } from "../../services/stripe";
+import { createProduct, createPlan, deletePlan } from "../../services/stripe";
 import { uploadFile, deleteFile } from "../../services/gcloud";
 import { appPicFolder, userPicFolder } from "../../constants";
 import { createPassword } from "../../helpers/functions";
@@ -81,7 +81,30 @@ export default {
 
   adminUpdatePlan: requiresVipfyAdmin.createResolver(async (parent, { plan, id }, { models }) => {
     try {
+      if (plan.price || plan.currency || plan.payperiod) {
+        throw new Error("The plan’s ID, amount, currency, or billing cycle can't be changed");
+      }
+
       await models.Plan.update({ ...plan }, { where: { id } });
+
+      return { ok: true };
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
+
+  adminEndPlan: requiresVipfyAdmin.createResolver(async (parent, { id, enddate }, { models }) => {
+    try {
+      const plan = models.Plan.findById(id, { raw: true, attributes: ["stridedata"] });
+
+      if (plan.stridedata) {
+        await deletePlan(plan.stridedata.id);
+      }
+
+      await models.Plan.update(
+        { enddate, stridedata: { ...plan.stridedata, deleted: true } },
+        { where: { id }, raw: true }
+      );
 
       return { ok: true };
     } catch (err) {
