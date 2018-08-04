@@ -19,20 +19,20 @@ export default {
         });
         let product;
 
-        if (!app.internaldata || !app.internaldata.stride) {
+        if (!app.internaldata || !app.internaldata.stripe) {
           const productData = await createProduct(app.name);
           const { id, active, created, name, type, updated } = productData;
 
           await models.App.update(
             {
-              internaldata: { stride: { id, active, created, name, type, updated } }
+              internaldata: { stripe: { id, active, created, name, type, updated } }
             },
             { where: { id: appId }, raw: true, transaction: ta }
           );
 
           product = id;
         } else {
-          product = app.internaldata.stride.id;
+          product = app.internaldata.stripe.id;
         }
         let interval = "year";
 
@@ -60,7 +60,7 @@ export default {
         await models.Plan.create(
           {
             ...plan,
-            stridedata: {
+            stripedata: {
               id: stripePlan.id,
               active,
               amount,
@@ -95,14 +95,14 @@ export default {
 
   adminEndPlan: requiresVipfyAdmin.createResolver(async (parent, { id, enddate }, { models }) => {
     try {
-      const plan = models.Plan.findById(id, { raw: true, attributes: ["stridedata"] });
+      const plan = models.Plan.findById(id, { raw: true, attributes: ["stripedata"] });
 
-      if (plan.stridedata) {
-        await deletePlan(plan.stridedata.id);
+      if (plan.stripedata) {
+        await deletePlan(plan.stripedata.id);
       }
 
       await models.Plan.update(
-        { enddate, stridedata: { ...plan.stridedata, deleted: true } },
+        { enddate, stripedata: { ...plan.stripedata, deleted: true } },
         { where: { id }, raw: true }
       );
 

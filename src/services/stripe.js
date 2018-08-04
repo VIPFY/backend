@@ -74,7 +74,7 @@ export const createCustomer = async (customer, source) => {
 };
 
 /**
- * List the cards from a stride customer
+ * List the cards from a stripe customer
  * @param id: string
  */
 export const listCards = async id => {
@@ -88,7 +88,7 @@ export const listCards = async id => {
 };
 
 /**
- * Adds a card to a stride customer
+ * Adds a card to a stripe customer
  * The source is a token created from a Stripe library in the Frontend
  * @param id: string
  * @param source: string
