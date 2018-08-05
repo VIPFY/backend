@@ -38,7 +38,7 @@ export default (sequelize, { INTEGER, DECIMAL, JSONB, TEXT, TIME, STRING, BOOLEA
     },
     optional: { type: BOOLEAN, defaultValue: false },
     gototime: TEXT,
-    stridedata: JSONB
+    stripedata: JSONB
   });
 
   Plan.associate = ({ App }) => {

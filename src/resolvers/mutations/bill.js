@@ -13,44 +13,52 @@ import { createCustomer, listCards, addCard } from "../../services/stripe";
 export default {
   /**
    * Add a credit card to a department. We will only save a token representation
-   * from stride.
+   * from stripe. Create a new User if none exists
    * @param data: string
    * @param departmentid: integer
    */
   addPaymentData: requiresRight(["admin", "addPayment"]).createResolver(
     async (parent, { data, departmentid }, { models }) => {
       try {
-        const department = await models.Department.findById(departmentid, { raw: true });
+        const department = await models.DepartmentData.findOne({
+          where: { unitid: departmentid },
+          raw: true
+        });
 
-        if (
-          !department.internaldata ||
-          !department.internaldata.stride ||
-          !department.internaldata.stride.source
-        ) {
-          const stripeCustomer = await createCustomer(department, data);
-
+        if (!department.internaldata || !department.internaldata.stripe) {
+          const stripeCustomer = await createCustomer(
+            { name: data.card.name, id: data.client_ip },
+            data.id
+          );
           const card = await listCards(stripeCustomer.id);
 
-          await models.Department.update({
-            internaldata: {
-              stride: {
-                id: stripeCustomer.id,
-                created: stripeCustomer.created,
-                currency: stripeCustomer.currency,
-                cards: [{ ...card.data[0] }]
+          await models.DepartmentData.update(
+            {
+              internaldata: {
+                stripe: {
+                  id: stripeCustomer.id,
+                  created: stripeCustomer.created,
+                  currency: stripeCustomer.currency,
+                  cards: [{ ...card.data[0] }]
+                }
               }
-            }
-          });
+            },
+            { where: { unitid: departmentid }, raw: true }
+          );
         } else {
-          const card = await addCard(department.internaldata.stripe.id, data);
-          await models.Department.update({
-            internaldata: {
-              stride: {
-                ...department.internaldata.stride,
-                cards: [...department.internaldata.stride.cards, { ...card }]
+          const card = await addCard(department.internaldata.stripe.id, data.id);
+
+          await models.DepartmentData.update(
+            {
+              internaldata: {
+                stripe: {
+                  ...department.internaldata.stripe,
+                  cards: [...department.internaldata.stripe.cards, { ...card }]
+                }
               }
-            }
-          });
+            },
+            { where: { unitid: departmentid }, raw: true }
+          );
         }
 
         return { ok: true };
@@ -76,8 +84,8 @@ export default {
 
           if (
             !department.internaldata ||
-            !department.internaldata.stride ||
-            !department.internaldata.stride.source
+            !department.internaldata.stripe ||
+            !department.internaldata.stripe.source
           ) {
             throw new Error("Missing payment information!");
           }
