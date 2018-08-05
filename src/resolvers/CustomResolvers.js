@@ -90,16 +90,17 @@ export const find = data => {
               "S",
               info.fieldNodes[0].selectionSet.selections
             );*/
-            /*models[data[search]].findById(parent[search], { raw: true }).then(a => console.error(parent[search], a));
+            models[data[search]].findById(parent[search], { raw: true }).then(a => console.error(parent[search], a));
             if (
               info.fieldNodes[0].selectionSet.selections.filter(
                 selection =>
                   !selection.name || (selection.name.value != "id" && selection.name.value != "__typename")
               ).length == 0
             ) {
-              return { id: parent[search] };
-            }*/
-            return models[data[search]].findById(parent[search]);
+              console.error({ id: parent[search] });
+              //return { id: parent[search] };
+            }
+            return models[data[search]].findById(parent[search], { raw: true });
           }
         }
       }
