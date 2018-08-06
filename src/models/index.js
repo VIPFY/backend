@@ -24,6 +24,10 @@ const sequelize = new Sequelize(
       timestamps: false,
       freezeTableName: true
     },
+    pool: {
+      min: 1,
+      max: 10,
+    },
     /* logging: process.env.LOGGING ? data => console.log(data) : false */
     logging: data => console.log(data)
   }
