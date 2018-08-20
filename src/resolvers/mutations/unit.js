@@ -2,6 +2,7 @@ import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 import { uploadFile } from "../../services/gcloud";
 import { userPicFolder } from "../../constants";
+import { NormalError } from "../errors";
 /* eslint-disable no-unused-vars, max-len */
 
 export default {
@@ -14,8 +15,8 @@ export default {
       await models.Unit.update({ profilepicture }, { where: { id: unitid } });
 
       return { ok: true };
-    } catch ({ message }) {
-      throw new Error(message);
+    } catch (err) {
+      throw new NormalError({ message: err.message });
     }
   }),
 
@@ -34,7 +35,7 @@ export default {
 
       return { ok: true };
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message });
     }
   })
 };

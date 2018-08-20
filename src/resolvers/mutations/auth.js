@@ -5,6 +5,7 @@ import { createTokens } from "../../helpers/auth";
 import { sendRegistrationEmail } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
 import { parentAdminCheck } from "../../helpers/functions";
+import { AuthError } from "../errors";
 
 export default {
   signUp: async (parent, { email, newsletter }, { models, SECRET, SECRET_TWO }) =>
@@ -13,7 +14,7 @@ export default {
         // Check whether the email is already in use
         const emailInUse = await models.Email.findOne({ where: { email } });
         if (emailInUse) {
-          throw new Error("Email already in use!");
+          throw new AuthError({ message: "Email already in use!" });
         }
 
         // const passwordhash = await createPassword(email);
@@ -42,19 +43,19 @@ export default {
         const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);
 
         return { ok: true, token, refreshToken };
-      } catch ({ message }) {
-        throw new Error(message);
+      } catch (err) {
+        throw new AuthError({ message: err.message });
       }
     }),
 
   signUpConfirm: async (parent, { email, password }, { models, SECRET, SECRET_TWO }) => {
     const emailExists = await models.Email.findOne({ where: { email } });
-    if (!emailExists) throw new Error("Email not found!");
+    if (!emailExists) throw new AuthError({ message: "Email not found!" });
 
     const isVerified = await models.Email.findOne({
       where: { email, verified: true }
     });
-    if (isVerified) throw new Error("User already verified!");
+    if (isVerified) throw new AuthError({ message: "User already verified!" });
 
     return models.sequelize.transaction(async ta => {
       try {
@@ -78,26 +79,26 @@ export default {
           refreshToken
         };
       } catch (err) {
-        throw new Error("Couldn't activate user!");
+        throw new AuthError({ message: "Couldn't activate user!" });
       }
     });
   },
 
   signIn: async (parent, { email, password }, { models, SECRET, SECRET_TWO }) => {
-    const error = "Email or Password incorrect!";
     try {
+      const message = "Email or Password incorrect!";
       const emailExists = await models.Login.findOne({ where: { email }, raw: true });
-      if (!emailExists) throw new Error(error);
-      if (emailExists.verified == false) throw new Error("Sorry, this email isn't verified yet.");
-      if (emailExists.banned == true) throw new Error("Sorry, this account is banned!");
-      if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended!");
+      if (!emailExists) throw new AuthError({ message });
+      if (emailExists.verified == false) throw new AuthError({ message: "Sorry, this email isn't verified yet." });
+      if (emailExists.banned == true) throw new AuthError({ message: "Sorry, this account is banned!" });
+      if (emailExists.suspended == true) throw new AuthError({ message: "Sorry, this account is suspended!" });
       if (emailExists.deleted == true) {
-        throw new Error("Sorry, this account doesn't exist anymore.");
+        throw new AuthError({ message: "Sorry, this account doesn't exist anymore." });
       }
 
       const basicUser = await models.User.findOne({ where: { id: emailExists.unitid } });
       const valid = await bcrypt.compare(password, emailExists.passwordhash);
-      if (!valid) throw new Error(error);
+      if (!valid) throw new AuthError({ message });
 
       const refreshTokenSecret = emailExists.passwordhash + SECRET_TWO;
       const user = await parentAdminCheck(models, basicUser);
@@ -108,15 +109,15 @@ export default {
 
       return { ok: true, user, token, refreshToken };
     } catch (err) {
-      throw new Error(err);
+      throw new AuthError({ message: err.message });
     }
   },
 
   changePassword: requiresAuth.createResolver(
     async (parent, { pw, newPw, confirmPw }, { models, token, SECRET, SECRET_TWO }) => {
       try {
-        if (newPw != confirmPw) throw new Error("New passwords don't match!");
-        if (pw == newPw) throw new Error("Current and new password can't be the same one!");
+        if (newPw != confirmPw) throw new AuthError({ message: "New passwords don't match!" });
+        if (pw == newPw) throw new AuthError({ message: "Current and new password can't be the same one!" });
 
         const {
           user: { unitid }
@@ -130,10 +131,10 @@ export default {
             suspended: false
           }
         });
-        if (!findOldPassword) throw new Error("No database entry found!");
+        if (!findOldPassword) throw new AuthError({ message: "No database entry found!" });
 
         const valid = await bcrypt.compare(pw, findOldPassword.passwordhash);
-        if (!valid) throw new Error("Incorrect old password!");
+        if (!valid) throw new AuthError({ message: "Incorrect old password!" });
         const passwordhash = await bcrypt.hash(newPw, 12);
 
         await models.Human.update({ passwordhash }, { where: { unitid } });
@@ -151,19 +152,18 @@ export default {
 
         return { ok: true, user, token: newToken, refreshToken };
       } catch (err) {
-        throw new Error(err.message);
+        throw new AuthError({ message: err.message });
       }
     }
   ),
 
   forgotPassword: async (parent, { email }, { models }) => {
-    const emailExists = await models.Login.findOne({ where: { email } });
-    if (!emailExists) throw new Error("Email doesn't exist!");
-    if (emailExists.banned == true) throw new Error("Sorry, this account is banned!");
-    if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended!");
-    if (emailExists.deleted == true) throw new Error("Sorry, this account doesn't exist anymore.");
-
     try {
+      const emailExists = await models.Login.findOne({ where: { email } });
+      if (!emailExists) throw new AuthError({ message: "Email or Password incorrect!" });
+      if (emailExists.verified == false) throw new AuthError({ message: "Sorry, this email isn't verified yet." });
+      if (emailExists.banned == true) throw new AuthError({ message: "Sorry, this account is banned!" });
+      if (emailExists.suspended == true) throw new AuthError({ message: "Sorry, this account is suspended!" });
       const user = await models.Human.findOne({ where: { unitid: emailExists.unitid } });
       // Change the given hash to improve security
       const start = random(3, 8);
@@ -177,7 +177,7 @@ export default {
         email
       };
     } catch (err) {
-      throw new Error(err.message);
+      throw new AuthError({ message: err.message });
     }
   }
 };

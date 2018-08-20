@@ -5,6 +5,7 @@ import {
   requiresMessageGroupRights
 } from "../../helpers/permissions";
 import { parentAdminCheck, superset } from "../../helpers/functions";
+import { NormalError } from "../errors";
 
 export default {
   /**
@@ -65,7 +66,7 @@ export default {
           messagegroup: groupId
         };
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message });
       }
     }
   ),
@@ -94,7 +95,7 @@ export default {
           message: messageid
         };
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message });
       }
     }
   ),
@@ -103,7 +104,9 @@ export default {
   setDeleteStatus: requiresAuth.createResolver(
     async (parent, { id, type }, { models }) => {
       const messageExists = await models.MessageData.findById(id);
-      if (!messageExists) throw new Error("Message doesn't exist!");
+      if (!messageExists) {
+        throw new NormalError({ message: "Message doesn't exist!" });
+      }
 
       try {
         await models.MessageData.update({ [type]: true }, { where: { id } });
@@ -111,7 +114,7 @@ export default {
           ok: true
         };
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message });
       }
     }
   )

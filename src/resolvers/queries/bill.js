@@ -1,7 +1,7 @@
 import { decode } from "jsonwebtoken";
-import moment from "moment";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
-import { fetchCustomer } from "../../services/stripe";
+// import { fetchCustomer } from "../../services/stripe";
+import { NormalError } from "../errors";
 
 export default {
   boughtPlans: requiresAuth.createResolver(async (parent, args, { models, token }) => {
@@ -35,8 +35,8 @@ export default {
       );
 
       return boughtPlans;
-    } catch ({ message }) {
-      throw new Error(message);
+    } catch (err) {
+      throw new NormalError({ message: err.message });
     }
   }),
 
@@ -50,7 +50,7 @@ export default {
 
       return bills;
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message });
     }
   }),
 
@@ -70,7 +70,7 @@ export default {
 
       return paymentData.payingoptions.stripe.cards;
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message });
     }
   }),
 
@@ -102,8 +102,8 @@ export default {
       });
 
       return mainPlans;
-    } catch ({ message }) {
-      throw new Error(message);
+    } catch (err) {
+      throw new NormalError({ message: err.message });
     }
   },
 
@@ -122,7 +122,7 @@ export default {
 
         return addresses;
       } catch (err) {
-        throw new Error(err);
+        throw new NormalError({ message: err.message });
       }
     }
   )

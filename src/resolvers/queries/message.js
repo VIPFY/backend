@@ -1,6 +1,7 @@
 import { decode } from "jsonwebtoken";
 import messaging from "vipfy-messaging";
 import { requiresAuth } from "../../helpers/permissions";
+import { NormalError } from "../errors";
 
 export default {
   /**
@@ -17,7 +18,7 @@ export default {
 
         return await messaging.fetchDialog(models, unitid, groupid);
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message });
       }
     }
   ),
@@ -31,19 +32,19 @@ export default {
 
         return await messaging.fetchGroups(models, unitid);
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message });
       }
     }
   ),
 
   fetchPublicUser: requiresAuth.createResolver(
-    async (parent, { userid }, { models, token }) => {
+    async (parent, { userid }, { models }) => {
       try {
         const user = await models.User.findById(userid);
 
         return user;
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message });
       }
     }
   )
