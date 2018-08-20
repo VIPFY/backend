@@ -25,6 +25,7 @@ import models from "./models";
 import { SECRET, SECRET_TWO, TOKEN_DEVELOPMENT } from "./login-data";
 import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware";
 import { refreshTokens } from "./helpers/auth";
+import logger from "./loggers";
 
 const app = express();
 const { ENVIRONMENT, TOKEN_SET, SSL_KEY, SSL_CERT } = process.env;
@@ -73,6 +74,7 @@ app.use(
       context: {
         models,
         token: TOKEN_SET ? TOKEN_DEVELOPMENT : token,
+        logger,
         SECRET,
         SECRET_TWO
       },

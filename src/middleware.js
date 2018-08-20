@@ -7,14 +7,12 @@
 import jwt from "jsonwebtoken";
 import formidable from "formidable";
 import mkdirp from "mkdirp";
-import path from "path";
-import fs from "fs";
 import bcrypt from "bcrypt";
-import moment from "moment";
 import { SECRET, SECRET_TWO, SECRET_THREE } from "./login-data";
 import { refreshTokens } from "./helpers/auth";
 import models from "./models";
 import Utility from "./helpers/createHmac";
+import logger from "./loggers";
 
 /* eslint-disable consistent-return, prefer-destructuring */
 export const authMiddleware = async (req, res, next) => {
@@ -106,11 +104,11 @@ export const loggingMiddleWare = (req, res, next) => {
       chunks.push(new Buffer(restArgs[0]));
     }
 
-    const now = moment();
-    const date = now.format("YYYY-MM-DD");
-    const uploadDir = "src/logs";
-    if (uploadDir) mkdirp.sync(uploadDir);
-    const logDirectory = path.join(__dirname, "./logs", `${date}.txt`);
+    // const now = moment();
+    // const date = now.format("YYYY-MM-DD");
+    // const uploadDir = "src/logs";
+    // if (uploadDir) mkdirp.sync(uploadDir);
+    // const logDirectory = path.join(__dirname, "./logs", `${date}.txt`);
 
     const body = Buffer.concat(chunks).toString("utf8");
 
@@ -162,11 +160,12 @@ export const loggingMiddleWare = (req, res, next) => {
         eventdata,
         user
       };
+      logger.error(JSON.stringify(log));
 
-      fs.appendFile(logDirectory, `${JSON.stringify(log)} \n`, err => {
-        if (err) throw err;
-        eventdata = "Logging Error";
-      });
+      // fs.appendFile(logDirectory, `${JSON.stringify(log)} \n`, err => {
+      //   if (err) throw err;
+      //   eventdata = "Logging Error";
+      // });
 
       if (req.body.query.includes("mutation")) {
         models.Log.create(log);
@@ -176,10 +175,11 @@ export const loggingMiddleWare = (req, res, next) => {
         models.Human.update({ lastactive: new Date().toUTCString() }, { where: { unitid: user } });
       }
     } catch ({ name, stack }) {
-      fs.appendFile(logDirectory, JSON.stringify(`${name}: ${stack}`), err => {
-        if (err) throw err;
-        eventdata = "Logging Error";
-      });
+      JSON.stringify(`${name}: ${stack}`);
+      // fs.appendFile(logDirectory, JSON.stringify(`${name}: ${stack}`), err => {
+      //   if (err) throw err;
+      //   eventdata = "Logging Error";
+      // });
     }
     oldEnd.apply(res, restArgs);
   };

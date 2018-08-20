@@ -34,8 +34,25 @@ export default {
     }
   },
 
-  fetchApp: (parent, { name }, { models }) => models.AppDetails.findOne({ where: { name } }),
-  fetchAppById: (parent, { id }, { models }) => models.AppDetails.findById(id),
+  fetchApp: async (parent, { name }, { models }) => {
+    try {
+      const app = await models.AppDetails.findOne({ where: { name } });
+
+      return app;
+    } catch (err) {
+      throw new NormalError({ message: err.message });
+    }
+  },
+
+  fetchAppById: async (parent, { id }, { models }) => {
+    try {
+      const app = await models.AppDetails.findById(id);
+
+      return app;
+    } catch (err) {
+      throw new NormalError({ message: err.message });
+    }
+  },
 
   fetchLicences: requiresAuth.createResolver(
     async (parent, { licenceid }, { models, token }, info) => {

@@ -300,7 +300,6 @@ export default {
 
             domainData.rr = rr;
             delete domainData.dns;
-            console.log(domainData);
             const updatedDNS = await dd24Api("UpdateDomain", domainData);
 
             if (updatedDNS && updatedDNS.code == 200) {
