@@ -33,6 +33,16 @@ const sequelize = new Sequelize(
   }
 );
 
+const changeCredentials = (username, password) => {
+  sequelize.connectionManager.config.username = username;
+  sequelize.connectionManager.config.password = password;
+  const { pool } = sequelize;
+  sequelize.initPools();
+  pool.drain().then(() => {
+    this.pool.clear();
+  });
+};
+
 // The mapping here will be used in the resolver to access the model.
 // For example models.User
 const db = {
@@ -82,5 +92,6 @@ Object.keys(db).forEach(modelName => {
 
 db.sequelize = sequelize;
 db.Op = sequelize.Op;
+db.changeCredentials = changeCredentials;
 
 export default db;
