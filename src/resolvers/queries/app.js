@@ -1,29 +1,37 @@
 import { decode } from "jsonwebtoken";
 import { weeblyApi } from "../../services/weebly";
+import dd24Api from "../../services/dd24";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
 
 /* eslint-disable default-case */
 const startTime = Date.now();
 
 export default {
-  allApps: (parent, { limit, offset, sortOptions }, { models }) =>
-    models.AppDetails.findAll({
-      limit,
-      offset,
-      attributes: [
-        "id",
-        "icon",
-        "logo",
-        "disabled",
-        "name",
-        "teaserdescription",
-        "features",
-        "cheapestprice",
-        "avgstars",
-        "cheapestpromo"
-      ],
-      order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
-    }),
+  allApps: async (parent, { limit, offset, sortOptions }, { models }) => {
+    try {
+      const allApps = await models.AppDetails.findAll({
+        limit,
+        offset,
+        attributes: [
+          "id",
+          "icon",
+          "logo",
+          "disabled",
+          "name",
+          "teaserdescription",
+          "features",
+          "cheapestprice",
+          "avgstars",
+          "cheapestpromo"
+        ],
+        order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
+      });
+
+      return allApps;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  },
 
   fetchApp: (parent, { name }, { models }) => models.AppDetails.findOne({ where: { name } }),
   fetchAppById: (parent, { id }, { models }) => models.AppDetails.findById(id),
@@ -76,6 +84,27 @@ export default {
               const endpoint = `user/${licence.key.weeblyid}/loginLink`;
               const res = await weeblyApi("POST", endpoint, "");
               licence.key.loginlink = res.link;
+            }
+
+            if (licence.appid == 11) {
+              const domain = await models.sequelize.query(
+                `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
+                  boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
+                  bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid LIMIT 1;`,
+                { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
+              );
+
+              const accountData = await dd24Api("GetOneTimePassword", { cid: domain[0].key.cid });
+              if (accountData.code == 200) {
+                if (licence.key.cid != accountData.cid) {
+                  throw new Error("Accountdata doesn't match!");
+                }
+
+                licence.key.loginurl = accountData.loginuri;
+                licence.key.password = accountData.onetimepassword;
+              } else {
+                throw new Error(accountData.description);
+              }
             }
           });
 

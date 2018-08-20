@@ -7,6 +7,7 @@ module.exports = {
   },
   rules: {
     "implicit-arrow-linebreak": "off",
+    "no-prototype-builtins": "off",
     "one-var": "off",
     "no-buffer-constructor": "off",
     "function-paren-newline": "off",

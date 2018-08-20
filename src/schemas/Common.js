@@ -65,7 +65,7 @@ input SortOptions {
 
 input Options {
   domain: String
-  whoisprivacy: Int
+  whoisPrivacy: Int
 }
 `;
 

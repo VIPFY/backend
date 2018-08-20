@@ -6,3 +6,4 @@ play.js
 db.js
 old/
 dist/
+node_modules

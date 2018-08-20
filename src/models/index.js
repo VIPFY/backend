@@ -7,7 +7,7 @@ components and exports everything as one big object.
 import Sequelize from "sequelize";
 import dotenv from "dotenv";
 import { POSTGRESLOGIN } from "../login-data";
-import { selectEnv } from "../helpers/selectEnv";
+import { selectEnv } from "../helpers/functions";
 // dotenv must be the first package loaded and launched, because it loads the
 // environment variables.
 dotenv.config({ path: selectEnv(process.env.ENVIRONMENT) });

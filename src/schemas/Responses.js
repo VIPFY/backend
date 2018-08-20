@@ -108,7 +108,6 @@ export const types = `
     reserveduntil: String
     nameserver: [String]
     ttl: Int
-    rr: [rr]
     vatvalid: Int
     event: [Int]
     parameter: eventResponse

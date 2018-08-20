@@ -1,21 +1,9 @@
 import { decode } from "jsonwebtoken";
+import moment from "moment";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
+import { fetchCustomer } from "../../services/stripe";
 
 export default {
-  fetchBills: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { company: unitid }
-      } = decode(token);
-
-      const bills = await models.Bill.findAll({ where: { unitid }, order: [["billtime", "DESC"]] });
-
-      return bills;
-    } catch (err) {
-      throw new Error(err.message);
-    }
-  }),
-
   boughtPlans: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
       const {
@@ -49,6 +37,40 @@ export default {
       return boughtPlans;
     } catch ({ message }) {
       throw new Error(message);
+    }
+  }),
+
+  fetchBills: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { company: unitid }
+      } = decode(token);
+
+      const bills = await models.Bill.findAll({ where: { unitid }, order: [["billtime", "DESC"]] });
+
+      return bills;
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }),
+
+  fetchPaymentData: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { company }
+      } = decode(token);
+
+      const paymentData = await models.Unit.findOne({
+        where: { id: company },
+        attributes: ["payingoptions"],
+        raw: true
+      });
+
+      // const customer = await fetchCustomer(paymentData.internaldata.stripe.id);
+
+      return paymentData.payingoptions.stripe.cards;
+    } catch (err) {
+      throw new Error(err.message);
     }
   }),
 

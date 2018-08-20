@@ -1,6 +1,8 @@
 import { decode } from "jsonwebtoken";
-import dd24Api from "../../services/dd24";
+import moment from "moment";
+import { NormalError } from "../errors";
 import { requiresDepartmentCheck, requiresRight } from "../../helpers/permissions";
+import dd24Api from "../../services/dd24";
 
 /* eslint-disable no-return-await */
 
@@ -149,7 +151,7 @@ export default {
   ),
 
   revokeLicencesFromDepartment: requiresRight(["distributelicences", "admin"]).createResolver(
-    async (parent, { departmentid, boughtplanid }, { models }) =>
+    (parent, { departmentid, boughtplanid }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
           const p1 = models.DepartmentApp.destroy(
@@ -242,8 +244,7 @@ export default {
 
         return { ok: true };
       } catch (err) {
-        console.log(err);
-        throw new Error(err);
+        throw new Error(err.message);
       }
     }
   ),
@@ -262,33 +263,104 @@ export default {
 
         return { ok: true };
       } catch (err) {
-        throw new Error(err);
+        throw new Error(err.message);
       }
     }
   ),
 
-  getDD24Login: async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { unitid }
-      } = decode(token);
+  /**
+   * Update Whois Privacy or Renewal Mode of a domain. Updating both at the same
+   * time is not possible!
+   * @param domainData: object
+   * domainData can contain the properties:
+   * domain: string
+   * renewalmode: enum
+   * whoisPrivacy: integer
+   * cid: string
+   * dns: object[]
+   * @param licenceid: integer
+   */
+  updateDomain: requiresRight(["admin", "managedomains"]).createResolver(
+    (parent, { domainData, licenceid: id }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
 
-      const domain = await models.sequelize.query(
-        `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
-          boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
-          bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid LIMIT 1;`,
-        { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
-      );
+          // Build the proper
+          if (domainData.dns) {
+            const rr = [];
+            domainData.dns.forEach((dns, key) => {
+              rr.push(`RR[${key}][${dns.type}][0]: ${dns.data}`);
+              rr.push(`RR[${key}][ZONE][0]: ${dns.host}`);
+              rr.push(`RR[${key}][ADD][0]: 1`);
+            });
 
-      if (domain.code == 200) {
-        const accountData = await dd24Api("GetOneTimePassword", { cid: domain[0].key.cid });
+            rr.forEach(item => {
+              domainData[item.substr(0, item.indexOf(":"))] = item.substr(item.indexOf(" ") + 1);
+            });
+            delete domainData.dns;
+            console.log(domainData);
+            const updatedDNS = await dd24Api("UpdateDomain", domainData);
 
-        return accountData;
-      } else {
-        throw new Error(domain.description);
-      }
-    } catch (err) {
-      throw new Error(err);
-    }
-  }
+            if (updatedDNS && updatedDNS.code == 200) {
+              console.log("------->", updatedDNS);
+              return { ok: true };
+            } else {
+              throw new NormalError({ message: updatedDNS.description, data: { test: "YO" } });
+            }
+          }
+
+          let p1;
+
+          let queryString = "UPDATE licence_data SET key = jsonb_set(key";
+
+          if (domainData.hasOwnProperty("whoisPrivacy")) {
+            const enddate = moment(Date.now()).add(1, "year");
+            let planid;
+
+            if (domainData.domain.indexOf(".org")) {
+              planid = 53;
+            } else if (domainData.domain.indexOf(".com")) {
+              planid = 51;
+            } else {
+              planid = 52;
+            }
+
+            p1 = models.BoughtPlan.create(
+              {
+                planid,
+                buyer: unitid,
+                payer: company,
+                enddate,
+                disabled: false,
+                description: `Whois Privacy for ${domainData.domain}`
+              },
+              { transaction: ta }
+            );
+
+            queryString += `, '{whoisPrivacy}', '"${domainData.whoisPrivacy}"'`;
+          } else {
+            queryString += `, '{renewalmode}', '"${
+              domainData.renewalmode == "ONCE" || domainData.renewalmode == "AUTODELETE" ? 0 : 1
+            }"'`;
+          }
+          queryString += `) WHERE id = ${id} AND unitid = ${unitid}`;
+
+          const updateDomain = await dd24Api("UpdateDomain", domainData);
+
+          if (updateDomain.code == 200) {
+            const p2 = models.sequelize.query(queryString, { transaction: ta });
+            await Promise.all([p1, p2]);
+
+            return { ok: true };
+          } else {
+            throw new Error(updateDomain.description);
+          }
+        } catch (err) {
+          throw new Error(err.message);
+        }
+      })
+  )
 };

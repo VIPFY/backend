@@ -22,7 +22,7 @@ import demoMutations from "./mutations/demo";
 
 import Subscription from "./subscriptions";
 
-import { find, implementDate, implementJSON } from "./CustomResolvers";
+import { find, implementDate, implementJSON } from "./customResolvers";
 
 const Query = Object.assign(
   authQueries,
@@ -63,6 +63,7 @@ export default {
   JSON: implementJSON,
   Address: find(unit),
   App: find(developerAndSupport),
+  AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   AppDetails: find(developerAndSupport),
   Bill: find(unit),
   BillPosition: find({ vendor: "Unit", billid: "Bill", planid: "Plan" }),
@@ -81,7 +82,6 @@ export default {
   MessageTag: find({ unitid: "User", messageid: "MessageTag" }),
   MessageGroup: find({ lastmessage: "MessageData", memberships: "[MessageGroupMembership]" }),
   MessageResponse: find({ message: "MessageData" }),
-  StartGroupResponse: find({ messagegroup: "MessageGroup" }),
   Newsletter: find({ email: "Email" }),
   ParentUnit: find({ parentunit: "Unit", childunit: "Unit" }),
   Phone: find(unit),
@@ -90,9 +90,9 @@ export default {
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
   Review: find({ reviewer: "User", appid: "App", answerto: "Review" }),
-  AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   ReviewHelpful: find({ reviewer: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),
+  StartGroupResponse: find({ messagegroup: "MessageGroup" }),
   User: find({ company: "Department" }),
   Website: find(unit)
 };

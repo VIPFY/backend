@@ -13,8 +13,8 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 
 // To create the GraphQl functions
-
 import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
+import { formatError } from "apollo-errors";
 import { makeExecutableSchema } from "graphql-tools";
 import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
@@ -27,7 +27,7 @@ import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware"
 import { refreshTokens } from "./helpers/auth";
 
 const app = express();
-const { ENVIRONMENT, TOKEN_SET } = process.env;
+const { ENVIRONMENT, TOKEN_SET, SSL_KEY, SSL_CERT } = process.env;
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
 let server;
@@ -35,8 +35,8 @@ let server;
 // We don't need certificates and https for development
 if (ENVIRONMENT == "production") {
   const httpsOptions = {
-    key: fs.readFileSync(process.env.SSL_KEY || "/etc/letsencrypt/live/vipfy.com/privkey.pem"),
-    cert: fs.readFileSync(process.env.SSL_CERT || "/etc/letsencrypt/live/vipfy.com/cert.pem")
+    key: fs.readFileSync(SSL_KEY || "/etc/letsencrypt/live/vipfy.com/privkey.pem"),
+    cert: fs.readFileSync(SSL_CERT || "/etc/letsencrypt/live/vipfy.com/cert.pem")
   };
 
   server = https.createServer(httpsOptions, app);
@@ -69,6 +69,7 @@ app.use(
 
     return {
       schema,
+      formatError,
       context: {
         models,
         token: TOKEN_SET ? TOKEN_DEVELOPMENT : token,
@@ -80,7 +81,7 @@ app.use(
   })
 );
 
-// Enable to Graphiql Interface
+// Enable Graphiql Interface
 if (ENVIRONMENT != "production") {
   app.use(
     "/graphiql",

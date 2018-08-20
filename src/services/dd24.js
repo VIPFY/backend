@@ -11,15 +11,17 @@ const auth = {
 };
 
 export default async (command, params) => {
-  // Copy bad inside good, otherwise => End of days!
-  const args = merge(auth, { params });
-  // Eleminate copying mistakes
-  const properCommand = `${command}Async`;
   try {
+    // Copy bad inside good, otherwise => End of days!
+    const args = merge(auth, { params });
+    // Eliminate copying mistakes
+    const properCommand = `${command}Async`;
     const result = await soap.createClientAsync(apiWSDL).then(client =>
       client[properCommand](args)
         .then(res => res[0][`${command}Result`])
-        .catch(err => err)
+        .catch(err => {
+          throw new Error(err);
+        })
     );
 
     return result;
