@@ -7,6 +7,7 @@ import { recursiveAddressCheck } from "../../helpers/functions";
 // import createInvoice from "../../helpers/createInvoice";
 import { createDownloadLink } from "../../services/gcloud";
 import { createCustomer, listCards, addCard, createSubscription } from "../../services/stripe";
+import { BillingError, PartnerError } from "../errors";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
@@ -59,7 +60,7 @@ export default {
 
         return { ok: true };
       } catch (err) {
-        throw new Error(err.message);
+        throw new BillingError({ message: err.message });
       }
     }
   ),
@@ -89,7 +90,7 @@ export default {
             !department.payingoptions.stripe.cards ||
             department.payingoptions.stripe.cards.length < 1
           ) {
-            throw new Error("Missing payment information!");
+            throw new BillingError({ message: "Missing payment information!" });
           }
 
           const plans = await models.Plan.findAll({
@@ -101,7 +102,7 @@ export default {
           const stripePlans = [];
           plans.forEach(({ price, name, numlicences, enddate, stripedata }) => {
             if (enddate && enddate < Date.now()) {
-              throw new Error(`The plan ${name} has already expired!`);
+              throw new BillingError({ message: `The plan ${name} has already expired!` });
             }
 
             billItems.push({
@@ -158,7 +159,10 @@ export default {
                   const accountDataCorrect = recursiveAddressCheck(accountData);
 
                   if (!accountDataCorrect) {
-                    throw new Error("Please make sure you have a valid address and retry then.");
+                    throw new PartnerError({
+                      internalData: { partner: "DD24" },
+                      message: "Please make sure you have a valid address and retry then."
+                    });
                   }
 
                   const { address, ...account } = accountDataCorrect;
@@ -178,7 +182,10 @@ export default {
                 if (registerDomain.code == 200) {
                   key.cid = registerDomain.cid;
                 } else {
-                  throw new Error(registerDomain.description);
+                  throw new PartnerError({
+                    internalData: { partner: "DD24" },
+                    message: registerDomain.description
+                  });
                 }
               }
               break;
@@ -307,7 +314,7 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new Error(err.message);
+          throw new BillingError({ message: err.message });
         }
       })
   ),
@@ -346,7 +353,7 @@ export default {
       // return { ok };
       return { ok: true };
     } catch (err) {
-      throw new Error(err);
+      throw new BillingError({ message: err.message });
     }
   },
 
@@ -373,7 +380,7 @@ export default {
 
         return { ok: true };
       } catch (err) {
-        throw new Error(err.message);
+        throw new BillingError({ message: err.message });
       }
     })
   ),
@@ -389,7 +396,7 @@ export default {
       });
 
       if (!bill) {
-        throw new Error("Couldn't find invoice!");
+        throw new BillingError("Couldn't find invoice!");
       }
       const name = bill.get("billname");
       const time = bill.get("billtime");
@@ -398,7 +405,7 @@ export default {
 
       return downloadLink;
     } catch (err) {
-      throw new Error(err.message);
+      throw new BillingError({ message: err.message });
     }
   })
 };

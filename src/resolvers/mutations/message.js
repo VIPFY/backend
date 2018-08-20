@@ -3,6 +3,7 @@ import { requiresAuth, requiresMessageGroupRights } from "../../helpers/permissi
 import { NEW_MESSAGE, pubsub } from "../../constants";
 import { parentAdminCheck, superset } from "../../helpers/functions";
 import { sanitizeMessage, updateLastReadMessage } from "../../helpers/messages";
+import { NormalError } from "../errors";
 
 export default {
   /**
@@ -34,7 +35,7 @@ export default {
           const [senderExists, receiverExists] = await Promise.all([p1, p2]);
 
           if (!receiverExists) {
-            throw new Error("The receiver doesn't exist!");
+            throw new NormalError({ message: "The receiver doesn't exist!" });
           }
 
           // annotate users with their company
@@ -43,7 +44,7 @@ export default {
           const [senderHas, receiverHas] = await Promise.all([p3, p4]);
 
           if (senderHas.company != receiverHas.company) {
-            throw new Error("Sender and receiver are not in the same Company!");
+            throw new Error({ message: "Sender and receiver are not in the same Company!" });
           }
 
           const group = await models.MessageGroup.create({}, { transaction: ta });
@@ -133,15 +134,15 @@ export default {
           await Promise.all(dbqueries);
           console.log({
             ok: true,
-            messagegroup: groupId,
+            messagegroup: groupId
           });
         });
         return {
           ok: true,
-          messagegroup: groupId,
+          messagegroup: groupId
         };
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message });
       }
     }
   ),
@@ -176,17 +177,17 @@ export default {
         await updateLastReadMessage(models, unitid, groupid, message.dataValues.id);
         return {
           ok: true,
-          message: message.dataValues.id,
+          message: message.dataValues.id
         };
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message });
       }
     }
   ),
 
   setDeleteStatus: requiresAuth.createResolver(async (parent, { id, type }, { models }) => {
     const messageExists = await models.MessageData.findById(id);
-    if (!messageExists) throw new Error("Message doesn't exist!");
+    if (!messageExists) throw new NormalError({ message: "Message doesn't exist!" });
 
     try {
       await models.MessageData.update({ [type]: true }, { where: { id } });
@@ -194,7 +195,7 @@ export default {
         ok: true
       };
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message });
     }
   }),
 
@@ -212,10 +213,9 @@ export default {
           message: now
         };
       }
-      throw new Error("Message already read");
+      throw new NormalError({ message: "Message already read" });
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message });
     }
-  }),
-
+  })
 };

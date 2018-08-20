@@ -1,20 +1,23 @@
 import jwt from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
+import { NormalError } from "../errors";
 
 /* eslint-disable no-unused-vars */
 
 export default {
   writeReview: requiresAuth.createResolver(
     async (parent, { appid, stars, text }, { models, token }) => {
-      const { user: { unitid } } = jwt.decode(token);
+      const {
+        user: { unitid }
+      } = jwt.decode(token);
       const p1 = models.App.findById(appid);
       const p2 = models.User.findById(unitid);
       const [app, user] = await Promise.all([p1, p2]);
 
       if (!app || !user) {
-        throw new Error("App or User doesn't exist!");
+        throw new NormalError({ message: "App or User doesn't exist!" });
       } else if (stars > 5 || stars < 1) {
-        throw new Error("Rating must be between 1 and 5 stars!");
+        throw new NormalError({ message: "Rating must be between 1 and 5 stars!" });
       } else {
         try {
           await models.ReviewData.create({
@@ -26,7 +29,7 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new Error(err.message);
+          throw new NormalError({ message: err.message });
         }
       }
     }
@@ -34,7 +37,9 @@ export default {
 
   rateReview: requiresAuth.createResolver(
     async (parent, { reviewid, balance }, { models, token }) => {
-      const { user: { unitid } } = jwt.decode(token);
+      const {
+        user: { unitid }
+      } = jwt.decode(token);
 
       const p1 = models.User.findById(unitid);
       const p2 = models.Review.findById(reviewid);
@@ -42,9 +47,9 @@ export default {
       const [commenter, review, changeRating] = await Promise.all([p1, p2, p3]);
 
       if (!review) {
-        throw new Error("Review doesn't exist!");
+        throw new NormalError({ message: "Review doesn't exist!" });
       } else if (!commenter) {
-        throw new Error("User doesn't exist!");
+        throw new NormalError({ message: "User doesn't exist!" });
       } else if (!changeRating) {
         try {
           const rate = await models.ReviewHelpful.create({
@@ -62,7 +67,7 @@ export default {
         }
       } else {
         if (changeRating.balance == balance) {
-          throw new Error(`This is the same value: ${balance}`);
+          throw new NormalError({ message: `This is the same value: ${balance}` });
         }
         try {
           const changing = await models.ReviewHelpful.update(
@@ -79,7 +84,7 @@ export default {
             balance
           };
         } catch (err) {
-          throw new Error(err.message);
+          throw new NormalError({ message: err.message });
         }
       }
     }

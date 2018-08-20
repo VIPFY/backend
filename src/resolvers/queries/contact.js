@@ -1,5 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
+import { NormalError } from "../errors";
 
 export default {
   fetchAddresses: requiresAuth.createResolver(async (parent, args, { models, token }) => {
@@ -15,7 +16,7 @@ export default {
 
       return addresses;
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message });
     }
   })
 };

@@ -288,24 +288,22 @@ export default {
             user: { unitid, company }
           } = decode(token);
 
-          // Build the proper
           if (domainData.dns) {
             const rr = [];
-            domainData.dns.forEach((dns, key) => {
-              rr.push(`RR[${key}][${dns.type}][0]: ${dns.data}`);
-              rr.push(`RR[${key}][ZONE][0]: ${dns.host}`);
-              rr.push(`RR[${key}][ADD][0]: 1`);
+            domainData.dns.forEach(dns => {
+              rr.push({
+                [dns.type]: [dns.data],
+                ZONE: [dns.host],
+                ADD: ["1"]
+              });
             });
 
-            rr.forEach(item => {
-              domainData[item.substr(0, item.indexOf(":"))] = item.substr(item.indexOf(" ") + 1);
-            });
+            domainData.rr = rr;
             delete domainData.dns;
             console.log(domainData);
             const updatedDNS = await dd24Api("UpdateDomain", domainData);
 
             if (updatedDNS && updatedDNS.code == 200) {
-              console.log("------->", updatedDNS);
               return { ok: true };
             } else {
               throw new NormalError({ message: updatedDNS.description, data: { test: "YO" } });

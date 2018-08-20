@@ -1,6 +1,7 @@
 // This file contains common operations which don't belong to a specific Component
 import { sendEmailToVipfy } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
+import { NormalError, PartnerError } from "../errors";
 
 /* eslint-disable consistent-return, no-unused-vars */
 
@@ -13,7 +14,7 @@ export default {
         ok: true
       };
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message });
     }
   },
 
@@ -26,8 +27,8 @@ export default {
       if (emailExists) throw new Error("There already exists an account with this email");
 
       return { ok: true };
-    } catch ({ message }) {
-      throw new Error(message);
+    } catch (err) {
+      throw new NormalError({ message: err.message });
     }
   }),
 
@@ -39,11 +40,11 @@ export default {
         where: { name: { [models.sequelize.Op.iLike]: `%${name}` } }
       });
 
-      if (nameExists) throw new Error("There already exists an app with this name");
+      if (nameExists) throw new Error({ message: "There already exists an app with this name" });
 
       return { ok: true };
-    } catch ({ message }) {
-      throw new Error(message);
+    } catch (err) {
+      throw new NormalError({ message: err.message });
     }
   })
 };

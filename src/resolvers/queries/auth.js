@@ -1,6 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { parentAdminCheck } from "../../helpers/functions";
 import { requiresAuth } from "../../helpers/permissions";
+import { AuthError } from "../errors";
 
 export default {
   me: requiresAuth.createResolver(async (parent, args, { models, token }) => {
@@ -12,15 +13,27 @@ export default {
         } = decode(token);
         const me = await models.User.findById(unitid);
 
-        if (me.suspended) throw new Error("This User is suspended!");
-        if (me.banned) throw new Error("This User is banned!");
-        if (me.deleted) throw new Error("This User got deleted!");
+        let message;
+        if (me.suspended) {
+          message = "This User is suspended!";
+          throw new AuthError({ message });
+        }
+
+        if (me.banned) {
+          message = "This User is banned!";
+          throw new AuthError({ message });
+        }
+
+        if (me.deleted) {
+          message = "This User got deleted!";
+          throw new AuthError({ message });
+        }
         const user = await parentAdminCheck(models, me);
 
         return user;
       } catch (err) {
-        throw new Error(err.message);
+        throw new AuthError({ message: err.message });
       }
-    } else throw new Error("Not Authenticated!");
+    } else throw new AuthError();
   })
 };

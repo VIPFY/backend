@@ -1,5 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { requiresRight, requiresAuth } from "../../helpers/permissions";
+import { NormalError } from "../errors";
 
 export default {
   fetchCompany: async (parent, { id }, { models }) => {
@@ -8,7 +9,7 @@ export default {
 
       return company;
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message });
     }
   },
 
@@ -21,8 +22,8 @@ export default {
         const size = await models.Department.findOne({ where: { unitid: company } });
 
         return size.employees;
-      } catch ({ message }) {
-        throw new Error(message);
+      } catch (err) {
+        throw new NormalError({ message: err.message });
       }
     }
   ),
@@ -41,7 +42,7 @@ export default {
 
       return departments;
     } catch (err) {
-      throw new Error(err);
+      throw new NormalError({ message: err.message });
     }
   }),
 
@@ -59,7 +60,7 @@ export default {
 
       return departments;
     } catch (err) {
-      throw new Error(err);
+      throw new NormalError({ message: err.message });
     }
   })
 };

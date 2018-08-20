@@ -1,5 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
+import { NormalError } from "../errors";
 
 export default {
   updateAddress: requiresAuth.createResolver(async (parent, args, { models, token }) => {
@@ -16,8 +17,8 @@ export default {
       await models.Address.update({ ...args }, { where: { id: args.id } });
 
       return { ok: true };
-    } catch ({ message }) {
-      throw new Error(message);
+    } catch (err) {
+      throw new NormalError({ message: err.message });
     }
   })
 };

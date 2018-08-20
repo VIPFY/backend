@@ -1,6 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { weeblyApi } from "../../services/weebly";
 import dd24Api from "../../services/dd24";
+import { NormalError, PartnerError } from "../errors";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
 
 /* eslint-disable default-case */
@@ -29,7 +30,7 @@ export default {
 
       return allApps;
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message });
     }
   },
 
@@ -62,7 +63,7 @@ export default {
         ) {
           const createLoginLinks = licences.map(async licence => {
             if (licence.unitid != unitid) {
-              throw new Error("This licence doesn't belong to this user!");
+              throw new NormalError({ message: "This licence doesn't belong to this user!" });
             }
 
             if (licence.disabled) {
@@ -97,13 +98,19 @@ export default {
               const accountData = await dd24Api("GetOneTimePassword", { cid: domain[0].key.cid });
               if (accountData.code == 200) {
                 if (licence.key.cid != accountData.cid) {
-                  throw new Error("Accountdata doesn't match!");
+                  throw new PartnerError({
+                    message: "Accountdata doesn't match!",
+                    internalData: { partner: "DD24" }
+                  });
                 }
 
                 licence.key.loginurl = accountData.loginuri;
                 licence.key.password = accountData.onetimepassword;
               } else {
-                throw new Error(accountData.description);
+                throw new PartnerError({
+                  message: accountData.description,
+                  internalData: { partner: "DD24" }
+                });
               }
             }
           });
@@ -113,7 +120,7 @@ export default {
 
         return licences;
       } catch (err) {
-        throw new Error(err);
+        throw new NormalError({ message: err.message });
       }
     }
   ),
@@ -172,7 +179,7 @@ export default {
 
       return filteredLicences;
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message });
     }
   },
 
@@ -189,7 +196,7 @@ export default {
       });
 
       if (!licenceBelongsToUser) {
-        throw new Error("This licence doesn't belong to this user!");
+        throw new NormalError({ message: "This licence doesn't belong to this user!" });
       }
 
       const credentials = licenceBelongsToUser.get("key");
@@ -204,7 +211,7 @@ export default {
         loginLink: res.link
       };
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message });
     }
   }),
 
@@ -231,8 +238,8 @@ export default {
         });
 
         return sanitizedApps;
-      } catch ({ message }) {
-        throw new Error(message);
+      } catch (err) {
+        throw new NormalError({ message: err.message });
       }
     }
   ),
@@ -254,7 +261,7 @@ export default {
 
       return domains;
     } catch (err) {
-      throw new Error(err);
+      throw new NormalError({ message: err.message });
     }
   })
 };

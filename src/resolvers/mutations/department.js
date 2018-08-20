@@ -4,6 +4,7 @@ import { userPicFolder } from "../../constants";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
 import { deleteFile } from "../../services/gcloud";
 import { createTokens } from "../../helpers/auth";
+import { NormalError } from "../errors";
 // import { sendRegistrationEmail } from "../../services/mailjet";
 
 export default {
@@ -16,7 +17,7 @@ export default {
           } = decode(token);
 
           if (companyExists) {
-            throw new Error("This user is already assigned to a company!");
+            throw new NormalError({ message: "This user is already assigned to a company!" });
           }
 
           const company = await models.Unit.create({}, { transaction: ta });
@@ -45,7 +46,7 @@ export default {
 
           return { ok: true, token: newToken, refreshToken };
         } catch (err) {
-          throw new Error(err.message);
+          throw new NormalError({ message: err.message });
         }
       })
   ),
@@ -70,7 +71,7 @@ export default {
 
         return { ok: true };
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message });
       }
     }
   ),
@@ -82,7 +83,7 @@ export default {
 
         return { ok: true };
       } catch (err) {
-        throw new Error(err);
+        throw new NormalError({ message: err.message });
       }
     }
   ),
@@ -122,7 +123,7 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new Error(err.message);
+          throw new NormalError({ message: err.message });
         }
       })
   ),
@@ -146,7 +147,7 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new Error(err);
+          throw new NormalError({ message: err.message });
         }
       })
   ),
@@ -161,7 +162,7 @@ export default {
 
         return { ok: true };
       } catch (err) {
-        throw new Error(err);
+        throw new NormalError({ message: err.message });
       }
     }
   ),
@@ -195,7 +196,7 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new Error(err);
+          throw new NormalError({ message: err.message });
         }
       })
   ),
@@ -209,7 +210,7 @@ export default {
 
         return { ok: true };
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message });
       }
     }
   ),
@@ -253,8 +254,8 @@ export default {
           }
 
           return { ok: true };
-        } catch ({ message }) {
-          throw new Error(message);
+        } catch (err) {
+          throw new NormalError({ message: err.message });
         }
       })
   )
