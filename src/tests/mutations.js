@@ -16,16 +16,6 @@ export const setDeleteStatus = `
   }
 `;
 
-export const setReadtime = `
-  mutation SetReadtime($id: Int!) {
-    setReadtime(id: $id) {
-      ok
-      id
-      message
-    }
-  }
-`;
-
 export const signUp = `
   mutation SignUp($email: String!, $newsletter: Boolean) {
     signUp(email: $email, newsletter: $newsletter) {

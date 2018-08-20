@@ -7,6 +7,7 @@
 import { decode } from "jsonwebtoken";
 import { checkDepartment } from "./functions";
 import { AuthError, AdminError } from "../resolvers/errors";
+import { checkRights } from "vipfy-messaging";
 
 const createResolver = resolver => {
   const baseResolver = resolver;
@@ -84,31 +85,9 @@ export const requiresMessageGroupRights = rights =>
         user: { unitid }
       } = await decode(token);
 
-      let groupid;
-      if ("group" in args) {
-        groupid = args.group;
-      } else if ("groupid" in args) {
-        // eslint-disable-next-line
-        groupid = args.groupid;
-      } else if ("message" in args) {
-        const message = await models.MessageData.findById(args.message, { raw: true });
-        console.log("MESSAGErights", message);
-        groupid = message.receiver;
-      } else {
-        throw new AuthError({ message: "Can't find group to check permission against" });
-      }
-
-      const hasRights = await models.MessageGroupRight.findAll({
-        where: {
-          right: rights,
-          unitid,
-          groupid
-        },
-        raw: true
-      });
-
-      if (hasRights.length !== rights.length) {
-        throw new AuthError({ message: "You don't have the necessary rights!" });
+      const hasRights = await checkRights(models, rights, unitid, args);
+      if (!hasRights) {
+        throw new AuthError({ message: "user doesn't have the nessesary rights" });
       }
     } catch (err) {
       console.log(err.message);
