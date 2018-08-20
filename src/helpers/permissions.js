@@ -6,6 +6,7 @@
 
 import { decode } from "jsonwebtoken";
 import { checkDepartment } from "./functions";
+import { AuthError, AdminError } from "../resolvers/errors";
 
 const createResolver = resolver => {
   const baseResolver = resolver;
@@ -21,21 +22,21 @@ const createResolver = resolver => {
 
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(async (parent, args, { models, token }) => {
-  if (!token) throw new Error("Not authenticated!");
+  if (!token) throw new AuthError();
   try {
     const {
       user: { company, unitid }
     } = decode(token);
 
     const userExists = await models.Unit.findById(unitid);
-    if (!userExists) throw new Error("Couldn't find user in database!");
+    if (!userExists) throw new AuthError({ message: "Couldn't find user in database!" });
 
     if (company) {
       const companyExists = await models.Unit.findById(company);
-      if (!companyExists) throw new Error("Couldn't find company in database!");
+      if (!companyExists) throw new AuthError({ message: "Couldn't find company in database!" });
     }
   } catch (err) {
-    throw new Error(err.message);
+    throw new AuthError(err.message);
   }
 });
 
@@ -87,13 +88,14 @@ export const requiresMessageGroupRights = rights =>
       if ("group" in args) {
         groupid = args.group;
       } else if ("groupid" in args) {
+        // eslint-disable-next-line
         groupid = args.groupid;
       } else if ("message" in args) {
         const message = await models.MessageData.findById(args.message, { raw: true });
         console.log("MESSAGErights", message);
         groupid = message.receiver;
       } else {
-        throw new Error("Can't find group to check permission against");
+        throw new AuthError({ message: "Can't find group to check permission against" });
       }
 
       const hasRights = await models.MessageGroupRight.findAll({
@@ -106,11 +108,13 @@ export const requiresMessageGroupRights = rights =>
       });
 
       if (hasRights.length !== rights.length) {
-        throw new Error("You don't have the necessary rights!");
+        throw new AuthError({ message: "You don't have the necessary rights!" });
       }
     } catch (err) {
       console.log(err.message);
-      throw new Error("Oops, something went wrong. Please report this error with id auth_2");
+      throw new AuthError({
+        message: "Oops, something went wrong. Please report this error with id auth_2"
+      });
     }
   });
 
@@ -121,9 +125,9 @@ export const requiresVipfyAdmin = requiresAuth.createResolver(async (parent, arg
     } = decode(token);
 
     if (unitid != 7 && unitid != 22 && unitid != 67) {
-      throw new Error("You're not a Vipfy Admin");
+      throw new AdminError();
     }
   } catch (err) {
-    throw new Error("You're not a Vipfy Admin!");
+    throw new AdminError();
   }
 });

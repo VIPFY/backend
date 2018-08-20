@@ -5,6 +5,7 @@
  */
 
 import stripePackage from "stripe";
+import moment from "moment";
 import { STRIPE_SECRET_KEY } from "../login-data";
 
 const stripe = stripePackage(STRIPE_SECRET_KEY);
@@ -12,7 +13,7 @@ const stripe = stripePackage(STRIPE_SECRET_KEY);
 export const createProduct = async app => {
   try {
     const res = await stripe.products.create({
-      name: `Product for ${app}`,
+      name: app,
       type: "service"
     });
 
@@ -105,16 +106,43 @@ export const addCard = async (id, source) => {
 
 /**
  * Creates a subscription for a customer in Stride
- * items should contain an array of plans the customer gets subscribed to
+ * items should contain an array of plans the customer gets subscribed to.
+ * Starts with the first of next month
  * @param customer: object
  * @param items: object[]
  */
 export const createSubscription = async (customer, items) => {
   try {
+    const nextMonth = moment()
+      .add(1, "months")
+      .startOf("month")
+      .unix();
+
     const res = await stripe.subscriptions.create({
       customer,
-      items
+      items,
+      billing_cycle_anchor: nextMonth
     });
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+export const fetchCustomer = async id => {
+  try {
+    const res = await stripe.customers.retrieve(id);
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+export const listInvoices = async () => {
+  try {
+    const res = await stripe.invoiceItems.list();
 
     return res;
   } catch (err) {

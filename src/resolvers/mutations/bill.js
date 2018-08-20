@@ -4,9 +4,9 @@ import moment from "moment";
 import dd24Api from "../../services/dd24";
 import { requiresRight, requiresAuth } from "../../helpers/permissions";
 import { recursiveAddressCheck } from "../../helpers/functions";
-import createInvoice from "../../helpers/createInvoice";
+// import createInvoice from "../../helpers/createInvoice";
 import { createDownloadLink } from "../../services/gcloud";
-import { createCustomer, listCards, addCard } from "../../services/stripe";
+import { createCustomer, listCards, addCard, createSubscription } from "../../services/stripe";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
@@ -20,21 +20,18 @@ export default {
   addPaymentData: requiresRight(["admin", "addPayment"]).createResolver(
     async (parent, { data, departmentid }, { models }) => {
       try {
-        const department = await models.DepartmentData.findOne({
-          where: { unitid: departmentid },
-          raw: true
-        });
+        const department = await models.Unit.findById(departmentid, { raw: true });
 
-        if (!department.internaldata || !department.internaldata.stripe) {
+        if (!department.payingoptions || !department.payingoptions.stripe) {
           const stripeCustomer = await createCustomer(
             { name: data.card.name, id: data.client_ip },
             data.id
           );
           const card = await listCards(stripeCustomer.id);
 
-          await models.DepartmentData.update(
+          await models.Unit.update(
             {
-              internaldata: {
+              payingoptions: {
                 stripe: {
                   id: stripeCustomer.id,
                   created: stripeCustomer.created,
@@ -43,21 +40,20 @@ export default {
                 }
               }
             },
-            { where: { unitid: departmentid }, raw: true }
+            { where: { id: departmentid }, raw: true }
           );
         } else {
-          const card = await addCard(department.internaldata.stripe.id, data.id);
-
-          await models.DepartmentData.update(
+          const card = await addCard(department.payingoptions.stripe.id, data.id);
+          await models.Unit.update(
             {
-              internaldata: {
+              payingoptions: {
                 stripe: {
-                  ...department.internaldata.stripe,
-                  cards: [...department.internaldata.stripe.cards, { ...card }]
+                  ...department.payingoptions.stripe,
+                  cards: [...department.payingoptions.stripe.cards, { ...card }]
                 }
               }
             },
-            { where: { unitid: departmentid }, raw: true }
+            { where: { id: departmentid }, raw: true }
           );
         }
 
@@ -68,6 +64,11 @@ export default {
     }
   ),
 
+  /**
+   * Buy a plan. The customer needs a valid credit card for this
+   * @param planIds: integer[]
+   * @param options: object
+   */
   buyPlan: requiresRight(["admin", "buyApps"]).createResolver(
     async (parent, { planIds, options }, { models, token }) =>
       models.sequelize.transaction(async ta => {
@@ -80,31 +81,36 @@ export default {
             user: { unitid, company }
           } = decode(token);
 
-          const department = await models.Department.findById(company, { raw: true });
-
+          const department = await models.Unit.findById(company, { raw: true });
+          // TODO: check whether the card is valid
           if (
-            !department.internaldata ||
-            !department.internaldata.stripe ||
-            !department.internaldata.stripe.source
+            !department.payingoptions ||
+            !department.payingoptions.stripe ||
+            !department.payingoptions.stripe.cards ||
+            department.payingoptions.stripe.cards.length < 1
           ) {
             throw new Error("Missing payment information!");
           }
 
           const plans = await models.Plan.findAll({
             where: { id: planIds },
-            attributes: ["price", "id", "appid", "name", "numlicences", "enddate"],
+            attributes: ["price", "id", "appid", "name", "numlicences", "enddate", "stripedata"],
             raw: true
           });
 
-          plans.forEach(({ price, name, numlicences, enddate }) => {
+          const stripePlans = [];
+          plans.forEach(({ price, name, numlicences, enddate, stripedata }) => {
             if (enddate && enddate < Date.now()) {
               throw new Error(`The plan ${name} has already expired!`);
             }
+
             billItems.push({
               description: name,
               quantity: numlicences,
               unitPrice: price
             });
+
+            stripePlans.push({ plan: stripedata.id });
           });
 
           const mainPlan = plans.shift();
@@ -116,7 +122,7 @@ export default {
 
             case "11":
               {
-                if (options.whoisprivacy) {
+                if (options.whoisPrivacy) {
                   key.whoisPrivacy = true;
                 }
 
@@ -131,7 +137,7 @@ export default {
                 options.renewalmode = "autorenew";
 
                 key.domain = options.domain.toLowerCase();
-                key.renewalmode = true;
+                key.renewalmode = "1";
                 let registerDomain;
 
                 if (hasAccount.length > 0) {
@@ -220,11 +226,13 @@ export default {
           }
 
           boughtPlans.splice(0, 0, mainBoughtPlan);
-          const bill = await models.Bill.create({ unitid: company }, { transaction: ta });
           const createLicences = [];
 
           if (mainPlan.appid == 11) {
-            const endtime = moment(Date.now()).add(1, "year");
+            const endtime = moment(Date.now())
+              .add(1, "year")
+              .subtract(1, "day");
+
             const domainLicence = models.Licence.create(
               {
                 unitid,
@@ -268,31 +276,34 @@ export default {
             await Promise.all(createLicences);
           }
 
-          const res = await createInvoice(false, models, company, bill.id, billItems);
-          if (res.ok !== true) {
-            throw new Error(res.err);
-          }
+          await createSubscription(department.payingoptions.stripe.id, stripePlans);
+          // const bill = await models.Bill.create({ unitid: company }, { transaction: ta });
 
-          await models.Bill.update(
-            { billname: res.billName },
-            { where: { id: bill.id }, transaction: ta }
-          );
-
-          const createBillPositions = boughtPlans.map(
-            async plan =>
-              await models.BillPosition.create(
-                {
-                  billid: bill.id,
-                  positiontext: `Plan ${plan.planid}, Licences ${plan.amount}`,
-                  price: plan.totalprice,
-                  planid: plan.planid,
-                  currency: "USD"
-                },
-                { transaction: ta }
-              )
-          );
-
-          await Promise.all(createBillPositions);
+          // const res = await createInvoice(false, models, company, bill.id, billItems);
+          // if (res.ok !== true) {
+          //   throw new Error(res.err);
+          // }
+          //
+          // await models.Bill.update(
+          //   { billname: res.billName },
+          //   { where: { id: bill.id }, transaction: ta }
+          // );
+          //
+          // const createBillPositions = boughtPlans.map(
+          //   async plan =>
+          //     await models.BillPosition.create(
+          //       {
+          //         billid: bill.id,
+          //         positiontext: `Plan ${plan.planid}, Licences ${plan.amount}`,
+          //         price: plan.totalprice,
+          //         planid: plan.planid,
+          //         currency: "USD"
+          //       },
+          //       { transaction: ta }
+          //     )
+          // );
+          //
+          // await Promise.all(createBillPositions);
 
           return { ok: true };
         } catch (err) {

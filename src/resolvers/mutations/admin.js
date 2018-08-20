@@ -49,6 +49,7 @@ export default {
         const planData = {
           currency: plan.currency,
           interval,
+          nickname: plan.name,
           product,
           amount: priceInCents
         };

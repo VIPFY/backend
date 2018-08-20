@@ -17,11 +17,14 @@ export const queries = `
   fetchCompany(id: Int!): Department!
   allCompanies(limit: Int, offset: Int): [Department]!
   freeUsers: [User]!
+  listStripeInvoices: JSON
   adminFetchListLength: ListCountResponse!
   adminFetchDepartments(company: Int!, limit: Int, offset: Int): [DepartmentDataResponse]!
 `;
 
 export const mutations = `
+  createApp(app: AppInput!, file: File, file2: File, files: [File]): Response!
+  updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, file: File): Response!
   adminCreateLicence(licenceData: JSON!): Response!
   adminUpdateLicence(unitid: Int!, boughtplanid: Int! licenceData: JSON!): Response!
   adminUpdateAddress(addressData: AddressInput!, id: Int!): Response!

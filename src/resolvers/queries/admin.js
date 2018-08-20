@@ -1,6 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { parentAdminCheck } from "../../helpers/functions";
+import { listInvoices } from "../../services/stripe";
 
 export default {
   adminFetchListLength: requiresVipfyAdmin.createResolver(async (parent, args, { models }) => {
@@ -56,6 +57,16 @@ export default {
         throw new Error(err.message);
       }
     } else throw new Error("Not an authenticated Admin!");
+  }),
+
+  listStripeInvoices: requiresVipfyAdmin.createResolver(async () => {
+    try {
+      const invoices = await listInvoices();
+
+      return invoices;
+    } catch (err) {
+      throw new Error(err.message);
+    }
   }),
 
   adminFetchBoughtPlans: requiresVipfyAdmin.createResolver(

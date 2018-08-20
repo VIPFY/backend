@@ -17,7 +17,6 @@ export default (
     profilepicture: TEXT,
     riskvalue: INTEGER,
     createdate: DATE,
-    payingoptions: JSONB,
     emails: { type: JSONB, allowNull: false },
     company: VIRTUAL,
     length: VIRTUAL,

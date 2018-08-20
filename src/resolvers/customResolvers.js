@@ -58,7 +58,7 @@ export const implementJSON = {
 export const find = data => {
   const searches = {};
   Object.keys(data).map(search => {
-    searches[search] = async (parent, args, { models }, info) => {
+    searches[search] = (parent, args, { models }, info) => {
       switch (data[search]) {
         case "Human":
         case "Department":
@@ -69,16 +69,13 @@ export const find = data => {
         default: {
           if (data[search][0] == "[") {
             // return array of objects
-            const modelName = data[search].substring(
-              1,
-              data[search].length - 1
-            );
+            const modelName = data[search].substring(1, data[search].length - 1);
             return models[modelName].findAll({
               where: { id: { $in: parent[search] } }
             });
           } else {
             // single object
-            /*console.error(
+            /* console.error(
               "FIND",
               search,
               data[search],
@@ -89,17 +86,23 @@ export const find = data => {
               info.fieldNodes[0].selectionSet,
               "S",
               info.fieldNodes[0].selectionSet.selections
-            );*/
-            /*models[data[search]].findById(parent[search], { raw: true }).then(a => console.error(parent[search], a));
+            ); */
+            // models[data[search]].findById(parent[search], { raw: true })
+            // .then(a => console.error(parent[search], a));
             if (
               info.fieldNodes[0].selectionSet.selections.filter(
                 selection =>
-                  !selection.name || (selection.name.value != "id" && selection.name.value != "__typename")
+                  !selection.name ||
+                  (selection.name.value != "id" && selection.name.value != "__typename")
               ).length == 0
             ) {
-              return { id: parent[search] };
-            }*/
-            return models[data[search]].findById(parent[search]);
+              if (parent[search] === null) {
+                return null;
+              } else {
+                return { id: parent[search] };
+              }
+            }
+            return models[data[search]].findById(parent[search], { raw: true });
           }
         }
       }

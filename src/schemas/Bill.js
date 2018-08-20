@@ -128,6 +128,17 @@ export const types = `
     amount: Int!
     planid: Int!
   }
+
+  type Card {
+    id: String!
+    brand: String!
+    exp_month: Int!
+    exp_year: Int!
+    last4: String!
+    name: String!
+    country: String!
+    cvc_check: String!
+  }
 `;
 
 export const queries = `
@@ -138,6 +149,7 @@ export const queries = `
 
   fetchBills: [Bill]!
   fetchBillingAddresses: [Address]!
+  fetchPaymentData: [Card]!
 `;
 
 export const mutations = `

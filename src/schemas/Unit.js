@@ -1,7 +1,6 @@
 export const types = `
   type Unit {
     id: Int!
-    payingoptions: JSON
     banned: Boolean!
     deleted: Boolean!
     suspended: Boolean!
@@ -42,7 +41,6 @@ export const types = `
     riskvalue: Int
     emails: JSON
     createdate: String
-    payingoptions: JSON
     company: Department
     teams: Boolean
     domains: Boolean
