@@ -5,9 +5,9 @@
 */
 
 import { decode } from "jsonwebtoken";
-import { checkDepartment } from "./functions";
-import { AuthError, AdminError } from "../resolvers/errors";
 import { checkRights } from "vipfy-messaging";
+import { checkDepartment } from "./functions";
+import { AuthError, AdminError } from "../errors";
 
 const createResolver = resolver => {
   const baseResolver = resolver;
@@ -22,7 +22,7 @@ const createResolver = resolver => {
 };
 
 // Check whether the user is authenticated
-export const requiresAuth = createResolver(async (parent, args, { models, token, logger }) => {
+export const requiresAuth = createResolver(async (parent, args, { models, token }) => {
   try {
     if (!token) throw new AuthError();
     const {
@@ -37,13 +37,12 @@ export const requiresAuth = createResolver(async (parent, args, { models, token,
       if (!companyExists) throw new AuthError({ message: "Couldn't find company in database!" });
     }
   } catch (err) {
-    logger.error(err.message);
-    throw new AuthError(err.message);
+    throw new AuthError(err);
   }
 });
 
 export const requiresDepartmentCheck = requiresAuth.createResolver(
-  async (parent, args, { models, token, logger }) => {
+  async (parent, args, { models, token }) => {
     try {
       if (args.departmentid) {
         const {
@@ -53,14 +52,13 @@ export const requiresDepartmentCheck = requiresAuth.createResolver(
         await checkDepartment(models, company, args.departmentid);
       }
     } catch (err) {
-      logger.error(err.message);
-      throw new Error(err);
+      throw new AuthError(err);
     }
   }
 );
 
 export const requiresRight = rights =>
-  requiresDepartmentCheck.createResolver(async (parent, args, { models, token, logger }) => {
+  requiresDepartmentCheck.createResolver(async (parent, args, { models, token }) => {
     try {
       const {
         user: { unitid: holder, company }
@@ -74,15 +72,16 @@ export const requiresRight = rights =>
         }
       });
 
-      if (!hasRight) throw new Error("You don't have the necessary rights!");
+      if (!hasRight) throw new AuthError({ message: "You don't have the necessary rights!" });
     } catch (err) {
-      logger.error(err.message);
-      throw new Error("Opps, something went wrong. Please report this error with id auth_1");
+      throw new AuthError({
+        message: "Opps, something went wrong. Please report this error with id auth_1"
+      });
     }
   });
 
 export const requiresMessageGroupRights = rights =>
-  requiresAuth.createResolver(async (parent, args, { models, token, logger }) => {
+  requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
       const {
         user: { unitid }
@@ -93,26 +92,22 @@ export const requiresMessageGroupRights = rights =>
         throw new AuthError({ message: "user doesn't have the nessesary rights" });
       }
     } catch (err) {
-      logger.error(err.message);
       throw new AuthError({
         message: "Oops, something went wrong. Please report this error with id auth_2"
       });
     }
   });
 
-export const requiresVipfyAdmin = requiresAuth.createResolver(
-  async (parent, args, { token, logger }) => {
-    try {
-      const {
-        user: { unitid }
-      } = decode(token);
+export const requiresVipfyAdmin = requiresAuth.createResolver(async (parent, args, { token }) => {
+  try {
+    const {
+      user: { unitid }
+    } = decode(token);
 
-      if (unitid != 7 && unitid != 22 && unitid != 67) {
-        throw new AdminError();
-      }
-    } catch (err) {
-      logger.error(err.message);
+    if (unitid != 7 && unitid != 22 && unitid != 67) {
       throw new AdminError();
     }
+  } catch (err) {
+    throw new AdminError();
   }
-);
+});

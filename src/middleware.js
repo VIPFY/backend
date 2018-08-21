@@ -22,7 +22,7 @@ export const authMiddleware = async (req, res, next) => {
       const { user } = await jwt.verify(token, SECRET);
       req.user = user;
     } catch (err) {
-      console.log(err);
+      console.error(err);
       if (err.name == "TokenExpiredError") {
         // If the token has expired, we use the refreshToken to assign new ones
         const refreshToken = req.headers["x-refresh-token"];
@@ -130,20 +130,22 @@ export const loggingMiddleWare = (req, res, next) => {
         parsedBody.data.ua = req.headers["user-agent"];
 
         parsedBody.data.variables = variables;
-        const { token: bodyToken, refreshToken } = parsedBody.data[Object.keys(parsedBody.data)[0]];
 
-        if (bodyToken && bodyToken != "null") {
-          const encToken = await Utility.generateHmac(bodyToken, SECRET_THREE);
-          const encRefreshToken = await Utility.generateHmac(refreshToken, SECRET_THREE);
+        if (parsedBody.data[Object.keys(parsedBody.data)[0]]) {
+          const { token: bodyToken, refreshToken } = parsedBody.data[
+            Object.keys(parsedBody.data)[0]
+          ];
 
-          parsedBody.data[Object.keys(parsedBody.data)[0]].token = encToken;
-          parsedBody.data[Object.keys(parsedBody.data)[0]].refreshToken = encRefreshToken;
+          if (bodyToken && bodyToken != "null") {
+            const encToken = await Utility.generateHmac(bodyToken, SECRET_THREE);
+            const encRefreshToken = await Utility.generateHmac(refreshToken, SECRET_THREE);
+
+            parsedBody.data[Object.keys(parsedBody.data)[0]].token = encToken;
+            parsedBody.data[Object.keys(parsedBody.data)[0]].refreshToken = encRefreshToken;
+          }
         }
+
         eventdata = parsedBody.data;
-      } else if (parsedBody.errors) {
-        parsedBody.errors[0].variables = variables;
-        eventtype = `Error: ${parsedBody.errors[0].path[0]}`;
-        eventdata = parsedBody.errors;
       }
 
       const log = {
@@ -155,9 +157,7 @@ export const loggingMiddleWare = (req, res, next) => {
       };
 
       if (parsedBody.data) {
-        logger.info(log);
-      } else {
-        logger.error(log);
+        logger.log("info", eventtype, log);
       }
 
       if (req.body.query.includes("mutation")) {
@@ -167,8 +167,8 @@ export const loggingMiddleWare = (req, res, next) => {
       if (user) {
         models.Human.update({ lastactive: new Date().toUTCString() }, { where: { unitid: user } });
       }
-    } catch ({ name, stack }) {
-      logger.error(`${name}: ${stack}`);
+    } catch (err) {
+      logger.error(err);
     }
     oldEnd.apply(res, restArgs);
   };

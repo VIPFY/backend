@@ -30,12 +30,14 @@ const options = {
 };
 
 const logger = winston.createLogger({
-  transports: [new winston.transports.File(options.file), new LoggingWinston()],
+  transports: [new winston.transports.File(options.file)],
   exitOnError: false
 });
 
 if (process.env.ENVIRONMENT == "development") {
   logger.add(new winston.transports.Console(options.console));
+} else if (process.env.ENVIRONMENT == "production") {
+  logger.add(new LoggingWinston());
 }
 
 export default logger;
