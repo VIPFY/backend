@@ -7,9 +7,21 @@ components and exports everything as one big object.
 import Sequelize from "sequelize";
 import dotenv from "dotenv";
 import { POSTGRESLOGIN } from "../login-data";
-import { selectEnv } from "../helpers/functions";
 // dotenv must be the first package loaded and launched, because it loads the
 // environment variables.
+const selectEnv = environment => {
+  switch (environment) {
+    case "production":
+      return ".env.prod";
+
+    case "testing":
+      return ".env.test";
+
+    default:
+      return ".env.dev";
+  }
+};
+
 dotenv.config({ path: selectEnv(process.env.ENVIRONMENT) });
 
 const sequelize = new Sequelize(
@@ -26,10 +38,9 @@ const sequelize = new Sequelize(
     },
     pool: {
       min: 1,
-      max: 10,
+      max: 10
     },
-    /* logging: process.env.LOGGING ? data => console.log(data) : false */
-    logging: data => console.log(data)
+    logging: process.env.LOGGING ? data => console.log(data) : false
   }
 );
 

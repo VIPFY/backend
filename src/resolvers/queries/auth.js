@@ -28,7 +28,7 @@ export default {
           message = "This User got deleted!";
           throw new AuthError({ message });
         }
-        const user = await parentAdminCheck(models, me);
+        const user = await parentAdminCheck(me);
 
         return user;
       } catch (err) {

@@ -42,14 +42,14 @@ export const requiresAuth = createResolver(async (parent, args, { models, token 
 });
 
 export const requiresDepartmentCheck = requiresAuth.createResolver(
-  async (parent, args, { models, token }) => {
+  async (parent, args, { token }) => {
     try {
       if (args.departmentid) {
         const {
           user: { company }
         } = decode(token);
 
-        await checkDepartment(models, company, args.departmentid);
+        await checkDepartment(company, args.departmentid);
       }
     } catch (err) {
       throw new AuthError(err);

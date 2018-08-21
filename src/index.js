@@ -65,7 +65,7 @@ app.use(
   "/graphql",
   bodyParser.json(),
   fileMiddleware,
-  graphqlExpress(({ headers }) => {
+  graphqlExpress(({ headers, ip }) => {
     const token = headers["x-token"];
 
     return {
@@ -76,7 +76,8 @@ app.use(
         token: TOKEN_SET ? TOKEN_DEVELOPMENT : token,
         logger,
         SECRET,
-        SECRET_TWO
+        SECRET_TWO,
+        ip
       },
       debug: ENVIRONMENT == "development"
     };

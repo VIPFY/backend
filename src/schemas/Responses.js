@@ -82,6 +82,7 @@ export const types = `
   }
 
   type AppBoughtPlanResponse {
+    id: ID!
     usedby: Unit
     boughtplan: BoughtPlan!
     description: String

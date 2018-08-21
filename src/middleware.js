@@ -149,7 +149,6 @@ export const loggingMiddleWare = (req, res, next) => {
       }
 
       const log = {
-        time: new Date().toUTCString(),
         ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress,
         eventtype,
         eventdata,
@@ -158,10 +157,6 @@ export const loggingMiddleWare = (req, res, next) => {
 
       if (parsedBody.data) {
         logger.log("info", eventtype, log);
-      }
-
-      if (req.body.query.includes("mutation")) {
-        models.Log.create(log);
       }
 
       if (user) {

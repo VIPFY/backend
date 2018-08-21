@@ -101,7 +101,7 @@ export default {
       if (!valid) throw new AuthError({ message });
 
       const refreshTokenSecret = emailExists.passwordhash + SECRET_TWO;
-      const user = await parentAdminCheck(models, basicUser);
+      const user = await parentAdminCheck(basicUser);
       // User doesn't have the property unitid, so we have to pass emailExists for
       // the token creation
       emailExists.company = user.company;
@@ -141,7 +141,7 @@ export default {
         const basicUser = await models.User.findById(unitid);
 
         const refreshTokenSecret = basicUser.passwordhash + SECRET_TWO;
-        const user = await parentAdminCheck(models, basicUser);
+        const user = await parentAdminCheck(basicUser);
         findOldPassword.company = user.company;
 
         const [newToken, refreshToken] = await createTokens(

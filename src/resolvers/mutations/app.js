@@ -3,12 +3,13 @@ import moment from "moment";
 import { NormalError } from "../../errors";
 import { requiresDepartmentCheck, requiresRight } from "../../helpers/permissions";
 import dd24Api from "../../services/dd24";
+import { createLog } from "../../helpers/functions";
 
 /* eslint-disable no-return-await */
 
 export default {
   distributeLicenceToDepartment: requiresDepartmentCheck.createResolver(
-    (parent, { departmentid, boughtplanid, licencetype }, { models, token }) =>
+    (parent, { departmentid, boughtplanid, licencetype }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -124,8 +125,6 @@ export default {
             };
           }
 
-          await models.DepartmentApp.create({ departmentid, boughtplanid }, { transaction: ta });
-
           const takeLicences = employees.map(
             async (employee, i) =>
               await models.Licence.update(
@@ -136,7 +135,23 @@ export default {
               )
           );
 
-          await Promise.all(takeLicences);
+          const takenLicences = await Promise.all(takeLicences);
+
+          const p5 = models.DepartmentApp.create(
+            { departmentid, boughtplanid },
+            { transaction: ta }
+          );
+
+          const p6 = createLog(
+            ip,
+            "distributeLicenceToDepartment",
+            { departmentid, boughtplanid, licencetype, takenLicences },
+            unitid,
+            ta
+          );
+
+          await Promise.all([p5, p6]);
+
           return { ok: true, error: null };
         } catch (err) {
           return {
@@ -151,22 +166,48 @@ export default {
   ),
 
   revokeLicencesFromDepartment: requiresRight(["distributelicences", "admin"]).createResolver(
-    (parent, { departmentid, boughtplanid }, { models }) =>
+    (parent, { departmentid, boughtplanid }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const p1 = models.DepartmentApp.destroy(
+          const {
+            user: { unitid }
+          } = decode(token);
+
+          const p1 = models.sequelize.query(
+            `SELECT * FROM licence_data WHERE unitid IN (SELECT
+             employee FROM department_employee_view WHERE id = :departmentid) AND
+             (endtime > NOW() OR endtime ISNULL) AND boughtplanid = :boughtplanid`,
+            { replacements: { departmentid, boughtplanid }, raw: true, transaction: ta }
+          );
+
+          const p2 = models.DepartmentApp.destroy(
             { where: { departmentid, boughtplanid } },
             { transaction: ta }
           );
 
-          const p2 = models.sequelize.query(
-            `UPDATE licence_data SET unitid = null WHERE unitid IN (SELECT
-             employee FROM department_employee_view WHERE id = :departmentid) AND
-             (endtime > NOW() OR endtime ISNULL) AND boughtplanid = :boughtplanid`,
-            { replacements: { departmentid, boughtplanid }, transaction: ta }
+          const [oldLicences, oldDepartment] = await Promise.all([p1, p2]);
+
+          const p3 = models.DepartmentApp.destroy(
+            { where: { departmentid, boughtplanid } },
+            { transaction: ta }
           );
 
-          await Promise.all([p1, p2]);
+          const p4 = models.sequelize.query(
+            `UPDATE licence_data SET unitid = null, agreed = false WHERE unitid IN (SELECT
+             employee FROM department_employee_view WHERE id = :departmentid) AND
+             (endtime > NOW() OR endtime ISNULL) AND boughtplanid = :boughtplanid RETURNING *`,
+            { replacements: { departmentid, boughtplanid }, raw: true, transaction: ta }
+          );
+
+          const revokedLicences = await Promise.all([p3, p4]);
+
+          await createLog(
+            ip,
+            "revokeLicencesFromDepartment",
+            { oldDepartment, oldLicences, revokedLicences: revokedLicences[1] },
+            unitid,
+            ta
+          );
 
           return { ok: true };
         } catch (err) {
@@ -176,77 +217,90 @@ export default {
   ),
 
   distributeLicence: requiresDepartmentCheck.createResolver(
-    async (parent, { boughtplanid, unitid, departmentid }, { models }) => {
-      try {
-        const p1 = models.Licence.findOne({
-          where: {
-            unitid: null,
-            boughtplanid,
-            endtime: {
-              [models.Op.or]: {
-                [models.Op.eq]: null,
-                [models.Op.lt]: Date.now()
+    (parent, { boughtplanid, unitid, departmentid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid: giver }
+          } = decode(token);
+
+          const p1 = models.Licence.findOne({
+            where: {
+              unitid: null,
+              boughtplanid,
+              endtime: {
+                [models.Op.or]: {
+                  [models.Op.eq]: null,
+                  [models.Op.lt]: Date.now()
+                }
               }
-            }
-          },
-          raw: true
-        });
+            },
+            raw: true
+          });
 
-        const p2 = models.Right.findOne({
-          where: {
-            holder: unitid,
-            forunit: departmentid,
-            type: { [models.Op.or]: ["admin", "distributeapps"] }
+          const p2 = models.Right.findOne({
+            where: {
+              holder: unitid,
+              forunit: departmentid,
+              type: { [models.Op.or]: ["admin", "distributeapps"] }
+            }
+          });
+
+          const [openLicence, hasRight] = await Promise.all([p1, p2]);
+          if (!openLicence) {
+            return {
+              ok: false,
+              error: {
+                code: 1,
+                message: "There are no open Licences to distribute for this plan!"
+              }
+            };
+          } else if (!openLicence && !hasRight) {
+            return {
+              ok: false,
+              error: {
+                code: 2,
+                message: "There are no open Licences and you don't have the right to distribute!"
+              }
+            };
+          } else if (!openLicence && hasRight) {
+            return {
+              ok: false,
+              error: {
+                code: 3,
+                message: "There is no open Licence to distribute for this plan!"
+              }
+            };
+          } else if (!hasRight) {
+            return {
+              ok: false,
+              error: {
+                code: 4,
+                message: "You don't have the right to distribute Licences"
+              }
+            };
           }
-        });
 
-        const [openLicences, hasRight] = await Promise.all([p1, p2]);
-        if (!openLicences) {
-          return {
-            ok: false,
-            error: {
-              code: 1,
-              message: "There are no open Licences to distribute for this plan!"
-            }
-          };
-        } else if (!openLicences && !hasRight) {
-          return {
-            ok: false,
-            error: {
-              code: 2,
-              message: "There are no open Licences and you don't have the right to distribute!"
-            }
-          };
-        } else if (!openLicences && hasRight) {
-          return {
-            ok: false,
-            error: {
-              code: 3,
-              message: "There is no open Licence to distribute for this plan!"
-            }
-          };
-        } else if (!hasRight) {
-          return {
-            ok: false,
-            error: {
-              code: 4,
-              message: "You don't have the right to distribute Licences"
-            }
-          };
+          const updatedLicence = await models.Licence.update(
+            {
+              unitid
+            },
+            { where: { boughtplanid, unitid: null, id: openLicence.id }, transaction: ta }
+          );
+
+          await createLog(
+            ip,
+            "distributeLicence",
+            { departmentid, boughtplanid, openLicence, hasRight, updatedLicence },
+            giver,
+            ta
+          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new Error(err.message);
         }
-
-        await models.Licence.update(
-          {
-            unitid
-          },
-          { where: { boughtplanid, unitid: null, id: openLicences.id } }
-        );
-
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
+      })
   ),
 
   revokeLicence: requiresDepartmentCheck.createResolver(

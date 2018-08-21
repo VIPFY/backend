@@ -148,7 +148,7 @@ export default {
   fetchUser: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
     try {
       const user = await models.User.findById(id);
-      const userWithCompany = await parentAdminCheck(models, user);
+      const userWithCompany = await parentAdminCheck(user);
 
       return userWithCompany;
     } catch ({ message }) {

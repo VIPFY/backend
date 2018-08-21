@@ -1,9 +1,6 @@
 import { decode } from "jsonwebtoken";
 import messaging from "vipfy-messaging";
-import {
-  requiresAuth,
-  requiresMessageGroupRights
-} from "../../helpers/permissions";
+import { requiresAuth, requiresMessageGroupRights } from "../../helpers/permissions";
 import { parentAdminCheck, superset } from "../../helpers/functions";
 import { NormalError } from "../../errors";
 
@@ -16,14 +13,7 @@ export default {
     async (parent, { receiver, defaultrights }, { models, token }) => {
       if (
         !superset(
-          [
-            "speak",
-            "upload",
-            "highlight",
-            "modifyown",
-            "deleteown",
-            "deleteother"
-          ],
+          ["speak", "upload", "highlight", "modifyown", "deleteown", "deleteother"],
           defaultrights
         )
       ) {
@@ -46,20 +36,15 @@ export default {
         }
 
         // annotate users with their company
-        const p3 = parentAdminCheck(models, senderExists);
-        const p4 = parentAdminCheck(models, receiverExists);
+        const p3 = parentAdminCheck(senderExists);
+        const p4 = parentAdminCheck(receiverExists);
         const [senderHas, receiverHas] = await Promise.all([p3, p4]);
 
         if (senderHas.company != receiverHas.company) {
           throw new Error("Sender and receiver are not in the same Company!");
         }
 
-        const groupId = await messaging.startConversation(
-          models,
-          unitid,
-          receiver,
-          defaultrights
-        );
+        const groupId = await messaging.startConversation(models, unitid, receiver, defaultrights);
 
         return {
           ok: true,
@@ -84,12 +69,7 @@ export default {
           user: { unitid, company }
         } = decode(token);
 
-        const messageid = messaging.sendMessage(
-          models,
-          unitid,
-          groupid,
-          message
-        );
+        const messageid = messaging.sendMessage(models, unitid, groupid, message);
         return {
           ok: true,
           message: messageid
@@ -101,21 +81,19 @@ export default {
   ),
 
   // TODO: update
-  setDeleteStatus: requiresAuth.createResolver(
-    async (parent, { id, type }, { models }) => {
-      const messageExists = await models.MessageData.findById(id);
-      if (!messageExists) {
-        throw new NormalError({ message: "Message doesn't exist!" });
-      }
-
-      try {
-        await models.MessageData.update({ [type]: true }, { where: { id } });
-        return {
-          ok: true
-        };
-      } catch (err) {
-        throw new NormalError({ message: err.message });
-      }
+  setDeleteStatus: requiresAuth.createResolver(async (parent, { id, type }, { models }) => {
+    const messageExists = await models.MessageData.findById(id);
+    if (!messageExists) {
+      throw new NormalError({ message: "Message doesn't exist!" });
     }
-  )
+
+    try {
+      await models.MessageData.update({ [type]: true }, { where: { id } });
+      return {
+        ok: true
+      };
+    } catch (err) {
+      throw new NormalError({ message: err.message });
+    }
+  })
 };

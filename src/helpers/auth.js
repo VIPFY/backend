@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { pick } from "lodash";
-import { parentAdminCheck } from "../helpers/functions";
+import { parentAdminCheck } from "./functions";
 
 export const createTokens = async (user, SECRET, SECRET2) => {
   try {
@@ -26,7 +26,9 @@ export const refreshTokens = async (refreshToken, models, SECRET, SECRET_TWO) =>
   let userId = 0;
 
   try {
-    const { user: { unitid } } = await jwt.decode(refreshToken);
+    const {
+      user: { unitid }
+    } = await jwt.decode(refreshToken);
     userId = unitid;
 
     if (!userId) {
@@ -45,7 +47,7 @@ export const refreshTokens = async (refreshToken, models, SECRET, SECRET_TWO) =>
 
     await jwt.verify(refreshToken, refreshSecret);
 
-    const refreshUser = await parentAdminCheck(models, basicUser);
+    const refreshUser = await parentAdminCheck(basicUser);
 
     const [newToken, newRefreshToken] = await createTokens(refreshUser, SECRET, refreshSecret);
     return {

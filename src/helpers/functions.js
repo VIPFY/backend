@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import { random } from "lodash";
 import moment from "moment";
+import models from "../models";
 
 /* eslint-disable no-return-assign */
 
@@ -21,10 +22,9 @@ export const createPassword = async email => {
 /**
  * Add the property company to the user object and set it to the companyid of the user
  *
- * @param {*} models
  * @param {*} user
  */
-export const parentAdminCheck = async (models, user) => {
+export const parentAdminCheck = async user => {
   await models.sequelize
     .query(
       `Select DISTINCT (id) from department_employee_view where
@@ -50,7 +50,7 @@ export const formatFilename = filename => {
 /*
 * Check whether the department belongs to the company
 */
-export const checkDepartment = async (models, company, departmentid) => {
+export const checkDepartment = async (company, departmentid) => {
   if (company == departmentid) return true;
 
   const departments = await models.sequelize
@@ -106,16 +106,21 @@ export const recursiveAddressCheck = (accountData, iterator = 0) => {
   return accountData[iterator];
 };
 
-// This is a helper function to load the proper environment variables
-export const selectEnv = environment => {
-  switch (environment) {
-    case "development":
-      return ".env.dev";
-
-    case "production":
-      return ".env.prod";
-
-    case "testing":
-      return ".env.test";
-  }
-};
+/**
+ * Add an entry in our Log table
+ * @param {string} ip
+ * @param {string} eventtype
+ * @param {object} eventdata
+ * @param {integer} user
+ * @param {object} transaction
+ */
+export const createLog = (ip, eventtype, eventdata, user, transaction) =>
+  models.Log.create(
+    {
+      ip,
+      eventtype,
+      eventdata,
+      user
+    },
+    { transaction }
+  );

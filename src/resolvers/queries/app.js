@@ -237,7 +237,8 @@ export default {
       try {
         const userApps = await models.sequelize
           .query(
-            `SELECT DISTINCT bp.usedby, bp.id AS boughtplan, bp.description,
+            `SELECT DISTINCT bp.id || '-' || :departmentid AS id, bp.usedby,
+              bp.id AS boughtplan, bp.description,
               a.name AS appname, p.appid, a.icon AS appicon, a.logo AS applogo
               FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit =
               bp.usedby AND r.type = 'canuselicences' AND r.holder = :departmentid)
@@ -247,14 +248,7 @@ export default {
           )
           .spread(res => res);
 
-        const sanitizedApps = [];
-        userApps.forEach(app => {
-          if (sanitizedApps.find(item => item.appid == app.appid) == undefined) {
-            sanitizedApps.push(app);
-          }
-        });
-
-        return sanitizedApps;
+        return userApps;
       } catch (err) {
         throw new NormalError({ message: err.message });
       }
