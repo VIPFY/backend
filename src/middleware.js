@@ -125,7 +125,11 @@ export const loggingMiddleWare = (req, res, next) => {
         variables.password = await bcrypt.hash(variables.password, 12);
       }
 
-      if (parsedBody.data && parsedBody.data != {}) {
+      if (parsedBody.errors) {
+        parsedBody.errors[0].variables = variables;
+        eventtype = `Error: ${parsedBody.errors[0].path[0]}`;
+        eventdata = parsedBody.errors;
+      } else if (parsedBody.data && parsedBody.data != {}) {
         eventtype = Object.keys(parsedBody.data)[0];
         parsedBody.data.ua = req.headers["user-agent"];
 
@@ -146,10 +150,6 @@ export const loggingMiddleWare = (req, res, next) => {
         }
 
         eventdata = parsedBody.data;
-      } else if (parsedBody.errors) {
-        parsedBody.errors[0].variables = variables;
-        eventtype = `Error: ${parsedBody.errors[0].path[0]}`;
-        eventdata = parsedBody.errors;
       }
 
       const log = {
