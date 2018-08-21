@@ -1,7 +1,7 @@
 // This file contains common operations which don't belong to a specific Component
 import { sendEmailToVipfy } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
-import { NormalError, PartnerError } from "../errors";
+import { NormalError, PartnerError } from "../../errors";
 
 /* eslint-disable consistent-return, no-unused-vars */
 

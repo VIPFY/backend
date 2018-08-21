@@ -5,7 +5,7 @@ import { createTokens } from "../../helpers/auth";
 import { sendRegistrationEmail } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
 import { parentAdminCheck } from "../../helpers/functions";
-import { AuthError } from "../errors";
+import { AuthError } from "../../errors";
 
 export default {
   signUp: async (parent, { email, newsletter }, { models, SECRET, SECRET_TWO }) =>

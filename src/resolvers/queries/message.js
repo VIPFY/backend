@@ -1,7 +1,7 @@
 import { decode } from "jsonwebtoken";
 import * as messaging from "vipfy-messaging";
 import { requiresAuth } from "../../helpers/permissions";
-import { NormalError } from "../errors";
+import { NormalError } from "../../errors";
 
 export default {
   /**

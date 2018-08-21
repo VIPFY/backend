@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
-import { NormalError } from "../errors";
+import { NormalError } from "../../errors";
 
 /* eslint-disable no-unused-vars */
 

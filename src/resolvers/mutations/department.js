@@ -4,7 +4,7 @@ import { userPicFolder } from "../../constants";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
 import { deleteFile } from "../../services/gcloud";
 import { createTokens } from "../../helpers/auth";
-import { NormalError } from "../errors";
+import { NormalError } from "../../errors";
 // import { sendRegistrationEmail } from "../../services/mailjet";
 
 export default {

@@ -2,7 +2,7 @@ import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 import { uploadFile } from "../../services/gcloud";
 import { userPicFolder } from "../../constants";
-import { NormalError } from "../errors";
+import { NormalError } from "../../errors";
 /* eslint-disable no-unused-vars, max-len */
 
 export default {

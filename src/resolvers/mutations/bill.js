@@ -7,7 +7,7 @@ import { recursiveAddressCheck } from "../../helpers/functions";
 // import createInvoice from "../../helpers/createInvoice";
 import { createDownloadLink } from "../../services/gcloud";
 import { createCustomer, listCards, addCard, createSubscription } from "../../services/stripe";
-import { BillingError, PartnerError } from "../errors";
+import { BillingError, PartnerError } from "../../errors";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 

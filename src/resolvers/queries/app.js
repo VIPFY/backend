@@ -1,7 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { weeblyApi } from "../../services/weebly";
 import dd24Api from "../../services/dd24";
-import { NormalError, PartnerError } from "../errors";
+import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
 
 /* eslint-disable default-case */

@@ -5,7 +5,7 @@ import {
   requiresMessageGroupRights
 } from "../../helpers/permissions";
 import { parentAdminCheck, superset } from "../../helpers/functions";
-import { NormalError } from "../errors";
+import { NormalError } from "../../errors";
 
 export default {
   /**
