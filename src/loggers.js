@@ -3,6 +3,7 @@ import moment from "moment";
 import path from "path";
 import winston from "winston";
 import { LoggingWinston } from "@google-cloud/logging-winston";
+import { GCLOUD_PLATFORM_ID } from "./login-data";
 
 const date = moment().format("YYYY-MM-DD");
 const logDir = path.join(__dirname, "./logs");
@@ -30,7 +31,10 @@ const options = {
 };
 
 const logger = winston.createLogger({
-  transports: [new winston.transports.File(options.file), new LoggingWinston(options.file)],
+  transports: [
+    new winston.transports.File(options.file),
+    new LoggingWinston({ ...options.file, projectId: GCLOUD_PLATFORM_ID })
+  ],
   exitOnError: false
 });
 
