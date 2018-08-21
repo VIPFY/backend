@@ -21,6 +21,7 @@
     "testEnvironment": "node"
   },
   "dependencies": {
+    "@google-cloud/logging-winston": "^0.9.0",
     "@google-cloud/profiler": "^0.1.14",
     "@google-cloud/storage": "^1.6.0",
     "@google-cloud/trace-agent": "^2.10.1",

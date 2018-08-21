@@ -3,15 +3,13 @@ import path from "path";
 import moment from "moment";
 import Storage from "@google-cloud/storage";
 import { formatFilename } from "../helpers/functions";
+import { GCLOUD_PLATFORM_ID } from "../login-data";
 
 /* eslint-disable no-shadow */
 
-// Your Google Cloud Platform project ID
-const projectId = "vipfy-148316";
-
 // Creates a client
 const storage = new Storage({
-  projectId,
+  GCLOUD_PLATFORM_ID,
   keyFilename: path.join(__dirname, "../..", "Vipfy-4c183d5274a4.json")
 });
 

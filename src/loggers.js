@@ -2,9 +2,9 @@ import fs from "fs";
 import moment from "moment";
 import path from "path";
 import winston from "winston";
+import { LoggingWinston } from "@google-cloud/logging-winston";
 
-const now = moment();
-const date = now.format("YYYY-MM-DD");
+const date = moment().format("YYYY-MM-DD");
 const logDir = path.join(__dirname, "./logs");
 
 if (!fs.existsSync(logDir)) {
@@ -17,22 +17,20 @@ const options = {
     filename: `${logDir}/${date}.txt`,
     handleExceptions: true,
     json: true,
-    masxsize: 5242880,
-    maxFiles: 5,
     colorize: false,
-    format: winston.format.combine(winston.format.timestamp(), winston.format.prettyPrint())
+    format: winston.format.combine(winston.format.timestamp(), winston.format.json())
   },
   console: {
     level: "debug",
     handleExceptions: true,
-    json: false,
+    json: true,
     colorize: true,
     format: winston.format.simple()
   }
 };
 
 const logger = winston.createLogger({
-  transports: [new winston.transports.File(options.file)],
+  transports: [new winston.transports.File(options.file), new LoggingWinston(options.file)],
   exitOnError: false
 });
 

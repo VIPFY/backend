@@ -104,14 +104,7 @@ export const loggingMiddleWare = (req, res, next) => {
       chunks.push(new Buffer(restArgs[0]));
     }
 
-    // const now = moment();
-    // const date = now.format("YYYY-MM-DD");
-    // const uploadDir = "src/logs";
-    // if (uploadDir) mkdirp.sync(uploadDir);
-    // const logDirectory = path.join(__dirname, "./logs", `${date}.txt`);
-
     const body = Buffer.concat(chunks).toString("utf8");
-
     let user = null;
     let eventtype;
     let eventdata;
@@ -160,12 +153,12 @@ export const loggingMiddleWare = (req, res, next) => {
         eventdata,
         user
       };
-      logger.error(JSON.stringify(log));
 
-      // fs.appendFile(logDirectory, `${JSON.stringify(log)} \n`, err => {
-      //   if (err) throw err;
-      //   eventdata = "Logging Error";
-      // });
+      if (parsedBody.data) {
+        logger.info(log);
+      } else {
+        logger.error(log);
+      }
 
       if (req.body.query.includes("mutation")) {
         models.Log.create(log);
@@ -175,11 +168,7 @@ export const loggingMiddleWare = (req, res, next) => {
         models.Human.update({ lastactive: new Date().toUTCString() }, { where: { unitid: user } });
       }
     } catch ({ name, stack }) {
-      JSON.stringify(`${name}: ${stack}`);
-      // fs.appendFile(logDirectory, JSON.stringify(`${name}: ${stack}`), err => {
-      //   if (err) throw err;
-      //   eventdata = "Logging Error";
-      // });
+      logger.error(`${name}: ${stack}`);
     }
     oldEnd.apply(res, restArgs);
   };
