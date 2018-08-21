@@ -83,7 +83,6 @@ export const types = `
 export const queries = `
 # All messages an user received - either from apps or other users
   fetchMessages(read: Boolean): [Message]
-  fetchLastDialogMessages: [MessageData]
   fetchDialog(groupid: ID!): [MessageData]
   fetchGroups: [MessageGroup]
   fetchPublicUser(userid: ID!): PublicUser
@@ -92,9 +91,6 @@ export const queries = `
 export const mutations = `
 # Sender or Receiver can delete a message here
   setDeleteStatus(id: ID!, type: MESSAGE_COLUMN!): Response!
-
-# The time an user opened a message
-  setReadtime(id: ID!): MessageResponse!
 
 # Send a message to another user
   sendMessage(groupid: ID!, message: String!): MessageResponse!

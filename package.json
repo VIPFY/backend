@@ -65,7 +65,8 @@
     "stripe": "^6.2.1",
     "subscriptions-transport-ws": "^0.9.5",
     "ul": "^5.2.13",
-    "winston": "^3.0.0"
+    "winston": "^3.0.0",
+    "vipfy-messaging": "git@bitbucket.org:vipfymarketplace/vipfy-messaging.git"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",

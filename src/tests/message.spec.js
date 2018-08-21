@@ -3,12 +3,11 @@ import { executeQuery, testDefault, testAuthentication, context } from "./helper
 import {
   dummyReadMessage,
   dummyUnreadMessage,
-  dummySetReadtimeResponse,
   dummyResponse,
   dummyMessageResponseSuccess
 } from "./dummies";
 import { fetchMessages } from "./queries";
-import { sendMessage, setDeleteStatus, setReadtime } from "./mutations";
+import { sendMessage, setDeleteStatus } from "./mutations";
 
 /* eslint-disable array-callback-return */
 
@@ -82,24 +81,6 @@ const testMutations = [
       type: "archivetimesender"
     },
     errorTest: true
-  },
-  {
-    description: "setReadtime should change the readtime prop",
-    operation: setReadtime,
-    dummy: dummySetReadtimeResponse,
-    name: "setReadtime",
-    args: {
-      id: 16
-    }
-  },
-  {
-    description: "setReadtime should throw an error, if the message was already read",
-    operation: setReadtime,
-    name: "setReadtime",
-    args: {
-      id: 7
-    },
-    errorTest: true
   }
 ];
 
@@ -141,15 +122,6 @@ describe("This workflow", () => {
 
     await expect(sendTheMessage.errors).toBeUndefined();
     await expect(sendTheMessage.data.sendMessage).toEqual(dummyMessageResponseSuccess);
-
-    const readTheMessage = await executeQuery(
-      setReadtime,
-      { id: sendTheMessage.data.sendMessage.id },
-      context
-    );
-
-    await expect(readTheMessage.errors).toBeUndefined();
-    await expect(readTheMessage.data.setReadtime).toEqual(dummyMessageResponseSuccess);
 
     const deleteTheMessage = await executeQuery(
       setDeleteStatus,

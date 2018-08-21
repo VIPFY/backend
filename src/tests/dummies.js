@@ -109,12 +109,6 @@ export const dummyReadMessage = {
   senderpicture: null
 };
 
-export const dummySetReadtimeResponse = {
-  ok: true,
-  id: expect.any(Number),
-  message: expect.any(String)
-};
-
 export const dummyResponse = { ok: true };
 
 export const dummyReviewResponse = {
