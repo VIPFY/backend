@@ -20,7 +20,7 @@ import { SubscriptionServer } from "subscriptions-transport-ws";
 import { createContext } from "dataloader-sequelize";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
-import models from "./models";
+import models from "vipfy-sequelize-setup";
 import { SECRET, SECRET_TWO, TOKEN_DEVELOPMENT } from "./login-data";
 import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware";
 import { refreshTokens } from "./helpers/auth";
