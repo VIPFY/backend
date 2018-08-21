@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { requiresRight, requiresAuth } from "../../helpers/permissions";
-import { NormalError } from "../errors";
+import { NormalError } from "../../errors";
 
 export default {
   fetchCompany: async (parent, { id }, { models }) => {

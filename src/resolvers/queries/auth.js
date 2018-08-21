@@ -1,7 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { parentAdminCheck } from "../../helpers/functions";
 import { requiresAuth } from "../../helpers/permissions";
-import { AuthError } from "../errors";
+import { AuthError } from "../../errors";
 
 export default {
   me: requiresAuth.createResolver(async (parent, args, { models, token }) => {

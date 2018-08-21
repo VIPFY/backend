@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
-import { NormalError } from "../errors";
+import { NormalError } from "../../errors";
 import { requiresDepartmentCheck, requiresRight } from "../../helpers/permissions";
 import dd24Api from "../../services/dd24";
 

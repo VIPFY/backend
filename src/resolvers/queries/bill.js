@@ -1,7 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
 // import { fetchCustomer } from "../../services/stripe";
-import { NormalError } from "../errors";
+import { NormalError } from "../../errors";
 
 export default {
   boughtPlans: requiresAuth.createResolver(async (parent, args, { models, token }) => {
