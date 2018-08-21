@@ -173,8 +173,8 @@ export const loggingMiddleWare = (req, res, next) => {
       if (user) {
         models.Human.update({ lastactive: new Date().toUTCString() }, { where: { unitid: user } });
       }
-    } catch ({ name, stack }) {
-      logger.error(`${name}: ${stack}`);
+    } catch (err) {
+      logger.error(err);
     }
     oldEnd.apply(res, restArgs);
   };

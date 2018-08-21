@@ -14,7 +14,10 @@ import fs from "fs";
 
 // To create the GraphQl functions
 import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
-import { formatError } from "apollo-errors";
+import {
+  formatError as formatApolloError,
+  isInstance as isApolloErrorInstance
+} from "apollo-errors";
 import { makeExecutableSchema } from "graphql-tools";
 import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
@@ -70,7 +73,14 @@ app.use(
 
     return {
       schema,
-      formatError,
+      formatError: err => {
+        const { originalError } = err;
+
+        if (isApolloErrorInstance(originalError)) {
+          logger.error(originalError);
+        }
+        return formatApolloError(err);
+      },
       context: {
         models,
         token: TOKEN_SET ? TOKEN_DEVELOPMENT : token,
