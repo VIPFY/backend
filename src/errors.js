@@ -1,4 +1,10 @@
-import { createError } from "apollo-errors";
+import {
+  createError,
+  formatError as formatApolloError,
+  isInstance as isApolloErrorInstance
+} from "apollo-errors";
+
+import logger from "./loggers";
 
 export const NormalError = createError("NormalError", {
   message: "Sorry, something went wrong!",
@@ -27,3 +33,12 @@ export const AdminError = createError("AdminError", {
   message: "You're not a Vipfy Admin!",
   internalData: { error: "Someone tried to login as an Admin." }
 });
+
+export const formatError = err => {
+  const { originalError } = err;
+
+  if (isApolloErrorInstance(originalError)) {
+    logger.error(originalError);
+  }
+  return formatApolloError(err);
+};

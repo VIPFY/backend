@@ -14,10 +14,6 @@ import fs from "fs";
 
 // To create the GraphQl functions
 import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
-import {
-  formatError as formatApolloError,
-  isInstance as isApolloErrorInstance
-} from "apollo-errors";
 import { makeExecutableSchema } from "graphql-tools";
 import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
@@ -29,6 +25,7 @@ import { SECRET, SECRET_TWO, TOKEN_DEVELOPMENT } from "./login-data";
 import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware";
 import { refreshTokens } from "./helpers/auth";
 import logger from "./loggers";
+import { formatError } from "./errors";
 
 const app = express();
 const { ENVIRONMENT, TOKEN_SET, SSL_KEY, SSL_CERT } = process.env;
@@ -73,14 +70,7 @@ app.use(
 
     return {
       schema,
-      formatError: err => {
-        const { originalError } = err;
-
-        if (isApolloErrorInstance(originalError)) {
-          logger.error(originalError);
-        }
-        return formatApolloError(err);
-      },
+      formatError,
       context: {
         models,
         token: TOKEN_SET ? TOKEN_DEVELOPMENT : token,
