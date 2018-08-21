@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import messaging from "vipfy-messaging";
+import * as messaging from "vipfy-messaging";
 import { requiresAuth, requiresMessageGroupRights } from "../../helpers/permissions";
 import { parentAdminCheck, superset } from "../../helpers/functions";
 import { NormalError } from "../../errors";
