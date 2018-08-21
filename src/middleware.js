@@ -125,7 +125,7 @@ export const loggingMiddleWare = (req, res, next) => {
         variables.password = await bcrypt.hash(variables.password, 12);
       }
 
-      if (parsedBody.data) {
+      if (parsedBody.data && parsedBody.data != {}) {
         eventtype = Object.keys(parsedBody.data)[0];
         parsedBody.data.ua = req.headers["user-agent"];
 
