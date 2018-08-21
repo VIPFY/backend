@@ -155,9 +155,9 @@ export const loggingMiddleWare = (req, res, next) => {
       };
 
       if (parsedBody.data) {
-        logger.info(log);
+        logger.log("info", eventtype, log);
       } else {
-        logger.error(log);
+        logger.log("error", eventtype, log);
       }
 
       if (req.body.query.includes("mutation")) {
