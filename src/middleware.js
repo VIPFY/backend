@@ -10,7 +10,7 @@ import mkdirp from "mkdirp";
 import bcrypt from "bcrypt";
 import { SECRET, SECRET_TWO, SECRET_THREE } from "./login-data";
 import { refreshTokens } from "./helpers/auth";
-import models from "vipfy-sequelize-setup";
+import models from "./models";
 import Utility from "./helpers/createHmac";
 import logger from "./loggers";
 
