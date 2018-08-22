@@ -65,7 +65,8 @@ export const find = data => {
           case "Human":
           case "Department":
             return await models[data[search]].findOne({
-              where: { unitid: parent.dataValues[search] }
+              where: { unitid: parent.dataValues[search] },
+              raw: true
             });
 
           default: {
@@ -73,7 +74,8 @@ export const find = data => {
               // return array of objects
               const modelName = data[search].substring(1, data[search].length - 1);
               return await models[modelName].findAll({
-                where: { id: { $in: parent[search] } }
+                where: { id: { $in: parent[search] } },
+                raw: true
               });
             } else {
               // single object
