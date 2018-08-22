@@ -22,7 +22,7 @@ import demoMutations from "./mutations/demo";
 
 import Subscription from "./subscriptions";
 
-import { find, implementDate, implementJSON } from "./customResolvers";
+import { find, findCompany, implementDate, implementJSON } from "./customResolvers";
 
 const Query = Object.assign(
   authQueries,
@@ -93,6 +93,6 @@ export default {
   ReviewHelpful: find({ reviewer: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
-  User: find({ company: "Department" }),
+  User: findCompany(),
   Website: find(unit)
 };
