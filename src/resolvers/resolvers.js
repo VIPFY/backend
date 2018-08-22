@@ -93,6 +93,6 @@ export default {
   ReviewHelpful: find({ reviewer: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
-  User: findCompany(),
+  User: find({ company: "Department" }),
   Website: find(unit)
 };
