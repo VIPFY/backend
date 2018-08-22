@@ -56,7 +56,7 @@ export const implementJSON = {
   }
 };
 
-export const find = async data => {
+export const find = data => {
   const searches = {};
   Object.keys(data).map(search => {
     searches[search] = (parent, args, { models }, info) => {
@@ -70,10 +70,7 @@ export const find = async data => {
         default: {
           if (data[search][0] == "[") {
             // return array of objects
-            const modelName = data[search].substring(
-              1,
-              data[search].length - 1
-            );
+            const modelName = data[search].substring(1, data[search].length - 1);
             return models[modelName].findAll({
               where: { id: { $in: parent[search] } }
             });
@@ -97,8 +94,7 @@ export const find = async data => {
               info.fieldNodes[0].selectionSet.selections.filter(
                 selection =>
                   !selection.name ||
-                  (selection.name.value != "id" &&
-                    selection.name.value != "__typename")
+                  (selection.name.value != "id" && selection.name.value != "__typename")
               ).length == 0
             ) {
               if (parent[search] === null) {

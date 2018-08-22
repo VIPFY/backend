@@ -211,7 +211,7 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new Error(err);
+          throw new NormalError({ message: err.message });
         }
       })
   ),
