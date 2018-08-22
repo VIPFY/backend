@@ -46,6 +46,7 @@
     "mkdirp": "^0.5.1",
     "moment": "^2.22.1",
     "mustache": "^2.3.0",
+    "node-mailjet": "^3.2.1",
     "nodeice": "^3.0.8",
     "noop6": "^1.0.7",
     "one-by-one": "^3.2.6",
