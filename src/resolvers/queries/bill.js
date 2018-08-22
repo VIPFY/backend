@@ -66,8 +66,6 @@ export default {
         raw: true
       });
 
-      // const customer = await fetchCustomer(paymentData.internaldata.stripe.id);
-
       return paymentData.payingoptions.stripe.cards;
     } catch (err) {
       throw new NormalError({ message: err.message });

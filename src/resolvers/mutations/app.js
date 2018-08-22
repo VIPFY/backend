@@ -298,29 +298,34 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new Error(err.message);
+          throw new NormalError({ message: err.message });
         }
       })
   ),
 
-  revokeLicence: requiresDepartmentCheck.createResolver(
-    async (parent, { licenceid: id }, { models }) => {
+  revokeLicence: async (parent, { licenceid: id }, { models }) =>
+    models.sequelize.transaction(async ta => {
       try {
         const res = await models.Licence.update(
           { unitid: null },
-          { where: { id, unitid: { [models.Op.not]: null } } }
+          {
+            where: { id, unitid: { [models.Op.not]: null } },
+            returning: true,
+            transaction: ta
+          }
         );
 
         if (res[0] == 0) {
           throw new Error("This Licence wasn't taken!");
         }
-
+        // eslint-disable-next-line
+        console.log(res[1][0]);
+        throw new Error("Pech");
         return { ok: true };
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message });
       }
-    }
-  ),
+    }),
 
   /**
    * Update Whois Privacy or Renewal Mode of a domain. Updating both at the same
