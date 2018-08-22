@@ -1,3 +1,4 @@
+import { NormalError } from "../errors";
 /* eslint-disable no-undef, array-callback-return */
 
 export const implementDate = {
@@ -55,27 +56,28 @@ export const implementJSON = {
   }
 };
 
-export const find = data => {
-  const searches = {};
-  Object.keys(data).map(search => {
-    searches[search] = (parent, args, { models }, info) => {
-      switch (data[search]) {
-        case "Human":
-        case "Department":
-          return models[data[search]].findOne({
-            where: { unitid: parent.dataValues[search] }
-          });
-
-        default: {
-          if (data[search][0] == "[") {
-            // return array of objects
-            const modelName = data[search].substring(1, data[search].length - 1);
-            return models[modelName].findAll({
-              where: { id: { $in: parent[search] } }
+export const find = async data => {
+  try {
+    const searches = {};
+    Object.keys(data).map(search => {
+      searches[search] = (parent, args, { models }, info) => {
+        switch (data[search]) {
+          case "Human":
+          case "Department":
+            return models[data[search]].findOne({
+              where: { unitid: parent.dataValues[search] }
             });
-          } else {
-            // single object
-            /* console.error(
+
+          default: {
+            if (data[search][0] == "[") {
+              // return array of objects
+              const modelName = data[search].substring(1, data[search].length - 1);
+              return models[modelName].findAll({
+                where: { id: { $in: parent[search] } }
+              });
+            } else {
+              // single object
+              /* console.error(
               "FIND",
               search,
               data[search],
@@ -87,27 +89,33 @@ export const find = data => {
               "S",
               info.fieldNodes[0].selectionSet.selections
             ); */
-            // models[data[search]].findById(parent[search], { raw: true })
-            // .then(a => console.error(parent[search], a));
-            if (
-              info.fieldNodes[0].selectionSet.selections.filter(
-                selection =>
-                  !selection.name ||
-                  (selection.name.value != "id" && selection.name.value != "__typename")
-              ).length == 0
-            ) {
-              if (parent[search] === null) {
-                return null;
-              } else {
-                return { id: parent[search] };
+              // models[data[search]].findById(parent[search], { raw: true })
+              // .then(a => console.error(parent[search], a));
+              if (
+                info.fieldNodes[0].selectionSet.selections.filter(
+                  selection =>
+                    !selection.name ||
+                    (selection.name.value != "id" && selection.name.value != "__typename")
+                ).length == 0
+              ) {
+                if (parent[search] === null) {
+                  return null;
+                } else {
+                  return { id: parent[search] };
+                }
               }
+              return models[data[search]].findById(parent[search], { raw: true });
             }
-            return models[data[search]].findById(parent[search], { raw: true });
           }
         }
-      }
-    };
-  });
+      };
+    });
 
-  return searches;
+    return searches;
+  } catch (err) {
+    throw new NormalError({
+      message: err.message,
+      internalData: { data, message: "Something went wrong with a custom resolver." }
+    });
+  }
 };
