@@ -92,6 +92,11 @@ export const superset = (sup, sub) => {
   return j == sub.length;
 };
 
+/**
+ * Gives back the first address which has all necessary properties
+ * @param {object} accountData
+ * @param {integer} iterator
+ */
 export const recursiveAddressCheck = (accountData, iterator = 0) => {
   if (!accountData[iterator]) {
     return null;

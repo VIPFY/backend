@@ -113,9 +113,6 @@ export const find = async data => {
 
     return searches;
   } catch (err) {
-    throw new NormalError({
-      message: err.message,
-      internalData: { data, message: "Something went wrong with a custom resolver." }
-    });
+    throw new NormalError({ message: err.message });
   }
 };
