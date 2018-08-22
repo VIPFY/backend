@@ -1,22 +1,26 @@
 // This file contains common operations which don't belong to a specific Component
 import { sendEmailToVipfy } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
-import { NormalError, PartnerError } from "../../errors";
+import { NormalError } from "../../errors";
+import { createLog } from "../../helpers/functions";
 
 /* eslint-disable consistent-return, no-unused-vars */
 
 export default {
-  newContactEmail: async (parent, args) => {
-    try {
-      const messageSent = await sendEmailToVipfy(args);
+  newContactEmail: async (parent, args, { models, ip }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const p1 = sendEmailToVipfy(args);
 
-      return {
-        ok: true
-      };
-    } catch (err) {
-      throw new NormalError({ message: err.message });
-    }
-  },
+        const p2 = createLog(ip, "newContactEmail", args, 0, ta);
+
+        await Promise.all([p1, p2]);
+
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({ message: err.message });
+      }
+    }),
 
   checkEmail: requiresAuth.createResolver(async (parent, { email }, { models }) => {
     if (!email) return { ok: true };

@@ -180,7 +180,7 @@ export default {
             { replacements: { departmentid, boughtplanid }, raw: true, transaction: ta }
           );
 
-          const p2 = models.DepartmentApp.destroy(
+          const p2 = models.DepartmentApp.findOne(
             { where: { departmentid, boughtplanid } },
             { transaction: ta }
           );
@@ -303,29 +303,45 @@ export default {
       })
   ),
 
-  revokeLicence: async (parent, { licenceid: id }, { models }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const res = await models.Licence.update(
-          { unitid: null },
-          {
-            where: { id, unitid: { [models.Op.not]: null } },
-            returning: true,
-            transaction: ta
-          }
-        );
+  revokeLicence: requiresDepartmentCheck.createResolver(
+    async (parent, { licenceid: id }, { models, ip, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
 
-        if (res[0] == 0) {
-          throw new Error("This Licence wasn't taken!");
+          const p1 = await models.Licence.findById(id, { raw: true });
+          const p2 = await models.Licence.update(
+            { unitid: null },
+            {
+              where: { id, unitid: { [models.Op.not]: null } },
+              returning: true,
+              transaction: ta,
+              raw: true
+            }
+          );
+
+          const [oldLicence, revokedLicence] = await Promise.all([p1, p2]);
+
+          if (revokedLicence[0] == 0) {
+            throw new Error("This Licence wasn't taken!");
+          }
+
+          await createLog(
+            ip,
+            "revokeLicence",
+            { oldLicence, revokedLicence: revokedLicence[1] },
+            unitid,
+            ta
+          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({ message: err.message });
         }
-        // eslint-disable-next-line
-        console.log(res[1][0]);
-        throw new Error("Pech");
-        return { ok: true };
-      } catch (err) {
-        throw new NormalError({ message: err.message });
-      }
-    }),
+      })
+  ),
 
   /**
    * Update Whois Privacy or Renewal Mode of a domain. Updating both at the same
@@ -340,12 +356,14 @@ export default {
    * @param licenceid: integer
    */
   updateDomain: requiresRight(["admin", "managedomains"]).createResolver(
-    (parent, { domainData, licenceid: id }, { models, token }) =>
+    (parent, { domainData, licenceid: id }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(token);
+
+          const oldLicence = await models.Licence.findById(id, { raw: true });
 
           if (domainData.dns) {
             const rr = [];
@@ -362,12 +380,28 @@ export default {
             const updatedDNS = await dd24Api("UpdateDomain", domainData);
 
             if (updatedDNS && updatedDNS.code == 200) {
+              const updatedLicence = await models.Licence.update(
+                {
+                  key: { dns: { ...domainData.dns } }
+                },
+                { transaction: ta, where: { id } }
+              );
+
+              await createLog(
+                ip,
+                "updateDomain",
+                { updatedDNS, domainData, oldLicence, updatedLicence },
+                unitid,
+                ta
+              );
+
               return { ok: true };
             } else {
-              throw new NormalError({ message: updatedDNS.description, data: { test: "YO" } });
+              throw new NormalError({ message: updatedDNS.description });
             }
           }
 
+          // Has to be created here to avoid problems when using Promise.all
           let p1;
 
           let queryString = "UPDATE licence_data SET key = jsonb_set(key";
@@ -408,14 +442,22 @@ export default {
 
           if (updateDomain.code == 200) {
             const p2 = models.sequelize.query(queryString, { transaction: ta });
-            await Promise.all([p1, p2]);
+            const [boughtPlan, updatedLicence] = await Promise.all([p1, p2]);
+
+            await createLog(
+              ip,
+              "updateDomain",
+              { boughtPlan, domainData, oldLicence, updatedLicence },
+              unitid,
+              ta
+            );
 
             return { ok: true };
           } else {
             throw new Error(updateDomain.description);
           }
         } catch (err) {
-          throw new Error(err.message);
+          throw new NormalError({ message: err.message });
         }
       })
   )
