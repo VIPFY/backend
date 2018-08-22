@@ -59,12 +59,12 @@ export const implementJSON = {
 export const find = data => {
   const searches = {};
   Object.keys(data).map(search => {
-    searches[search] = (parent, args, { models }, info) => {
+    searches[search] = async (parent, args, { models }, info) => {
       try {
         switch (data[search]) {
           case "Human":
           case "Department":
-            return models[data[search]].findOne({
+            return await models[data[search]].findOne({
               where: { unitid: parent.dataValues[search] }
             });
 
@@ -72,7 +72,7 @@ export const find = data => {
             if (data[search][0] == "[") {
               // return array of objects
               const modelName = data[search].substring(1, data[search].length - 1);
-              return models[modelName].findAll({
+              return await models[modelName].findAll({
                 where: { id: { $in: parent[search] } }
               });
             } else {
@@ -104,7 +104,7 @@ export const find = data => {
                   return { id: parent[search] };
                 }
               }
-              return models[data[search]].findById(parent[search], {
+              return await models[data[search]].findById(parent[search], {
                 raw: true
               });
             }
