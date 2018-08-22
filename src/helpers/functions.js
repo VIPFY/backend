@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { random } from "lodash";
 import moment from "moment";
-import models from "../models";
+import models from "vipfy-sequelize-setup";
 
 /* eslint-disable no-return-assign */
 

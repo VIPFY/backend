@@ -34,7 +34,6 @@
     "body-parser": "^1.17.2",
     "cors": "^2.8.4",
     "dataloader-sequelize": "^1.7.2",
-    "dotenv": "^6.0.0",
     "express": "^4.15.3",
     "formidable": "^1.2.1",
     "graphql": "^0.13.2",
@@ -47,7 +46,6 @@
     "mkdirp": "^0.5.1",
     "moment": "^2.22.1",
     "mustache": "^2.3.0",
-    "node-mailjet": "^3.2.1",
     "nodeice": "^3.0.8",
     "noop6": "^1.0.7",
     "one-by-one": "^3.2.6",
@@ -58,15 +56,14 @@
     "querystring": "^0.2.0",
     "read-utf8": "^1.2.8",
     "same-time": "^2.3.3",
-    "sanitize-html": "^1.18.3",
-    "sequelize": "^4.32.6",
     "sib-api-v3-sdk": "^7.0.1",
     "soap": "^0.24.0",
     "stripe": "^6.2.1",
     "subscriptions-transport-ws": "^0.9.5",
     "ul": "^5.2.13",
     "winston": "^3.0.0",
-    "vipfy-messaging": "git@bitbucket.org:vipfymarketplace/vipfy-messaging.git"
+    "vipfy-messaging": "git@bitbucket.org:vipfymarketplace/vipfy-messaging.git",
+    "vipfy-sequelize-setup": "git@bitbucket.org:vipfymarketplace/vipfy-sequelize-setup.git"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
