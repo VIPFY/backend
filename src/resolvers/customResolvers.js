@@ -57,10 +57,10 @@ export const implementJSON = {
 };
 
 export const find = data => {
-  try {
-    const searches = {};
-    Object.keys(data).map(search => {
-      searches[search] = (parent, args, { models }, info) => {
+  const searches = {};
+  Object.keys(data).map(search => {
+    searches[search] = (parent, args, { models }, info) => {
+      try {
         switch (data[search]) {
           case "Human":
           case "Department":
@@ -78,17 +78,17 @@ export const find = data => {
             } else {
               // single object
               /* console.error(
-              "FIND",
-              search,
-              data[search],
-              parent[search],
-              "INFO",
-              info,
-              "SET",
-              info.fieldNodes[0].selectionSet,
-              "S",
-              info.fieldNodes[0].selectionSet.selections
-            ); */
+                "FIND",
+                search,
+                data[search],
+                parent[search],
+                "INFO",
+                info,
+                "SET",
+                info.fieldNodes[0].selectionSet,
+                "S",
+                info.fieldNodes[0].selectionSet.selections
+              ); */
               // models[data[search]].findById(parent[search], { raw: true })
               // .then(a => console.error(parent[search], a));
               if (
@@ -104,18 +104,20 @@ export const find = data => {
                   return { id: parent[search] };
                 }
               }
-              return models[data[search]].findById(parent[search], { raw: true });
+              return models[data[search]].findById(parent[search], {
+                raw: true
+              });
             }
           }
         }
-      };
-    });
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { error: "A resolver didn't function properly", data }
+        });
+      }
+    };
+  });
 
-    return searches;
-  } catch (err) {
-    throw new NormalError({
-      message: err.message,
-      internalData: { error: "A resolver didn't function properly", data }
-    });
-  }
+  return searches;
 };
