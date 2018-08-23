@@ -20,7 +20,6 @@ export const types = `
     profilepicture: String
     employees: Int
     employeedata: [User]!
-    payingoptions: JSON
     manageemployees: Boolean
     managelicences: Boolean
     apps: JSON

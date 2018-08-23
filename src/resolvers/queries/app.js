@@ -176,8 +176,7 @@ export default {
         where: { unitid, boughtplanid: bpIds }
       });
 
-      // eslint-disable-next-line
-      const filteredLicences = licences.map(licence => {
+      licences.forEach(licence => {
         if (licence.disabled) {
           licence.agreed = false;
           licence.key = null;
@@ -194,7 +193,7 @@ export default {
         }
       });
 
-      return filteredLicences;
+      return licences;
     } catch (err) {
       throw new NormalError({ message: err.message });
     }

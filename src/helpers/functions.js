@@ -127,5 +127,5 @@ export const createLog = (ip, eventtype, eventdata, user, transaction) =>
       eventdata,
       user
     },
-    { transaction }
+    { transaction, raw: true }
   );
