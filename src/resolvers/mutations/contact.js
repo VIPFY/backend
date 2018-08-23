@@ -17,13 +17,12 @@ export default {
           const newAddress = await models.Address.create({ unitid, ...args }, { transaction: ta });
           logArgs = { newAddress };
         } else {
-          const p1 = models.Address.findById(args.id, { raw: true, transaction: ta });
-          const p2 = models.Address.update(
+          const oldAddress = await models.Address.findById(args.id, { raw: true, transaction: ta });
+          const updatedAddress = await models.Address.update(
             { ...args },
             { where: { id: args.id }, returning: true, transaction: ta }
           );
 
-          const [oldAddress, updatedAddress] = await Promise.all([p1, p2]);
           logArgs = { oldAddress, updatedAddress: updatedAddress[1] };
         }
 

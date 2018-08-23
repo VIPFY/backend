@@ -3,7 +3,7 @@ import { assign } from "lodash";
 import moment from "moment";
 import dd24Api from "../../services/dd24";
 import { requiresRight, requiresAuth } from "../../helpers/permissions";
-import { recursiveAddressCheck } from "../../helpers/functions";
+import { recursiveAddressCheck, createLog } from "../../helpers/functions";
 // import createInvoice from "../../helpers/createInvoice";
 import { createDownloadLink } from "../../services/gcloud";
 import { createCustomer, listCards, addCard, createSubscription } from "../../services/stripe";
@@ -19,50 +19,62 @@ export default {
    * @param departmentid: integer
    */
   addPaymentData: requiresRight(["admin", "addPayment"]).createResolver(
-    async (parent, { data, departmentid }, { models }) => {
-      try {
-        const department = await models.Unit.findById(departmentid, { raw: true });
+    async (parent, { data, departmentid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
 
-        if (!department.payingoptions || !department.payingoptions.stripe) {
-          const stripeCustomer = await createCustomer(
-            { name: data.card.name, id: data.client_ip },
-            data.id
-          );
-          const card = await listCards(stripeCustomer.id);
+          const department = await models.Unit.findById(departmentid, { raw: true });
+          const logArgs = { department };
 
-          await models.Unit.update(
-            {
-              payingoptions: {
-                stripe: {
-                  id: stripeCustomer.id,
-                  created: stripeCustomer.created,
-                  currency: stripeCustomer.currency,
-                  cards: [{ ...card.data[0] }]
+          if (!department.payingoptions || !department.payingoptions.stripe) {
+            const stripeCustomer = await createCustomer(
+              { name: data.card.name, id: data.client_ip },
+              data.id
+            );
+            const card = await listCards(stripeCustomer.id);
+
+            await models.Unit.update(
+              {
+                payingoptions: {
+                  stripe: {
+                    id: stripeCustomer.id,
+                    created: stripeCustomer.created,
+                    currency: stripeCustomer.currency,
+                    cards: [{ ...card.data[0] }]
+                  }
                 }
-              }
-            },
-            { where: { id: departmentid }, raw: true }
-          );
-        } else {
-          const card = await addCard(department.payingoptions.stripe.id, data.id);
-          await models.Unit.update(
-            {
-              payingoptions: {
-                stripe: {
-                  ...department.payingoptions.stripe,
-                  cards: [...department.payingoptions.stripe.cards, { ...card }]
+              },
+              { where: { id: departmentid }, raw: true }
+            );
+
+            logArgs.stripeCustomer = stripeCustomer;
+            logArgs.card = card;
+          } else {
+            const card = await addCard(department.payingoptions.stripe.id, data.id);
+            await models.Unit.update(
+              {
+                payingoptions: {
+                  stripe: {
+                    ...department.payingoptions.stripe,
+                    cards: [...department.payingoptions.stripe.cards, { ...card }]
+                  }
                 }
-              }
-            },
-            { where: { id: departmentid }, raw: true }
-          );
+              },
+              { where: { id: departmentid }, raw: true }
+            );
+            logArgs.newCard = card;
+          }
+
+          await createLog(ip, "addPaymentData", logArgs, unitid, ta);
+
+          return { ok: true };
+        } catch (err) {
+          throw new BillingError({ message: err.message });
         }
-
-        return { ok: true };
-      } catch (err) {
-        throw new BillingError({ message: err.message });
-      }
-    }
+      })
   ),
 
   /**

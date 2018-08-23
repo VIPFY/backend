@@ -1,7 +1,7 @@
 import { decode } from "jsonwebtoken";
 import * as messaging from "vipfy-messaging";
 import { requiresAuth, requiresMessageGroupRights } from "../../helpers/permissions";
-import { parentAdminCheck, superset } from "../../helpers/functions";
+import { parentAdminCheck, superset, createLog } from "../../helpers/functions";
 import { NormalError } from "../../errors";
 
 export default {
@@ -17,13 +17,12 @@ export default {
           defaultrights
         )
       ) {
-        throw new Error("defaultrights contains illegal right");
+        throw new Error("Defaultrights contains illegal right");
       }
       console.log("b");
       try {
         const {
-          /* eslint-disable no-unused-vars */
-          user: { unitid, company }
+          user: { unitid }
         } = decode(token);
 
         const p1 = models.User.findById(unitid);
@@ -65,8 +64,7 @@ export default {
     async (parent, { groupid, message }, { models, token }) => {
       try {
         const {
-          /* eslint-disable no-unused-vars */
-          user: { unitid, company }
+          user: { unitid }
         } = decode(token);
 
         const messageid = messaging.sendMessage(models, unitid, groupid, message);
@@ -81,19 +79,36 @@ export default {
   ),
 
   // TODO: update
-  setDeleteStatus: requiresAuth.createResolver(async (parent, { id, type }, { models }) => {
-    const messageExists = await models.MessageData.findById(id);
-    if (!messageExists) {
-      throw new NormalError({ message: "Message doesn't exist!" });
-    }
+  setDeleteStatus: requiresAuth.createResolver(
+    async (parent, { id, type }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
 
-    try {
-      await models.MessageData.update({ [type]: true }, { where: { id } });
-      return {
-        ok: true
-      };
-    } catch (err) {
-      throw new NormalError({ message: err.message });
-    }
-  })
+          const oldMessage = await models.MessageData.findById(id, { raw: true });
+          if (!oldMessage) {
+            throw new Error("Message doesn't exist!");
+          }
+
+          const deletedMessage = await models.MessageData.update(
+            { [type]: true },
+            { where: { id }, returning: true, transaction: ta }
+          );
+
+          await createLog(
+            ip,
+            "setDeleteStatus",
+            { oldMessage, deletedMessage: deletedMessage[1] },
+            unitid,
+            ta
+          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({ message: err.message });
+        }
+      })
+  )
 };
