@@ -83,7 +83,7 @@ export default {
    * @param options: object
    */
   buyPlan: requiresRight(["admin", "buyApps"]).createResolver(
-    async (parent, { planIds, options }, { models, token }) =>
+    async (parent, { planIds, options }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const billItems = [];
@@ -102,7 +102,7 @@ export default {
             !department.payingoptions.stripe.cards ||
             department.payingoptions.stripe.cards.length < 1
           ) {
-            throw new BillingError({ message: "Missing payment information!" });
+            throw new Error("Missing payment information!");
           }
 
           const plans = await models.Plan.findAll({
@@ -114,7 +114,7 @@ export default {
           const stripePlans = [];
           plans.forEach(({ price, name, numlicences, enddate, stripedata }) => {
             if (enddate && enddate < Date.now()) {
-              throw new BillingError({ message: `The plan ${name} has already expired!` });
+              throw new Error(`The plan ${name} has already expired!`);
             }
 
             billItems.push({
@@ -127,6 +127,7 @@ export default {
           });
 
           const mainPlan = plans.shift();
+          let partnerLogs;
 
           switch (mainPlan.appid) {
             case 26:
@@ -190,6 +191,8 @@ export default {
                   newOptions.organization = organization.name;
 
                   registerDomain = await dd24Api("AddDomain", newOptions);
+                  partnerLogs = newOptions;
+                  partnerLogs.domain = registerDomain;
                 }
                 if (registerDomain.code == 200) {
                   key.cid = registerDomain.cid;
@@ -252,7 +255,7 @@ export default {
               .add(1, "year")
               .subtract(1, "day");
 
-            const domainLicence = models.Licence.create(
+            const createLicence = models.Licence.create(
               {
                 unitid,
                 boughtplanid: boughtPlans[0].id,
@@ -264,7 +267,7 @@ export default {
               { transaction: ta }
             );
 
-            const right = models.Right.create(
+            const createRight = models.Right.create(
               {
                 holder: unitid,
                 forunit: company,
@@ -273,7 +276,9 @@ export default {
               { transaction: ta }
             );
 
-            await Promise.all[(domainLicence, right)];
+            const [right, domainLicence] = await Promise.all[(createRight, createLicence)];
+            partnerLogs.right = right;
+            partnerLogs.domainLicence = domainLicence;
           } else {
             await boughtPlans.forEach(plan => {
               for (let i = 0; i < plan.amount; i++) {
@@ -292,7 +297,8 @@ export default {
               }
             });
 
-            await Promise.all(createLicences);
+            const newLicences = await Promise.all(createLicences);
+            partnerLogs.licences = newLicences;
           }
 
           await createSubscription(department.payingoptions.stripe.id, stripePlans);
@@ -324,13 +330,15 @@ export default {
           //
           // await Promise.all(createBillPositions);
 
+          await createLog(ip, "buyPlan", { ...partnerLogs, department, boughtPlans }, unitid, ta);
+
           return { ok: true };
         } catch (err) {
           throw new BillingError({ message: err.message });
         }
       })
   ),
-
+  // TODO: Add logging when changed
   createMonthlyBill: async (parent, args, { models, token }) => {
     try {
       const {
@@ -365,10 +373,10 @@ export default {
       // return { ok };
       return { ok: true };
     } catch (err) {
-      throw new BillingError({ message: err.message });
+      throw new BillingError(err);
     }
   },
-
+  // TODO: Add logging when changed
   addBillPos: requiresAuth.createResolver(async (parent, { bill, billid }, { models, token }) =>
     models.sequelize.transaction(async ta => {
       try {
@@ -396,7 +404,7 @@ export default {
       }
     })
   ),
-
+  // TODO: Add logging when changed
   downloadBill: requiresAuth.createResolver(async (parent, { billid }, { models, token }) => {
     try {
       const {
