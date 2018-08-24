@@ -74,7 +74,7 @@ export const find = data => {
               // return array of objects
               const modelName = data[search].substring(1, data[search].length - 1);
               return await models[modelName].findAll({
-                where: { id: { $in: parent[search] } },
+                where: { id: { [models.Op.in]: parent[search] } },
                 raw: true
               });
             } else {
