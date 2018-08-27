@@ -22,7 +22,7 @@ import demoMutations from "./mutations/demo";
 
 import Subscription from "./subscriptions";
 
-import { find, findCompany, implementDate, implementJSON } from "./customResolvers";
+import { find, implementDate, implementJSON } from "./customResolvers";
 
 const Query = Object.assign(
   authQueries,
@@ -83,6 +83,7 @@ export default {
   MessageGroup: find({ lastmessage: "MessageData", memberships: "[MessageGroupMembership]" }),
   MessageResponse: find({ message: "MessageData" }),
   Newsletter: find({ email: "Email" }),
+  Notification: find({ receiver: "Unit" }),
   ParentUnit: find({ parentunit: "Unit", childunit: "Unit" }),
   Phone: find(unit),
   Plan: find(plans),

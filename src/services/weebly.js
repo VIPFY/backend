@@ -8,8 +8,9 @@ then a payment plan and finally generating a single sign-on link for him to
 access his account.
 */
 import axios from "axios";
-import { WEEBLY_KEY, WEEBLY_SECRET } from "../login-data";
 import Utility from "../helpers/createHmac";
+
+const { WEEBLY_KEY, WEEBLY_SECRET } = process.env;
 
 function createOptions(method, endpoint, requestHash, requestData) {
   return {

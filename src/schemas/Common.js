@@ -26,6 +26,15 @@ enum ORDER {
 # Custom Scalar JSON
   scalar JSON
 
+type Notification {
+  id: Int!
+  receiver: Unit!
+  sendtime: Date!
+  message: String
+  icon: String
+  link: String
+}
+
 type Newsletter {
   email: Email!
   activesince: String!
@@ -78,4 +87,8 @@ export const mutations = `
 
 # Checks whether a name of an app already exists in our database
   checkName(name: String): Response!
+`;
+
+export const queries = `
+  fetchNotifications: [Notification]!
 `;

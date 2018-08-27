@@ -127,7 +127,7 @@ export default {
           });
 
           const mainPlan = plans.shift();
-          let partnerLogs;
+          let partnerLogs = {};
 
           switch (mainPlan.appid) {
             case 26:
@@ -276,7 +276,10 @@ export default {
               { transaction: ta }
             );
 
-            const [right, domainLicence] = await Promise.all[(createRight, createLicence)];
+            const res = await Promise.all([createRight, createLicence]);
+            const right = res[0].get();
+            const domainLicence = res[1].get();
+
             partnerLogs.right = right;
             partnerLogs.domainLicence = domainLicence;
           } else {

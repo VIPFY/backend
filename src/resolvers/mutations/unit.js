@@ -30,7 +30,7 @@ export default {
           ta
         );
 
-        return { ok: true };
+        return profilepicture;
       } catch (err) {
         throw new NormalError({ message: err.message });
       }

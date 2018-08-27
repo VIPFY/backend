@@ -75,7 +75,7 @@ export const queries = `
 export const mutations = `
   createUser(user: UserInput!, file: File): Response!
   updateUser(user: UserInput!): Response!
-  updateProfilePic(file: File!): Response!
+  updateProfilePic(file: File!): String!
 
   # Only an email is required for the signup
   signUp(email: String!, newsletter: Boolean): RegisterResponse!

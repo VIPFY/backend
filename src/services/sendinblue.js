@@ -1,12 +1,11 @@
 import SibApiV3Sdk from "sib-api-v3-sdk";
 import { times, random } from "lodash";
-import { SIB_KEY } from "../login-data";
 
 const defaultClient = SibApiV3Sdk.ApiClient.instance;
 
 const apiKey = defaultClient.authentications["api-key"];
 
-apiKey.apiKey = SIB_KEY;
+apiKey.apiKey = process.env.SIB_KEY;
 
 const password = times(20, () => random(35).toString(36)).join("");
 

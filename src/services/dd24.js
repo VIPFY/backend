@@ -1,7 +1,7 @@
 import soap from "soap";
 import { merge } from "lodash";
-import { DD24_KEY, DD24_SECRET } from "../login-data";
 
+const { DD24_KEY, DD24_SECRET } = process.env;
 const apiWSDL = "https://api-ote-2.domaindiscount24.com:4424/?wsdl";
 const auth = {
   params: {

@@ -5,9 +5,10 @@ as a function which establishes and ends a connection to our database for testin
 
 import { graphql } from "graphql";
 import express from "express";
-import { schema } from "../index";
 import models from "vipfy-sequelize-setup";
-import { SECRET, SECRET_TWO } from "../login-data";
+import { schema } from "../index";
+
+const { SECRET, SECRET_TWO } = process.env;
 
 const app = express();
 

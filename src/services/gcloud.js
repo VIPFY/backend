@@ -3,9 +3,10 @@ import path from "path";
 import moment from "moment";
 import Storage from "@google-cloud/storage";
 import { formatFilename } from "../helpers/functions";
-import { GCLOUD_PLATFORM_ID } from "../login-data";
 
 /* eslint-disable no-shadow */
+
+const { GCLOUD_PLATFORM_ID } = process.env;
 
 // Creates a client
 const storage = new Storage({

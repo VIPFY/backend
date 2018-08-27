@@ -71,7 +71,7 @@ export default {
               interval: stripePlan.interval
             }
           },
-          { transaction: ta, raw: true }
+          { transaction: ta }
         );
         return { ok: true };
       } catch (err) {

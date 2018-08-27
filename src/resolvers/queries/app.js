@@ -273,5 +273,19 @@ export default {
     } catch (err) {
       throw new NormalError({ message: err.message });
     }
-  })
+  }),
+
+  fetchNotifications: async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { unitid }
+      } = decode(token);
+
+      const notifications = await models.Notification.findAll({ where: { receiver: unitid } });
+
+      return notifications;
+    } catch (err) {
+      throw new NormalError({ message: err.message });
+    }
+  }
 };
