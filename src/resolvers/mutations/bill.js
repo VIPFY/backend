@@ -192,7 +192,7 @@ export default {
           boughtPlans.splice(0, 0, mainBoughtPlan);
 
           if (mainPlan.appid !== 11) {
-            const { dns } = await Services.createAccount(models, mainPlan.appid, options, mainPlan, mainBoughtPlan.id, ta);
+            const { dns } = await Services.createAccount(models, mainPlan.appid, options, mainPlan.id, mainBoughtPlan.id, ta);
             if (dns && dns.length > 0) {
               throw new Error("setting dns settings not implemented yet");
             }
