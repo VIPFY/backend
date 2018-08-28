@@ -4,6 +4,26 @@ import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
 
 export default {
+  createAddress: requiresAuth.createResolver((parent, { addressData }, { models, token, ip }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        const { zip, street, city, ...normalData } = addressData;
+        const address = { street, zip, city };
+
+        await models.Address.create({ ...normalData, address, unitid }, { transaction: ta });
+        await createLog(ip, "createAddress", { addressData }, unitid, ta);
+
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({ message: err.message });
+      }
+    })
+  ),
+
   updateAddress: requiresAuth.createResolver(async (parent, args, { models, token, ip }) =>
     models.sequelize.transaction(async ta => {
       try {

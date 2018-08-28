@@ -89,6 +89,6 @@ export const mutations = `
   checkName(name: String): Response!
 `;
 
-export const queries = `
-  fetchNotifications: [Notification]!
+export const subscriptions = `
+  newNotification: [Notification]!
 `;
