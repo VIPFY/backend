@@ -38,7 +38,11 @@ export const formatError = err => {
   const { originalError } = err;
 
   if (isApolloErrorInstance(originalError)) {
-    logger.error(originalError);
+    if (originalError.internalData.err) {
+      logger.error(originalError.internalData.err);
+    } else {
+      logger.error(originalError);
+    }
   }
   return formatApolloError(err);
 };

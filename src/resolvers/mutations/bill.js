@@ -375,7 +375,7 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new BillingError({ message: err.message });
+          throw new BillingError({ message: err.message, internalData: { err } });
         }
       })
   ),
