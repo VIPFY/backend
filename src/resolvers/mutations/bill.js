@@ -47,7 +47,7 @@ export default {
                   }
                 }
               },
-              { where: { id: departmentid }, raw: true }
+              { where: { id: departmentid } }
             );
 
             logArgs.stripeCustomer = stripeCustomer;
@@ -63,7 +63,7 @@ export default {
                   }
                 }
               },
-              { where: { id: departmentid }, raw: true }
+              { where: { id: departmentid } }
             );
             logArgs.newCard = card;
           }
@@ -391,14 +391,14 @@ export default {
         if (!billid) {
           const invoice = await models.Bill.create(
             { unitid: company, billtime: null },
-            { raw: true, transaction: ta }
+            { transaction: ta }
           );
           id = invoice.id;
         }
 
         await models.BillPosition.create(
           { ...bill, billid: id, unitid: company },
-          { transaction: ta, raw: true }
+          { transaction: ta }
         );
 
         return { ok: true };

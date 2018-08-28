@@ -134,6 +134,7 @@ export default {
           const {
             user: { unitid }
           } = await decode(token);
+
           const findOldPassword = await models.Login.findOne({
             where: {
               unitid,

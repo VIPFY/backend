@@ -22,33 +22,37 @@ export default {
             throw new Error("This user is already assigned to a company!");
           }
 
-          const company = await models.Unit.create({}, { transaction: ta, returning: true });
+          let company = await models.Unit.create({}, { transaction: ta });
+          company = company.get();
 
           const p1 = models.Right.create(
             { holder: unitid, forunit: company.id, type: "admin" },
-            { transaction: ta, returning: true }
+            { transaction: ta }
           );
 
           const p2 = models.DepartmentData.create(
             { unitid: company.id, name },
-            { transaction: ta, returning: true }
+            { transaction: ta }
           );
 
           const p3 = models.ParentUnit.create(
             { parentunit: company.id, childunit: unitid },
-            { transaction: ta, returning: true }
+            { transaction: ta }
           );
 
-          const [rights, department, parentUnit] = await Promise.all([p1, p2, p3]);
+          let [rights, department, parentUnit] = await Promise.all([p1, p2, p3]);
+          rights = rights();
+          department = department();
+          parentUnit = parentUnit();
 
           const p4 = createLog(
             ip,
             "createCompany",
             {
-              company: company[0],
-              rights: rights[0],
-              department: department[0],
-              parentUnit: parentUnit[0]
+              company,
+              rights,
+              department,
+              parentUnit
             },
             unitid,
             ta
@@ -106,18 +110,14 @@ export default {
             user: { unitid: adder }
           } = decode(token);
 
-          const parentUnit = await models.ParentUnit.create(
+          let parentUnit = await models.ParentUnit.create(
             { parentunit: departmentid, childunit: unitid },
-            { returning: true, transaction: ta }
+            { transaction: ta }
           );
 
-          await createLog(
-            ip,
-            "addEmployee",
-            { unitid, departmentid, parentUnit: parentUnit[0] },
-            adder,
-            ta
-          );
+          parentUnit = parentUnit();
+
+          await createLog(ip, "addEmployee", { unitid, departmentid, parentUnit }, adder, ta);
 
           return { ok: true };
         } catch (err) {
@@ -146,28 +146,33 @@ export default {
 
           const passwordhash = await bcrypt.hash("test", 12);
 
-          const unit = await models.Unit.create({}, { transaction: ta, returning: true });
+          let unit = await models.Unit.create({}, { transaction: ta });
+          unit = unit();
+
           const p1 = models.Human.create(
             { firstname, unitid: unit.id, passwordhash },
-            { transaction: ta, returning: true }
+            { transaction: ta }
           );
 
           const p2 = models.Email.create(
             { email, unitid: unit.id, verified: true },
-            { transaction: ta, returning: true }
+            { transaction: ta }
           );
 
           const p3 = models.ParentUnit.create(
             { parentunit: departmentid, childunit: unit.id },
-            { transaction: ta, returning: true }
+            { transaction: ta }
           );
 
-          const [human, newEmail, parentUnit] = await Promise.all([p1, p2, p3]);
+          let [human, newEmail, parentUnit] = await Promise.all([p1, p2, p3]);
+          human = human();
+          newEmail = newEmail();
+          parentUnit = parentUnit();
 
           await createLog(
             ip,
             "addCreateEmployee",
-            { unit: unit[0], human: human[0], newEmail: newEmail[0], parentUnit: parentUnit[0] },
+            { unit, human, newEmail, parentUnit },
             unitid,
             ta
           );
@@ -189,27 +194,21 @@ export default {
             user: { unitid }
           } = decode(token);
 
-          const unit = await models.Unit.create({}, { transaction: ta, returning: true });
+          let unit = await models.Unit.create({}, { transaction: ta });
+          unit = unit();
 
-          const p1 = models.DepartmentData.create(
-            { unitid: unit.id, name },
-            { transaction: ta, returning: true }
-          );
+          const p1 = models.DepartmentData.create({ unitid: unit.id, name }, { transaction: ta });
 
           const p2 = models.ParentUnit.create(
             { parentunit: departmentid, childunit: unit.id },
-            { transaction: ta, returning: true }
+            { transaction: ta }
           );
 
-          const [department, parentUnit] = await Promise.all([p1, p2]);
+          let [department, parentUnit] = await Promise.all([p1, p2]);
+          department = department();
+          parentUnit = parentUnit();
 
-          await createLog(
-            ip,
-            "addSubDepartment",
-            { unit: unit[0], department: department[0], parentUnit: parentUnit[0] },
-            unitid,
-            ta
-          );
+          await createLog(ip, "addSubDepartment", { unit, department, parentUnit }, unitid, ta);
 
           return { ok: true };
         } catch (err) {
@@ -228,7 +227,7 @@ export default {
 
           const updatedDepartment = await models.DepartmentData.update(
             { name },
-            { where: { unitid: departmentid }, raw: true, returning: true, transaction: ta }
+            { where: { unitid: departmentid }, returning: true, transaction: ta }
           );
 
           await createLog(
