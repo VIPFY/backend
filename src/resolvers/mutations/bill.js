@@ -55,7 +55,7 @@ export default {
                   }
                 }
               },
-              { where: { id: departmentid }, raw: true }
+              { where: { id: departmentid } }
             );
 
             logArgs.stripeCustomer = stripeCustomer;
@@ -77,7 +77,7 @@ export default {
                   }
                 }
               },
-              { where: { id: departmentid }, raw: true }
+              { where: { id: departmentid } }
             );
             logArgs.newCard = card;
           }
@@ -149,7 +149,7 @@ export default {
           });
 
           const mainPlan = plans.shift();
-          let partnerLogs;
+          let partnerLogs = {};
 
           const createMainBoughtPlan = await models.BoughtPlan.create(
             {
@@ -305,9 +305,10 @@ export default {
               { transaction: ta }
             );
 
-            const [right, domainLicence] = await Promise.all[
-              (createRight, createLicence)
-            ];
+            const res = await Promise.all([createRight, createLicence]);
+            const right = res[0].get();
+            const domainLicence = res[1].get();
+
             partnerLogs.right = right;
             partnerLogs.domainLicence = domainLicence;
           } else {

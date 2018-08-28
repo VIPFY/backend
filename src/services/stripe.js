@@ -6,9 +6,8 @@
 
 import stripePackage from "stripe";
 import moment from "moment";
-import { STRIPE_SECRET_KEY } from "../login-data";
 
-const stripe = stripePackage(STRIPE_SECRET_KEY);
+const stripe = stripePackage(process.env.STRIPE_SECRET_KEY);
 
 export const createProduct = async app => {
   try {

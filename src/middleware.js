@@ -8,11 +8,12 @@ import jwt from "jsonwebtoken";
 import formidable from "formidable";
 import mkdirp from "mkdirp";
 import bcrypt from "bcrypt";
-import { SECRET, SECRET_TWO, SECRET_THREE } from "./login-data";
-import { refreshTokens } from "./helpers/auth";
 import models from "vipfy-sequelize-setup";
+import { refreshTokens } from "./helpers/auth";
 import Utility from "./helpers/createHmac";
 import logger from "./loggers";
+
+const { SECRET, SECRET_TWO, SECRET_THREE } = process.env;
 
 /* eslint-disable consistent-return, prefer-destructuring */
 export const authMiddleware = async (req, res, next) => {

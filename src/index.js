@@ -21,17 +21,28 @@ import { createContext } from "dataloader-sequelize";
 import models from "vipfy-sequelize-setup";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
-import { SECRET, SECRET_TWO, TOKEN_DEVELOPMENT } from "./login-data";
 import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware";
 import { refreshTokens } from "./helpers/auth";
 import logger from "./loggers";
 import { formatError } from "./errors";
 
 const app = express();
-const { ENVIRONMENT, TOKEN_SET, SSL_KEY, SSL_CERT } = process.env;
+const {
+  ENVIRONMENT,
+  TOKEN_SET,
+  SSL_KEY,
+  SSL_CERT,
+  SECRET,
+  SECRET_TWO,
+  TOKEN_DEVELOPMENT
+} = process.env;
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
 let server;
+
+if (!SECRET || !SECRET_TWO) {
+  throw new Error("No secret set!");
+}
 
 // We don't need certificates and https for development
 if (ENVIRONMENT == "production") {

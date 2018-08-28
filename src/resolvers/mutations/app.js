@@ -385,8 +385,7 @@ export default {
             {
               where: { id, unitid: { [models.Op.not]: null } },
               returning: true,
-              transaction: ta,
-              raw: true
+              transaction: ta
             }
           );
 

@@ -1,5 +1,5 @@
 // import axios from "axios";
-// import { SHOPIFY_KEY, SHOPIFY_SECRET } from "../login-data";
+// const { SHOPIFY_KEY, SHOPIFY_SECRET } =process.env
 //
 // const config = {
 //   method: "get",

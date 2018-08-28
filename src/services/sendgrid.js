@@ -1,5 +1,5 @@
 // import { client } from "@sendgrid/client";
-// import {SENDGRID_KEY} from "../login-data";
+// const {SENDGRID_KEY} = process.env
 
 // client.setApiKey(SENDGRID_KEY);
 // const args = {

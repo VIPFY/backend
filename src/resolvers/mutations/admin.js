@@ -41,7 +41,7 @@ export default {
             interval = "day";
             break;
 
-          case "mons":
+          case "months":
             interval = "month";
         }
         const priceInCents = Math.ceil(plan.price * 100);
@@ -71,7 +71,7 @@ export default {
               interval: stripePlan.interval
             }
           },
-          { transaction: ta, raw: true }
+          { transaction: ta }
         );
         return { ok: true };
       } catch (err) {

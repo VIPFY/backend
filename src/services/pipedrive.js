@@ -1,8 +1,8 @@
 import axios from "axios";
 import Pipedrive, { Client } from "pipedrive";
-import { PIPEDRIVE_KEY } from "../login-data";
 
 // Connect to Pipedrive via their custom library
+const { PIPEDRIVE_KEY } = process.env;
 const pipedrive = new Client(PIPEDRIVE_KEY, { strictMode: true });
 
 export const getToken = (email, password) => {
