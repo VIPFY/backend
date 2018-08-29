@@ -21,6 +21,7 @@ export const types = `
     lastactive: String
     resetoption: Int
     language: String
+    statisticdata: JSON
   }
 
   type User {
@@ -46,6 +47,7 @@ export const types = `
     domains: Boolean
     marketplace: Boolean
     billing: Boolean
+    statisticdata: JSON
   }
 
   input UserInput {
@@ -57,11 +59,11 @@ export const types = `
     oldemail: String
     verified: Boolean
     banned: Boolean
-    lastname: String
     title: String
     sex: SEX
     birthday: Date
     language: String
+    statisticdata: JSON
   }
 `;
 
