@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
-import * as Services from "vipfy-services";
+import * as Services from "@vipfy-private/services";
 import { NormalError } from "../../errors";
 import {
   requiresDepartmentCheck,

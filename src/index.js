@@ -19,7 +19,7 @@ import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
 import { createContext } from "dataloader-sequelize";
 import models from "@vipfy-private/sequelize-setup";
-import * as Services from "vipfy-services";
+import * as Services from "@vipfy-private/services";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware";
