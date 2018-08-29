@@ -18,7 +18,7 @@ export default {
 
         return { ok: true };
       } catch (err) {
-        throw new NormalError({ message: err.message });
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }),
 
@@ -32,7 +32,7 @@ export default {
 
       return { ok: true };
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   }),
 
@@ -48,7 +48,7 @@ export default {
 
       return { ok: true };
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   })
 };

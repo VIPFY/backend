@@ -44,7 +44,7 @@ export default {
 
         return { ok: true, token, refreshToken };
       } catch (err) {
-        throw new AuthError({ message: err.message });
+        throw new AuthError({ message: err.message, internalData: { err } });
       }
     }),
 
@@ -86,7 +86,7 @@ export default {
           refreshToken
         };
       } catch (err) {
-        throw new AuthError({ message: "Couldn't activate user!" });
+        throw new AuthError({ message: "Couldn't activate user!", internalData: { err } });
       }
     });
   },
@@ -120,7 +120,7 @@ export default {
 
       return { ok: true, user, token, refreshToken };
     } catch (err) {
-      throw new AuthError({ message: err.message });
+      throw new AuthError({ message: err.message, internalData: { err } });
     }
   },
 
@@ -178,7 +178,7 @@ export default {
 
           return { ok: true, user, token: newToken, refreshToken };
         } catch (err) {
-          throw new AuthError({ message: err.message });
+          throw new AuthError({ message: err.message, internalData: { err } });
         }
       })
   ),
@@ -222,7 +222,7 @@ export default {
           email
         };
       } catch (err) {
-        throw new AuthError({ message: err.message });
+        throw new AuthError({ message: err.message, internalData: { err } });
       }
     })
 };

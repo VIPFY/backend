@@ -29,7 +29,7 @@ export default {
 
       return await messaging.fetchGroups(models, unitid);
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   }),
 
@@ -39,7 +39,7 @@ export default {
 
       return user;
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   })
 };

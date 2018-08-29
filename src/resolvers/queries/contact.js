@@ -16,7 +16,7 @@ export default {
 
       return addresses;
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   })
 };
