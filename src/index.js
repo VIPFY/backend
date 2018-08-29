@@ -19,7 +19,7 @@ import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
 import { createContext } from "dataloader-sequelize";
 import models from "vipfy-sequelize-setup";
-import * as Sendgrid from "vipfy-services";
+import * as Services from "vipfy-services";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware";
@@ -27,7 +27,7 @@ import { refreshTokens } from "./helpers/auth";
 import logger from "./loggers";
 import { formatError } from "./errors";
 
-Sendgrid.setLogger(logger);
+Services.setLogger(logger);
 
 const app = express();
 const {
