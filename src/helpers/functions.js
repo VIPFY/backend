@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import { random } from "lodash";
 import moment from "moment";
-import models from "vipfy-sequelize-setup";
+import models from "@vipfy-private/sequelize-setup";
 import { NormalError } from "../errors";
 import { pubsub, NEW_NOTIFICATION } from "../constants";
 

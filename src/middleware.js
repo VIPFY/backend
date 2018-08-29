@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 import formidable from "formidable";
 import mkdirp from "mkdirp";
 import bcrypt from "bcrypt";
-import models from "vipfy-sequelize-setup";
+import models from "@vipfy-private/sequelize-setup";
 import { refreshTokens } from "./helpers/auth";
 import Utility from "./helpers/createHmac";
 import logger from "./loggers";

@@ -5,7 +5,7 @@ as a function which establishes and ends a connection to our database for testin
 
 import { graphql } from "graphql";
 import express from "express";
-import models from "vipfy-sequelize-setup";
+import models from "@vipfy-private/sequelize-setup";
 import { schema } from "../index";
 
 const { SECRET, SECRET_TWO } = process.env;
