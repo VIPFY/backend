@@ -29,7 +29,7 @@ export default {
           link: "profile"
         };
         const notification = await createNotification(notificationBody, ta);
-        console.log(notification);
+
         await createLog(
           ip,
           "updateProfilePic",
@@ -65,17 +65,25 @@ export default {
           user: { unitid }
         } = decode(token);
 
-        const { password, ...human } = user;
-
+        const { password, statisticdata, ...human } = user;
+        let updatedHuman;
         if (password) {
           throw new Error("You can't update the password this way!");
         }
+
         const oldHuman = await models.Human.findOne({ where: { unitid }, raw: true });
 
-        const updatedHuman = await models.Human.update(
-          { ...human },
-          { where: { unitid }, returning: true, transaction: ta }
-        );
+        if (statisticdata) {
+          updatedHuman = await models.Human.update(
+            { statisticdata: { ...oldHuman.statisticdata, ...statisticdata } },
+            { where: { unitid }, returning: true, transaction: ta }
+          );
+        } else {
+          updatedHuman = await models.Human.update(
+            { ...human },
+            { where: { unitid }, returning: true, transaction: ta }
+          );
+        }
 
         await createLog(
           ip,
