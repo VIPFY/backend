@@ -29,7 +29,7 @@ export default {
           link: "profile"
         };
         const notification = await createNotification(notificationBody, ta);
-
+        console.log(notification);
         await createLog(
           ip,
           "updateProfilePic",
@@ -51,7 +51,7 @@ export default {
           link: "profile"
         };
 
-        await createNotification(notification, ta);
+        await createNotification(notification);
 
         throw new NormalError({ message: err.message, internalData: { err } });
       }
