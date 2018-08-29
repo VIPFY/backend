@@ -59,9 +59,9 @@ export default {
         user: { unitid }
       } = decode(token);
 
-      await models.Notification.update(
+      const data = await models.Notification.update(
         { readtime: models.sequelize.fn("NOW") },
-        { where: { receiver: unitid, id } }
+        { where: { receiver: unitid, id }, returning: true }
       );
 
       return true;
