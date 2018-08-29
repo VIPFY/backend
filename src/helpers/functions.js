@@ -2,6 +2,8 @@ import bcrypt from "bcrypt";
 import { random } from "lodash";
 import moment from "moment";
 import models from "vipfy-sequelize-setup";
+import { NormalError } from "../errors";
+import { pubsub, NEW_NOTIFICATION } from "../constants";
 
 /* eslint-disable no-return-assign */
 
@@ -129,3 +131,29 @@ export const createLog = (ip, eventtype, eventdata, user, transaction) =>
     },
     { transaction, raw: true }
   );
+
+/**
+ * Create a notification and send it to the user via Webhooks
+ * @param {object} notificationBody
+ * @param {string} transaction
+ * notificationBody needs these properties:
+ * @param {string} receiver
+ * @param {string} message
+ * @param {string} icon
+ * @param {string} link
+ */
+export const createNotification = async (notificationBody, transaction) => {
+  try {
+    const sendtime = getDate();
+
+    const notification = await models.Notification.create(
+      { ...notificationBody, sendtime },
+      { transaction }
+    );
+    pubsub.publish(NEW_NOTIFICATION, { receiver: notification.dataValues.receiver });
+
+    return notification;
+  } catch (err) {
+    return new NormalError({ message: err.message });
+  }
+};

@@ -24,7 +24,7 @@ import resolvers from "./resolvers/resolvers";
 import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware";
 import { refreshTokens } from "./helpers/auth";
 import logger from "./loggers";
-import { formatError } from "./errors";
+import { formatError, AuthError } from "./errors";
 
 const app = express();
 const {
@@ -101,7 +101,7 @@ if (ENVIRONMENT != "production") {
     "/graphiql",
     graphiqlExpress({
       endpointURL: "/graphql",
-      subscriptionsEndpoint: `ws://localhost:${PORT}/subscriptions`
+      subscriptionsEndpoint: `ws${secure}://localhost:${PORT}/subscriptions`
     })
   );
 }
@@ -124,17 +124,23 @@ if (ENVIRONMENT != "testing") {
         subscribe,
         schema,
         onConnect: async ({ token, refreshToken }) => {
-          if (token && refreshToken) {
+          if (token && token != "null") {
             try {
               jwt.verify(token, SECRET);
 
               return { models, token };
             } catch (err) {
               if (err.name == "TokenExpiredError") {
+                console.log("Token expired in Subscription");
                 const newTokens = await refreshTokens(refreshToken, models, SECRET, SECRET_TWO);
+
                 return { models, token: newTokens.token };
+              } else {
+                throw new AuthError({
+                  message: err.message,
+                  internalData: { error: "Subscription Error" }
+                });
               }
-              return {};
             }
           }
           return {};

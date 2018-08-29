@@ -100,5 +100,5 @@ export const mutations = `
 `;
 
 export const subscriptions = `
-  newMessage: MessageData!
+  newMessage(groupid: ID!): MessageData!
 `;

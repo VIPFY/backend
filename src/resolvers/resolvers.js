@@ -1,33 +1,35 @@
-import departmentQueries from "./queries/department";
+import adminQueries from "./queries/admin";
+import authQueries from "./queries/auth";
 import appQueries from "./queries/app";
+import billQueries from "./queries/bill";
+import commonQueries from "./queries/common";
+import contactQueries from "./queries/contact";
+import demoQueries from "./queries/demo";
+import departmentQueries from "./queries/department";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
-import billQueries from "./queries/bill";
-import contactQueries from "./queries/contact";
-import authQueries from "./queries/auth";
-import adminQueries from "./queries/admin";
-import demoQueries from "./queries/demo";
 
-import appMutations from "./mutations/app";
-import messageMutations from "./mutations/message";
-import authMutations from "./mutations/auth";
-import userMutations from "./mutations/unit";
-import reviewMutations from "./mutations/review";
-import commonMutations from "./mutations/common";
-import departmentMutations from "./mutations/department";
-import billMutations from "./mutations/bill";
-import contactMutations from "./mutations/contact";
 import adminMutations from "./mutations/admin";
+import authMutations from "./mutations/auth";
+import appMutations from "./mutations/app";
+import billMutations from "./mutations/bill";
+import commonMutations from "./mutations/common";
+import contactMutations from "./mutations/contact";
 import demoMutations from "./mutations/demo";
+import departmentMutations from "./mutations/department";
+import messageMutations from "./mutations/message";
+import reviewMutations from "./mutations/review";
+import userMutations from "./mutations/unit";
 
 import Subscription from "./subscriptions";
 
 import { find, implementDate, implementJSON } from "./customResolvers";
 
 const Query = Object.assign(
-  authQueries,
   adminQueries,
+  authQueries,
   departmentQueries,
+  commonQueries,
   contactQueries,
   appQueries,
   messageQueries,
@@ -37,8 +39,8 @@ const Query = Object.assign(
 );
 
 const Mutation = Object.assign(
-  appMutations,
   adminMutations,
+  appMutations,
   authMutations,
   departmentMutations,
   messageMutations,

@@ -3,7 +3,7 @@ import { requiresAuth } from "../../helpers/permissions";
 import { uploadFile } from "../../services/gcloud";
 import { userPicFolder } from "../../constants";
 import { NormalError } from "../../errors";
-import { createLog } from "../../helpers/functions";
+import { createLog, createNotification } from "../../helpers/functions";
 /* eslint-disable no-unused-vars, prefer-destructuring */
 
 export default {
@@ -22,16 +22,37 @@ export default {
           { where: { id: unitid }, returning: true, transaction: ta }
         );
 
+        const notificationBody = {
+          receiver: unitid,
+          message: "Your profile picture was updated.",
+          icon: "user-check",
+          link: "profile"
+        };
+        const notification = await createNotification(notificationBody, ta);
+
         await createLog(
           ip,
           "updateProfilePic",
-          { oldUnit, updatedUnit: updatedUnit[1] },
+          { oldUnit, updatedUnit: updatedUnit[1], notification },
           unitid,
           ta
         );
 
         return profilepicture;
       } catch (err) {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        const notification = {
+          receiver: unitid,
+          message: "The upload didn't succeed!",
+          icon: "user-times",
+          link: "profile"
+        };
+
+        await createNotification(notification, ta);
+
         throw new NormalError({ message: err.message });
       }
     })

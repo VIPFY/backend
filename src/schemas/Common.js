@@ -28,8 +28,9 @@ enum ORDER {
 
 type Notification {
   id: Int!
-  receiver: Unit!
-  sendtime: Date!
+  receiver: User!
+  sendtime: String!
+  readtime: String!
   message: String
   icon: String
   link: String
@@ -79,16 +80,21 @@ input Options {
 `;
 
 export const mutations = `
-# Sends an email from an user to office@vipfy.com
+  # Sends an email from an user to office@vipfy.com
   newContactEmail(name: String!, email: String!, phone: String, message: String): Response!
 
-# Checks whether an email already exists in our database
+  # Checks whether an email already exists in our database
   checkEmail(email: String): Response!
 
-# Checks whether a name of an app already exists in our database
+  # Checks whether a name of an app already exists in our database
   checkName(name: String): Response!
+  readNotification(id: Int!): Boolean!
+`;
+
+export const queries = `
+  fetchNotifications: [Notification]!
 `;
 
 export const subscriptions = `
-  newNotification: [Notification]!
+  newNotification(receiver: Int!): Notification!
 `;

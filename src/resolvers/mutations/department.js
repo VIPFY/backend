@@ -83,13 +83,13 @@ export default {
 
           const currentData = await models.DepartmentData.findOne({
             where: { unitid },
-            include: ["statisticdata"],
+            attributes: ["statisticdata"],
             raw: true,
             transaction: ta
           });
 
           const newData = await models.DepartmentData.update(
-            { statisticdata: { ...currentData, ...data } },
+            { statisticdata: { ...currentData.statisticdata, ...data } },
             { where: { unitid }, transaction: ta, returning: true }
           );
 

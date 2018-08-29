@@ -3,6 +3,7 @@ import * as messaging from "vipfy-messaging";
 import { requiresAuth, requiresMessageGroupRights } from "../../helpers/permissions";
 import { parentAdminCheck, superset, createLog } from "../../helpers/functions";
 import { NormalError } from "../../errors";
+import { NEW_MESSAGE, pubsub } from "../../constants";
 
 export default {
   /**
@@ -68,6 +69,12 @@ export default {
         } = decode(token);
 
         const messageid = messaging.sendMessage(models, unitid, groupid, message);
+
+        pubsub.publish(NEW_MESSAGE, {
+          receiver: groupid,
+          message
+        });
+
         return {
           ok: true,
           message: messageid

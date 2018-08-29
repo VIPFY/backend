@@ -1,4 +1,5 @@
 // This file contains common operations which don't belong to a specific Component
+import { decode } from "jsonwebtoken";
 import { sendEmailToVipfy } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
@@ -47,6 +48,23 @@ export default {
       if (nameExists) throw new Error({ message: "There already exists an app with this name" });
 
       return { ok: true };
+    } catch (err) {
+      throw new NormalError({ message: err.message });
+    }
+  }),
+
+  readNotification: requiresAuth.createResolver(async (parent, { id }, { models, token }) => {
+    try {
+      const {
+        user: { unitid }
+      } = decode(token);
+
+      await models.Notification.update(
+        { readtime: models.sequelize.fn("NOW") },
+        { where: { receiver: unitid, id } }
+      );
+
+      return true;
     } catch (err) {
       throw new NormalError({ message: err.message });
     }
