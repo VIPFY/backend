@@ -65,6 +65,7 @@
     "ul": "^5.2.13",
     "vipfy-messaging": "git@bitbucket.org:vipfymarketplace/vipfy-messaging.git",
     "vipfy-sequelize-setup": "git@bitbucket.org:vipfymarketplace/vipfy-sequelize-setup.git",
+    "vipfy-services": "git@bitbucket.org:vipfymarketplace/vipfy-services.git",
     "winston": "^3.0.0"
   },
   "devDependencies": {

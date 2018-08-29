@@ -9,7 +9,7 @@ export default {
 
       return company;
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
 
@@ -23,7 +23,7 @@ export default {
 
         return size.employees;
       } catch (err) {
-        throw new NormalError({ message: err.message });
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   ),
@@ -42,7 +42,7 @@ export default {
 
       return departments;
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   }),
 
@@ -60,7 +60,7 @@ export default {
 
       return departments;
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   })
 };

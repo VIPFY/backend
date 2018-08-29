@@ -1,7 +1,11 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
+import * as Services from "vipfy-services";
 import { NormalError } from "../../errors";
-import { requiresDepartmentCheck, requiresRight } from "../../helpers/permissions";
+import {
+  requiresDepartmentCheck,
+  requiresRight
+} from "../../helpers/permissions";
 import dd24Api from "../../services/dd24";
 import { createLog } from "../../helpers/functions";
 
@@ -9,7 +13,11 @@ import { createLog } from "../../helpers/functions";
 
 export default {
   distributeLicenceToDepartment: requiresDepartmentCheck.createResolver(
-    (parent, { departmentid, boughtplanid, licencetype }, { models, token, ip }) =>
+    (
+      parent,
+      { departmentid, boughtplanid, licencetype },
+      { models, token, ip }
+    ) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -65,12 +73,12 @@ export default {
             attributes: ["disabled", "endtime"]
           });
 
-          const [openLicences, haveNoLicence, hasRight, validPlan] = await Promise.all([
-            p1,
-            p2,
-            p3,
-            p4
-          ]);
+          const [
+            openLicences,
+            haveNoLicence,
+            hasRight,
+            validPlan
+          ] = await Promise.all([p1, p2, p3, p4]);
           const employees = haveNoLicence.map(licence => licence.employee);
 
           if (openLicences.length == 0) {
@@ -115,7 +123,11 @@ export default {
                 message: "The plan is disabled."
               }
             };
-          } else if (validPlan && validPlan.endtime && validPlan.endtime < Date.now()) {
+          } else if (
+            validPlan &&
+            validPlan.endtime &&
+            validPlan.endtime < Date.now()
+          ) {
             return {
               ok: false,
               error: {
@@ -131,7 +143,11 @@ export default {
                 {
                   unitid: employee
                 },
-                { where: { id: openLicences[i].id, unitid: null }, raw: true, transaction: ta }
+                {
+                  where: { id: openLicences[i].id, unitid: null },
+                  raw: true,
+                  transaction: ta
+                }
               )
           );
 
@@ -165,7 +181,10 @@ export default {
       })
   ),
 
-  revokeLicencesFromDepartment: requiresRight(["distributelicences", "admin"]).createResolver(
+  revokeLicencesFromDepartment: requiresRight([
+    "distributelicences",
+    "admin"
+  ]).createResolver(
     (parent, { departmentid, boughtplanid }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -177,7 +196,11 @@ export default {
             `SELECT * FROM licence_data WHERE unitid IN (SELECT
              employee FROM department_employee_view WHERE id = :departmentid) AND
              (endtime > NOW() OR endtime ISNULL) AND boughtplanid = :boughtplanid`,
-            { replacements: { departmentid, boughtplanid }, raw: true, transaction: ta }
+            {
+              replacements: { departmentid, boughtplanid },
+              raw: true,
+              transaction: ta
+            }
           );
 
           const p2 = models.DepartmentApp.findOne(
@@ -196,7 +219,11 @@ export default {
             `UPDATE licence_data SET unitid = null, agreed = false WHERE unitid IN (SELECT
              employee FROM department_employee_view WHERE id = :departmentid) AND
              (endtime > NOW() OR endtime ISNULL) AND boughtplanid = :boughtplanid RETURNING *`,
-            { replacements: { departmentid, boughtplanid }, raw: true, transaction: ta }
+            {
+              replacements: { departmentid, boughtplanid },
+              raw: true,
+              transaction: ta
+            }
           );
 
           const revokedLicences = await Promise.all([p3, p4]);
@@ -211,7 +238,7 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message });
+          throw new NormalError({ message: err.message, internalData: { err } });
         }
       })
   ),
@@ -252,7 +279,8 @@ export default {
               ok: false,
               error: {
                 code: 1,
-                message: "There are no open Licences to distribute for this plan!"
+                message:
+                  "There are no open Licences to distribute for this plan!"
               }
             };
           } else if (!openLicence && !hasRight) {
@@ -260,7 +288,8 @@ export default {
               ok: false,
               error: {
                 code: 2,
-                message: "There are no open Licences and you don't have the right to distribute!"
+                message:
+                  "There are no open Licences and you don't have the right to distribute!"
               }
             };
           } else if (!openLicence && hasRight) {
@@ -281,24 +310,63 @@ export default {
             };
           }
 
-          const updatedLicence = await models.Licence.update(
+          const p3 = models.Licence.update(
             {
               unitid
             },
-            { where: { boughtplanid, unitid: null, id: openLicence.id }, transaction: ta }
+            {
+              where: { boughtplanid, unitid: null, id: openLicence.id },
+              transaction: ta
+            }
+          );
+
+          const p4 = models.BoughtPlan.findById(boughtplanid, {
+            include: [models.Plan],
+            raw: true,
+            transaction: ta
+          });
+
+          const p5 = models.Human.findById(unitid, {
+            transaction: ta
+          });
+
+          const [updatedLicence, boughtPlan, user] = Promise.all([p3, p4, p5]);
+
+          // TODO: set email properly
+          const inputUser = {
+            id: unitid,
+            firstname: user.firstname,
+            middlename: user.middlename,
+            lastname: user.lastname,
+            rights: [],
+            email: "test@example.com"
+          };
+          await Services.addUser(
+            models,
+            boughtPlan.planid.appid,
+            boughtplanid,
+            openLicence.id,
+            inputUser,
+            ta
           );
 
           await createLog(
             ip,
             "distributeLicence",
-            { departmentid, boughtplanid, openLicence, hasRight, updatedLicence },
+            {
+              departmentid,
+              boughtplanid,
+              openLicence,
+              hasRight,
+              updatedLicence
+            },
             giver,
             ta
           );
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message });
+          throw new NormalError({ message: err.message, internalData: { err } });
         }
       })
   ),
@@ -327,6 +395,13 @@ export default {
             throw new Error("This Licence wasn't taken!");
           }
 
+          const boughtPlan = await models.BoughtPlan.findById(p1.boughtplanid, {
+            include: [models.Plan],
+            raw: true,
+            transaction: ta
+          });
+          await Services.removeUser(models, boughtPlan.planid.appid, p1.boughtplanid, id, ta);
+
           await createLog(
             ip,
             "revokeLicence",
@@ -337,7 +412,7 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message });
+          throw new NormalError({ message: err.message, internalData: { err } });
         }
       })
   ),
@@ -432,7 +507,10 @@ export default {
             queryString += `, '{whoisPrivacy}', '"${domainData.whoisPrivacy}"'`;
           } else {
             queryString += `, '{renewalmode}', '"${
-              domainData.renewalmode == "ONCE" || domainData.renewalmode == "AUTODELETE" ? 0 : 1
+              domainData.renewalmode == "ONCE" ||
+              domainData.renewalmode == "AUTODELETE"
+                ? 0
+                : 1
             }"'`;
           }
           queryString += `) WHERE id = ${id} AND unitid = ${unitid}`;
@@ -456,7 +534,7 @@ export default {
             throw new Error(updateDomain.description);
           }
         } catch (err) {
-          throw new NormalError({ message: err.message });
+          throw new NormalError({ message: err.message, internalData: { err } });
         }
       })
   )

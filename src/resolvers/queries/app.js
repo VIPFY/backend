@@ -30,7 +30,7 @@ export default {
 
       return allApps;
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
 
@@ -40,7 +40,7 @@ export default {
 
       return app;
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
 
@@ -50,7 +50,7 @@ export default {
 
       return app;
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
 
@@ -137,7 +137,7 @@ export default {
 
         return licences;
       } catch (err) {
-        throw new NormalError({ message: err.message });
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   ),
@@ -195,7 +195,7 @@ export default {
 
       return licences;
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
 
@@ -227,7 +227,7 @@ export default {
         loginLink: res.link
       };
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   }),
 
@@ -249,7 +249,7 @@ export default {
 
         return userApps;
       } catch (err) {
-        throw new NormalError({ message: err.message });
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   ),
@@ -271,7 +271,7 @@ export default {
 
       return domains;
     } catch (err) {
-      throw new NormalError({ message: err.message });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   })
 };

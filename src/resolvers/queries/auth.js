@@ -32,7 +32,7 @@ export default {
 
         return user;
       } catch (err) {
-        throw new AuthError({ message: err.message });
+        throw new AuthError({ message: err.message, internalData: { err } });
       }
     } else throw new AuthError();
   })
