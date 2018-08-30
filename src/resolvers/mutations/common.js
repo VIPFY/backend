@@ -59,9 +59,26 @@ export default {
         user: { unitid }
       } = decode(token);
 
-      const data = await models.Notification.update(
+      await models.Notification.update(
         { readtime: models.sequelize.fn("NOW") },
-        { where: { receiver: unitid, id }, returning: true }
+        { where: { receiver: unitid, id } }
+      );
+
+      return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message });
+    }
+  }),
+
+  readAllNotifications: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { unitid }
+      } = decode(token);
+
+      await models.Notification.update(
+        { readtime: models.sequelize.fn("NOW") },
+        { where: { receiver: unitid, readtime: { [models.Op.eq]: null } } }
       );
 
       return true;

@@ -24,7 +24,7 @@ const createResolver = resolver => {
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(async (parent, args, { models, token }) => {
   try {
-    if (!token) throw new AuthError();
+    if (!token || token == "null") throw new AuthError();
     const {
       user: { company, unitid }
     } = decode(token);
@@ -89,7 +89,7 @@ export const requiresMessageGroupRights = rights =>
 
       const hasRights = await checkRights(models, rights, unitid, args);
       if (!hasRights) {
-        throw new AuthError({ message: "user doesn't have the nessesary rights" });
+        throw new Error("User doesn't have the neccesary rights");
       }
     } catch (err) {
       throw new AuthError({

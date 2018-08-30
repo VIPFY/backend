@@ -13,16 +13,20 @@ export default {
   newMessage: {
     subscribe: withFilter(
       (parent, args, { token }) => {
-        console.log("Ich kann nciht funktionieren", args, token);
-        // const { user } = decode(token);
-        // if (!token || token == "null" || !user || !user.unitid) {
-        //   throw new AuthError();
-        // }
+        console.log(token);
+        const { user } = decode(token);
+
+        if (!token || token == "null" || !user || !user.unitid) {
+          throw new AuthError();
+        }
+
         return pubsub.asyncIterator(NEW_MESSAGE);
       },
-      (payload, variables) => {
-        if (payload && variables) {
-          return payload.receiver == variables.groupid;
+      (payload, args) => {
+        if (payload && args) {
+          console.log("payload", payload);
+          console.log("args", args);
+          return payload.newMessage.receiver == args.groupid;
         }
         return "";
       }
@@ -30,28 +34,14 @@ export default {
   },
 
   newNotification: {
-    subscribe: withFilter(
-      (parent, args, { token }) => {
-        console.log("ja, das hier klappt wirklich", parent, args, token);
-        const {
-          user: { unitid }
-        } = decode(token);
+    subscribe: withFilter((parent, args, { token }) => {
+      const { user } = decode(token);
 
-        if (!unitid) {
-          throw new AuthError();
-        }
-        return pubsub.asyncIterator(NEW_NOTIFICATION);
-      },
-      (payload, variables) => {
-        if (payload && variables) {
-          console.log("in der payload", payload, variables);
-          console.log(payload.receiver == variables.receiver);
-          if (payload.receiver == variables.receiver) {
-            return { haifa: "Es klappt" };
-          }
-        }
-        return "";
+      if (!token || token == "null" || !user || !user.unitid) {
+        throw new AuthError();
       }
-    )
+
+      return pubsub.asyncIterator(NEW_NOTIFICATION);
+    }, (payload, args) => payload.newNotification.receiver == args.receiver)
   }
 };

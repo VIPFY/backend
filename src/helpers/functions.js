@@ -150,7 +150,8 @@ export const createNotification = async (notificationBody, transaction) => {
       { ...notificationBody, sendtime },
       { transaction }
     );
-    pubsub.publish(NEW_NOTIFICATION, { receiver: notification.dataValues.receiver });
+
+    pubsub.publish(NEW_NOTIFICATION, { newNotification: { ...notification.dataValues } });
 
     return notification;
   } catch (err) {

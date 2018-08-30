@@ -14,8 +14,6 @@ export default {
         order: [["id", "DESC"]]
       });
 
-      console.log(notifications);
-
       return notifications;
     } catch (err) {
       throw new NormalError({ message: err.message });

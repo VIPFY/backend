@@ -57,9 +57,11 @@ export default {
   ),
 
   /**
-   * post a message to the group with the supplied message,
+   * Post a message to the group with the supplied message,
    * and call markAsRead with the id of the new message.
-   * also sanitzes the message before posting
+   * Also sanitzes the message before posting
+   * @param {integer} groupid
+   * @param {string} message
    */
   sendMessage: requiresMessageGroupRights(["speak"]).createResolver(
     async (parent, { groupid, message }, { models, token }) => {
@@ -68,16 +70,13 @@ export default {
           user: { unitid }
         } = decode(token);
 
-        const messageid = messaging.sendMessage(models, unitid, groupid, message);
+        const newMessage = await messaging.sendMessage(models, unitid, groupid, message);
 
-        pubsub.publish(NEW_MESSAGE, {
-          receiver: groupid,
-          message
-        });
+        pubsub.publish(NEW_MESSAGE, { newMessage: { ...newMessage.dataValues } });
 
         return {
           ok: true,
-          message: messageid
+          message: newMessage.dataValues.id
         };
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
