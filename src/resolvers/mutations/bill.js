@@ -1,7 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { assign } from "lodash";
 import moment from "moment";
-import * as Services from "vipfy-services";
+import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { requiresRight, requiresAuth } from "../../helpers/permissions";
 import { recursiveAddressCheck, createLog } from "../../helpers/functions";
