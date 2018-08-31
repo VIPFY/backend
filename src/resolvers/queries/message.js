@@ -9,17 +9,19 @@ export default {
    * (i.e. all messages between visibletimestart and visibletimeend of all group memberships
    * of the user for that group), sorted by sendtime.
    */
-  fetchDialog: requiresAuth.createResolver(async (parent, { groupid }, { models, token }) => {
-    try {
-      const {
-        user: { unitid }
-      } = decode(token);
+  fetchDialog: requiresAuth.createResolver(
+    async (parent, { groupid, limit, offset }, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
 
-      return await messaging.fetchDialog(models, unitid, groupid);
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { error: err } });
+        return await messaging.fetchDialog(models, unitid, groupid, limit, offset);
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { error: err } });
+      }
     }
-  }),
+  ),
 
   fetchGroups: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {

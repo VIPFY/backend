@@ -83,7 +83,7 @@ export const types = `
 export const queries = `
 # All messages an user received - either from apps or other users
   fetchMessages(read: Boolean): [Message]
-  fetchDialog(groupid: ID!): [MessageData]
+  fetchDialog(groupid: ID!, limit: Int, offset: Int): [MessageData]
   fetchGroups: [MessageGroup]
   fetchPublicUser(userid: ID!): PublicUser
 `;

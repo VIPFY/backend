@@ -20,7 +20,7 @@ export default {
       ) {
         throw new Error("Defaultrights contains illegal right");
       }
-      console.log("b");
+
       try {
         const {
           user: { unitid }

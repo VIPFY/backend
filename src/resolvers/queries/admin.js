@@ -208,7 +208,7 @@ export default {
     }
   }),
 
-  adminFetchPlans: async (parent, { appid }, { models }) => {
+  adminFetchPlans: requiresVipfyAdmin.createResolver(async (parent, { appid }, { models }) => {
     try {
       const allPlans = await models.Plan.findAll({ where: { appid }, order: [["price", "ASC"]] });
       // Filter out the main plans
@@ -232,7 +232,7 @@ export default {
     } catch ({ message }) {
       throw new Error(message);
     }
-  },
+  }),
 
   adminFetchEmployees: requiresVipfyAdmin.createResolver(
     async (parent, { unitid, limit, offset = 0 }, { models }) => {

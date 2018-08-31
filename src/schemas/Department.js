@@ -61,6 +61,7 @@ export const queries = `
 
 # Returns the amount of units in a Department
   fetchCompanySize: Int!
+  fetchEmployees: [DepartmentEmployee]!
 `;
 
 export const mutations = `
