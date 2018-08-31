@@ -5,7 +5,7 @@
 */
 
 import { decode } from "jsonwebtoken";
-import { checkRights } from "vipfy-messaging";
+import { checkRights } from "@vipfy-private/messaging";
 import { checkDepartment } from "./functions";
 import { AuthError, AdminError } from "../errors";
 
