@@ -9,6 +9,7 @@ access his account.
 */
 import axios from "axios";
 import Utility from "../helpers/createHmac";
+import { PartnerError } from "../errors";
 
 const { WEEBLY_KEY, WEEBLY_SECRET } = process.env;
 
@@ -59,7 +60,7 @@ export const weeblyApi = async (method, endpoint, requestData) => {
 
     return res.data;
   } catch (err) {
-    throw new Error(err.response.data.error.message);
+    throw new PartnerError({ message: err.response.data.error.message });
   }
 };
 
@@ -78,7 +79,7 @@ export const createLoginLink = async (email, domain, plan) => {
     const res = await weeblyApi(method, endpoint, requestData);
     userId = res.user.user_id;
   } catch (err) {
-    return new Error(`The email ${email} is already in use at Weebly!`);
+    return new PartnerError({ message: `The email ${email} is already in use at Weebly!` });
   }
 
   endpoint = `user/${userId}/site`;
@@ -87,7 +88,7 @@ export const createLoginLink = async (email, domain, plan) => {
     const res = await weeblyApi(method, endpoint, requestData);
     siteId = res.site.site_id;
   } catch (err) {
-    return new Error(err.message);
+    return new PartnerError({ messge: err.message });
   }
 
   endpoint = `user/${userId}/site/${siteId}/loginLink`;
@@ -99,6 +100,6 @@ export const createLoginLink = async (email, domain, plan) => {
       loginLink: res.link
     };
   } catch (err) {
-    return new Error(err.message);
+    return new PartnerError({ message: err.message });
   }
 };

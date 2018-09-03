@@ -93,7 +93,7 @@ export const mutations = `
   setDeleteStatus(id: ID!, type: MESSAGE_COLUMN!): Response!
 
 # Send a message to another user
-  sendMessage(groupid: ID!, message: String!): MessageResponse!
+  sendMessage(groupid: ID!, message: String!, file: File): MessageResponse!
 
   startConversation(receiver: ID!, defaultrights: [String]!): StartGroupResponse!
   startGroup(receivers: [ID], defaultrights: [String]!, groupname: String!): StartGroupResponse!

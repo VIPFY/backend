@@ -35,6 +35,7 @@ export default {
 
   newNotification: {
     subscribe: withFilter((parent, args, { token }) => {
+      console.log("----token---->", token);
       const { user } = decode(token);
 
       if (!token || token == "null" || !user || !user.unitid) {
