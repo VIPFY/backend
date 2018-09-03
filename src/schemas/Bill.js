@@ -143,8 +143,8 @@ export const types = `
 
 export const queries = `
   boughtPlans: [BoughtPlan]!
-  fetchPlan(planid: Int!): Plan!
   fetchPlans(appid: Int!): [Plan]!
+  fetchPlanInputs(planid: ID!): JSON!
   createLoginLink(boughtplanid: Int!): ProductResponse!
 
   fetchBills: [Bill]!
