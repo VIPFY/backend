@@ -82,6 +82,14 @@ const postprocessors = {
 };
 
 const postprocess = async (datatype, value, fields, models) => {
+  logger.debug(`postprocessor called on ${datatype}`, {
+    datatype,
+    value,
+    fields,
+    models,
+    callable: datatype in postprocessors,
+    postprocessors
+  });
   if (datatype in postprocessors) {
     return postprocessors[datatype](value, fields, models);
   } else {
@@ -106,8 +114,14 @@ export const find = data => {
               : null
           ))
           .filter(s => s != null);
-        
-        logger.debug(`running resolver for ${datatype}`, { datatype, value, key, fields, args });
+
+        logger.debug(`running resolver for ${datatype}`, {
+          datatype,
+          value,
+          key,
+          fields,
+          args
+        });
 
         if (datatype[0] == "[") {
           // return array of objects
@@ -129,12 +143,10 @@ export const find = data => {
           }
           return postprocess(
             datatype,
-            await models[datatype].findOne(
-              {
-                where: { [key]: value },
-                raw: true
-              }
-            ),
+            await models[datatype].findOne({
+              where: { [key]: value },
+              raw: true
+            }),
             fields,
             models
           );
