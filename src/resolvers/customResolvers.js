@@ -130,6 +130,7 @@ export const find = data => {
           return Promise.all(
             (await models[modelName].findAll({
               where: { [key]: { [models.Op.in]: value } },
+              attributes: fields,
               raw: true
             })).map(v => postprocess(datatype, v, fields, models))
           );
@@ -145,6 +146,7 @@ export const find = data => {
             datatype,
             await models[datatype].findOne({
               where: { [key]: value },
+              attributes: fields,
               raw: true
             }),
             fields,
