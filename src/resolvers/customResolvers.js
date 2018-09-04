@@ -1,4 +1,5 @@
 import { NormalError } from "../errors";
+import logger from "../loggers";
 /* eslint-disable no-undef, array-callback-return */
 
 export const implementDate = {
@@ -63,6 +64,7 @@ const specialKeys = {
 
 const postprocessors = {
   Department: async (value, fields, models) => {
+    logger.debug("postprocessing department", { value, fields, models });
     if (fields.includes("domains")) {
       value.domains = await models.sequelize.query(
         `SELECT ld.id, ld.key->'domain' as domainname FROM licence_data ld INNER JOIN
