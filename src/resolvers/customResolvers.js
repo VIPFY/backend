@@ -117,7 +117,7 @@ export const find = data => {
             (await models[modelName].findAll({
               where: { [key]: { [models.Op.in]: value } },
               raw: true
-            })).map(v => postprocess(key, v, fields, models))
+            })).map(v => postprocess(datatype, v, fields, models))
           );
         } else {
           if (fields == ["id"]) {
@@ -128,7 +128,7 @@ export const find = data => {
             }
           }
           return postprocess(
-            key,
+            datatype,
             await models[datatype].findOne(
               {
                 where: { [key]: value },
