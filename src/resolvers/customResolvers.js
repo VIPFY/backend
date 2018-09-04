@@ -64,16 +64,24 @@ const specialKeys = {
 const postprocessors = {
   Department: async (value, fields, models) => {
     if (fields.includes("domains")) {
-      value.domains = await models.sequelize.query(`SELECT ld.id, ld.key->'domain' as domainname FROM licence_data ld INNER JOIN
+      value.domains = await models.sequelize.query(
+        `SELECT ld.id, ld.key->'domain' as domainname FROM licence_data ld INNER JOIN
       boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
-      bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid;`, { replacements: { unitid: value.id }, type: models.sequelize.QueryTypes.SELECT, raw: true })
+      bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid;`,
+        {
+          replacements: { unitid: value.id },
+          type: models.sequelize.QueryTypes.SELECT,
+          raw: true
+        }
+      );
     }
     return value;
   }
 };
 
 const postprocess = async (datatype, value, fields, models) => {
-  if (datatype in postprocessors) return postprocessors[datatype](value, fields, models);
+  if (datatype in postprocessors)
+    return postprocessors[datatype](value, fields, models);
   else return value;
 };
 
@@ -99,14 +107,14 @@ export const find = data => {
           // return array of objects
           const modelName = datatype.substring(1, datatype.length - 1);
           key = modelName in specialKeys ? specialKeys[modelName] : "id";
-          return Promise.all((await models[modelName].findAll({
-            where: { [key]: { [models.Op.in]: value } },
-            raw: true
-          })).map(v => postprocess(key, v, fields, models)));
+          return Promise.all(
+            (await models[modelName].findAll({
+              where: { [key]: { [models.Op.in]: value } },
+              raw: true
+            })).map(v => postprocess(key, v, fields, models))
+          );
         } else {
-          if (
-            fields == ["id"]
-          ) {
+          if (fields == ["id"]) {
             if (parent[search] === null) {
               return null;
             } else {
@@ -115,12 +123,14 @@ export const find = data => {
           }
           return postprocess(
             key,
-            await models[datatype].findOne({
-              where: {
-                [key]: value,
+            await models[datatype].findOne(
+              {
+                where: { [key]: value },
                 raw: true
-              }
-            }, fields, models)
+              },
+              fields,
+              models
+            )
           );
         }
       } catch (err) {
