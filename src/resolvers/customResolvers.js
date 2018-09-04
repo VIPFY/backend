@@ -69,7 +69,7 @@ const postprocessors = {
       boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
       bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid;`,
         {
-          replacements: { unitid: value.id },
+          replacements: { unitid: value.unitid },
           type: models.sequelize.QueryTypes.SELECT,
           raw: true
         }
@@ -80,9 +80,11 @@ const postprocessors = {
 };
 
 const postprocess = async (datatype, value, fields, models) => {
-  if (datatype in postprocessors)
+  if (datatype in postprocessors) {
     return postprocessors[datatype](value, fields, models);
-  else return value;
+  } else {
+    return value;
+  }
 };
 
 export const find = data => {
