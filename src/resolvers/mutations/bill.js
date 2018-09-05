@@ -214,7 +214,7 @@ export default {
           if (plan.appid !== 11) {
             const { dns } = await Services.createAccount(
               models,
-              boughtPlan.appid,
+              plan.appid,
               planinputs,
               plan.id,
               mergedFeatures,
