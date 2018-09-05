@@ -199,7 +199,7 @@ export default {
               usedby: company,
               planid: plan.id,
               disabled: false,
-              totalprice: plan.price,
+              totalprice: calculatedPrice,
               additionalfeatures: features,
               totalfeatures: mergedFeatures
             },
