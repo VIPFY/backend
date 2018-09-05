@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import { pick } from "lodash";
 import { parentAdminCheck } from "./functions";
 
-export const createTokens = async (user, SECRET, SECRET2) => {
+export const createTokens = async (user, SECRET, SECRET_TWO) => {
   try {
     const createToken = await jwt.sign({ user: pick(user, ["unitid", "company"]) }, SECRET, {
       expiresIn: "12h"
@@ -10,7 +10,7 @@ export const createTokens = async (user, SECRET, SECRET2) => {
 
     const createRefreshToken = await jwt.sign(
       { user: pick(user, ["unitid", "company"]) },
-      SECRET2,
+      SECRET_TWO,
       {
         expiresIn: "7d"
       }

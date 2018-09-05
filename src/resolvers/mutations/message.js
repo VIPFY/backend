@@ -2,8 +2,10 @@ import { decode } from "jsonwebtoken";
 import * as messaging from "@vipfy-private/messaging";
 import { requiresAuth, requiresMessageGroupRights } from "../../helpers/permissions";
 import { parentAdminCheck, superset, createLog } from "../../helpers/functions";
+import { uploadAttachment } from "../../services/gcloud";
 import { NormalError } from "../../errors";
 import { NEW_MESSAGE, pubsub } from "../../constants";
+import logger from "../../loggers";
 
 export default {
   /**
@@ -64,24 +66,49 @@ export default {
    * @param {string} message
    */
   sendMessage: requiresMessageGroupRights(["speak"]).createResolver(
-    async (parent, { groupid, message }, { models, token }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(token);
+    (parent, { groupid, message, file }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
+          let newMessage;
 
-        const newMessage = await messaging.sendMessage(models, unitid, groupid, message);
+          if (file) {
+            newMessage = await messaging.sendMessage(
+              models,
+              unitid,
+              file,
+              uploadAttachment,
+              groupid,
+              "",
+              ta,
+              logger
+            );
+          } else {
+            newMessage = await messaging.sendMessage(
+              models,
+              unitid,
+              null,
+              () => {},
+              groupid,
+              message,
+              ta,
+              logger
+            );
+          }
 
-        pubsub.publish(NEW_MESSAGE, { newMessage: { ...newMessage.dataValues } });
+          pubsub.publish(NEW_MESSAGE, { newMessage: { ...newMessage.dataValues } });
 
-        return {
-          ok: true,
-          message: newMessage.dataValues.id
-        };
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
+          return {
+            ok: true,
+            message: newMessage.dataValues.id
+          };
+        } catch (err) {
+          console.log(err);
+          throw new NormalError({ message: err.message, internalData: { err } });
+        }
+      })
   ),
 
   // TODO: update

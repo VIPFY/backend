@@ -83,7 +83,7 @@ export const types = `
 export const queries = `
 # All messages an user received - either from apps or other users
   fetchMessages(read: Boolean): [Message]
-  fetchDialog(groupid: ID!, limit: Int, offset: Int): [MessageData]
+  fetchDialog(groupid: ID!, limit: Int, cursor: String): [MessageData]
   fetchGroups: [MessageGroup]
   fetchPublicUser(userid: ID!): PublicUser
 `;
@@ -93,7 +93,7 @@ export const mutations = `
   setDeleteStatus(id: ID!, type: MESSAGE_COLUMN!): Response!
 
 # Send a message to another user
-  sendMessage(groupid: ID!, message: String!, file: File): MessageResponse!
+  sendMessage(groupid: ID!, message: String, file: File): MessageResponse!
 
   startConversation(receiver: ID!, defaultrights: [String]!): StartGroupResponse!
   startGroup(receivers: [ID], defaultrights: [String]!, groupname: String!): StartGroupResponse!

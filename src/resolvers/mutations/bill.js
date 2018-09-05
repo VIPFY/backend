@@ -6,7 +6,7 @@ import dd24Api from "../../services/dd24";
 import { requiresRight, requiresAuth } from "../../helpers/permissions";
 import { recursiveAddressCheck, createLog } from "../../helpers/functions";
 // import createInvoice from "../../helpers/createInvoice";
-import { createDownloadLink } from "../../services/gcloud";
+import { invoiceLink } from "../../services/gcloud";
 import {
   createCustomer,
   listCards,
@@ -466,7 +466,7 @@ export default {
         const name = bill.get("billname");
         const time = bill.get("billtime");
 
-        const downloadLink = await createDownloadLink(name, time);
+        const downloadLink = await invoiceLink(name, time);
 
         return downloadLink;
       } catch (err) {

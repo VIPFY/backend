@@ -4,13 +4,13 @@
 * establishes the connection to the database before starting the server
 */
 
-import express from "express";
 import bodyParser from "body-parser";
+import cors from "cors";
+import express from "express";
+import fs from "fs";
 import https from "https";
 import http from "http";
-import cors from "cors";
 import jwt from "jsonwebtoken";
-import fs from "fs";
 
 // To create the GraphQl functions
 import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
@@ -26,6 +26,7 @@ import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware"
 import { refreshTokens } from "./helpers/auth";
 import logger from "./loggers";
 import { formatError, AuthError } from "./errors";
+import { attachmentLink } from "./services/gcloud";
 
 Services.setLogger(logger);
 
@@ -113,6 +114,22 @@ if (ENVIRONMENT != "production") {
 app.get("/", (req, res) =>
   res.send(`Go to http${secure}://localhost:${PORT}/graphiql for the Interface`)
 );
+
+// The bodyParser is needed here (again), so that the post can receive the content.
+app.use(bodyParser.json());
+app.post("/download", async (req, res) => {
+  try {
+    const token = req.headers["x-token"];
+    if (!token) {
+      return res.status(403).send({ error: "Not Authenticated!" });
+    }
+
+    await attachmentLink(req.body.id, res);
+    return res.status(200);
+  } catch (err) {
+    return res.status(500).send({ error: err });
+  }
+});
 
 if (ENVIRONMENT != "testing") {
   server.listen(PORT, () => {

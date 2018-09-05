@@ -10,13 +10,13 @@ export default {
    * of the user for that group), sorted by sendtime.
    */
   fetchDialog: requiresAuth.createResolver(
-    async (parent, { groupid, limit, offset }, { models, token }) => {
+    async (parent, { groupid, limit, cursor }, { models, token }) => {
       try {
         const {
           user: { unitid }
         } = decode(token);
 
-        return await messaging.fetchDialog(models, unitid, groupid, limit, offset);
+        return await messaging.fetchDialog(cursor, groupid, limit, models, unitid);
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { error: err } });
       }
