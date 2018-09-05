@@ -42,7 +42,7 @@ export function calculatePlanPrice(
     }
     feature.value -= featureDefinition.number;
     if (feature.value == 0 && feature.amount == 0) continue;
-    if (featureDefinition.amoutper !== feature.value / feature.amount) {
+    if (featureDefinition.amountper !== feature.value / feature.amount) {
       logger.error("Requested amount inconsitent with feature definition", { featureDefinition, feature });
       throw new Error("Requested amount inconsitent with feature definition");
     }
