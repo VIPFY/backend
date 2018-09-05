@@ -116,6 +116,8 @@ export default {
           // const billItems = [];
           const key = {};
 
+          logger.debug("start buying process", { planid, features, price, planinputs });
+
           const department = await models.Unit.findById(company, { raw: true });
           // TODO: check whether the card is valid
           if (
@@ -173,6 +175,8 @@ export default {
             }
           }
 
+          logger.debug("mergedFeatures", { mergedFeatures });
+
           // const stripePlans = [];
           /* billItems.push({
             description: plan.name,
@@ -191,8 +195,9 @@ export default {
               usedBy: company,
               planid: plan.id,
               disabled: false,
-              amount: plan.numlicences, //TODO: remove amount
-              totalprice: plan.price
+              totalprice: plan.price,
+              additionalfeatures: features,
+              totalfeatures: mergedFeatures
             },
             {
               transaction: ta
