@@ -341,6 +341,8 @@ export default {
             p5
           ]);
 
+          logger.debug("distributeLicence: boughtplan", { boughtPlan });
+
           // TODO: set email properly
           const inputUser = {
             id: unitid,
