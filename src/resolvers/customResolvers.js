@@ -1,4 +1,5 @@
 import { NormalError } from "../errors";
+import logger from "../loggers";
 /* eslint-disable no-undef, array-callback-return */
 
 export const implementDate = {
@@ -56,61 +57,99 @@ export const implementJSON = {
   }
 };
 
+const specialKeys = {
+  Human: "unitid",
+  Department: "unitid"
+};
+
+const postprocessors = {
+  Department: async (value, fields, models) => {
+    logger.debug("postprocessing department", { value, fields, models });
+    if (fields.includes("domains")) {
+      value.domains = await models.sequelize.query(
+        `SELECT ld.id, ld.key->'domain' as domainname FROM licence_data ld INNER JOIN
+      boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
+      bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid;`,
+        {
+          replacements: { unitid: value.unitid },
+          type: models.sequelize.QueryTypes.SELECT,
+          raw: true
+        }
+      );
+    }
+    return value;
+  }
+};
+
+const postprocess = async (datatype, value, fields, models) => {
+  logger.debug(`postprocessor called on ${datatype}`, {
+    datatype,
+    value,
+    fields,
+    models,
+    callable: datatype in postprocessors,
+    postprocessors
+  });
+  if (datatype in postprocessors) {
+    return postprocessors[datatype](value, fields, models);
+  } else {
+    return value;
+  }
+};
+
 export const find = data => {
   const searches = {};
   Object.keys(data).map(search => {
     searches[search] = async (parent, args, { models }, info) => {
       try {
-        switch (data[search]) {
-          case "Human":
-          case "Department":
-            return await models[data[search]].findOne({
-              where: { unitid: parent.dataValues[search] },
-              raw: true
-            });
+        const datatype = data[search];
+        const value = parent[search];
+        let key = datatype in specialKeys ? specialKeys[datatype] : "id";
 
-          default: {
-            if (data[search][0] == "[") {
-              // return array of objects
-              const modelName = data[search].substring(1, data[search].length - 1);
-              return await models[modelName].findAll({
-                where: { id: { [models.Op.in]: parent[search] } },
-                raw: true
-              });
+        // prettier-ignore
+        const fields = info.fieldNodes[0].selectionSet.selections
+          .map(selection => (
+            selection.name && selection.name.value != "__typename"
+              ? selection.name.value
+              : null
+          ))
+          .filter(s => s != null);
+
+        logger.debug(`running resolver for ${datatype}`, {
+          datatype,
+          value,
+          key,
+          fields,
+          args
+        });
+
+        if (datatype[0] == "[") {
+          // return array of objects
+          const modelName = datatype.substring(1, datatype.length - 1);
+          key = modelName in specialKeys ? specialKeys[modelName] : "id";
+          return Promise.all(
+            (await models[modelName].findAll({
+              where: { [key]: { [models.Op.in]: value } },
+              raw: true
+            })).map(v => postprocess(datatype, v, fields, models))
+          );
+        } else {
+          if (fields == ["id"]) {
+            if (parent[search] === null) {
+              return null;
             } else {
-              // single object
-              /* console.error(
-                "FIND",
-                search,
-                data[search],
-                parent[search],
-                "INFO",
-                info,
-                "SET",
-                info.fieldNodes[0].selectionSet,
-                "S",
-                info.fieldNodes[0].selectionSet.selections
-              ); */
-              // models[data[search]].findById(parent[search], { raw: true })
-              // .then(a => console.error(parent[search], a));
-              if (
-                info.fieldNodes[0].selectionSet.selections.filter(
-                  selection =>
-                    !selection.name ||
-                    (selection.name.value != "id" && selection.name.value != "__typename")
-                ).length == 0
-              ) {
-                if (parent[search] === null) {
-                  return null;
-                } else {
-                  return { id: parent[search] };
-                }
-              }
-              return await models[data[search]].findById(parent[search], {
-                raw: true
-              });
+              return { [key]: value };
             }
           }
+          return postprocess(
+            datatype,
+            await models[datatype].findOne({
+              where: { [key]: value },
+              raw: true
+            }),
+            fields,
+            models
+          );
         }
       } catch (err) {
         throw new NormalError({

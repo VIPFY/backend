@@ -143,8 +143,8 @@ export const types = `
 
 export const queries = `
   boughtPlans: [BoughtPlan]!
-  fetchPlan(planid: Int!): Plan!
   fetchPlans(appid: Int!): [Plan]!
+  fetchPlanInputs(planid: ID!): JSON!
   createLoginLink(boughtplanid: Int!): ProductResponse!
 
   fetchBills: [Bill]!
@@ -155,7 +155,7 @@ export const queries = `
 export const mutations = `
   addPaymentData(data: JSON, departmentid: Int!): Response!
   # The buying process
-  buyPlan(planIds: [Int]!, options: Options): Response!
+  buyPlan(planIds: [Int]!, options: JSON): Response!
 
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!

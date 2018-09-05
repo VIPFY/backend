@@ -20,9 +20,14 @@ import { SubscriptionServer } from "subscriptions-transport-ws";
 import { createContext } from "dataloader-sequelize";
 import models from "@vipfy-private/sequelize-setup";
 import * as Services from "@vipfy-private/services";
+import { express as voyagerMiddleware } from "graphql-voyager/middleware";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
-import { authMiddleware, fileMiddleware, loggingMiddleWare } from "./middleware";
+import {
+  authMiddleware,
+  fileMiddleware,
+  loggingMiddleWare
+} from "./middleware";
 import { refreshTokens } from "./helpers/auth";
 import logger from "./loggers";
 import { formatError, AuthError } from "./errors";
@@ -38,7 +43,8 @@ const {
   SSL_CERT,
   SECRET,
   SECRET_TWO,
-  TOKEN_DEVELOPMENT
+  TOKEN_DEVELOPMENT,
+  USE_VOYAGER
 } = process.env;
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
@@ -51,8 +57,12 @@ if (!SECRET || !SECRET_TWO) {
 // We don't need certificates and https for development
 if (ENVIRONMENT == "production") {
   const httpsOptions = {
-    key: fs.readFileSync(SSL_KEY || "/etc/letsencrypt/live/vipfy.com/privkey.pem"),
-    cert: fs.readFileSync(SSL_CERT || "/etc/letsencrypt/live/vipfy.com/cert.pem")
+    key: fs.readFileSync(
+      SSL_KEY || "/etc/letsencrypt/live/vipfy.com/privkey.pem"
+    ),
+    cert: fs.readFileSync(
+      SSL_CERT || "/etc/letsencrypt/live/vipfy.com/cert.pem"
+    )
   };
 
   server = https.createServer(httpsOptions, app);
@@ -99,6 +109,10 @@ app.use(
   })
 );
 
+if (USE_VOYAGER) {
+  app.use("/voyager", voyagerMiddleware({ endpointUrl: "/graphql" }));
+}
+
 // Enable Graphiql Interface
 if (ENVIRONMENT != "production") {
   app.use(
@@ -135,7 +149,9 @@ if (ENVIRONMENT != "testing") {
   server.listen(PORT, () => {
     if (process.env.LOGGING) {
       console.log(`Server running on port ${PORT}`);
-      console.log(`Go to http${secure}://localhost:${PORT}/graphiql for the Interface`);
+      console.log(
+        `Go to http${secure}://localhost:${PORT}/graphiql for the Interface`
+      );
     }
 
     new SubscriptionServer(
@@ -152,7 +168,12 @@ if (ENVIRONMENT != "testing") {
             } catch (err) {
               if (err.name == "TokenExpiredError") {
                 console.log("Token expired in Subscription");
-                const newTokens = await refreshTokens(refreshToken, models, SECRET, SECRET_TWO);
+                const newTokens = await refreshTokens(
+                  refreshToken,
+                  models,
+                  SECRET,
+                  SECRET_TWO
+                );
 
                 return { models, token: newTokens.token };
               } else {

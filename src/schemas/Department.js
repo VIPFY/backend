@@ -23,6 +23,12 @@ export const types = `
     manageemployees: Boolean
     managelicences: Boolean
     apps: JSON
+    domains: [Domain]
+  }
+
+  type Domain {
+    id: ID!
+    domainname: String!
   }
 
   type DepartmentData {
