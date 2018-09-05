@@ -12,7 +12,7 @@ export function calculatePlanPrice(
   boughtfeatures
 ) {
   const featuresDict = {};
-  let price = baseprice;
+  let price = baseprice - 0;
   featuredescription.forEach(section => {
     section.features.forEach(feature => {
       if (!feature.key) return;
@@ -43,7 +43,10 @@ export function calculatePlanPrice(
     feature.value -= featureDefinition.number;
     if (feature.value == 0 && feature.amount == 0) continue;
     if (featureDefinition.amountper !== feature.value / feature.amount) {
-      logger.error("Requested amount inconsitent with feature definition", { featureDefinition, feature });
+      logger.error("Requested amount inconsitent with feature definition", {
+        featureDefinition,
+        feature
+      });
       throw new Error("Requested amount inconsitent with feature definition");
     }
     price += feature.amount * featureDefinition.price;
