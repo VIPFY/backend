@@ -239,7 +239,10 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -327,11 +330,16 @@ export default {
             transaction: ta
           });
 
-          const p5 = models.Human.findById(unitid, {
+          const p5 = models.Human.findOne({
+            where: { unitid },
             transaction: ta
           });
 
-          const [updatedLicence, boughtPlan, user] = await Promise.all([p3, p4, p5]);
+          const [updatedLicence, boughtPlan, user] = await Promise.all([
+            p3,
+            p4,
+            p5
+          ]);
 
           // TODO: set email properly
           const inputUser = {
@@ -368,7 +376,10 @@ export default {
           return { ok: true };
         } catch (err) {
           logger.error(err);
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -402,7 +413,13 @@ export default {
             raw: true,
             transaction: ta
           });
-          await Services.removeUser(models, boughtPlan.planid.appid, p1.boughtplanid, id, ta);
+          await Services.removeUser(
+            models,
+            boughtPlan.planid.appid,
+            p1.boughtplanid,
+            id,
+            ta
+          );
 
           await createLog(
             ip,
@@ -414,7 +431,10 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -536,7 +556,10 @@ export default {
             throw new Error(updateDomain.description);
           }
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   )
