@@ -354,7 +354,7 @@ export default {
           };
           await Services.addUser(
             models,
-            boughtPlan.planid.appid,
+            boughtPlan["plan_datum.appid"],
             boughtplanid,
             openLicence.id,
             inputUser,
@@ -417,7 +417,7 @@ export default {
           });
           await Services.removeUser(
             models,
-            boughtPlan.planid.appid,
+            boughtPlan["plan_datum.appid"],
             p1.boughtplanid,
             id,
             ta
