@@ -196,7 +196,7 @@ export default {
             {
               buyer: unitid,
               payer: company,
-              usedBy: company,
+              usedby: company,
               planid: plan.id,
               disabled: false,
               totalprice: plan.price,
