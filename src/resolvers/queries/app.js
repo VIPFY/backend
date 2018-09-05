@@ -4,9 +4,6 @@ import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
 
-/* eslint-disable default-case */
-const startTime = Date.now();
-
 export default {
   allApps: async (parent, { limit, offset, sortOptions }, { models }) => {
     try {
@@ -73,6 +70,8 @@ export default {
           replacements.licenceid = licenceid;
         }
         const licences = await models.sequelize.query(query, { replacements }).spread(res => res);
+
+        const startTime = Date.now();
 
         if (
           info.fieldNodes[0].selectionSet.selections.find(item => item.name.value == "key") !==
@@ -175,6 +174,8 @@ export default {
       const licences = await models.Licence.findAll({
         where: { unitid, boughtplanid: bpIds }
       });
+      
+      const startTime = Date.now();
 
       licences.forEach(licence => {
         if (licence.disabled) {
