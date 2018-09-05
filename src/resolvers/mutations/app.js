@@ -594,6 +594,7 @@ export default {
             unitid,
             ta
           );
+          return { ok: true };
         } catch (err) {
           throw new NormalError({
             message: err.message,
