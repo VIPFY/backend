@@ -77,14 +77,19 @@ export const queries = `
   # Returns all apps in Vipfy
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
 
-  # Returns a specific app
+  # Returns a specific app by name
   fetchApp(name: String!): AppDetails
+
+  # Returns a specific app by id
   fetchAppById(id: Int!): AppDetails
 
-  fetchPrice(appid: Int!): Plan!
+  # Returns all Apps a department is allowed to distribute Licences for
   fetchUnitApps(departmentid: Int!): [AppBoughtPlanResponse]!
 
+  # Returns all Licences of the current user, optionally limited to a single licence id
   fetchLicences(licenceid: Int): [Licence]!
+
+  # Returns all Licences of a current user that are not department licences
   fetchUsersOwnLicences(unitid: Int!): [Licence]
 `;
 
