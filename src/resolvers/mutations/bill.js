@@ -157,7 +157,7 @@ export default {
           const calculatedPrice = calculatePlanPrice(
             plan.price,
             plan.features,
-            features
+            JSON.parse(JSON.stringify(features)) // hacky deep copy
           );
           logger.debug(
             `calulated price: ${calculatedPrice}, supplied price: ${price}`
