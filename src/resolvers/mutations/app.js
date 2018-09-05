@@ -4,7 +4,8 @@ import * as Services from "@vipfy-private/services";
 import { NormalError } from "../../errors";
 import {
   requiresDepartmentCheck,
-  requiresRight
+  requiresRight,
+  requiresAuth
 } from "../../helpers/permissions";
 import dd24Api from "../../services/dd24";
 import { createLog } from "../../helpers/functions";
@@ -557,6 +558,42 @@ export default {
           } else {
             throw new Error(updateDomain.description);
           }
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  agreeToLicence: requiresAuth.createResolver(
+    (parent, { licenceid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
+
+          const updatedLicence = await models.Licence.update(
+            { agreed: true },
+            {
+              where: { id: licenceid, unitid },
+              returning: true,
+              transaction: ta
+            }
+          );
+          if (updatedLicence[0] == 0) {
+            throw new Error("no such licence");
+          }
+
+          await createLog(
+            ip,
+            "agreeToLicence",
+            { licenceid, updatedLicence: updatedLicence[1] },
+            unitid,
+            ta
+          );
         } catch (err) {
           throw new NormalError({
             message: err.message,
