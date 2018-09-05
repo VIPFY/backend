@@ -331,7 +331,7 @@ export default {
             transaction: ta
           });
 
-          const [updatedLicence, boughtPlan, user] = Promise.all([p3, p4, p5]);
+          const [updatedLicence, boughtPlan, user] = await Promise.all([p3, p4, p5]);
 
           // TODO: set email properly
           const inputUser = {
