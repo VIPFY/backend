@@ -112,7 +112,7 @@ export default {
         user: { unitid, company }
       } = decode(token);
       try {
-        models.sequelize.transaction(async ta => {
+        await models.sequelize.transaction(async ta => {
           // const billItems = [];
           const key = {};
 
