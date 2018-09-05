@@ -37,7 +37,7 @@ export function calculatePlanPrice(
       !isNumber(feature.number) ||
       feature.number < 0
     ) {
-      logger.crit("Invalid definition of bought feature", { feature });
+      logger.error("Invalid definition of bought feature", { feature });
       throw new Error("Invalid definition of bought feature");
     }
     if (featureDefinition.amoutper !== feature.value / feature.amount) {
