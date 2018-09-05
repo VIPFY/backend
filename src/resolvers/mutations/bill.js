@@ -416,6 +416,7 @@ export default {
           return { ok: true };
         });
       } catch (err) {
+        logger.error(err);
         throw new BillingError({
           message: err.message,
           internalData: { err, planid, features, price, planinputs, unitid }
