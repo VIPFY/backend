@@ -30,14 +30,14 @@ export const requiresAuth = createResolver(async (parent, args, { models, token 
     } = decode(token);
 
     const userExists = await models.Unit.findById(unitid);
-    if (!userExists) throw new AuthError({ message: "Couldn't find user in database!" });
+    if (!userExists) throw new Error("Couldn't find user in database!");
 
     if (company) {
       const companyExists = await models.Unit.findById(company);
-      if (!companyExists) throw new AuthError({ message: "Couldn't find company in database!" });
+      if (!companyExists) throw new Error("Couldn't find company in database!");
     }
   } catch (err) {
-    throw new AuthError(err);
+    throw new AuthError({ message: err.message, internalData: { err } });
   }
 });
 

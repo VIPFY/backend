@@ -5,7 +5,9 @@ import { requiresAuth } from "../../helpers/permissions";
 export default {
   fetchRecommendedApps: requiresAuth.createResolver(async (parent, args, { models, token }) => {
     try {
-      const { user: { unitid } } = decode(token);
+      const {
+        user: { unitid }
+      } = decode(token);
       const licences = await models.Licence.findAll({ where: { unitid } });
       const ids = await licences.map(licence => licence.get("boughtplanid"));
 
@@ -44,8 +46,9 @@ export default {
       const filteredApps = await models.App.findAll({ where: { id: finalAppIds } });
 
       return filteredApps;
-    } catch ({ message }) {
-      throw new Error(message);
+    } catch (err) {
+      console.log("------------>", err);
+      throw new Error(err.message);
     }
   })
 };
