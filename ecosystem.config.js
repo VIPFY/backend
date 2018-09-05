@@ -70,7 +70,7 @@ module.exports = {
       },
       'post-deploy' : 'npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js'
     },
-    dev : {
+    conf : {
       user : 'node',
       host : '104.155.3.91',
       ref  : 'origin/development',
