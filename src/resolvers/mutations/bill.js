@@ -116,7 +116,12 @@ export default {
           // const billItems = [];
           const key = {};
 
-          logger.debug("start buying process", { planid, features, price, planinputs });
+          logger.debug("start buying process", {
+            planid,
+            features,
+            price,
+            planinputs
+          });
 
           const department = await models.Unit.findById(company, { raw: true });
           // TODO: check whether the card is valid
@@ -205,6 +210,8 @@ export default {
           );
           const boughtPlan = createBoughtPlan.get();
 
+          logger.debug("createdBoughtPlan", { boughtPlan });
+
           if (boughtPlan.appid !== 11) {
             const { dns } = await Services.createAccount(
               models,
@@ -218,6 +225,7 @@ export default {
             if (dns && dns.length > 0) {
               throw new Error("setting dns settings not implemented yet");
             }
+            logger.debug("created Service Account");
           } else {
             if (planinputs.whoisPrivacy) {
               key.whoisPrivacy = true;
@@ -351,6 +359,7 @@ export default {
 
             const newLicences = await Promise.all(createLicences);
             partnerLogs.licences = newLicences;
+            logger.debug(`created ${mergedFeatures.users} licences`);
           }
 
           /* await createSubscription(
@@ -388,10 +397,21 @@ export default {
           await createLog(
             ip,
             "buyPlan",
-            { ...partnerLogs, department, boughtPlan, mergedFeatures, planid, features, price, planinputs },
+            {
+              ...partnerLogs,
+              department,
+              boughtPlan,
+              mergedFeatures,
+              planid,
+              features,
+              price,
+              planinputs
+            },
             unitid,
             ta
           );
+
+          logger.debug("created log");
 
           return { ok: true };
         });
