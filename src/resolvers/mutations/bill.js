@@ -159,6 +159,7 @@ export default {
             plan.features,
             features
           );
+          logger.debug(`calulated price: ${calculatedPrice}, supplied price: ${price}`);
           if (price != calculatedPrice) {
             logger.crit(
               `calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`,
