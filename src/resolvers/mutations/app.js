@@ -8,6 +8,7 @@ import {
 } from "../../helpers/permissions";
 import dd24Api from "../../services/dd24";
 import { createLog } from "../../helpers/functions";
+import logger from "../../loggers";
 
 /* eslint-disable no-return-await */
 
@@ -366,6 +367,7 @@ export default {
 
           return { ok: true };
         } catch (err) {
+          logger.error(err);
           throw new NormalError({ message: err.message, internalData: { err } });
         }
       })
