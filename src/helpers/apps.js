@@ -40,6 +40,7 @@ export function calculatePlanPrice(
       logger.error("Invalid definition of bought feature", { feature });
       throw new Error("Invalid definition of bought feature");
     }
+    if (feature.value == 0 && feature.amount == 0) continue;
     if (featureDefinition.amoutper !== feature.value / feature.amount) {
       logger.error("Requested amount inconsitent with feature definition", { featureDefinition, feature });
       throw new Error("Requested amount inconsitent with feature definition");
