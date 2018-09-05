@@ -179,7 +179,7 @@ export default {
             mergedFeatures[fkey] = features[fkey].value;
           }
 
-          logger.debug("mergedFeatures", { mergedFeatures });
+          logger.debug("mergedFeatures", { mergedFeatures, features, internaldescription: plan.internaldescription });
 
           // const stripePlans = [];
           /* billItems.push({
