@@ -34,8 +34,8 @@ export function calculatePlanPrice(
     if (
       !isNumber(feature.value) ||
       feature.value < 0 ||
-      !isNumber(feature.number) ||
-      feature.number < 0
+      !isNumber(feature.amount) ||
+      feature.amount < 0
     ) {
       logger.error("Invalid definition of bought feature", { feature });
       throw new Error("Invalid definition of bought feature");
