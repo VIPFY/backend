@@ -411,9 +411,8 @@ export default {
           );
 
           logger.debug("created log");
-
-          return { ok: true };
         });
+        return { ok: true };
       } catch (err) {
         logger.error(err);
         throw new BillingError({
