@@ -161,7 +161,7 @@ export default {
           );
           logger.debug(`calulated price: ${calculatedPrice}, supplied price: ${price}`);
           if (price != calculatedPrice) {
-            logger.crit(
+            logger.error(
               `calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`,
               { planid, features, price, planinputs, unitid }
             );
