@@ -5,6 +5,8 @@ import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { requiresRight, requiresAuth } from "../../helpers/permissions";
 import { recursiveAddressCheck, createLog } from "../../helpers/functions";
+import { calculatePlanPrice } from "../../helpers/apps";
+
 // import createInvoice from "../../helpers/createInvoice";
 import { invoiceLink } from "../../services/gcloud";
 import {
@@ -14,6 +16,7 @@ import {
   createSubscription
 } from "../../services/stripe";
 import { BillingError, PartnerError } from "../../errors";
+import logger from "../../loggers";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
@@ -86,7 +89,10 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new BillingError({ message: err.message, internalData: { err } });
+          throw new BillingError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -97,16 +103,18 @@ export default {
    * @param options: object
    */
   buyPlan: requiresRight(["admin", "buyApps"]).createResolver(
-    async (parent, { planIds, options }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const billItems = [];
-          let boughtPlans = [];
+    async (
+      parent,
+      { planid, features, price, planinputs },
+      { models, token, ip }
+    ) => {
+      const {
+        user: { unitid, company }
+      } = decode(token);
+      try {
+        models.sequelize.transaction(async ta => {
+          // const billItems = [];
           const key = {};
-
-          const {
-            user: { unitid, company }
-          } = decode(token);
 
           const department = await models.Unit.findById(company, { raw: true });
           // TODO: check whether the card is valid
@@ -119,8 +127,8 @@ export default {
             throw new Error("Missing payment information!");
           }
 
-          const plans = await models.Plan.findAll({
-            where: { id: planIds },
+          const plan = await models.Plan.findOne({
+            where: { id: planid },
             attributes: [
               "price",
               "id",
@@ -128,76 +136,85 @@ export default {
               "name",
               "numlicences",
               "enddate",
-              "stripedata"
+              "stripedata",
+              "features",
+              "internaldescription"
             ],
             raw: true
           });
 
-          const stripePlans = [];
-          plans.forEach(({ price, name, numlicences, enddate, stripedata }) => {
-            if (enddate && enddate < Date.now()) {
-              throw new Error(`The plan ${name} has already expired!`);
+          if (plan.enddate && plan.enddate < Date.now()) {
+            throw new Error(`The plan ${plan.name} has already expired!`);
+          }
+
+          const calculatedPrice = calculatePlanPrice(
+            plan.price,
+            plan.features,
+            features
+          );
+          if (price != calculatedPrice) {
+            logger.crit(
+              `calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`,
+              { planid, features, price, planinputs, unitid }
+            );
+            throw new Error(
+              `calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`
+            );
+          }
+
+          // compute complete features of the plan by merging default features and bought features
+          const mergedFeatures = plan.internaldescription;
+          // eslint-disable-next-line no-restricted-syntax
+          for (const fkey of Object.keys(features)) {
+            if (fkey in mergedFeatures) {
+              mergedFeatures[fkey] += features[fkey];
+            } else {
+              mergedFeatures[fkey] = features[fkey];
             }
+          }
 
-            billItems.push({
-              description: name,
-              quantity: numlicences,
-              unitPrice: price
-            });
-
-            stripePlans.push({ plan: stripedata.id });
+          // const stripePlans = [];
+          /* billItems.push({
+            description: plan.name,
+            quantity: numlicences,
+            unitPrice: plan.price
           });
 
-          const mainPlan = plans.shift();
+          stripePlans.push({ plan: plan.stripedata.id }); */
+
           let partnerLogs = {};
 
-          const createMainBoughtPlan = await models.BoughtPlan.create(
+          const createBoughtPlan = await models.BoughtPlan.create(
             {
               buyer: unitid,
               payer: company,
               usedBy: company,
-              planid: mainPlan.id,
+              planid: plan.id,
               disabled: false,
-              amount: mainPlan.numlicences,
-              totalprice: mainPlan.price
+              amount: plan.numlicences, //TODO: remove amount
+              totalprice: plan.price
             },
             {
               transaction: ta
             }
           );
-          const mainBoughtPlan = createMainBoughtPlan.get();
+          const boughtPlan = createBoughtPlan.get();
 
-          if (plans.length > 0) {
-            const createSubBoughtPlans = plans.map(
-              async plan =>
-                await models.BoughtPlan.create(
-                  {
-                    buyer: unitid,
-                    payer: company,
-                    usedBy: company,
-                    planid: plan.id,
-                    disabled: false,
-                    amount: plan.numlicences,
-                    totalprice: plan.price,
-                    mainboughtplan: mainBoughtPlan.id
-                  },
-                  { transaction: ta }
-                )
+          if (boughtPlan.appid !== 11) {
+            const { dns } = await Services.createAccount(
+              models,
+              boughtPlan.appid,
+              planinputs,
+              plan.id,
+              mergedFeatures,
+              boughtPlan.id,
+              ta
             );
-
-            const boughtPlansData = await Promise.all(createSubBoughtPlans);
-            boughtPlans = boughtPlansData.map(bP => bP.get());
-          }
-
-          boughtPlans.splice(0, 0, mainBoughtPlan);
-
-          if (mainPlan.appid !== 11) {
-            const { dns } = await Services.createAccount(models, mainPlan.appid, options, mainPlan.id, mainBoughtPlan.id, ta);
             if (dns && dns.length > 0) {
               throw new Error("setting dns settings not implemented yet");
             }
           } else {
-            if (options.whoisPrivacy) {
+            if (planinputs.whoisPrivacy) {
               key.whoisPrivacy = true;
             }
 
@@ -211,16 +228,16 @@ export default {
               }
             );
 
-            options.period = 1;
-            options.renewalmode = "autorenew";
+            planinputs.period = 1;
+            planinputs.renewalmode = "autorenew";
 
-            key.domain = options.domain.toLowerCase();
+            key.domain = planinputs.domain.toLowerCase();
             key.renewalmode = "1";
             let registerDomain;
 
             if (hasAccount.length > 0) {
-              options.cid = hasAccount[0].key.cid;
-              registerDomain = await dd24Api("AddDomain", options);
+              planinputs.cid = hasAccount[0].key.cid;
+              registerDomain = await dd24Api("AddDomain", planinputs);
             } else {
               const accountData = await models.sequelize.query(
                 `SELECT title, firstname, lastname, ad.address, ad.country,
@@ -249,7 +266,7 @@ export default {
               const { address, ...account } = accountDataCorrect;
               const { street, zip, city } = address;
 
-              const newOptions = assign(options, {
+              const newOptions = assign(planinputs, {
                 street,
                 zip,
                 city,
@@ -279,7 +296,7 @@ export default {
 
           const createLicences = [];
 
-          if (mainPlan.appid == 11) {
+          if (plan.appid == 11) {
             const endtime = moment(Date.now())
               .add(1, "year")
               .subtract(1, "day");
@@ -287,7 +304,7 @@ export default {
             const createLicence = models.Licence.create(
               {
                 unitid,
-                boughtplanid: boughtPlans[0].id,
+                boughtplanid: boughtPlan.id,
                 endtime,
                 agreed: false,
                 disabled: false,
@@ -312,31 +329,29 @@ export default {
             partnerLogs.right = right;
             partnerLogs.domainLicence = domainLicence;
           } else {
-            await boughtPlans.forEach(plan => {
-              for (let i = 0; i < plan.amount; i++) {
-                createLicences.push(
-                  models.Licence.create(
-                    {
-                      unitid: null,
-                      boughtplanid: plan.id,
-                      agreed: false,
-                      disabled: false,
-                      key
-                    },
-                    { transaction: ta }
-                  )
-                );
-              }
-            });
+            for (let i = 0; i < mergedFeatures.users; i++) {
+              createLicences.push(
+                models.Licence.create(
+                  {
+                    unitid: null,
+                    boughtplanid: boughtPlan.id,
+                    agreed: false,
+                    disabled: false,
+                    key
+                  },
+                  { transaction: ta }
+                )
+              );
+            }
 
             const newLicences = await Promise.all(createLicences);
             partnerLogs.licences = newLicences;
           }
 
-          await createSubscription(
+          /* await createSubscription(
             department.payingoptions.stripe.id,
             stripePlans
-          );
+          ); */
           // const bill = await models.Bill.create({ unitid: company }, { transaction: ta });
 
           // const res = await createInvoice(false, models, company, bill.id, billItems);
@@ -368,16 +383,20 @@ export default {
           await createLog(
             ip,
             "buyPlan",
-            { ...partnerLogs, department, boughtPlans },
+            { ...partnerLogs, department, boughtPlan, mergedFeatures, planid, features, price, planinputs },
             unitid,
             ta
           );
 
           return { ok: true };
-        } catch (err) {
-          throw new BillingError({ message: err.message, internalData: { err } });
-        }
-      })
+        });
+      } catch (err) {
+        throw new BillingError({
+          message: err.message,
+          internalData: { err, planid, features, price, planinputs, unitid }
+        });
+      }
+    }
   ),
   // TODO: Add logging when changed
   createMonthlyBill: async (parent, args, { models, token }) => {
@@ -444,7 +463,10 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new BillingError({ message: err.message, internalData: { err } });
+          throw new BillingError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),

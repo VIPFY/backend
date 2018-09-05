@@ -155,7 +155,7 @@ export const queries = `
 export const mutations = `
   addPaymentData(data: JSON, departmentid: Int!): Response!
   # The buying process
-  buyPlan(planIds: [Int]!, options: JSON): Response!
+  buyPlan(planids: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
 
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!
