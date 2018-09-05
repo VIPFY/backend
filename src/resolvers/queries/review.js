@@ -8,7 +8,5 @@ export default {
     });
 
     return reviews;
-  },
-
-  fetchPrice: (parent, { appid }, { models }) => models.Plan.findOne({ where: { appid } })
+  }
 };
