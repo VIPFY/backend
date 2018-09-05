@@ -33,13 +33,14 @@ export function calculatePlanPrice(
     const featureDefinition = featuresDict[key];
     if (
       !isNumber(feature.value) ||
-      feature.value < 0 ||
+      feature.value - featureDefinition.number < 0 ||
       !isNumber(feature.amount) ||
       feature.amount < 0
     ) {
       logger.error("Invalid definition of bought feature", { feature });
       throw new Error("Invalid definition of bought feature");
     }
+    feature.value -= featureDefinition.number;
     if (feature.value == 0 && feature.amount == 0) continue;
     if (featureDefinition.amoutper !== feature.value / feature.amount) {
       logger.error("Requested amount inconsitent with feature definition", { featureDefinition, feature });

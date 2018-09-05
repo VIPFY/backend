@@ -171,15 +171,7 @@ export default {
           }
 
           // compute complete features of the plan by merging default features and bought features
-          const mergedFeatures = plan.internaldescription;
-          // eslint-disable-next-line no-restricted-syntax
-          for (const fkey of Object.keys(features)) {
-            if (fkey in mergedFeatures) {
-              mergedFeatures[fkey] += features[fkey];
-            } else {
-              mergedFeatures[fkey] = features[fkey];
-            }
-          }
+          const mergedFeatures = { ...plan.internaldescription, ...features };
 
           logger.debug("mergedFeatures", { mergedFeatures });
 
