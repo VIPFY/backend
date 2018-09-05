@@ -212,7 +212,7 @@ export default {
 
           logger.debug("createdBoughtPlan", { boughtPlan });
 
-          if (boughtPlan.appid !== 11) {
+          if (plan.appid !== 11) {
             /* const { dns } = await Services.createAccount(
               models,
               boughtPlan.appid,
