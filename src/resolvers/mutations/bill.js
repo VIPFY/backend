@@ -212,7 +212,7 @@ export default {
           logger.debug("createdBoughtPlan", { boughtPlan });
 
           if (plan.appid !== 11) {
-            /* const { dns } = await Services.createAccount(
+            const { dns } = await Services.createAccount(
               models,
               boughtPlan.appid,
               planinputs,
@@ -223,7 +223,7 @@ export default {
             );
             if (dns && dns.length > 0) {
               throw new Error("setting dns settings not implemented yet");
-            } */
+            }
             logger.debug("created Service Account");
           } else {
             if (planinputs.whoisPrivacy) {
