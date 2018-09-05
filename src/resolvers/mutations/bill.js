@@ -159,7 +159,9 @@ export default {
             plan.features,
             features
           );
-          logger.debug(`calulated price: ${calculatedPrice}, supplied price: ${price}`);
+          logger.debug(
+            `calulated price: ${calculatedPrice}, supplied price: ${price}`
+          );
           if (price != calculatedPrice) {
             logger.error(
               `calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`,
@@ -171,7 +173,11 @@ export default {
           }
 
           // compute complete features of the plan by merging default features and bought features
-          const mergedFeatures = { ...plan.internaldescription, ...features };
+          const mergedFeatures = plan.internaldescription;
+          // eslint-disable-next-line no-restricted-syntax
+          for (const fkey of Object.keys(features)) {
+            mergedFeatures[fkey] = features[fkey].value;
+          }
 
           logger.debug("mergedFeatures", { mergedFeatures });
 
