@@ -41,6 +41,7 @@ export function calculatePlanPrice(
       throw new Error("Invalid definition of bought feature");
     }
     if (featureDefinition.amoutper !== feature.value / feature.amount) {
+      logger.error("Requested amount inconsitent with feature definition", { featureDefinition, feature });
       throw new Error("Requested amount inconsitent with feature definition");
     }
     price += feature.amount * featureDefinition.price;
