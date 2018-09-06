@@ -22,6 +22,14 @@ module.exports = {
         SSL_KEY: '/etc/letsencrypt/live/vipfy.com/privkey.pem',
         SSL_CERT: '/etc/letsencrypt/live/vipfy.com/cert.pem',
         GCLOUD_TRACE_NEW_CONTEXT: 1
+      },
+      env_conf: {
+        NODE_ENV: 'production',
+        ENVIRONMENT: 'production',
+        SSL_KEY: '/etc/letsencrypt/live/conferences.vipfy.store/privkey.pem',
+        SSL_CERT: '/etc/letsencrypt/live/conferences.vipfy.store/cert.pem',
+        GCLOUD_TRACE_NEW_CONTEXT: 1,
+        USE_VOYAGER: 1
       }
     }
   ],
@@ -61,6 +69,22 @@ module.exports = {
         USE_VOYAGER: 1
       },
       'post-deploy' : 'npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js'
+    },
+    conf : {
+      user : 'node',
+      host : '104.155.3.91',
+      ref  : 'origin/development',
+      repo : 'git@bitbucket.org:vipfymarketplace/vipfy-backend.git',
+      path : '/var/www/vipfy-backend',
+      env: {
+        NODE_ENV: 'production',
+        ENVIRONMENT: 'production',
+        SSL_KEY: '/etc/letsencrypt/live/conferences.vipfy.store/privkey.pem',
+        SSL_CERT: '/etc/letsencrypt/live/conferences.vipfy.store/cert.pem',
+        GCLOUD_TRACE_NEW_CONTEXT: 1,
+        USE_VOYAGER: 1
+      },
+      'post-deploy' : 'npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env conf'
     }
   }
 };

@@ -4,10 +4,12 @@ import * as Services from "@vipfy-private/services";
 import { NormalError } from "../../errors";
 import {
   requiresDepartmentCheck,
-  requiresRight
+  requiresRight,
+  requiresAuth
 } from "../../helpers/permissions";
 import dd24Api from "../../services/dd24";
 import { createLog } from "../../helpers/functions";
+import logger from "../../loggers";
 
 /* eslint-disable no-return-await */
 
@@ -238,7 +240,10 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -326,11 +331,18 @@ export default {
             transaction: ta
           });
 
-          const p5 = models.Human.findById(unitid, {
+          const p5 = models.Human.findOne({
+            where: { unitid },
             transaction: ta
           });
 
-          const [updatedLicence, boughtPlan, user] = Promise.all([p3, p4, p5]);
+          const [updatedLicence, boughtPlan, user] = await Promise.all([
+            p3,
+            p4,
+            p5
+          ]);
+
+          logger.debug("distributeLicence: boughtplan", { boughtPlan });
 
           // TODO: set email properly
           const inputUser = {
@@ -343,7 +355,7 @@ export default {
           };
           await Services.addUser(
             models,
-            boughtPlan.planid.appid,
+            boughtPlan["plan_datum.appid"],
             boughtplanid,
             openLicence.id,
             inputUser,
@@ -366,7 +378,11 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          logger.error(err);
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -400,7 +416,13 @@ export default {
             raw: true,
             transaction: ta
           });
-          await Services.removeUser(models, boughtPlan.planid.appid, p1.boughtplanid, id, ta);
+          await Services.removeUser(
+            models,
+            boughtPlan["plan_datum.appid"],
+            p1.boughtplanid,
+            id,
+            ta
+          );
 
           await createLog(
             ip,
@@ -412,7 +434,10 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -534,7 +559,47 @@ export default {
             throw new Error(updateDomain.description);
           }
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  agreeToLicence: requiresAuth.createResolver(
+    (parent, { licenceid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
+
+          const updatedLicence = await models.Licence.update(
+            { agreed: true },
+            {
+              where: { id: licenceid, unitid },
+              returning: true,
+              transaction: ta
+            }
+          );
+          if (updatedLicence[0] == 0) {
+            throw new Error("no such licence");
+          }
+
+          await createLog(
+            ip,
+            "agreeToLicence",
+            { licenceid, updatedLicence: updatedLicence[1] },
+            unitid,
+            ta
+          );
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   )

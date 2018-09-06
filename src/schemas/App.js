@@ -101,4 +101,6 @@ export const mutations = `
   revokeLicencesFromDepartment(departmentid: Int!, boughtplanid: Int!): Response!
   distributeLicence(boughtplanid: Int!, unitid: Int!, departmentid: Int!): DistributeResponse!
   revokeLicence(licenceid: Int!): Response!
+
+  agreeToLicence(licenceid: ID!): Response!
 `;
