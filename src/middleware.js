@@ -13,7 +13,8 @@ import { refreshTokens } from "./helpers/auth";
 import Utility from "./helpers/createHmac";
 import logger from "./loggers";
 import { AuthError } from "./errors";
-import * as NodeCache from "node-cache";
+
+const NodeCache = require("node-cache");
 
 const { SECRET, SECRET_TWO, SECRET_THREE } = process.env;
 
