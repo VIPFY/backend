@@ -94,13 +94,24 @@ export const queries = `
 `;
 
 export const mutations = `
+  # Admin: delete App from database
   deleteApp(id: Int!): Response!
+
+  # Admin: toogle App between disabled and enabled
   toggleAppStatus(id: Int!): Response!
 
+  # Add the boughtplan as departmentapp and give each empoyee a licence
   distributeLicenceToDepartment(departmentid: Int!, boughtplanid: Int!, licencetype: String!): DistributeResponse!
+
+  # Revoke licence from everyone in department
   revokeLicencesFromDepartment(departmentid: Int!, boughtplanid: Int!): Response!
+
+  # Give a user a licence from the licence pool of department
   distributeLicence(boughtplanid: Int!, unitid: Int!, departmentid: Int!): DistributeResponse!
+
+  # Free the licence
   revokeLicence(licenceid: Int!): Response!
 
+  # Agree to all terms and conditions of a licence
   agreeToLicence(licenceid: ID!): Response!
 `;

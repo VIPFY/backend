@@ -587,6 +587,7 @@ export default {
             throw new Error("no such licence");
           }
 
+          // TODO: save reference to licence agreements that user agreed to
           await createLog(
             ip,
             "agreeToLicence",
