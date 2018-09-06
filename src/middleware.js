@@ -54,7 +54,7 @@ export const authMiddleware = async (req, res, next) => {
   const token = req.headers["x-token"];
   if (token != "null" && token) {
     try {
-      const user = await jwt.verify(token, SECRET);
+      const { user } = await jwt.verify(token, SECRET);
       req.user = user;
       let { userid, company } = user;
 
