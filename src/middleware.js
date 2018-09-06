@@ -65,8 +65,8 @@ export const authMiddleware = async (req, res, next) => {
       }
 
       const [userPerm, companyPerm] = await Promise.all([
-        await getUnitPermission(unitid),
-        await getUnitPermission(company)
+        getUnitPermission(unitid),
+        getUnitPermission(company)
       ]);
 
       logger.debug("auth2", { userPerm, companyPerm });
