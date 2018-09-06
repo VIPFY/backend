@@ -41,9 +41,9 @@ export default {
           );
 
           let [rights, department, parentUnit] = await Promise.all([p1, p2, p3]);
-          rights = rights();
-          department = department();
-          parentUnit = parentUnit();
+          rights = rights.get();
+          department = department.get();
+          parentUnit = parentUnit.get();
 
           const p4 = createLog(
             ip,
