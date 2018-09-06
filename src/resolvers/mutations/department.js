@@ -24,7 +24,7 @@ export default {
 
           let company = await models.Unit.create({}, { transaction: ta });
           company = company.get();
-          console.log(company);
+
           const p1 = models.Right.create(
             { holder: unitid, forunit: company.id, type: "admin" },
             { transaction: ta }
