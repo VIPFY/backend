@@ -56,20 +56,17 @@ export const authMiddleware = async (req, res, next) => {
     try {
       const { user } = await jwt.verify(token, SECRET);
       req.user = user;
-      logger.debug("auth", { user });
       let { unitid, company } = user;
 
 
       if (company === undefined || company === null || company === "null") {
-        company = unitid;
+        company = unitid; // a bit of a hack to make the code simpler
       }
 
       const [userPerm, companyPerm] = await Promise.all([
         getUnitPermission(unitid),
         getUnitPermission(company)
       ]);
-
-      logger.debug("auth2", { userPerm, companyPerm });
 
       checkUnitPermissions(userPerm, "User");
       checkUnitPermissions(companyPerm, "Company");
