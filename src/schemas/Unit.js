@@ -70,8 +70,6 @@ export const types = `
 export const queries = `
   # Returns the logged-in user. Used for Authentication
   me: User
-
-  fetchUserByPassword(password: String!): String!
 `;
 
 export const mutations = `
@@ -93,6 +91,4 @@ export const mutations = `
 
   # Send the user a new link for sign up
   forgotPassword(email: String!): ForgotPwResponse!
-
-  giveLicence(touser: Int!, licenceid: Int!): Response!
 `;

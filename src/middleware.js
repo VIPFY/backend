@@ -12,8 +12,42 @@ import models from "@vipfy-private/sequelize-setup";
 import { refreshTokens } from "./helpers/auth";
 import Utility from "./helpers/createHmac";
 import logger from "./loggers";
+import { AuthError } from "./errors";
+
+const NodeCache = require("node-cache");
 
 const { SECRET, SECRET_TWO, SECRET_THREE } = process.env;
+
+const unitPermissionCache = new NodeCache({
+  checkperiod: 120,
+  stdTTL: 60,
+  deleteOnExpire: true
+});
+
+const getUnitPermission = async unitid => {
+  let permissions = unitPermissionCache.get(unitid);
+  if (permissions !== undefined) return permissions;
+  const unit = await models.Unit.findById(unitid, { raw: true });
+  permissions = {
+    suspended: unit.suspended,
+    banned: unit.banned,
+    deleted: unit.banned
+  };
+  unitPermissionCache.set(unitid, permissions);
+  return permissions;
+};
+
+const checkUnitPermissions = (permissions, name) => {
+  if (permissions.suspended) {
+    throw new AuthError({ message: `${name} is suspended!` });
+  }
+  if (permissions.banned) {
+    throw new AuthError({ message: `${name} is banned!` });
+  }
+  if (permissions.deleted) {
+    throw new AuthError({ message: `${name} is deleted!` });
+  }
+};
 
 /* eslint-disable consistent-return, prefer-destructuring */
 export const authMiddleware = async (req, res, next) => {
@@ -22,12 +56,31 @@ export const authMiddleware = async (req, res, next) => {
     try {
       const { user } = await jwt.verify(token, SECRET);
       req.user = user;
+      let { unitid, company } = user;
+
+
+      if (company === undefined || company === null || company === "null") {
+        company = unitid; // a bit of a hack to make the code simpler
+      }
+
+      const [userPerm, companyPerm] = await Promise.all([
+        getUnitPermission(unitid),
+        getUnitPermission(company)
+      ]);
+
+      checkUnitPermissions(userPerm, "User");
+      checkUnitPermissions(companyPerm, "Company");
     } catch (err) {
       console.error(err);
       if (err.name == "TokenExpiredError") {
         // If the token has expired, we use the refreshToken to assign new ones
         const refreshToken = req.headers["x-refresh-token"];
-        const newTokens = await refreshTokens(refreshToken, models, SECRET, SECRET_TWO);
+        const newTokens = await refreshTokens(
+          refreshToken,
+          models,
+          SECRET,
+          SECRET_TWO
+        );
 
         if (newTokens.token && newTokens.refreshToken) {
           res.set("Access-Control-Expose-Headers", "x-token, x-refresh-token");
@@ -36,6 +89,7 @@ export const authMiddleware = async (req, res, next) => {
         }
         req.user = newTokens.user;
       } else {
+        logger.info(err, { token });
         req.headers["x-token"] = undefined;
         req.headers["x-refresh-token"] = undefined;
       }
@@ -138,11 +192,19 @@ export const loggingMiddleWare = (req, res, next) => {
           ];
 
           if (bodyToken && bodyToken != "null") {
-            const encToken = await Utility.generateHmac(bodyToken, SECRET_THREE);
-            const encRefreshToken = await Utility.generateHmac(refreshToken, SECRET_THREE);
+            const encToken = await Utility.generateHmac(
+              bodyToken,
+              SECRET_THREE
+            );
+            const encRefreshToken = await Utility.generateHmac(
+              refreshToken,
+              SECRET_THREE
+            );
 
             parsedBody.data[Object.keys(parsedBody.data)[0]].token = encToken;
-            parsedBody.data[Object.keys(parsedBody.data)[0]].refreshToken = encRefreshToken;
+            parsedBody.data[
+              Object.keys(parsedBody.data)[0]
+            ].refreshToken = encRefreshToken;
           }
         }
 
@@ -161,7 +223,10 @@ export const loggingMiddleWare = (req, res, next) => {
       }
 
       if (user) {
-        models.Human.update({ lastactive: new Date().toUTCString() }, { where: { unitid: user } });
+        models.Human.update(
+          { lastactive: new Date().toUTCString() },
+          { where: { unitid: user } }
+        );
       }
     } catch (err) {
       logger.error(err);
