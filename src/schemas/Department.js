@@ -2,6 +2,7 @@ export const types = `
   type ParentUnit {
     parentunit: Unit!
     childunit: Unit!
+    position: String
   }
 
   type Right {
