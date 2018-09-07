@@ -98,7 +98,7 @@ export default {
             }
 
             if (licence.appid == 2) {
-              const link = await createLoginLink(licence.key.weeblyId, licence.key.siteId);
+              const link = await createLoginLink(licence.key.weebly_id, licence.key.site_id);
               licence.key.loginurl = link;
             }
 
