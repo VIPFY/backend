@@ -152,8 +152,3 @@ export const dummyForgotPwResponse = {
   ok: true,
   email: dummyEmail
 };
-
-export const dummyWeeblyResponse = {
-  ok: true,
-  loginLink: expect.any(String)
-};

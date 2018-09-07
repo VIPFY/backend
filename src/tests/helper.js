@@ -1,7 +1,7 @@
-/*
-This file contains helper functions which will be used for testing as well
-as a function which establishes and ends a connection to our database for testing.
-*/
+/**
+ * This file contains helper functions which will be used for testing as well
+ * as a function which establishes and ends a connection to our database for testing.
+ */
 
 import { graphql } from "graphql";
 import express from "express";

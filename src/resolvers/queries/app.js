@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { weeblyApi } from "../../services/weebly";
+import { createLoginLink } from "@vipfy-private/weebly";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
@@ -98,9 +98,8 @@ export default {
             }
 
             if (licence.appid == 2) {
-              const endpoint = `user/${licence.key.weeblyid}/loginLink`;
-              const res = await weeblyApi("POST", endpoint, "");
-              licence.key.loginlink = res.link;
+              const link = await createLoginLink(licence.key.weeblyId, licence.key.siteId);
+              licence.key.loginurl = link;
             }
 
             if (licence.appid == 11) {
@@ -174,7 +173,7 @@ export default {
       const licences = await models.Licence.findAll({
         where: { unitid, boughtplanid: bpIds }
       });
-      
+
       const startTime = Date.now();
 
       licences.forEach(licence => {

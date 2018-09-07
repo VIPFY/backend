@@ -88,7 +88,7 @@ export const mutations = `
 
   # Checks whether a name of an app already exists in our database
   checkName(name: String): Response!
-  
+
   readNotification(id: Int!): Boolean!
   readAllNotifications: Boolean!
 `;

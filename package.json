@@ -28,6 +28,7 @@
     "@vipfy-private/messaging": "latest",
     "@vipfy-private/sequelize-setup": "latest",
     "@vipfy-private/services": "latest",
+    "@vipfy-private/weebly": "latest",
     "apollo-errors": "^1.9.0",
     "apollo-server-express": "^1.3.2",
     "apollo-upload-server": "^5.0.0",
