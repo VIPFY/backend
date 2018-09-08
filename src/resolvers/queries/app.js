@@ -1,5 +1,6 @@
 import { decode } from "jsonwebtoken";
-import { createLoginLink } from "@vipfy-private/weebly";
+// import { getLoginData } from "@vipfy-private/weebly";
+import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
@@ -97,12 +98,11 @@ export default {
               }
             }
 
-            if (licence.appid == 2) {
-              const link = await createLoginLink(licence.key.weeblyId, licence.key.siteId);
-              licence.key.loginurl = link;
-            }
-
-            if (licence.appid == 11) {
+            if (licence.key && licence.appid != 11) {
+              // const link = await getLoginData(licence.key.weebly_id, licence.key.site_id);
+              // licence.key.loginurl = link.loginurl;
+              licence.key = Services.getLoginData(models, licence.appid, licence.id, undefined);
+            } else {
               const domain = await models.sequelize.query(
                 `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
                   boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
@@ -198,38 +198,6 @@ export default {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
-
-  // change to requiresRight("A") in Production!
-  createLoginLink: requiresAuth.createResolver(async (parent, { licenceid }, { models, token }) => {
-    try {
-      const {
-        user: { unitid }
-      } = decode(token);
-      let res;
-
-      const licenceBelongsToUser = await models.Licence.findOne({
-        where: { unitid, id: licenceid }
-      });
-
-      if (!licenceBelongsToUser) {
-        throw new NormalError({ message: "This licence doesn't belong to this user!" });
-      }
-
-      const credentials = licenceBelongsToUser.get("key");
-
-      if (credentials.weeblyid) {
-        const endpoint = `user/${credentials.weeblyid}/loginLink`;
-        res = await weeblyApi("POST", endpoint, "");
-      }
-
-      return {
-        ok: true,
-        loginLink: res.link
-      };
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
-    }
-  }),
 
   fetchUnitApps: requiresRight(["distributelicences", "admin"]).createResolver(
     async (parent, { departmentid }, { models }) => {
