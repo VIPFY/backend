@@ -7,82 +7,98 @@ import { createLog } from "../../helpers/functions";
 /* eslint-disable no-unused-vars, prefer-destructuring */
 
 export default {
-  updateProfilePic: requiresAuth.createResolver(async (parent, { file }, { models, token, ip }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const profilepicture = await uploadFile(file, userPicFolder);
-        const {
-          user: { unitid }
-        } = decode(token);
+  updateProfilePic: requiresAuth.createResolver(
+    async (parent, { file }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const profilepicture = await uploadFile(file, userPicFolder);
+          const {
+            user: { unitid }
+          } = decode(token);
 
-        const oldUnit = await models.Unit.findOne({ where: { id: unitid }, raw: true });
+          const oldUnit = await models.Unit.findOne({
+            where: { id: unitid },
+            raw: true
+          });
 
-        const updatedUnit = await models.Unit.update(
-          { profilepicture },
-          { where: { id: unitid }, returning: true, transaction: ta }
-        );
+          const updatedUnit = await models.Unit.update(
+            { profilepicture },
+            { where: { id: unitid }, returning: true, transaction: ta }
+          );
 
-        const notificationBody = {
-          receiver: unitid,
-          message: "Your profile picture was updated.",
-          icon: "user-check",
-          link: "profile"
-        };
+          const notificationBody = {
+            receiver: unitid,
+            message: "Your profile picture was updated.",
+            icon: "user-check",
+            link: "profile"
+          };
 
-        await createLog(
-          ip,
-          "updateProfilePic",
-          { oldUnit, updatedUnit: updatedUnit[1] },
-          unitid,
-          ta
-        );
+          await createLog(
+            ip,
+            "updateProfilePic",
+            { oldUnit, updatedUnit: updatedUnit[1] },
+            unitid,
+            ta
+          );
 
-        return profilepicture;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    })
+          return profilepicture;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   ),
 
-  updateUser: requiresAuth.createResolver(async (parent, { user }, { models, token, ip }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(token);
+  updateUser: requiresAuth.createResolver(
+    async (parent, { user }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
+          console.log(user);
+          const { password, statisticdata, ...human } = user;
+          let updatedHuman;
+          if (password) {
+            throw new Error("You can't update the password this way!");
+          }
 
-        const { password, statisticdata, ...human } = user;
-        let updatedHuman;
-        if (password) {
-          throw new Error("You can't update the password this way!");
-        }
+          const oldHuman = await models.Human.findOne({
+            where: { unitid },
+            raw: true
+          });
 
-        const oldHuman = await models.Human.findOne({ where: { unitid }, raw: true });
+          if (statisticdata) {
+            updatedHuman = await models.Human.update(
+              {
+                statisticdata: { ...oldHuman.statisticdata, ...statisticdata }
+              },
+              { where: { unitid }, returning: true, transaction: ta }
+            );
+          } else {
+            updatedHuman = await models.Human.update(
+              { ...human },
+              { where: { unitid }, returning: true, transaction: ta }
+            );
+          }
 
-        if (statisticdata) {
-          updatedHuman = await models.Human.update(
-            { statisticdata: { ...oldHuman.statisticdata, ...statisticdata } },
-            { where: { unitid }, returning: true, transaction: ta }
+          await createLog(
+            ip,
+            "updateUser",
+            { updateArgs: user, oldHuman, updatedHuman: updatedHuman[1] },
+            unitid,
+            ta
           );
-        } else {
-          updatedHuman = await models.Human.update(
-            { ...human },
-            { where: { unitid }, returning: true, transaction: ta }
-          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
-
-        await createLog(
-          ip,
-          "updateUser",
-          { updateArgs: user, oldHuman, updatedHuman: updatedHuman[1] },
-          unitid,
-          ta
-        );
-
-        return { ok: true };
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    })
+      })
   )
 };

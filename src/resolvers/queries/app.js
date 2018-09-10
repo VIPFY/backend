@@ -70,17 +70,22 @@ export default {
           query += " AND licence_data.id = :licenceid";
           replacements.licenceid = licenceid;
         }
-        const licences = await models.sequelize.query(query, { replacements }).spread(res => res);
+        const licences = await models.sequelize
+          .query(query, { replacements })
+          .spread(res => res);
 
         const startTime = Date.now();
 
         if (
-          info.fieldNodes[0].selectionSet.selections.find(item => item.name.value == "key") !==
-          undefined
+          info.fieldNodes[0].selectionSet.selections.find(
+            item => item.name.value == "key"
+          ) !== undefined
         ) {
           const createLoginLinks = licences.map(async licence => {
             if (licence.unitid != unitid) {
-              throw new NormalError({ message: "This licence doesn't belong to this user!" });
+              throw new NormalError({
+                message: "This licence doesn't belong to this user!"
+              });
             }
 
             if (licence.disabled) {
@@ -99,18 +104,27 @@ export default {
             }
 
             if (licence.key && licence.appid != 11) {
-              // const link = await getLoginData(licence.key.weebly_id, licence.key.site_id);
-              // licence.key.loginurl = link.loginurl;
-              licence.key = Services.getLoginData(models, licence.appid, licence.id, undefined);
+              licence.key = Services.getLoginData(
+                models,
+                licence.appid,
+                licence.id,
+                licence.boughtplanid,
+                undefined
+              );
             } else {
               const domain = await models.sequelize.query(
                 `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
                   boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
                   bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid LIMIT 1;`,
-                { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
+                {
+                  replacements: { unitid },
+                  type: models.sequelize.QueryTypes.SELECT
+                }
               );
 
-              const accountData = await dd24Api("GetOneTimePassword", { cid: domain[0].key.cid });
+              const accountData = await dd24Api("GetOneTimePassword", {
+                cid: domain[0].key.cid
+              });
               if (accountData.code == 200) {
                 if (licence.key.cid != accountData.cid) {
                   throw new PartnerError({
@@ -146,10 +160,13 @@ export default {
         user: { company }
       } = decode(token);
 
-      const departments = await models.sequelize.query("Select id from getDepartments(:company)", {
-        replacements: { company },
-        type: models.sequelize.QueryTypes.SELECT
-      });
+      const departments = await models.sequelize.query(
+        "Select id from getDepartments(:company)",
+        {
+          replacements: { company },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
 
       const departmentIds = Object.values(departments).map(dp => dp.id);
 
@@ -160,7 +177,9 @@ export default {
         raw: true
       });
 
-      const departmentPlanIds = Object.values(departmentPlans).map(dp => dp.boughtplanid);
+      const departmentPlanIds = Object.values(departmentPlans).map(
+        dp => dp.boughtplanid
+      );
 
       const boughtPlans = await models.BoughtPlan.findAll({
         attributes: ["id"],
@@ -222,24 +241,26 @@ export default {
     }
   ),
 
-  fetchDomains: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
+  fetchDomains: requiresAuth.createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
 
-      const domains = await models.sequelize
-        .query(
-          `SELECT ld.*, ld.endtime::date, ld.starttime::date FROM licence_data ld
+        const domains = await models.sequelize
+          .query(
+            `SELECT ld.*, ld.endtime::date, ld.starttime::date FROM licence_data ld
            INNER JOIN boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
            bpd.planid IN (25, 48, 51, 50, 49) AND ld.unitid = :company;`,
-          { replacements: { company } }
-        )
-        .spread(res => res);
+            { replacements: { company } }
+          )
+          .spread(res => res);
 
-      return domains;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return domains;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  })
+  )
 };

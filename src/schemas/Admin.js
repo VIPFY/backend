@@ -14,7 +14,7 @@ export const queries = `
   fetchRecentLogs(user: Int!): [Log]!
   allDepartments: [Department]!
   adminFetchEmployees(unitid: Int!, limit: Int, offset: Int): [DepartmentEmployee]!
-  fetchCompany(id: Int!): Department!
+  adminFetchCompany(id: Int!): Department!
   allCompanies(limit: Int, offset: Int): [Department]!
   freeUsers: [User]!
   listStripeInvoices: JSON

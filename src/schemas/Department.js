@@ -63,6 +63,8 @@ export const types = `
 `;
 
 export const queries = `
+  # Returns the users company
+  fetchCompany: Department!
   fetchDepartments: [DepartmentResponse]!
   fetchDepartmentsData: [DepartmentDataResponse]!
 
