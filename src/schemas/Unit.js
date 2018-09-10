@@ -40,7 +40,7 @@ export const types = `
     suspended: Boolean!
     profilepicture: String
     riskvalue: Int
-    emails: JSON
+    emails: [Email]
     createdate: String
     company: Department
     teams: Boolean
