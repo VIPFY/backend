@@ -165,9 +165,9 @@ export default {
           );
 
           let [human, newEmail, parentUnit] = await Promise.all([p1, p2, p3]);
-          human = human();
-          newEmail = newEmail();
-          parentUnit = parentUnit();
+          human = human.get();
+          newEmail = newEmail.get();
+          parentUnit = parentUnit.get();
 
           await createLog(
             ip,
