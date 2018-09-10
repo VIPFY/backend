@@ -205,8 +205,8 @@ export default {
           );
 
           let [department, parentUnit] = await Promise.all([p1, p2]);
-          department = department();
-          parentUnit = parentUnit();
+          department = department.get();
+          parentUnit = parentUnit.get();
 
           await createLog(ip, "addSubDepartment", { unit, department, parentUnit }, unitid, ta);
 
