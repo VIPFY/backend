@@ -5,6 +5,7 @@ import billQueries from "./queries/bill";
 import commonQueries from "./queries/common";
 import contactQueries from "./queries/contact";
 import demoQueries from "./queries/demo";
+import domainQueries from "./queries/domain";
 import departmentQueries from "./queries/department";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
@@ -17,6 +18,7 @@ import commonMutations from "./mutations/common";
 import contactMutations from "./mutations/contact";
 import demoMutations from "./mutations/demo";
 import departmentMutations from "./mutations/department";
+import domainMutations from "./mutations/domain";
 import messageMutations from "./mutations/message";
 import reviewMutations from "./mutations/review";
 import userMutations from "./mutations/unit";
@@ -27,15 +29,16 @@ import { find, implementDate, implementJSON } from "./customResolvers";
 
 const Query = Object.assign(
   adminQueries,
+  appQueries,
   authQueries,
-  departmentQueries,
+  billQueries,
   commonQueries,
   contactQueries,
-  appQueries,
+  demoQueries,
+  departmentQueries,
+  domainQueries,
   messageQueries,
-  reviewQueries,
-  billQueries,
-  demoQueries
+  reviewQueries
 );
 
 const Mutation = Object.assign(
@@ -43,6 +46,7 @@ const Mutation = Object.assign(
   appMutations,
   authMutations,
   departmentMutations,
+  domainMutations,
   messageMutations,
   userMutations,
   reviewMutations,
@@ -69,11 +73,20 @@ export default {
   AppDetails: find(developerAndSupport),
   Bill: find(unit),
   BillPosition: find({ vendor: "Unit", billid: "Bill", planid: "Plan" }),
-  BoughtPlan: find({ buyer: "Unit", usedby: "Unit", planid: "Plan", payer: "Unit" }),
+  BoughtPlan: find({
+    buyer: "Unit",
+    usedby: "Unit",
+    planid: "Plan",
+    payer: "Unit"
+  }),
   Department: find(unit),
   DepartmentData: find(unit),
   DepartmentEmail: find({ departmentid: "Department", emailownerid: "Unit" }),
-  DepartmentEmployee: find({ id: "Department", childid: "Unit", employee: "User" }),
+  DepartmentEmployee: find({
+    id: "Department",
+    childid: "Unit",
+    employee: "User"
+  }),
   Email: find(unit),
   Human: find(unit),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),
@@ -82,7 +95,10 @@ export default {
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
   MessageGroupMembership: find({ groupid: "MessageGroup", unitid: "User" }),
   MessageTag: find({ unitid: "User", messageid: "MessageTag" }),
-  MessageGroup: find({ lastmessage: "MessageData", memberships: "[MessageGroupMembership]" }),
+  MessageGroup: find({
+    lastmessage: "MessageData",
+    memberships: "[MessageGroupMembership]"
+  }),
   MessageResponse: find({ message: "MessageData" }),
   Newsletter: find({ email: "Email" }),
   Notification: find({ receiver: "Unit" }),

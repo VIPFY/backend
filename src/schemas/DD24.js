@@ -1,4 +1,16 @@
 export const types = `
+  type Domain {
+    id: ID!
+    name: String!
+    accountid: String!
+    createdate: String!
+    renewaldate: String
+    renewalmode: String!
+    whoisprivacy: Boolean!
+    statisticdata: JSON
+    unitid: User!
+  }
+
 # Data of a specific event
   type eventResponse {
     reserveduntil: String
@@ -10,7 +22,6 @@ export const types = `
     domain: String!
     renewalmode: RENEWALMODE
     whoisPrivacy: Int
-    cid: String
     dns: [DNSRecord]
   }
 
@@ -45,5 +56,6 @@ export const queries = `
 `;
 
 export const mutations = `
+  registerDomain(domainData: DD24!): Response!
   updateDomain(domainData: DD24!, licenceid: Int!): Response!
 `;

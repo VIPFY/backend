@@ -1,16 +1,18 @@
 import { decode } from "jsonwebtoken";
-import { assign } from "lodash";
-import moment from "moment";
 import * as Services from "@vipfy-private/services";
-import dd24Api from "../../services/dd24";
 import { requiresRight, requiresAuth } from "../../helpers/permissions";
-import { recursiveAddressCheck, createLog } from "../../helpers/functions";
+import { createLog } from "../../helpers/functions";
 import { calculatePlanPrice } from "../../helpers/apps";
 
 // import createInvoice from "../../helpers/createInvoice";
 import { invoiceLink } from "../../services/gcloud";
-import { createCustomer, listCards, addCard, createSubscription } from "../../services/stripe";
-import { BillingError, PartnerError } from "../../errors";
+import {
+  createCustomer,
+  listCards,
+  addCard,
+  createSubscription
+} from "../../services/stripe";
+import { BillingError } from "../../errors";
 import logger from "../../loggers";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
@@ -60,13 +62,19 @@ export default {
             logArgs.stripeCustomer = stripeCustomer;
             logArgs.card = card;
           } else {
-            const card = await addCard(department.payingoptions.stripe.id, data.id);
+            const card = await addCard(
+              department.payingoptions.stripe.id,
+              data.id
+            );
             await models.Unit.update(
               {
                 payingoptions: {
                   stripe: {
                     ...department.payingoptions.stripe,
-                    cards: [...department.payingoptions.stripe.cards, { ...card }]
+                    cards: [
+                      ...department.payingoptions.stripe.cards,
+                      { ...card }
+                    ]
                   }
                 }
               },
@@ -98,7 +106,11 @@ export default {
    * @return {any} ok
    */
   buyPlan: requiresRight(["admin", "buyApps"]).createResolver(
-    async (parent, { planid, features, price, planinputs }, { models, token, ip }) => {
+    async (
+      parent,
+      { planid, features, price, planinputs },
+      { models, token, ip }
+    ) => {
       const {
         user: { unitid, company }
       } = decode(token);
@@ -151,7 +163,9 @@ export default {
             JSON.parse(JSON.stringify(features)) // hacky deep copy
           );
 
-          logger.debug(`calulated price: ${calculatedPrice}, supplied price: ${price}`);
+          logger.debug(
+            `calulated price: ${calculatedPrice}, supplied price: ${price}`
+          );
 
           if (price != calculatedPrice) {
             logger.error(
@@ -185,7 +199,7 @@ export default {
 
           stripePlans.push({ plan: plan.stripedata.id }); */
 
-          let partnerLogs = {};
+          const partnerLogs = {};
 
           const createBoughtPlan = await models.BoughtPlan.create(
             {
@@ -206,154 +220,40 @@ export default {
 
           logger.debug("createdBoughtPlan", { boughtPlan });
 
-          if (plan.appid != 11) {
-            const { dns } = await Services.createAccount(
-              models,
-              plan.appid,
-              planinputs,
-              mergedFeatures,
-              boughtPlan.id,
-              ta
-            );
+          const { dns } = await Services.createAccount(
+            models,
+            plan.appid,
+            planinputs,
+            mergedFeatures,
+            boughtPlan.id,
+            ta
+          );
 
-            if (dns && dns.length > 0) {
-              throw new Error("setting dns settings not implemented yet");
-            }
-            logger.debug("created Service Account");
-          } else {
-            if (planinputs.whoisPrivacy) {
-              key.whoisPrivacy = true;
-            }
-
-            const hasAccount = await models.sequelize.query(
-              `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
-                  boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
-                  bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid LIMIT 1;`,
-              {
-                replacements: { unitid },
-                type: models.sequelize.QueryTypes.SELECT
-              }
-            );
-
-            planinputs.period = 1;
-            planinputs.renewalmode = "autorenew";
-
-            key.domain = planinputs.domain.toLowerCase();
-            key.renewalmode = "1";
-            let registerDomain;
-
-            if (hasAccount.length > 0) {
-              planinputs.cid = hasAccount[0].key.cid;
-              registerDomain = await dd24Api("AddDomain", planinputs);
-            } else {
-              const accountData = await models.sequelize.query(
-                `SELECT title, firstname, lastname, ad.address, ad.country,
-                    ed.email, pd.number as phone FROM human_data hd INNER JOIN
-                    address_data ad ON ad.unitid = hd.unitid INNER JOIN
-                    email_data ed ON ed.unitid = hd.unitid INNER JOIN phone_data pd
-                    ON pd.unitid = hd.unitid WHERE hd.unitid = :unitid AND
-                    ('domain' = ANY(ad.tags) OR 'main' = ANY(ad.tags)) AND
-                    ed.verified = TRUE AND ed.autogenerated = TRUE`,
-                {
-                  replacements: { unitid },
-                  type: models.sequelize.QueryTypes.SELECT
-                }
-              );
-
-              const accountDataCorrect = recursiveAddressCheck(accountData);
-
-              if (!accountDataCorrect) {
-                throw new PartnerError({
-                  internalData: { partner: "DD24" },
-                  message: "Please make sure you have a valid address and retry then."
-                });
-              }
-
-              const { address, ...account } = accountDataCorrect;
-              const { street, zip, city } = address;
-
-              const newOptions = assign(planinputs, {
-                street,
-                zip,
-                city,
-                ...account
-              });
-
-              const organization = await models.Department.findOne({
-                attributes: ["name"],
-                raw: true,
-                where: { unitid: company }
-              });
-              newOptions.organization = organization.name;
-
-              registerDomain = await dd24Api("AddDomain", newOptions);
-              partnerLogs = newOptions;
-              partnerLogs.domain = registerDomain;
-            }
-            if (registerDomain.code == 200) {
-              key.cid = registerDomain.cid;
-            } else {
-              throw new PartnerError({
-                internalData: { partner: "DD24" },
-                message: registerDomain.description
-              });
-            }
+          if (dns && dns.length > 0) {
+            throw new Error("setting dns settings not implemented yet");
           }
+          logger.debug("created Service Account");
 
           const createLicences = [];
 
-          if (plan.appid == 11) {
-            const endtime = moment(Date.now())
-              .add(1, "year")
-              .subtract(1, "day");
-
-            const createLicence = models.Licence.create(
-              {
-                unitid,
-                boughtplanid: boughtPlan.id,
-                endtime,
-                agreed: false,
-                disabled: false,
-                key
-              },
-              { transaction: ta }
+          for (let i = 0; i < mergedFeatures.users; i++) {
+            createLicences.push(
+              models.Licence.create(
+                {
+                  unitid: null,
+                  boughtplanid: boughtPlan.id,
+                  agreed: false,
+                  disabled: false,
+                  key
+                },
+                { transaction: ta }
+              )
             );
-
-            const createRight = models.Right.create(
-              {
-                holder: unitid,
-                forunit: company,
-                type: "managedomains"
-              },
-              { transaction: ta }
-            );
-
-            const res = await Promise.all([createRight, createLicence]);
-            const right = res[0].get();
-            const domainLicence = res[1].get();
-
-            partnerLogs.right = right;
-            partnerLogs.domainLicence = domainLicence;
-          } else {
-            for (let i = 0; i < mergedFeatures.users; i++) {
-              createLicences.push(
-                models.Licence.create(
-                  {
-                    unitid: null,
-                    boughtplanid: boughtPlan.id,
-                    agreed: false,
-                    disabled: false,
-                    key
-                  },
-                  { transaction: ta }
-                )
-              );
-            }
-
-            const newLicences = await Promise.all(createLicences);
-            partnerLogs.licences = newLicences;
-            logger.debug(`created ${mergedFeatures.users} licences`);
           }
+
+          const newLicences = await Promise.all(createLicences);
+          partnerLogs.licences = newLicences;
+          logger.debug(`created ${mergedFeatures.users} licences`);
 
           /* await createSubscription(
             department.payingoptions.stripe.id,
@@ -458,58 +358,61 @@ export default {
     }
   },
   // TODO: Add logging when changed
-  addBillPos: requiresAuth.createResolver(async (parent, { bill, billid }, { models, token }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { company }
-        } = decode(token);
-        let id = billid;
+  addBillPos: requiresAuth.createResolver(
+    async (parent, { bill, billid }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(token);
+          let id = billid;
 
-        if (!billid) {
-          const invoice = await models.Bill.create(
-            { unitid: company, billtime: null },
-            { raw: true, transaction: ta }
+          if (!billid) {
+            const invoice = await models.Bill.create(
+              { unitid: company, billtime: null },
+              { raw: true, transaction: ta }
+            );
+            id = invoice.id;
+          }
+
+          await models.BillPosition.create(
+            { ...bill, billid: id, unitid: company },
+            { transaction: ta, raw: true }
           );
-          id = invoice.id;
+
+          return { ok: true };
+        } catch (err) {
+          throw new BillingError({
+            message: err.message,
+            internalData: { err }
+          });
         }
-
-        await models.BillPosition.create(
-          { ...bill, billid: id, unitid: company },
-          { transaction: ta, raw: true }
-        );
-
-        return { ok: true };
-      } catch (err) {
-        throw new BillingError({
-          message: err.message,
-          internalData: { err }
-        });
-      }
-    })
+      })
   ),
   // TODO: Add logging when changed
-  downloadBill: requiresAuth.createResolver(async (parent, { billid }, { models, token }) => {
-    try {
-      const {
-        user: { company: unitid }
-      } = await decode(token);
-      const bill = await models.Bill.findOne({
-        where: { unitid, id: billid },
-        attributes: ["billname", "billtime"]
-      });
+  downloadBill: requiresAuth.createResolver(
+    async (parent, { billid }, { models, token }) => {
+      try {
+        const {
+          user: { company: unitid }
+        } = await decode(token);
+        const bill = await models.Bill.findOne({
+          where: { unitid, id: billid },
+          attributes: ["billname", "billtime"]
+        });
 
-      if (!bill) {
-        throw new BillingError("Couldn't find invoice!");
+        if (!bill) {
+          throw new BillingError("Couldn't find invoice!");
+        }
+        const name = bill.get("billname");
+        const time = bill.get("billtime");
+
+        const downloadLink = await invoiceLink(name, time);
+
+        return downloadLink;
+      } catch (err) {
+        throw new BillingError({ message: err.message, internalData: { err } });
       }
-      const name = bill.get("billname");
-      const time = bill.get("billtime");
-
-      const downloadLink = await invoiceLink(name, time);
-
-      return downloadLink;
-    } catch (err) {
-      throw new BillingError({ message: err.message, internalData: { err } });
     }
-  })
+  )
 };

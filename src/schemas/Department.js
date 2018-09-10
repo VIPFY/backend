@@ -27,11 +27,6 @@ export const types = `
     domains: [Domain]
   }
 
-  type Domain {
-    id: ID!
-    domainname: String!
-  }
-
   type DepartmentData {
     name: String!
     legalinformation: JSON

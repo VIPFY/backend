@@ -1,5 +1,4 @@
 import { decode } from "jsonwebtoken";
-import moment from "moment";
 import * as Services from "@vipfy-private/services";
 import { NormalError } from "../../errors";
 import {
@@ -7,7 +6,6 @@ import {
   requiresRight,
   requiresAuth
 } from "../../helpers/permissions";
-import dd24Api from "../../services/dd24";
 import { createLog } from "../../helpers/functions";
 import logger from "../../loggers";
 
@@ -433,131 +431,6 @@ export default {
           );
 
           return { ok: true };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
-  /**
-   * Update Whois Privacy or Renewal Mode of a domain. Updating both at the same
-   * time is not possible!
-   * @param domainData: object
-   * domainData can contain the properties:
-   * domain: string
-   * renewalmode: enum
-   * whoisPrivacy: integer
-   * cid: string
-   * dns: object[]
-   * @param licenceid: integer
-   */
-  updateDomain: requiresRight(["admin", "managedomains"]).createResolver(
-    (parent, { domainData, licenceid: id }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid, company }
-          } = decode(token);
-
-          const oldLicence = await models.Licence.findById(id, { raw: true });
-
-          if (domainData.dns) {
-            const rr = [];
-            domainData.dns.forEach(dns => {
-              rr.push({
-                [dns.type]: [dns.data],
-                ZONE: [dns.host],
-                ADD: ["1"]
-              });
-            });
-
-            domainData.rr = rr;
-            delete domainData.dns;
-            const updatedDNS = await dd24Api("UpdateDomain", domainData);
-
-            if (updatedDNS && updatedDNS.code == 200) {
-              const updatedLicence = await models.Licence.update(
-                {
-                  key: { dns: { ...domainData.dns } }
-                },
-                { transaction: ta, where: { id } }
-              );
-
-              await createLog(
-                ip,
-                "updateDomain",
-                { updatedDNS, domainData, oldLicence, updatedLicence },
-                unitid,
-                ta
-              );
-
-              return { ok: true };
-            } else {
-              throw new NormalError({ message: updatedDNS.description });
-            }
-          }
-
-          // Has to be created here to avoid problems when using Promise.all
-          let p1;
-
-          let queryString = "UPDATE licence_data SET key = jsonb_set(key";
-
-          if (domainData.hasOwnProperty("whoisPrivacy")) {
-            const enddate = moment(Date.now()).add(1, "year");
-            let planid;
-
-            if (domainData.domain.indexOf(".org")) {
-              planid = 53;
-            } else if (domainData.domain.indexOf(".com")) {
-              planid = 51;
-            } else {
-              planid = 52;
-            }
-
-            p1 = models.BoughtPlan.create(
-              {
-                planid,
-                buyer: unitid,
-                payer: company,
-                enddate,
-                disabled: false,
-                description: `Whois Privacy for ${domainData.domain}`
-              },
-              { transaction: ta }
-            );
-
-            queryString += `, '{whoisPrivacy}', '"${domainData.whoisPrivacy}"'`;
-          } else {
-            queryString += `, '{renewalmode}', '"${
-              domainData.renewalmode == "ONCE" ||
-              domainData.renewalmode == "AUTODELETE"
-                ? 0
-                : 1
-            }"'`;
-          }
-          queryString += `) WHERE id = ${id} AND unitid = ${unitid}`;
-
-          const updateDomain = await dd24Api("UpdateDomain", domainData);
-
-          if (updateDomain.code == 200) {
-            const p2 = models.sequelize.query(queryString, { transaction: ta });
-            const [boughtPlan, updatedLicence] = await Promise.all([p1, p2]);
-
-            await createLog(
-              ip,
-              "updateDomain",
-              { boughtPlan, domainData, oldLicence, updatedLicence },
-              unitid,
-              ta
-            );
-
-            return { ok: true };
-          } else {
-            throw new Error(updateDomain.description);
-          }
         } catch (err) {
           throw new NormalError({
             message: err.message,
