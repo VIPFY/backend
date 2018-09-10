@@ -115,7 +115,7 @@ export default {
             { transaction: ta }
           );
 
-          parentUnit = parentUnit();
+          parentUnit = parentUnit.get();
 
           await createLog(ip, "addEmployee", { unitid, departmentid, parentUnit }, adder, ta);
 
