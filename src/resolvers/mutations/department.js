@@ -147,7 +147,7 @@ export default {
           const passwordhash = await bcrypt.hash("test", 12);
 
           let unit = await models.Unit.create({}, { transaction: ta });
-          unit = unit();
+          unit = unit.get();
 
           const p1 = models.Human.create(
             { firstname, unitid: unit.id, passwordhash },
