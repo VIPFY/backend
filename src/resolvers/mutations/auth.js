@@ -151,7 +151,9 @@ export default {
         null
       );
 
-      const [user] = await Promise.all([p1, p2]);
+      const [basicUser] = await Promise.all([p1, p2]);
+
+      const user = await parentAdminCheck(basicUser);
       // User doesn't have the property unitid, so we have to pass emailExists for
       // the token creation
       const [token, refreshToken] = await createTokens(
