@@ -84,7 +84,7 @@ const postprocessors = {
   },
   Email: async (value, fields, models) => {
     logger.debug("postprocessing Email", { value, fields });
-    if (fields.includes("verifyuntil")) {
+    if (fields.includes("verifyuntil") && !value.verified) {
       const verifyuntil = moment(value.createdat).subtract(
         EMAIL_VERIFICATION_TIME
       );
