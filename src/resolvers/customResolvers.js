@@ -1,4 +1,4 @@
-import { moment } from "moment";
+import moment from "moment";
 import { NormalError } from "../errors";
 import logger from "../loggers";
 import { EMAIL_VERIFICATION_TIME } from "../constants";
@@ -62,7 +62,7 @@ export const implementJSON = {
 const specialKeys = {
   Human: "unitid",
   Department: "unitid",
-  Email: "unitid"
+  Email: "email"
 };
 
 const postprocessors = {
@@ -105,7 +105,7 @@ export const find = data => {
   Object.keys(data).map(search => {
     searches[search] = async (parent, args, { models }, info) => {
       try {
-        const datatype = data[search];
+        let datatype = data[search];
         const value = parent[search];
         let key = datatype in specialKeys ? specialKeys[datatype] : "id";
 
@@ -118,14 +118,14 @@ export const find = data => {
           ))
           .filter(s => s != null);
 
-        logger.debug(`running resolver for ${datatype}`);
+        logger.debug(`running resolver for ${datatype}`, { fields, value, key });
 
         if (datatype[0] == "[") {
           // return array of objects
-          const modelName = datatype.substring(1, datatype.length - 1);
-          key = modelName in specialKeys ? specialKeys[modelName] : "id";
+          datatype = datatype.substring(1, datatype.length - 1);
+          key = datatype in specialKeys ? specialKeys[datatype] : "id";
           return Promise.all(
-            (await models[modelName].findAll({
+            (await models[datatype].findAll({
               where: { [key]: { [models.Op.in]: value } },
               raw: true
             })).map(v => postprocess(datatype, v, fields, models))
