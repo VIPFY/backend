@@ -85,9 +85,8 @@ const postprocessors = {
   Email: async (value, fields, models) => {
     logger.debug("postprocessing Email", { value, fields });
     if (fields.includes("verifyuntil")) {
-      value.verifyuntil = (
-        moment(value.createdat) - EMAIL_VERIFICATION_TIME
-      ).toDate();
+      const verifyuntil = moment(value.createdat) - EMAIL_VERIFICATION_TIME;
+      value.verifyuntil = verifyuntil.toDate();
     }
     return value;
   }
@@ -129,7 +128,7 @@ export const find = data => {
           // return array of objects
           datatype = datatype.substring(1, datatype.length - 1);
           key = datatype in specialKeys ? specialKeys[datatype] : "id";
-          return Promise.all(
+          return await Promise.all(
             (await models[datatype].findAll({
               where: { [key]: { [models.Op.in]: value } },
               raw: true
@@ -143,7 +142,7 @@ export const find = data => {
               return { [key]: value };
             }
           }
-          return postprocess(
+          return await postprocess(
             datatype,
             await models[datatype].findOne({
               where: { [key]: value },
@@ -154,6 +153,7 @@ export const find = data => {
           );
         }
       } catch (err) {
+        console.error(err);
         throw new NormalError({
           message: err.message,
           internalData: { error: "A resolver didn't function properly", data }
