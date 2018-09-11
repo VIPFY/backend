@@ -86,7 +86,7 @@ const postprocessors = {
     logger.debug("postprocessing Email", { value, fields });
     if (fields.includes("verifyuntil")) {
       value.verifyuntil = moment(value.createdat) - EMAIL_VERIFICATION_TIME;
-      logger.debug("postrocessing Email modified value", { value });
+      logger.debug("postrocessing Email modified value", { value, calcualtedValue: moment(value.createdat) - EMAIL_VERIFICATION_TIME });
     }
     return value;
   }
