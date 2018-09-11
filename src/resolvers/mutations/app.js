@@ -270,7 +270,7 @@ export default {
 
           const p2 = models.Right.findOne({
             where: {
-              holder: unitid,
+              holder: giver,
               forunit: departmentid,
               type: { [models.Op.or]: ["admin", "distributeapps"] }
             }
