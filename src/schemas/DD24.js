@@ -1,7 +1,7 @@
 export const types = `
   type Domain {
     id: ID!
-    name: String!
+    domainname: String!
     accountid: String!
     createdate: String!
     renewaldate: String
@@ -19,7 +19,7 @@ export const types = `
 
 # The props which can be send to the DD24 Api
   input DD24 {
-    domain: String!
+    domainname: String!
     renewalmode: RENEWALMODE
     whoisPrivacy: Int
     dns: [DNSRecord]
