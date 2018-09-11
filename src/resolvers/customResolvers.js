@@ -1,7 +1,7 @@
 import { moment } from "moment";
 import { NormalError } from "../errors";
 import logger from "../loggers";
-import { EMAIL_VERIFICATION_TIME } from "../constants"
+import { EMAIL_VERIFICATION_TIME } from "../constants";
 /* eslint-disable no-undef, array-callback-return */
 
 export const implementDate = {
@@ -62,7 +62,7 @@ export const implementJSON = {
 const specialKeys = {
   Human: "unitid",
   Department: "unitid",
-  Email: "unitid",
+  Email: "unitid"
 };
 
 const postprocessors = {
@@ -82,8 +82,10 @@ const postprocessors = {
     }
     return value;
   },
-  Email: async (value, fields, models) => {
-    if (fields.inludes("verifyuntil")) {
+  Email: async (value, fields) => {
+    if (fields.includes("verifyuntil")) {
+      console.log("FIELDS: ", fields);
+      console.log("VALUE: ", value);
       value.verifyuntil = moment(value.createdat) - EMAIL_VERIFICATION_TIME;
     }
     return value;

@@ -40,7 +40,11 @@ export default {
             { transaction: ta }
           );
 
-          let [rights, department, parentUnit] = await Promise.all([p1, p2, p3]);
+          let [rights, department, parentUnit] = await Promise.all([
+            p1,
+            p2,
+            p3
+          ]);
           rights = rights.get();
           department = department.get();
           parentUnit = parentUnit.get();
@@ -58,17 +62,27 @@ export default {
             ta
           );
 
-          const p5 = await models.Login.findOne({ where: { unitid } }, { transaction: ta });
+          const p5 = await models.Login.findOne(
+            { where: { unitid } },
+            { transaction: ta }
+          );
 
           const [user] = await Promise.all([p5, p4]);
 
           user.company = company.id;
           const refreshTokenSecret = user.passwordhash + SECRET_TWO;
-          const [newToken, refreshToken] = await createTokens(user, SECRET, refreshTokenSecret);
+          const [newToken, refreshToken] = await createTokens(
+            user,
+            SECRET,
+            refreshTokenSecret
+          );
 
           return { ok: true, token: newToken, refreshToken };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -93,11 +107,20 @@ export default {
             { where: { unitid }, transaction: ta, returning: true }
           );
 
-          await createLog(ip, "updateStatisticData", { currentData, newData: newData[1] }, id, ta);
+          await createLog(
+            ip,
+            "updateStatisticData",
+            { currentData, newData: newData[1] },
+            id,
+            ta
+          );
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -117,11 +140,20 @@ export default {
 
           parentUnit = parentUnit.get();
 
-          await createLog(ip, "addEmployee", { unitid, departmentid, parentUnit }, adder, ta);
+          await createLog(
+            ip,
+            "addEmployee",
+            { unitid, departmentid, parentUnit },
+            adder,
+            ta
+          );
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -181,7 +213,10 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -197,7 +232,10 @@ export default {
           let unit = await models.Unit.create({}, { transaction: ta });
           unit = unit();
 
-          const p1 = models.DepartmentData.create({ unitid: unit.id, name }, { transaction: ta });
+          const p1 = models.DepartmentData.create(
+            { unitid: unit.id, name },
+            { transaction: ta }
+          );
 
           const p2 = models.ParentUnit.create(
             { parentunit: departmentid, childunit: unit.id },
@@ -208,116 +246,142 @@ export default {
           department = department.get();
           parentUnit = parentUnit.get();
 
-          await createLog(ip, "addSubDepartment", { unit, department, parentUnit }, unitid, ta);
-
-          return { ok: true };
-        } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
-        }
-      })
-  ),
-
-  editDepartmentName: requiresRight(["admin", "manageemployees"]).createResolver(
-    (parent, { departmentid, name }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
-
-          const updatedDepartment = await models.DepartmentData.update(
-            { name },
-            { where: { unitid: departmentid }, returning: true, transaction: ta }
-          );
-
           await createLog(
             ip,
-            "editDepartmentName",
-            { updatedDepartment: updatedDepartment[1] },
+            "addSubDepartment",
+            { unit, department, parentUnit },
             unitid,
             ta
           );
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
 
-  deleteSubDepartment: requiresRight(["admin", "manageemployees"]).createResolver(
-    async (parent, { departmentid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
+  editDepartmentName: requiresRight([
+    "admin",
+    "manageemployees"
+  ]).createResolver((parent, { departmentid, name }, { models, token, ip }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
 
-          const options = { transaction: ta, raw: true };
-          const updateOptions = { where: { id: departmentid }, returning: true, ...options };
-          const destroyData = {
-            where: { unitid: departmentid },
-            options
-          };
+        const updatedDepartment = await models.DepartmentData.update(
+          { name },
+          { where: { unitid: departmentid }, returning: true, transaction: ta }
+        );
 
-          const p1 = models.Unit.findOne(updateOptions);
-          const p2 = models.DepartmentData.findOne(updateOptions);
-          const p3 = models.Email.findOne(destroyData);
-          const p4 = models.Address.findOne(destroyData);
-          const p5 = models.Phone.findOne(destroyData);
-          const p6 = models.ParentUnit.findOne(
-            {
-              where: {
-                [models.Op.or]: [{ childunit: departmentid }, { parentunit: departmentid }]
-              }
-            },
-            options
-          );
+        await createLog(
+          ip,
+          "editDepartmentName",
+          { updatedDepartment: updatedDepartment[1] },
+          unitid,
+          ta
+        );
 
-          const p7 = models.Unit.update({ deleted: true }, updateOptions);
-          const p8 = models.DepartmentData.update({ name: "Deleted Department" }, updateOptions);
-          const p9 = models.Email.destroy(destroyData);
-          const p10 = models.Address.destroy(destroyData);
-          const p11 = models.Phone.destroy(destroyData);
-          const p12 = models.ParentUnit.destroy(
-            {
-              where: {
-                [models.Op.or]: [{ childunit: departmentid }, { parentunit: departmentid }]
-              }
-            },
-            options
-          );
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    })
+  ),
 
-          const [
+  deleteSubDepartment: requiresRight([
+    "admin",
+    "manageemployees"
+  ]).createResolver(async (parent, { departmentid }, { models, token, ip }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        const options = { transaction: ta, raw: true };
+        const updateOptions = {
+          where: { id: departmentid },
+          returning: true,
+          ...options
+        };
+        const destroyData = {
+          where: { unitid: departmentid },
+          options
+        };
+
+        const p1 = models.Unit.findOne(updateOptions);
+        const p2 = models.DepartmentData.findOne(updateOptions);
+        const p3 = models.Email.findOne(destroyData);
+        const p4 = models.Address.findOne(destroyData);
+        const p5 = models.Phone.findOne(destroyData);
+        const p6 = models.ParentUnit.findOne(
+          {
+            where: {
+              [models.Op.or]: [
+                { childunit: departmentid },
+                { parentunit: departmentid }
+              ]
+            }
+          },
+          options
+        );
+
+        const p7 = models.Unit.update({ deleted: true }, updateOptions);
+        const p8 = models.DepartmentData.update(
+          { name: "Deleted Department" },
+          updateOptions
+        );
+        const p9 = models.Email.destroy(destroyData);
+        const p10 = models.Address.destroy(destroyData);
+        const p11 = models.Phone.destroy(destroyData);
+        const p12 = models.ParentUnit.destroy(
+          {
+            where: {
+              [models.Op.or]: [
+                { childunit: departmentid },
+                { parentunit: departmentid }
+              ]
+            }
+          },
+          options
+        );
+
+        const [
+          oldUnit,
+          oldDepartment,
+          oldEmail,
+          oldAddress,
+          oldPhone,
+          oldParentUnit
+        ] = await Promise.all([p1, p2, p3, p4, p5, p6]);
+        await Promise.all([p7, p8, p9, p10, p11, p12]);
+
+        await createLog(
+          ip,
+          "deleteSubDepartment",
+          {
             oldUnit,
             oldDepartment,
             oldEmail,
             oldAddress,
             oldPhone,
             oldParentUnit
-          ] = await Promise.all([p1, p2, p3, p4, p5, p6]);
-          await Promise.all([p7, p8, p9, p10, p11, p12]);
+          },
+          unitid,
+          ta
+        );
 
-          await createLog(
-            ip,
-            "deleteSubDepartment",
-            {
-              oldUnit,
-              oldDepartment,
-              oldEmail,
-              oldAddress,
-              oldPhone,
-              oldParentUnit
-            },
-            unitid,
-            ta
-          );
-
-          return { ok: true };
-        } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
-        }
-      })
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    })
   ),
 
   removeEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
@@ -333,7 +397,8 @@ export default {
           });
 
           await models.ParentUnit.destroy({
-            where: { parentunit: departmentid, childunit: unitid, transaction: ta }
+            where: { parentunit: departmentid, childunit: unitid },
+            transaction: ta
           });
 
           await createLog(
@@ -348,7 +413,10 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -362,22 +430,34 @@ export default {
           } = decode(token);
 
           const p1 = await models.Unit.findById(unitid);
-          const p2 = models.Human.findOne({ where: { unitid }, transaction: ta, raw: true });
-          const p3 = models.Email.findOne({ where: { unitid }, raw: true, transaction: ta });
-          const p4 = models.Address.findOne({ where: { unitid }, raw: true, transaction: ta });
+          const p2 = models.Human.findOne({
+            where: { unitid },
+            transaction: ta,
+            raw: true
+          });
+          const p3 = models.Email.findOne({
+            where: { unitid },
+            raw: true,
+            transaction: ta
+          });
+          const p4 = models.Address.findOne({
+            where: { unitid },
+            raw: true,
+            transaction: ta
+          });
           const p5 = models.ParentUnit.destroy({
             where: { childunit: unitid },
             raw: true,
             transaction: ta
           });
 
-          const [oldUnit, oldHuman, oldEmail, oldAddress, oldParentUnit] = await Promise.all([
-            p1,
-            p2,
-            p3,
-            p4,
-            p5
-          ]);
+          const [
+            oldUnit,
+            oldHuman,
+            oldEmail,
+            oldAddress,
+            oldParentUnit
+          ] = await Promise.all([p1, p2, p3, p4, p5]);
 
           if (oldUnit.deleted) throw new Error("User already deleted!");
 
@@ -393,7 +473,10 @@ export default {
             { transaction: ta, returning: true }
           );
 
-          const p8 = models.Email.destroy({ where: { unitid } }, { transaction: ta });
+          const p8 = models.Email.destroy(
+            { where: { unitid } },
+            { transaction: ta }
+          );
 
           const p9 = models.Address.update(
             { address: { city: "deleted" }, description: "deleted" },
@@ -428,7 +511,10 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   )
