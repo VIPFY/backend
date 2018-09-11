@@ -115,7 +115,7 @@ export default {
             { transaction: ta }
           );
 
-          parentUnit = parentUnit();
+          parentUnit = parentUnit.get();
 
           await createLog(ip, "addEmployee", { unitid, departmentid, parentUnit }, adder, ta);
 
@@ -147,7 +147,7 @@ export default {
           const passwordhash = await bcrypt.hash("test", 12);
 
           let unit = await models.Unit.create({}, { transaction: ta });
-          unit = unit();
+          unit = unit.get();
 
           const p1 = models.Human.create(
             { firstname, unitid: unit.id, passwordhash },
@@ -165,9 +165,9 @@ export default {
           );
 
           let [human, newEmail, parentUnit] = await Promise.all([p1, p2, p3]);
-          human = human();
-          newEmail = newEmail();
-          parentUnit = parentUnit();
+          human = human.get();
+          newEmail = newEmail.get();
+          parentUnit = parentUnit.get();
 
           await createLog(
             ip,
@@ -205,8 +205,8 @@ export default {
           );
 
           let [department, parentUnit] = await Promise.all([p1, p2]);
-          department = department();
-          parentUnit = parentUnit();
+          department = department.get();
+          parentUnit = parentUnit.get();
 
           await createLog(ip, "addSubDepartment", { unit, department, parentUnit }, unitid, ta);
 
