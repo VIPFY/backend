@@ -103,7 +103,9 @@ export default {
               }
             }
 
-            if (licence.key && licence.appid != 11) {
+            if (licence.appid == 4) {
+              // just forward the key for demo purposes, until pipedrive is implemented
+            } else if (licence.key && licence.appid != 11) {
               licence.key = Services.getLoginData(
                 models,
                 licence.appid,
@@ -111,7 +113,7 @@ export default {
                 licence.boughtplanid,
                 undefined
               );
-            } else {
+            } else if (licence.key) {
               const domain = await models.sequelize.query(
                 `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
                   boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
