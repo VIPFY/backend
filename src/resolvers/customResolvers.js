@@ -85,8 +85,9 @@ const postprocessors = {
   Email: async (value, fields, models) => {
     logger.debug("postprocessing Email", { value, fields });
     if (fields.includes("verifyuntil")) {
-      value.verifyuntil = moment(value.createdat) - EMAIL_VERIFICATION_TIME;
-      logger.debug("postrocessing Email modified value", { value, calcualtedValue: moment(value.createdat) - EMAIL_VERIFICATION_TIME });
+      value.verifyuntil = (
+        moment(value.createdat) - EMAIL_VERIFICATION_TIME
+      ).toDate();
     }
     return value;
   }
@@ -118,7 +119,11 @@ export const find = data => {
           ))
           .filter(s => s != null);
 
-        logger.debug(`running resolver for ${datatype}`, { fields, value, key });
+        logger.debug(`running resolver for ${datatype}`, {
+          fields,
+          value,
+          key
+        });
 
         if (datatype[0] == "[") {
           // return array of objects
@@ -131,7 +136,7 @@ export const find = data => {
             })).map(v => postprocess(datatype, v, fields, models))
           );
         } else {
-          if (fields == ["id"]) {
+          if (fields == [key]) {
             if (parent[search] === null) {
               return null;
             } else {
