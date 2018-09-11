@@ -156,69 +156,71 @@ export default {
     }
   ),
 
-  fetchUsersOwnLicences: async (parent, { unitid }, { models, token }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
+  fetchUsersOwnLicences: requiresAuth.createResolver(
+    async (parent, { unitid }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
 
-      const departments = await models.sequelize.query(
-        "Select id from getDepartments(:company)",
-        {
-          replacements: { company },
-          type: models.sequelize.QueryTypes.SELECT
-        }
-      );
+        const departments = await models.sequelize.query(
+          "Select id from getDepartments(:company)",
+          {
+            replacements: { company },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
 
-      const departmentIds = Object.values(departments).map(dp => dp.id);
+        const departmentIds = Object.values(departments).map(dp => dp.id);
 
-      const departmentPlans = await models.DepartmentApp.findAll({
-        where: {
-          departmentid: departmentIds
-        },
-        raw: true
-      });
+        const departmentPlans = await models.DepartmentApp.findAll({
+          where: {
+            departmentid: departmentIds
+          },
+          raw: true
+        });
 
-      const departmentPlanIds = Object.values(departmentPlans).map(
-        dp => dp.boughtplanid
-      );
+        const departmentPlanIds = Object.values(departmentPlans).map(
+          dp => dp.boughtplanid
+        );
 
-      const boughtPlans = await models.BoughtPlan.findAll({
-        attributes: ["id"],
-        where: { id: { [models.Op.notIn]: departmentPlanIds } },
-        raw: true
-      });
+        const boughtPlans = await models.BoughtPlan.findAll({
+          attributes: ["id"],
+          where: { id: { [models.Op.notIn]: departmentPlanIds } },
+          raw: true
+        });
 
-      const bpIds = Object.values(boughtPlans).map(bp => bp.id);
+        const bpIds = Object.values(boughtPlans).map(bp => bp.id);
 
-      const licences = await models.Licence.findAll({
-        where: { unitid, boughtplanid: bpIds }
-      });
+        const licences = await models.Licence.findAll({
+          where: { unitid, boughtplanid: bpIds }
+        });
 
-      const startTime = Date.now();
+        const startTime = Date.now();
 
-      licences.forEach(licence => {
-        if (licence.disabled) {
-          licence.agreed = false;
-          licence.key = null;
-        }
-
-        if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
-          licence.key = null;
-        }
-
-        if (licence.endtime) {
-          if (Date.parse(licence.endtime) < startTime) {
+        licences.forEach(licence => {
+          if (licence.disabled) {
+            licence.agreed = false;
             licence.key = null;
           }
-        }
-      });
 
-      return licences;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+          if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
+            licence.key = null;
+          }
+
+          if (licence.endtime) {
+            if (Date.parse(licence.endtime) < startTime) {
+              licence.key = null;
+            }
+          }
+        });
+
+        return licences;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  },
+  ),
 
   fetchUnitApps: requiresRight(["distributelicences", "admin"]).createResolver(
     async (parent, { departmentid }, { models }) => {

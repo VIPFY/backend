@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { userPicFolder } from "../../constants";
 import { requiresAuth, requiresRight } from "../../helpers/permissions";
-import { deleteFile } from "../../services/gcloud";
+import { deleteFile, uploadFile } from "../../services/gcloud";
 import { createTokens } from "../../helpers/auth";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
@@ -509,6 +509,43 @@ export default {
           );
 
           return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  updateCompanyPic: requiresRight(["admin"]).createResolver(
+    async (parent, { file }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const profilepicture = await uploadFile(file, userPicFolder);
+          const {
+            user: { company: id }
+          } = decode(token);
+
+          const oldUnit = await models.Unit.findOne({
+            where: { id },
+            raw: true
+          });
+
+          const updatedUnit = await models.Unit.update(
+            { profilepicture },
+            { where: { id }, returning: true, transaction: ta }
+          );
+
+          await createLog(
+            ip,
+            "updateCompanyPic",
+            { oldUnit, updatedUnit: updatedUnit[1] },
+            id,
+            ta
+          );
+
+          return profilepicture;
         } catch (err) {
           throw new NormalError({
             message: err.message,

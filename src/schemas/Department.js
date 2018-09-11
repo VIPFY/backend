@@ -70,6 +70,7 @@ export const queries = `
 
 export const mutations = `
   createCompany(name: String!): RegisterResponse!
+  updateCompanyPic(file: File!): String!
   updateStatisticData(data: JSON!): Response!
 
   addSubDepartment(departmentid: Int! ,name: String!): Response!
