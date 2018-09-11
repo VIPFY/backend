@@ -68,11 +68,10 @@ export default {
           );
 
           const [user] = await Promise.all([p5, p4]);
-
-          user.company = company.id;
+          
           const refreshTokenSecret = user.passwordhash + SECRET_TWO;
           const [newToken, refreshToken] = await createTokens(
-            user,
+            { unitid, company: company.id },
             SECRET,
             refreshTokenSecret
           );
