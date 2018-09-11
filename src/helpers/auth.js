@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { pick } from "lodash";
 import { parentAdminCheck } from "./functions";
+import { AuthError } from "../errors";
 
 export const createTokens = async (user, SECRET, SECRET_TWO) => {
   try {
@@ -59,4 +60,51 @@ export const refreshTokens = async (refreshToken, models, SECRET, SECRET_TWO) =>
     console.log(err);
     return {};
   }
+};
+
+const NodeCache = require("node-cache");
+
+const unitAuthCache = new NodeCache({
+  checkperiod: 120,
+  stdTTL: 60,
+  deleteOnExpire: true
+});
+
+const getAuthentificationObject = async (models, unitid) => {
+  let permissions = unitAuthCache.get(unitid);
+  if (permissions !== undefined) return permissions;
+  const unit = await models.Unit.findById(unitid, { raw: true });
+  permissions = {
+    suspended: unit.suspended,
+    banned: unit.banned,
+    deleted: unit.banned
+  };
+  unitAuthCache.set(unitid, permissions);
+  return permissions;
+};
+
+const checkAuthentificationObject = (permissions, name) => {
+  if (permissions.suspended) {
+    throw new AuthError({ message: `${name} is suspended!` });
+  }
+  if (permissions.banned) {
+    throw new AuthError({ message: `${name} is banned!` });
+  }
+  if (permissions.deleted) {
+    throw new AuthError({ message: `${name} is deleted!` });
+  }
+};
+
+export const checkAuthentification = async (models, unitid, company) => {
+  if (company === undefined || company === null || company === "null") {
+    company = unitid; // a bit of a hack to make the code simpler
+  }
+
+  const [userPerm, companyPerm] = await Promise.all([
+    getAuthentificationObject(models, unitid),
+    getAuthentificationObject(models, company)
+  ]);
+
+  checkAuthentificationObject(userPerm, "User");
+  checkAuthentificationObject(companyPerm, "Company");
 };

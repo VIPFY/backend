@@ -1,7 +1,7 @@
 import { random } from "lodash";
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
-import { createTokens } from "../../helpers/auth";
+import { createTokens, checkAuthentification } from "../../helpers/auth";
 import { sendRegistrationEmail } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
 import { parentAdminCheck, createLog } from "../../helpers/functions";
@@ -125,30 +125,24 @@ export default {
   ) => {
     try {
       const message = "Email or Password incorrect!";
+
       const emailExists = await models.Login.findOne({
         where: { email },
         raw: true
       });
 
       if (!emailExists) throw new Error(message);
-      if (emailExists.verified == false)
-        throw new Error("Sorry, this email isn't verified yet.");
-      if (emailExists.banned == true)
-        throw new Error("Sorry, this account is banned!");
-      if (emailExists.suspended == true)
-        throw new Error("Sorry, this account is suspended!");
-      if (emailExists.deleted == true) {
-        throw new Error("Sorry, this account doesn't exist anymore.");
-      }
 
-      const basicUser = await models.User.findOne({
-        where: { id: emailExists.unitid }
-      });
       const valid = await bcrypt.compare(password, emailExists.passwordhash);
       if (!valid) throw new Error(message);
 
+      checkAuthentification(models, emailExists.unitid, emailExists.company);
+
       const refreshTokenSecret = emailExists.passwordhash + SECRET_TWO;
-      const p1 = parentAdminCheck(basicUser);
+
+      const p1 = models.User.findOne({
+        where: { id: emailExists.unitid }
+      });
       const p2 = createLog(
         ip,
         "signIn",
@@ -160,7 +154,6 @@ export default {
       const [user] = await Promise.all([p1, p2]);
       // User doesn't have the property unitid, so we have to pass emailExists for
       // the token creation
-      emailExists.company = user.company;
       const [token, refreshToken] = await createTokens(
         emailExists,
         SECRET,

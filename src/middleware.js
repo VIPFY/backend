@@ -9,45 +9,13 @@ import formidable from "formidable";
 import mkdirp from "mkdirp";
 import bcrypt from "bcrypt";
 import models from "@vipfy-private/sequelize-setup";
-import { refreshTokens } from "./helpers/auth";
+import { refreshTokens, checkAuthentification } from "./helpers/auth";
 import Utility from "./helpers/createHmac";
 import logger from "./loggers";
 import { AuthError } from "./errors";
 
-const NodeCache = require("node-cache");
 
 const { SECRET, SECRET_TWO, SECRET_THREE } = process.env;
-
-const unitPermissionCache = new NodeCache({
-  checkperiod: 120,
-  stdTTL: 60,
-  deleteOnExpire: true
-});
-
-const getUnitPermission = async unitid => {
-  let permissions = unitPermissionCache.get(unitid);
-  if (permissions !== undefined) return permissions;
-  const unit = await models.Unit.findById(unitid, { raw: true });
-  permissions = {
-    suspended: unit.suspended,
-    banned: unit.banned,
-    deleted: unit.banned
-  };
-  unitPermissionCache.set(unitid, permissions);
-  return permissions;
-};
-
-const checkUnitPermissions = (permissions, name) => {
-  if (permissions.suspended) {
-    throw new AuthError({ message: `${name} is suspended!` });
-  }
-  if (permissions.banned) {
-    throw new AuthError({ message: `${name} is banned!` });
-  }
-  if (permissions.deleted) {
-    throw new AuthError({ message: `${name} is deleted!` });
-  }
-};
 
 /* eslint-disable consistent-return, prefer-destructuring */
 export const authMiddleware = async (req, res, next) => {
@@ -56,20 +24,9 @@ export const authMiddleware = async (req, res, next) => {
     try {
       const { user } = await jwt.verify(token, SECRET);
       req.user = user;
-      let { unitid, company } = user;
+      const { unitid, company } = user;
 
-
-      if (company === undefined || company === null || company === "null") {
-        company = unitid; // a bit of a hack to make the code simpler
-      }
-
-      const [userPerm, companyPerm] = await Promise.all([
-        getUnitPermission(unitid),
-        getUnitPermission(company)
-      ]);
-
-      checkUnitPermissions(userPerm, "User");
-      checkUnitPermissions(companyPerm, "Company");
+      checkAuthentification(unitid, company);
     } catch (err) {
       console.error(err);
       if (err.name == "TokenExpiredError") {
