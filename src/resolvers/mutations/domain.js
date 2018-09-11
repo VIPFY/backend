@@ -11,141 +11,150 @@ import {
 import { PartnerError } from "../../errors";
 
 export default {
-  registerDomain: async (parent, { domainData }, { models, token, ip }) =>
-    models.sequelize.transaction(async ta => {
-      const {
-        user: { unitid, company }
-      } = decode(token);
+  registerDomain: requiresRight(["admin", "registerdomain"]).createResolver(
+    async (parent, { domainData }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid, company }
+        } = decode(token);
 
-      try {
-        const hasAccount = await models.Domain.findOne({
-          where: { unitid: company },
-          raw: true
-        });
+        try {
+          const hasAccount = await models.Domain.findOne({
+            where: { unitid: company },
+            raw: true
+          });
 
-        let register;
-        let partnerLogs = {};
+          let register;
+          let partnerLogs = {};
+          domainData.renewalmode = "AUTORENEW";
 
-        if (hasAccount) {
-          const mergedData = {
-            cid: hasAccount.accountid,
-            period: 1,
-            ...domainData
-          };
-          register = await dd24Api("AddDomain", mergedData);
-          domainData.accountid = register.cid;
-        } else {
-          const accountData = await models.sequelize.query(
-            `SELECT ad.address, ad.country, pd.number as phone FROM unit_data hd
+          if (hasAccount) {
+            const mergedData = {
+              cid: hasAccount.accountid,
+              period: 1,
+              ...domainData
+            };
+
+            register = await dd24Api("AddDomain", mergedData);
+
+            if (register.code == "200") {
+              domainData.accountid = hasAccount.accountid;
+            } else {
+              throw new Error(register.description);
+            }
+          } else {
+            const accountData = await models.sequelize.query(
+              `SELECT ad.address, ad.country, pd.number as phone FROM unit_data hd
             INNER JOIN address_data ad ON ad.unitid = hd.id
             INNER JOIN phone_data pd ON pd.unitid = hd.id WHERE hd.id =
             :company AND ('domain' = ANY(ad.tags) OR 'main' = ANY(ad.tags))`,
-            {
-              replacements: { company },
-              type: models.sequelize.QueryTypes.SELECT
+              {
+                replacements: { company },
+                type: models.sequelize.QueryTypes.SELECT
+              }
+            );
+
+            const accountDataCorrect = recursiveAddressCheck(accountData);
+
+            if (!accountDataCorrect) {
+              throw new Error(
+                "Please make sure you have a valid address and retry then."
+              );
             }
+
+            const { address, ...account } = accountDataCorrect;
+            const { street, zip, city } = address;
+
+            const newOptions = {
+              ...domainData,
+              ...account,
+              title: "Mr",
+              firstname: "Domain",
+              lastname: "Administrator",
+              email: "domains@vipfy.com",
+              period: 1,
+              street,
+              zip,
+              city,
+              unitid: company
+            };
+
+            const organization = await models.Department.findOne({
+              attributes: ["name"],
+              raw: true,
+              where: { unitid: company }
+            });
+            newOptions.organization = organization.name;
+
+            register = await dd24Api("AddDomain", newOptions);
+            partnerLogs = newOptions;
+            partnerLogs.domain = register;
+
+            if (register.code == "200") {
+              domainData.accountid = register.cid;
+            } else {
+              throw new Error(register.description);
+            }
+          }
+
+          const renewaldate = moment(Date.now())
+            .add(1, "year")
+            .subtract(1, "day");
+
+          const domain = await models.Domain.create(
+            {
+              ...domainData,
+              accountemail: "domains@vipfy.com",
+              domainname: domainData.domain,
+              renewalmode: "AUTORENEWAL",
+              renewaldate,
+              unitid: company
+            },
+            { returning: true }
           );
 
-          const accountDataCorrect = recursiveAddressCheck(accountData);
+          const p1 = createLog(
+            ip,
+            "registerDomain",
+            {
+              ...partnerLogs,
+              domain
+            },
+            unitid,
+            ta
+          );
 
-          if (!accountDataCorrect) {
-            throw new Error(
-              "Please make sure you have a valid address and retry then."
-            );
-          }
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: `${domainData.domain} successfully registered.`,
+              icon: "laptop",
+              link: "domains"
+            },
+            ta
+          );
 
-          const { address, ...account } = accountDataCorrect;
-          const { street, zip, city } = address;
+          await Promise.all([p1, p2]);
 
-          const newOptions = {
-            ...domainData,
-            ...account,
-            title: "Mr",
-            firstname: "Domain",
-            lastname: "Administrator",
-            email: "domains@vipfy.com",
-            period: 1,
-            street,
-            zip,
-            city,
-            unitid: company
-          };
-
-          const organization = await models.Department.findOne({
-            attributes: ["name"],
-            raw: true,
-            where: { unitid: company }
-          });
-          newOptions.organization = organization.name;
-          console.log(newOptions);
-          register = await dd24Api("AddDomain", newOptions);
-          partnerLogs = newOptions;
-          partnerLogs.domain = register;
-        }
-
-        if (register.code == "200") {
-          domainData.accountid = register.cid;
-        } else {
-          throw new Error(register.description);
-        }
-
-        const renewaldate = moment(Date.now())
-          .add(1, "year")
-          .subtract(1, "day");
-
-        const domain = await models.Domain.create(
-          {
-            accountid: domainData.accountid,
-            accountemail: "domains@vipfy.com",
-            domainname: domainData.domain,
-            whoisprivacy: domainData.whoisprivacy,
-            renewaldate,
-            unitid
-          },
-          { returning: true }
-        );
-
-        const p1 = createLog(
-          ip,
-          "registerDomain",
-          {
-            ...partnerLogs,
-            domain
-          },
-          unitid,
-          ta
-        );
-
-        const p2 = createNotification(
-          {
+          return domain;
+        } catch (err) {
+          createNotification({
             receiver: unitid,
-            message: `${domainData.domain} successfully registered.`,
-            icon: "laptop",
+            message: `Registration of ${domainData.domain} failed.`,
+            icon: "bug",
             link: "domains"
-          },
-          ta
-        );
+          });
 
-        await Promise.all([p1, p2]);
-
-        return { ok: true };
-      } catch (err) {
-        createNotification({
-          receiver: unitid,
-          message: `Registration of ${domainData.domain} failed.`,
-          icon: "bug",
-          link: "domains"
-        });
-
-        throw new PartnerError({
-          message: err.message,
-          internalData: {
-            err,
-            partner: "DD24"
-          }
-        });
-      }
-    }),
+          throw new PartnerError({
+            message: err.message,
+            internalData: {
+              err,
+              partner: "DD24"
+            }
+          });
+        }
+      })
+  ),
 
   /**
    * Update Whois Privacy or Renewal Mode of a domain. Updating both at the same
