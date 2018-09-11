@@ -52,7 +52,7 @@ module.exports = {
         SSL_CERT: '/etc/letsencrypt/live/vipfy.com/cert.pem',
         GCLOUD_TRACE_NEW_CONTEXT: 1
       },
-      'post-deploy' : 'npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env production'
+      'post-deploy' : 'rm -rf node_modules/\@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env production'
     },
     dev : {
       user : 'node',
@@ -68,7 +68,7 @@ module.exports = {
         GCLOUD_TRACE_NEW_CONTEXT: 1,
         USE_VOYAGER: 1
       },
-      'post-deploy' : 'npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js'
+      'post-deploy' : 'rm -rf node_modules/\@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js'
     },
     conf : {
       user : 'node',
@@ -84,7 +84,7 @@ module.exports = {
         GCLOUD_TRACE_NEW_CONTEXT: 1,
         USE_VOYAGER: 1
       },
-      'post-deploy' : 'npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env conf'
+      'post-deploy' : 'rm -rf node_modules/\@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env conf'
     }
   }
 };

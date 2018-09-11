@@ -84,8 +84,11 @@ const postprocessors = {
   },
   Email: async (value, fields, models) => {
     logger.debug("postprocessing Email", { value, fields });
-    if (fields.includes("verifyuntil")) {
-      value.verifyuntil = moment(value.createdat) - EMAIL_VERIFICATION_TIME;
+    if (fields.includes("verifyuntil") && !value.verified) {
+      const verifyuntil = moment(value.createdat).subtract(
+        EMAIL_VERIFICATION_TIME
+      );
+      value.verifyuntil = new Date(verifyuntil.format());
     }
     return value;
   }
@@ -117,27 +120,31 @@ export const find = data => {
           ))
           .filter(s => s != null);
 
-        logger.debug(`running resolver for ${datatype}`, { fields, value, key });
+        logger.debug(`running resolver for ${datatype}`, {
+          fields,
+          value,
+          key
+        });
 
         if (datatype[0] == "[") {
           // return array of objects
           datatype = datatype.substring(1, datatype.length - 1);
           key = datatype in specialKeys ? specialKeys[datatype] : "id";
-          return Promise.all(
+          return await Promise.all(
             (await models[datatype].findAll({
               where: { [key]: { [models.Op.in]: value } },
               raw: true
             })).map(v => postprocess(datatype, v, fields, models))
           );
         } else {
-          if (fields == ["id"]) {
+          if (fields == [key]) {
             if (parent[search] === null) {
               return null;
             } else {
               return { [key]: value };
             }
           }
-          return postprocess(
+          return await postprocess(
             datatype,
             await models[datatype].findOne({
               where: { [key]: value },
@@ -148,6 +155,7 @@ export const find = data => {
           );
         }
       } catch (err) {
+        console.error(err);
         throw new NormalError({
           message: err.message,
           internalData: { error: "A resolver didn't function properly", data }
