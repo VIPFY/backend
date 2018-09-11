@@ -103,7 +103,7 @@ export default {
               }
             }
 
-            if (licence.key == 4) {
+            if (licence.appid == 4) {
               // just forward the key for demo purposes, until pipedrive is implemented
             } if (licence.key && licence.appid != 11) {
               licence.key = Services.getLoginData(
