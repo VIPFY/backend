@@ -113,7 +113,7 @@ export default {
                 licence.boughtplanid,
                 undefined
               );
-            } else {
+            } else if (licence.key) {
               const domain = await models.sequelize.query(
                 `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
                   boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
