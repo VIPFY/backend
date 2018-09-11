@@ -83,9 +83,8 @@ const postprocessors = {
     return value;
   },
   Email: async (value, fields) => {
+    logger.debug("postprocessing Email", { value, fields, models });
     if (fields.includes("verifyuntil")) {
-      console.log("FIELDS: ", fields);
-      console.log("VALUE: ", value);
       value.verifyuntil = moment(value.createdat) - EMAIL_VERIFICATION_TIME;
     }
     return value;
