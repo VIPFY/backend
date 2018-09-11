@@ -87,6 +87,7 @@ export default {
     childid: "Unit",
     employee: "User"
   }),
+  Domain: find({ unitid: "Department" }),
   Email: find(unit),
   Human: find(unit),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),

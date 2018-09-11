@@ -52,7 +52,7 @@ export const types = `
 `;
 
 export const queries = `
-  fetchDomains: [Licence]!
+  fetchDomains: [Domain]!
 `;
 
 export const mutations = `
