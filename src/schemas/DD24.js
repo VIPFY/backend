@@ -3,8 +3,8 @@ export const types = `
     id: ID!
     domainname: String!
     accountid: String!
-    createdate: String!
-    renewaldate: String
+    createdate: Date!
+    renewaldate: Date
     renewalmode: String!
     whoisprivacy: Boolean!
     statisticdata: JSON
@@ -56,6 +56,6 @@ export const queries = `
 `;
 
 export const mutations = `
-  registerDomain(domainData: DD24!): Response!
+  registerDomain(domainData: DD24!): Domain!
   updateDomain(domainData: DD24!, licenceid: Int!): Response!
 `;
