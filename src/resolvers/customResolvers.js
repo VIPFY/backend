@@ -1,4 +1,4 @@
-import { moment } from "moment";
+import moment from "moment";
 import { NormalError } from "../errors";
 import logger from "../loggers";
 import { EMAIL_VERIFICATION_TIME } from "../constants";
