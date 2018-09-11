@@ -8,7 +8,11 @@ import { parentAdminCheck, createLog } from "../../helpers/functions";
 import { AuthError } from "../../errors";
 
 export default {
-  signUp: async (parent, { email, newsletter }, { models, SECRET, SECRET_TWO }) =>
+  signUp: async (
+    parent,
+    { email, newsletter },
+    { models, SECRET, SECRET_TWO }
+  ) =>
     models.sequelize.transaction(async ta => {
       try {
         // Check whether the email is already in use
@@ -22,7 +26,7 @@ export default {
 
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
-          { unitid: unit.id, passwordhash, firstname: email },
+          { unitid: unit.id, passwordhash },
           { transaction: ta }
         );
         // delete verified: true
@@ -40,7 +44,11 @@ export default {
         // sendRegistrationEmail(email, passwordhash);
 
         const refreshSecret = user.passwordhash + SECRET_TWO;
-        const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);
+        const [token, refreshToken] = await createTokens(
+          user,
+          SECRET,
+          refreshSecret
+        );
 
         return { ok: true, token, refreshToken };
       } catch (err) {
@@ -48,7 +56,11 @@ export default {
       }
     }),
 
-  signUpConfirm: async (parent, { email, password }, { models, SECRET, SECRET_TWO, ip }) => {
+  signUpConfirm: async (
+    parent,
+    { email, password },
+    { models, SECRET, SECRET_TWO, ip }
+  ) => {
     const emailExists = await models.Email.findOne({ where: { email } });
     if (!emailExists) throw new Error("Email not found!");
 
@@ -60,7 +72,9 @@ export default {
     return models.sequelize.transaction(async ta => {
       try {
         const p1 = bcrypt.hash(password, 12);
-        const p2 = models.Human.findOne({ where: { unitid: emailExists.unitid } });
+        const p2 = models.Human.findOne({
+          where: { unitid: emailExists.unitid }
+        });
         const [pw, user] = await Promise.all([p1, p2]);
 
         const p3 = models.Human.update(
@@ -73,12 +87,22 @@ export default {
           { where: { email }, raw: true, transaction: ta }
         );
 
-        const p5 = createLog(ip, "signUpConfirm", { user, email }, user.unitid, ta);
+        const p5 = createLog(
+          ip,
+          "signUpConfirm",
+          { user, email },
+          user.unitid,
+          ta
+        );
 
         await Promise.all([p3, p4, p5]);
 
         const refreshSecret = pw + SECRET_TWO;
-        const [token, refreshToken] = await createTokens(user, SECRET, refreshSecret);
+        const [token, refreshToken] = await createTokens(
+          user,
+          SECRET,
+          refreshSecret
+        );
 
         return {
           ok: true,
@@ -86,37 +110,62 @@ export default {
           refreshToken
         };
       } catch (err) {
-        throw new AuthError({ message: "Couldn't activate user!", internalData: { err } });
+        throw new AuthError({
+          message: "Couldn't activate user!",
+          internalData: { err }
+        });
       }
     });
   },
 
-  signIn: async (parent, { email, password }, { models, SECRET, SECRET_TWO, ip }) => {
+  signIn: async (
+    parent,
+    { email, password },
+    { models, SECRET, SECRET_TWO, ip }
+  ) => {
     try {
       const message = "Email or Password incorrect!";
-      const emailExists = await models.Login.findOne({ where: { email }, raw: true });
+      const emailExists = await models.Login.findOne({
+        where: { email },
+        raw: true
+      });
 
       if (!emailExists) throw new Error(message);
-      if (emailExists.verified == false) throw new Error("Sorry, this email isn't verified yet.");
-      if (emailExists.banned == true) throw new Error("Sorry, this account is banned!");
-      if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended!");
+      if (emailExists.verified == false)
+        throw new Error("Sorry, this email isn't verified yet.");
+      if (emailExists.banned == true)
+        throw new Error("Sorry, this account is banned!");
+      if (emailExists.suspended == true)
+        throw new Error("Sorry, this account is suspended!");
       if (emailExists.deleted == true) {
         throw new Error("Sorry, this account doesn't exist anymore.");
       }
 
-      const basicUser = await models.User.findOne({ where: { id: emailExists.unitid } });
+      const basicUser = await models.User.findOne({
+        where: { id: emailExists.unitid }
+      });
       const valid = await bcrypt.compare(password, emailExists.passwordhash);
       if (!valid) throw new Error(message);
 
       const refreshTokenSecret = emailExists.passwordhash + SECRET_TWO;
       const p1 = parentAdminCheck(basicUser);
-      const p2 = createLog(ip, "signIn", { user: emailExists, email }, emailExists.unitid, null);
+      const p2 = createLog(
+        ip,
+        "signIn",
+        { user: emailExists, email },
+        emailExists.unitid,
+        null
+      );
 
       const [user] = await Promise.all([p1, p2]);
       // User doesn't have the property unitid, so we have to pass emailExists for
       // the token creation
       emailExists.company = user.company;
-      const [token, refreshToken] = await createTokens(emailExists, SECRET, refreshTokenSecret);
+      const [token, refreshToken] = await createTokens(
+        emailExists,
+        SECRET,
+        refreshTokenSecret
+      );
 
       return { ok: true, user, token, refreshToken };
     } catch (err) {
@@ -125,11 +174,16 @@ export default {
   },
 
   changePassword: requiresAuth.createResolver(
-    async (parent, { pw, newPw, confirmPw }, { models, token, SECRET, SECRET_TWO, ip }) =>
+    async (
+      parent,
+      { pw, newPw, confirmPw },
+      { models, token, SECRET, SECRET_TWO, ip }
+    ) =>
       models.sequelize.transaction(async ta => {
         try {
           if (newPw != confirmPw) throw new Error("New passwords don't match!");
-          if (pw == newPw) throw new Error("Current and new password can't be the same one!");
+          if (pw == newPw)
+            throw new Error("Current and new password can't be the same one!");
 
           const {
             user: { unitid }
@@ -186,12 +240,18 @@ export default {
   forgotPassword: async (parent, { email }, { models, ip }) =>
     models.sequelize.transaction(async ta => {
       try {
-        const emailExists = await models.Login.findOne({ where: { email }, raw: true });
+        const emailExists = await models.Login.findOne({
+          where: { email },
+          raw: true
+        });
 
         if (!emailExists) throw new Error("Email or Password incorrect!");
-        if (emailExists.verified == false) throw new Error("Sorry, this email isn't verified yet.");
-        if (emailExists.banned == true) throw new Error("Sorry, this account is banned!");
-        if (emailExists.suspended == true) throw new Error("Sorry, this account is suspended!");
+        if (emailExists.verified == false)
+          throw new Error("Sorry, this email isn't verified yet.");
+        if (emailExists.banned == true)
+          throw new Error("Sorry, this account is banned!");
+        if (emailExists.suspended == true)
+          throw new Error("Sorry, this account is suspended!");
 
         const user = await models.Human.findOne({
           where: { unitid: emailExists.unitid },

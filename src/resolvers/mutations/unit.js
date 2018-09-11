@@ -58,7 +58,7 @@ export default {
           const {
             user: { unitid }
           } = decode(token);
-          console.log(user);
+
           const { password, statisticdata, ...human } = user;
           let updatedHuman;
           if (password) {
@@ -73,7 +73,8 @@ export default {
           if (statisticdata) {
             updatedHuman = await models.Human.update(
               {
-                statisticdata: { ...oldHuman.statisticdata, ...statisticdata }
+                statisticdata: { ...oldHuman.statisticdata, ...statisticdata },
+                ...human
               },
               { where: { unitid }, returning: true, transaction: ta }
             );
