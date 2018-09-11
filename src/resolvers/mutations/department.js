@@ -21,7 +21,6 @@ export default {
           if (companyExists) {
             throw new Error("This user is already assigned to a company!");
           }
-
           let company = await models.Unit.create({}, { transaction: ta });
           company = company.get();
 
@@ -68,7 +67,7 @@ export default {
           );
 
           const [user] = await Promise.all([p5, p4]);
-
+          console.log(user);
           user.company = company.id;
           const refreshTokenSecret = user.passwordhash + SECRET_TWO;
           const [newToken, refreshToken] = await createTokens(
