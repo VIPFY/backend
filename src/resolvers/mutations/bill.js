@@ -229,9 +229,9 @@ export default {
             ta
           );
 
-          if (dns && dns.length > 0) {
-            throw new Error("setting dns settings not implemented yet");
-          }
+          // if (dns && dns.length > 0) {
+          //   throw new Error("setting dns settings not implemented yet");
+          // }
           logger.debug("created Service Account");
 
           const createLicences = [];
