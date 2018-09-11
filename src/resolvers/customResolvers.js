@@ -118,7 +118,7 @@ export const find = data => {
           ))
           .filter(s => s != null);
 
-        logger.debug(`running resolver for ${datatype}`);
+        logger.debug(`running resolver for ${datatype}`, { fields, value, key });
 
         if (datatype[0] == "[") {
           // return array of objects
