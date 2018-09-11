@@ -19,9 +19,9 @@ export const types = `
 
 # The props which can be send to the DD24 Api
   input DD24 {
-    domainname: String!
+    domain: String!
     renewalmode: RENEWALMODE
-    whoisPrivacy: Int
+    whoisprivacy: Int
     dns: [DNSRecord]
   }
 

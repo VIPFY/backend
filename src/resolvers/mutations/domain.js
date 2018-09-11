@@ -37,8 +37,8 @@ export default {
         } else {
           const accountData = await models.sequelize.query(
             `SELECT ad.address, ad.country, pd.number as phone FROM unit_data hd
-            INNER JOIN address_data ad ON ad.unitid = hd.unitid
-            INNER JOIN phone_data pd ON pd.unitid = hd.unitid WHERE hd.unitid =
+            INNER JOIN address_data ad ON ad.unitid = hd.id
+            INNER JOIN phone_data pd ON pd.unitid = hd.id WHERE hd.id =
             :company AND ('domain' = ANY(ad.tags) OR 'main' = ANY(ad.tags))`,
             {
               replacements: { company },
@@ -63,7 +63,7 @@ export default {
             title: "Mr",
             firstname: "Domain",
             lastname: "Administrator",
-            accountemail: "domains@vipfy.com",
+            email: "domains@vipfy.com",
             period: 1,
             street,
             zip,
@@ -77,12 +77,13 @@ export default {
             where: { unitid: company }
           });
           newOptions.organization = organization.name;
-
+          console.log(newOptions);
           register = await dd24Api("AddDomain", newOptions);
           partnerLogs = newOptions;
           partnerLogs.domain = register;
         }
-        if (register.code == 200) {
+
+        if (register.code == "200") {
           domainData.accountid = register.cid;
         } else {
           throw new Error(register.description);
@@ -93,7 +94,14 @@ export default {
           .subtract(1, "day");
 
         const domain = await models.Domain.create(
-          { ...domainData, renewaldate, unitid },
+          {
+            accountid: domainData.accountid,
+            accountemail: "domains@vipfy.com",
+            domainname: domainData.domain,
+            whoisprivacy: domainData.whoisprivacy,
+            renewaldate,
+            unitid
+          },
           { returning: true }
         );
 
@@ -111,7 +119,7 @@ export default {
         const p2 = createNotification(
           {
             receiver: unitid,
-            message: `${domainData.domainname} successfully registered.`,
+            message: `${domainData.domain} successfully registered.`,
             icon: "laptop",
             link: "domains"
           },
@@ -124,7 +132,7 @@ export default {
       } catch (err) {
         createNotification({
           receiver: unitid,
-          message: `Registration of ${domainData.domainname} failed.`,
+          message: `Registration of ${domainData.domain} failed.`,
           icon: "bug",
           link: "domains"
         });
