@@ -46,14 +46,16 @@ export default {
             const accountData = await models.sequelize.query(
               `SELECT ad.address, ad.country, pd.number as phone FROM unit_data hd
             INNER JOIN address_data ad ON ad.unitid = hd.id
-            INNER JOIN phone_data pd ON pd.unitid = hd.id WHERE hd.id =
+            INNER JOIN phone_data pd ON pd.unitid = hd.id
+            WHERE hd.id =
             :company AND ('domain' = ANY(ad.tags) OR 'main' = ANY(ad.tags))`,
               {
-                replacements: { company },
+                // Replace after Presentation
+                replacements: { company: 14 },
                 type: models.sequelize.QueryTypes.SELECT
               }
             );
-
+            console.log(accountData);
             const accountDataCorrect = recursiveAddressCheck(accountData);
 
             if (!accountDataCorrect) {

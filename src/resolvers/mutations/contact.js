@@ -19,45 +19,61 @@ export default {
 
           const { zip, street, city, ...normalData } = addressData;
           const address = { street, zip, city };
-
-          await models.Address.create({ ...normalData, address, unitid }, { transaction: ta });
+          // Remove main
+          await models.Address.create(
+            { ...normalData, address, unitid },
+            { transaction: ta }
+          );
           await createLog(ip, "createAddress", { addressData }, unitid, ta);
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
 
-  updateAddress: requiresAuth.createResolver(async (parent, args, { models, token, ip }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(token);
+  updateAddress: requiresAuth.createResolver(
+    async (parent, args, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
 
-        let logArgs;
+          let logArgs;
 
-        if (!args.id) {
-          const newAddress = await models.Address.create({ unitid, ...args }, { transaction: ta });
-          logArgs = { newAddress };
-        } else {
-          const oldAddress = await models.Address.findById(args.id, { raw: true, transaction: ta });
-          const updatedAddress = await models.Address.update(
-            { ...args },
-            { where: { id: args.id }, returning: true, transaction: ta }
-          );
+          if (!args.id) {
+            const newAddress = await models.Address.create(
+              { unitid, ...args },
+              { transaction: ta }
+            );
+            logArgs = { newAddress };
+          } else {
+            const oldAddress = await models.Address.findById(args.id, {
+              raw: true,
+              transaction: ta
+            });
+            const updatedAddress = await models.Address.update(
+              { ...args },
+              { where: { id: args.id }, returning: true, transaction: ta }
+            );
 
-          logArgs = { oldAddress, updatedAddress: updatedAddress[1] };
+            logArgs = { oldAddress, updatedAddress: updatedAddress[1] };
+          }
+
+          await createLog(ip, "updateAddress", logArgs, unitid, ta);
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
-
-        await createLog(ip, "updateAddress", logArgs, unitid, ta);
-
-        return { ok: true };
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    })
+      })
   )
 };
