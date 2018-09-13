@@ -5,9 +5,13 @@ import { AuthError } from "../errors";
 
 export const createTokens = async (user, SECRET, SECRET_TWO) => {
   try {
-    const createToken = await jwt.sign({ user: pick(user, ["unitid", "company"]) }, SECRET, {
-      expiresIn: "12h"
-    });
+    const createToken = await jwt.sign(
+      { user: pick(user, ["unitid", "company"]) },
+      SECRET,
+      {
+        expiresIn: "12h"
+      }
+    );
 
     const createRefreshToken = await jwt.sign(
       { user: pick(user, ["unitid", "company"]) },
@@ -23,7 +27,12 @@ export const createTokens = async (user, SECRET, SECRET_TWO) => {
   }
 };
 
-export const refreshTokens = async (refreshToken, models, SECRET, SECRET_TWO) => {
+export const refreshTokens = async (
+  refreshToken,
+  models,
+  SECRET,
+  SECRET_TWO
+) => {
   let userId = 0;
 
   try {
@@ -36,7 +45,10 @@ export const refreshTokens = async (refreshToken, models, SECRET, SECRET_TWO) =>
       return {};
     }
 
-    const p1 = await models.Human.findOne({ where: { unitid: userId }, raw: true });
+    const p1 = await models.Human.findOne({
+      where: { unitid: userId },
+      raw: true
+    });
     const p2 = await models.User.findOne({ where: { id: userId }, raw: true });
     const [user, basicUser] = await Promise.all([p1, p2]);
 
@@ -50,7 +62,11 @@ export const refreshTokens = async (refreshToken, models, SECRET, SECRET_TWO) =>
 
     const refreshUser = await parentAdminCheck(basicUser);
 
-    const [newToken, newRefreshToken] = await createTokens(refreshUser, SECRET, refreshSecret);
+    const [newToken, newRefreshToken] = await createTokens(
+      refreshUser,
+      SECRET,
+      refreshSecret
+    );
     return {
       token: newToken,
       refreshToken: newRefreshToken,
@@ -71,16 +87,23 @@ const unitAuthCache = new NodeCache({
 });
 
 const getAuthentificationObject = async (models, unitid) => {
-  let permissions = unitAuthCache.get(unitid);
-  if (permissions !== undefined) return permissions;
-  const unit = await models.Unit.findById(unitid, { raw: true });
-  permissions = {
-    suspended: unit.suspended,
-    banned: unit.banned,
-    deleted: unit.banned
-  };
-  unitAuthCache.set(unitid, permissions);
-  return permissions;
+  try {
+    let permissions = unitAuthCache.get(unitid);
+    if (permissions != undefined) return permissions;
+    const unit = await models.Unit.findOne(
+      { where: { id: unitid } },
+      { raw: true }
+    );
+    permissions = {
+      suspended: unit.suspended,
+      banned: unit.banned,
+      deleted: unit.banned
+    };
+    unitAuthCache.set(unitid, permissions);
+    return permissions;
+  } catch (err) {
+    throw new AuthError(err);
+  }
 };
 
 const checkAuthentificationObject = (permissions, name) => {

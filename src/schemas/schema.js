@@ -3,7 +3,7 @@ import * as Admin from "./Admin";
 import * as Bill from "./Bill";
 import * as Common from "./Common";
 import * as Contact from "./Contact";
-import * as DD24 from "./DD24";
+import * as Domain from "./Domain";
 import * as Department from "./Department";
 import * as Message from "./Message";
 import * as Unit from "./Unit";
@@ -24,7 +24,7 @@ const schemas = [
   Bill,
   Common,
   Contact,
-  DD24,
+  Domain,
   Demo,
   Department,
   Message,

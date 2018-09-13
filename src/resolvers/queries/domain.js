@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { requiresRight, requiresAuth } from "../../helpers/permissions";
+import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
 export default {
@@ -11,7 +11,8 @@ export default {
         } = decode(token);
 
         const domains = await models.Domain.findAll({
-          where: { unitid: company }
+          where: { unitid: company },
+          order: [["id", "ASC"]]
         });
 
         return domains;

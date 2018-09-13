@@ -2,13 +2,13 @@ export const types = `
   type Domain {
     id: ID!
     domainname: String!
-    accountid: String!
     createdate: Date!
     renewaldate: Date
     renewalmode: String!
     whoisprivacy: Boolean!
     statisticdata: JSON
     unitid: User!
+    dns: JSON
   }
 
 # Data of a specific event
@@ -19,7 +19,7 @@ export const types = `
 
 # The props which can be send to the DD24 Api
   input DD24 {
-    domain: String!
+    domain: String
     renewalmode: RENEWALMODE
     whoisprivacy: Int
     dns: [DNSRecord]
@@ -57,5 +57,5 @@ export const queries = `
 
 export const mutations = `
   registerDomain(domainData: DD24!): Domain!
-  updateDomain(domainData: DD24!, licenceid: Int!): Response!
+  updateDomain(domainData: DD24!, id: Int!): Response!
 `;

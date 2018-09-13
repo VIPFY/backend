@@ -14,7 +14,6 @@ import Utility from "./helpers/createHmac";
 import logger from "./loggers";
 import { AuthError } from "./errors";
 
-
 const { SECRET, SECRET_TWO, SECRET_THREE } = process.env;
 
 /* eslint-disable consistent-return, prefer-destructuring */
@@ -26,7 +25,7 @@ export const authMiddleware = async (req, res, next) => {
       req.user = user;
       const { unitid, company } = user;
 
-      checkAuthentification(unitid, company);
+      checkAuthentification(models, unitid, company);
     } catch (err) {
       console.error(err);
       if (err.name == "TokenExpiredError") {

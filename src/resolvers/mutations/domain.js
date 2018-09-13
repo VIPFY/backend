@@ -163,6 +163,7 @@ export default {
   /**
    * Update Whois Privacy or Renewal Mode of a domain. Updating both at the same
    * time is not possible!
+   * @param id: integer
    * @param domainData: object
    * domainData can contain the properties:
    * domain: string
@@ -170,19 +171,27 @@ export default {
    * whoisPrivacy: integer
    * cid: string
    * dns: object[]
-   * @param licenceid: integer
    * @returns {any}
    */
   updateDomain: requiresRight(["admin", "managedomains"]).createResolver(
-    (parent, { domainData, licenceid: id }, { models, token, ip }) =>
+    (parent, { domainData, id }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(token);
 
-          const oldLicence = await models.Licence.findById(id, { raw: true });
+          const oldDomain = await models.Domain.findOne(
+            { where: { id } },
+            {
+              raw: true,
+              transaction: ta
+            }
+          );
+          domainData.cid = oldDomain.accountid;
+          domainData.domain = oldDomain.domainname;
 
+          // Update of the domains DNS settings
           if (domainData.dns) {
             const rr = [];
             domainData.dns.forEach(dns => {
@@ -198,9 +207,9 @@ export default {
             const updatedDNS = await dd24Api("UpdateDomain", domainData);
 
             if (updatedDNS && updatedDNS.code == 200) {
-              const updatedLicence = await models.Licence.update(
+              const updatedDomain = await models.Domain.update(
                 {
-                  key: { dns: { ...domainData.dns } }
+                  dns: { ...domainData.dns }
                 },
                 { transaction: ta, where: { id } }
               );
@@ -208,7 +217,7 @@ export default {
               await createLog(
                 ip,
                 "updateDomain",
-                { updatedDNS, domainData, oldLicence, updatedLicence },
+                { updatedDNS, domainData, oldDomain, updatedDomain },
                 unitid,
                 ta
               );
@@ -222,9 +231,9 @@ export default {
           // Has to be created here to avoid problems when using Promise.all
           let p1;
 
-          let queryString = "UPDATE licence_data SET key = jsonb_set(key";
+          const toUpdate = {};
 
-          if (domainData.hasOwnProperty("whoisPrivacy")) {
+          if (domainData.hasOwnProperty("whoisprivacy")) {
             const enddate = moment(Date.now()).add(1, "year");
             let planid;
 
@@ -247,28 +256,31 @@ export default {
               },
               { transaction: ta }
             );
-
-            queryString += `, '{whoisPrivacy}', '"${domainData.whoisPrivacy}"'`;
+            toUpdate.whoisprivacy = domainData.whoisprivacy;
           } else {
-            queryString += `, '{renewalmode}', '"${
+            toUpdate.renewalmode =
               domainData.renewalmode == "ONCE" ||
               domainData.renewalmode == "AUTODELETE"
-                ? 0
-                : 1
-            }"'`;
+                ? "AUTODELETE"
+                : "AUTORENEW";
           }
-          queryString += `) WHERE id = ${id} AND unitid = ${unitid}`;
-
           const updateDomain = await dd24Api("UpdateDomain", domainData);
 
           if (updateDomain.code == 200) {
-            const p2 = models.sequelize.query(queryString, { transaction: ta });
-            const [boughtPlan, updatedLicence] = await Promise.all([p1, p2]);
+            const p2 = models.Domain.update(
+              { ...toUpdate },
+              {
+                where: { id, unitid: company },
+                transaction: ta,
+                returning: true
+              }
+            );
+            const [boughtPlan, updatedDomain] = await Promise.all([p1, p2]);
 
             await createLog(
               ip,
               "updateDomain",
-              { boughtPlan, domainData, oldLicence, updatedLicence },
+              { boughtPlan, domainData, oldDomain, updatedDomain },
               unitid,
               ta
             );
