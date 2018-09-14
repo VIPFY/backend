@@ -1,7 +1,7 @@
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
 import { requiresRight, requiresAuth } from "../../helpers/permissions";
-import { createLog } from "../../helpers/functions";
+import { createLog, createNotification } from "../../helpers/functions";
 import { calculatePlanPrice } from "../../helpers/apps";
 
 // import createInvoice from "../../helpers/createInvoice";
@@ -24,15 +24,16 @@ export default {
    *
    * @param {any} data Data Object received from the stripe plugin.
    * @param {number} departmentid Identifier for the department the card is for.
+   * @returns any
    */
   addPaymentData: requiresRight(["admin", "addPayment"]).createResolver(
     async (parent, { data, departmentid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
+        const {
+          user: { unitid }
+        } = decode(token);
 
+        try {
           const department = await models.Unit.findById(departmentid, {
             raw: true
           });
@@ -83,10 +84,31 @@ export default {
             logArgs.newCard = card;
           }
 
-          await createLog(ip, "addPaymentData", logArgs, unitid, ta);
+          const p1 = createLog(ip, "addPaymentData", logArgs, unitid, ta);
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: "Credit Card successfully added",
+              icon: "cc-stripe",
+              link: "billing"
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
 
           return { ok: true };
         } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Adding Credit Card failed",
+              icon: "cc-stripe",
+              link: "billing"
+            },
+            ta
+          );
+
           throw new BillingError({
             message: err.message,
             internalData: { err }

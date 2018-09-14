@@ -5,7 +5,7 @@ import { requiresAuth, requiresRight } from "../../helpers/permissions";
 import { deleteFile, uploadFile } from "../../services/gcloud";
 import { createTokens } from "../../helpers/auth";
 import { NormalError } from "../../errors";
-import { createLog } from "../../helpers/functions";
+import { createLog, createNotification } from "../../helpers/functions";
 
 // import { sendRegistrationEmail } from "../../services/mailjet";
 

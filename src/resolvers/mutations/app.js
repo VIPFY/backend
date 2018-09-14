@@ -6,7 +6,7 @@ import {
   requiresRight,
   requiresAuth
 } from "../../helpers/permissions";
-import { createLog } from "../../helpers/functions";
+import { createLog, createNotification } from "../../helpers/functions";
 import logger from "../../loggers";
 
 /* eslint-disable no-return-await */
@@ -249,11 +249,11 @@ export default {
   distributeLicence: requiresDepartmentCheck.createResolver(
     (parent, { boughtplanid, unitid, departmentid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid: giver }
-          } = decode(token);
+        const {
+          user: { unitid: giver }
+        } = decode(token);
 
+        try {
           const p1 = models.Licence.findOne({
             where: {
               unitid: null,
@@ -360,7 +360,7 @@ export default {
             ta
           );
 
-          await createLog(
+          const log = createLog(
             ip,
             "distributeLicence",
             {
@@ -374,8 +374,43 @@ export default {
             ta
           );
 
+          const app = boughtPlan.planid.appid.name;
+          const notiGiver = createNotification(
+            {
+              receiver: giver,
+              message: `${app} distributed to ${user.firstname} ${
+                user.lastname
+              }`,
+              icon: "th",
+              link: "teams"
+            },
+            ta
+          );
+
+          const notiReceiver = createNotification(
+            {
+              receiver: giver,
+              message: `User ${giver} has given you access to ${app}`,
+              icon: "th",
+              link: "teams"
+            },
+            ta
+          );
+
+          await Promise.all([log, notiGiver, notiReceiver]);
+
           return { ok: true };
         } catch (err) {
+          await createNotification(
+            {
+              receiver: giver,
+              message: "Distribution of App failed",
+              icon: "th",
+              link: "teams"
+            },
+            ta
+          );
+
           logger.error(err);
           throw new NormalError({
             message: err.message,

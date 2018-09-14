@@ -8,7 +8,8 @@ export const types = `
     whoisprivacy: Boolean!
     statisticdata: JSON
     unitid: User!
-    dns: JSON
+    dns: JSON,
+    boughtplanid: BoughtPlan!
   }
 
 # Data of a specific event
@@ -20,6 +21,7 @@ export const types = `
 # The props which can be send to the DD24 Api
   input DD24 {
     domain: String
+    tld: TLD
     renewalmode: RENEWALMODE
     whoisprivacy: Int
     dns: [DNSRecord]
@@ -40,6 +42,12 @@ export const types = `
     MX_PRIO,
     TXT,
     NS,
+  }
+
+  enum TLD {
+    org,
+    com,
+    net
   }
 
 # ONCE directly renewals the domain and sets it to AUTODELETE, AUTODELETE deletes

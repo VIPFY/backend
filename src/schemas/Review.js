@@ -40,7 +40,7 @@ export const queries = `
 
 export const mutations = `
 # Create a review for an app
-  writeReview(appid: Int!, stars: Int!, text: String): Response!
+  writeReview(appid: Int!, stars: Int!, text: String): Review!
 
 # Rate a review
   rateReview(reviewid: Int!, balance: Int!): ReviewResponse!

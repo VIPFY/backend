@@ -24,9 +24,35 @@ export default {
             raw: true
           });
 
+          let totalprice;
           let register;
+          const additionalfeatures = {};
+          const totalfeatures = {
+            domain: domainData.domain,
+            renewalmode: "AUTORENEW"
+          };
           let partnerLogs = {};
           domainData.renewalmode = "AUTORENEW";
+
+          // eslint-disable-next-line
+          switch (domainData.tld) {
+            case "com":
+              totalprice = 10;
+              break;
+
+            case "org":
+              totalprice = 15;
+              break;
+
+            case "net":
+              totalprice = 20;
+          }
+
+          if (domainData.whoisprivacy == 1) {
+            totalprice += 5;
+            additionalfeatures.whoisprivacy = true;
+            totalfeatures.whoisprivacy = true;
+          }
 
           if (hasAccount) {
             const mergedData = {
@@ -105,16 +131,31 @@ export default {
             .add(1, "year")
             .subtract(1, "day");
 
+          const boughtPlan = await models.BoughtPlan.create(
+            {
+              buyer: unitid,
+              payer: company,
+              planid: 25,
+              disabled: false,
+              totalprice,
+              description: `Registration of ${domainData.domain}`,
+              additionalfeatures,
+              totalfeatures
+            },
+            { transaction: ta }
+          );
+
           const domain = await models.Domain.create(
             {
               ...domainData,
+              boughtplanid: boughtPlan.dataValues.id,
               accountemail: "domains@vipfy.com",
               domainname: domainData.domain,
               renewalmode: "AUTORENEWAL",
               renewaldate,
               unitid: company
             },
-            { returning: true }
+            { transaction: ta }
           );
 
           const p1 = createLog(
@@ -122,7 +163,8 @@ export default {
             "registerDomain",
             {
               ...partnerLogs,
-              domain
+              domain,
+              boughtPlan
             },
             unitid,
             ta
@@ -176,11 +218,11 @@ export default {
   updateDomain: requiresRight(["admin", "managedomains"]).createResolver(
     (parent, { domainData, id }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid, company }
-          } = decode(token);
+        const {
+          user: { unitid, company }
+        } = decode(token);
 
+        try {
           const oldDomain = await models.Domain.findOne(
             { where: { id } },
             {
@@ -190,9 +232,12 @@ export default {
           );
           domainData.cid = oldDomain.accountid;
           domainData.domain = oldDomain.domainname;
+          let message;
 
           // Update of the domains DNS settings
           if (domainData.dns) {
+            message = `DNS update of ${domainData.domain} was successful`;
+
             const rr = [];
             domainData.dns.forEach(dns => {
               rr.push({
@@ -214,13 +259,25 @@ export default {
                 { transaction: ta, where: { id } }
               );
 
-              await createLog(
+              const log = await createLog(
                 ip,
                 "updateDomain",
                 { updatedDNS, domainData, oldDomain, updatedDomain },
                 unitid,
                 ta
               );
+
+              const notification = createNotification(
+                {
+                  receiver: unitid,
+                  message,
+                  icon: "laptop",
+                  link: "domains"
+                },
+                ta
+              );
+
+              await Promise.all([log, notification]);
 
               return { ok: true };
             } else {
@@ -230,39 +287,81 @@ export default {
 
           // Has to be created here to avoid problems when using Promise.all
           let p1;
-
           const toUpdate = {};
+          const addLogs = {};
 
           if (domainData.hasOwnProperty("whoisprivacy")) {
-            const enddate = moment(Date.now()).add(1, "year");
-            let planid;
+            const endtime = new Date();
+            let totalprice = 5;
+            const additionalfeatures = { whoisprivacy: true };
+            message = `Whois Privacy for ${
+              domainData.domain
+            } was successfully applied`;
+
+            const totalfeatures = {
+              domain: domainData.domain,
+              renewalmode: "AUTORENEW",
+              whoisprivacy: true
+            };
 
             if (domainData.domain.indexOf(".org")) {
-              planid = 53;
+              totalprice += 15;
             } else if (domainData.domain.indexOf(".com")) {
-              planid = 51;
+              totalprice += 10;
             } else {
-              planid = 52;
+              totalprice += 20;
             }
 
-            p1 = models.BoughtPlan.create(
-              {
-                planid,
-                buyer: unitid,
-                payer: company,
-                enddate,
-                disabled: false,
-                description: `Whois Privacy for ${domainData.domain}`
-              },
-              { transaction: ta }
+            const predecessor = await models.BoughtPlan.findOne(
+              { where: { id: oldDomain.boughtplanid } },
+              { raw: true }
             );
+
+            const bpOld = models.BoughtPlan.update(
+              {
+                endtime,
+                planid: 25
+              },
+              {
+                where: {
+                  id: predecessor.id
+                },
+                transaction: ta,
+                returning: true
+              }
+            );
+
+            const bpNew = await models.BoughtPlan.create(
+              {
+                buyer: unitid,
+                predecessor: predecessor.id,
+                payer: company,
+                planid: 25,
+                disabled: false,
+                totalprice,
+                description: `Registration of ${domainData.domain}`,
+                additionalfeatures,
+                totalfeatures
+              },
+              { transaction: ta, returning: true }
+            );
+
+            const [oldBoughtPlan, updatedBoughtPlan] = await Promise.all([
+              bpOld,
+              bpNew
+            ]);
+
             toUpdate.whoisprivacy = domainData.whoisprivacy;
+            addLogs.oldBoughtPlan = oldBoughtPlan;
+            addLogs.updatedBoughtPlan = updatedBoughtPlan;
           } else {
             toUpdate.renewalmode =
               domainData.renewalmode == "ONCE" ||
               domainData.renewalmode == "AUTODELETE"
                 ? "AUTODELETE"
                 : "AUTORENEW";
+
+            message = `Renewal of ${domainData.domain} was successful`;
           }
           const updateDomain = await dd24Api("UpdateDomain", domainData);
 
@@ -277,19 +376,40 @@ export default {
             );
             const [boughtPlan, updatedDomain] = await Promise.all([p1, p2]);
 
-            await createLog(
+            const log = createLog(
               ip,
               "updateDomain",
-              { boughtPlan, domainData, oldDomain, updatedDomain },
+              { boughtPlan, domainData, oldDomain, updatedDomain, ...addLogs },
               unitid,
               ta
             );
+
+            const notification = createNotification(
+              {
+                receiver: unitid,
+                message,
+                icon: "laptop",
+                link: "domains"
+              },
+              ta
+            );
+
+            await Promise.all([log, notification]);
 
             return { ok: true };
           } else {
             throw new Error(updateDomain.description);
           }
         } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Update failed",
+              icon: "laptop",
+              link: "domains"
+            },
+            ta
+          );
           throw new PartnerError({
             message: err.message,
             internalData: { err }

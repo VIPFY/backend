@@ -7,30 +7,33 @@ import { NormalError } from "../../errors";
 export default {
   writeReview: requiresAuth.createResolver(
     async (parent, { appid, stars, text }, { models, token }) => {
-      const {
-        user: { unitid }
-      } = jwt.decode(token);
-      const p1 = models.App.findById(appid);
-      const p2 = models.User.findById(unitid);
-      const [app, user] = await Promise.all([p1, p2]);
+      try {
+        const {
+          user: { unitid }
+        } = jwt.decode(token);
+        const p1 = models.App.findById(appid);
+        const p2 = models.User.findById(unitid);
+        const [app, user] = await Promise.all([p1, p2]);
 
-      if (!app || !user) {
-        throw new Error("App or User doesn't exist!");
-      } else if (stars > 5 || stars < 1) {
-        throw new Error("Rating must be between 1 and 5 stars!");
-      } else {
-        try {
-          await models.ReviewData.create({
+        if (!app || !user) {
+          throw new Error("App or User doesn't exist!");
+        } else if (stars > 5 || stars < 1) {
+          throw new Error("Rating must be between 1 and 5 stars!");
+        } else {
+          const review = await models.ReviewData.create({
             stars,
             reviewtext: text,
             unitid,
             appid
           });
 
-          return { ok: true };
-        } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+          return review;
         }
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
       }
     }
   ),
@@ -44,8 +47,14 @@ export default {
 
         const p1 = models.User.findById(unitid);
         const p2 = models.Review.findById(reviewid);
-        const p3 = models.ReviewHelpful.findOne({ where: { reviewid, unitid } });
-        const [commenter, review, changeRating] = await Promise.all([p1, p2, p3]);
+        const p3 = models.ReviewHelpful.findOne({
+          where: { reviewid, unitid }
+        });
+        const [commenter, review, changeRating] = await Promise.all([
+          p1,
+          p2,
+          p3
+        ]);
 
         if (!review) {
           throw new Error("Review doesn't exist!");
