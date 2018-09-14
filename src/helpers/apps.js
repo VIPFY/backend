@@ -11,6 +11,14 @@ export function calculatePlanPrice(
   featuredescription,
   boughtfeatures
 ) {
+  if (
+    baseprice === undefined ||
+    featuredescription === undefined ||
+    boughtfeatures === undefined
+  ) {
+    throw new Error("invalid paramters");
+  }
+
   const featuresDict = {};
   let price = baseprice - 0;
   featuredescription.forEach(section => {
@@ -52,4 +60,9 @@ export function calculatePlanPrice(
     price += feature.amount * featureDefinition.price;
   }
   return price;
+}
+
+export function checkPlanInputsSchema(schema, planinputs) {
+  // TODO
+  return true;
 }
