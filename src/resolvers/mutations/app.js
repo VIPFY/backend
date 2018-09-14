@@ -423,11 +423,11 @@ export default {
   revokeLicence: requiresDepartmentCheck.createResolver(
     async (parent, { licenceid: id }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
+        const {
+          user: { unitid }
+        } = decode(token);
 
+        try {
           const p1 = await models.Licence.findById(id, { raw: true });
           const p2 = await models.Licence.update(
             { unitid: null },
@@ -457,7 +457,7 @@ export default {
             ta
           );
 
-          await createLog(
+          const log = createLog(
             ip,
             "revokeLicence",
             { oldLicence, revokedLicence: revokedLicence[1] },
@@ -465,8 +465,41 @@ export default {
             ta
           );
 
+          const app = boughtPlan.planid.appid.name;
+          const notiGiver = createNotification(
+            {
+              receiver: unitid,
+              message: `${app} revoked from ${oldLicence.unitid}`,
+              icon: "th",
+              link: "teams"
+            },
+            ta
+          );
+
+          const notiReceiver = createNotification(
+            {
+              receiver: oldLicence.unitid,
+              message: `User ${unitid} has revoked ${app} from you`,
+              icon: "th",
+              link: "teams"
+            },
+            ta
+          );
+
+          await Promise.all([log, notiGiver, notiReceiver]);
+
           return { ok: true };
         } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Revokation failed",
+              icon: "th",
+              link: "teams"
+            },
+            ta
+          );
+
           throw new NormalError({
             message: err.message,
             internalData: { err }
