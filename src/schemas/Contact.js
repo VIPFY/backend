@@ -54,9 +54,7 @@ export const types = `
 `;
 
 export const queries = `
-  fetchAddresses: [Address]!
-  # A function only usable by Vipfy admins
-  fetchUserAddresses(unitid: Int!): [Address]!
+  fetchAddresses(forCompany: Int): [Address]!
 `;
 
 export const mutations = `

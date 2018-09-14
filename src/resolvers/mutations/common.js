@@ -23,67 +23,79 @@ export default {
       }
     }),
 
-  checkEmail: requiresAuth.createResolver(async (parent, { email }, { models }) => {
-    if (!email) return { ok: true };
+  checkEmail: requiresAuth.createResolver(
+    async (parent, { email }, { models }) => {
+      if (!email) return { ok: true };
 
-    try {
-      const emailExists = await models.Email.findOne({ where: { email } });
+      try {
+        const emailExists = await models.Email.findOne({ where: { email } });
 
-      if (emailExists) throw new Error("There already exists an account with this email");
+        if (emailExists)
+          throw new Error("There already exists an account with this email");
 
-      return { ok: true };
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  }),
+  ),
 
-  checkName: requiresAuth.createResolver(async (parent, { name }, { models }) => {
-    if (!name) return { ok: true };
+  checkName: requiresAuth.createResolver(
+    async (parent, { name }, { models }) => {
+      if (!name) return { ok: true };
 
-    try {
-      const nameExists = await models.App.findOne({
-        where: { name: { [models.sequelize.Op.iLike]: `%${name}` } }
-      });
+      try {
+        const nameExists = await models.App.findOne({
+          where: { name: { [models.sequelize.Op.iLike]: `%${name}` } }
+        });
 
-      if (nameExists) throw new Error({ message: "There already exists an app with this name" });
+        if (nameExists)
+          throw new Error({
+            message: "There already exists an app with this name"
+          });
 
-      return { ok: true };
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  }),
+  ),
 
-  readNotification: requiresAuth.createResolver(async (parent, { id }, { models, token }) => {
-    try {
-      const {
-        user: { unitid }
-      } = decode(token);
+  readNotification: requiresAuth.createResolver(
+    async (parent, { id }, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
 
-      await models.Notification.update(
-        { readtime: models.sequelize.fn("NOW") },
-        { where: { receiver: unitid, id } }
-      );
+        await models.Notification.update(
+          { readtime: models.sequelize.fn("NOW") },
+          { where: { receiver: unitid, id } }
+        );
 
-      return true;
-    } catch (err) {
-      throw new NormalError({ message: err.message });
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message });
+      }
     }
-  }),
+  ),
 
-  readAllNotifications: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { unitid }
-      } = decode(token);
+  readAllNotifications: requiresAuth.createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
 
-      await models.Notification.update(
-        { readtime: models.sequelize.fn("NOW") },
-        { where: { receiver: unitid, readtime: { [models.Op.eq]: null } } }
-      );
+        await models.Notification.update(
+          { readtime: models.sequelize.fn("NOW") },
+          { where: { receiver: unitid, readtime: { [models.Op.eq]: null } } }
+        );
 
-      return true;
-    } catch (err) {
-      throw new NormalError({ message: err.message });
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message });
+      }
     }
-  })
+  )
 };

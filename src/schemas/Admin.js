@@ -13,6 +13,7 @@ export const queries = `
   fetchUser(id: Int!): User!
   fetchRecentLogs(user: Int!): [Log]!
   allDepartments: [Department]!
+  adminFetchUserAddresses: [Address]!
   adminFetchEmployees(unitid: Int!, limit: Int, offset: Int): [DepartmentEmployee]!
   adminFetchCompany(id: Int!): Department!
   allCompanies(limit: Int, offset: Int): [Department]!

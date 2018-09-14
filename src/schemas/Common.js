@@ -79,6 +79,10 @@ input Options {
 }
 `;
 
+export const queries = `
+fetchNotifications: [Notification]!
+`;
+
 export const mutations = `
   # Sends an email from an user to office@vipfy.com
   newContactEmail(name: String!, email: String!, phone: String, message: String): Response!
@@ -91,10 +95,6 @@ export const mutations = `
 
   readNotification(id: Int!): Boolean!
   readAllNotifications: Boolean!
-`;
-
-export const queries = `
-  fetchNotifications: [Notification]!
 `;
 
 export const subscriptions = `

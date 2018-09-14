@@ -23,8 +23,6 @@ export default {
       },
       (payload, args) => {
         if (payload && args) {
-          console.log("payload", payload);
-          console.log("args", args);
           return payload.newMessage.receiver == args.groupid;
         }
         return "";

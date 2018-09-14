@@ -388,8 +388,9 @@ export default {
 
           const notiReceiver = createNotification(
             {
-              receiver: giver,
-              message: `User ${giver} has given you access to a new App`,
+              receiver: unitid,
+              message: `User ${giver} has given you access to a new App.
+              Please relog in`,
               icon: "th",
               link: "teams"
             },

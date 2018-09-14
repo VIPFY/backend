@@ -132,7 +132,7 @@ export default {
     }
   ),
 
-  fetchUserAddresses: requiresVipfyAdmin.createResolver(
+  adminFetchUserAddresses: requiresVipfyAdmin.createResolver(
     async (parent, { unitid }, { models }) => {
       try {
         const addresses = await models.Address.findAll({
