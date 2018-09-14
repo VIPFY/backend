@@ -374,11 +374,10 @@ export default {
             ta
           );
 
-          const app = boughtPlan.planid.appid.name;
           const notiGiver = createNotification(
             {
               receiver: giver,
-              message: `${app} distributed to ${user.firstname} ${
+              message: `Licence distributed to ${user.firstname} ${
                 user.lastname
               }`,
               icon: "th",
@@ -390,7 +389,7 @@ export default {
           const notiReceiver = createNotification(
             {
               receiver: giver,
-              message: `User ${giver} has given you access to ${app}`,
+              message: `User ${giver} has given you access to a new App`,
               icon: "th",
               link: "teams"
             },
@@ -465,11 +464,10 @@ export default {
             ta
           );
 
-          const app = boughtPlan.planid.appid.name;
           const notiGiver = createNotification(
             {
               receiver: unitid,
-              message: `${app} revoked from ${oldLicence.unitid}`,
+              message: `App revoked from ${oldLicence.unitid}`,
               icon: "th",
               link: "teams"
             },
@@ -479,7 +477,7 @@ export default {
           const notiReceiver = createNotification(
             {
               receiver: oldLicence.unitid,
-              message: `User ${unitid} has revoked ${app} from you`,
+              message: `User ${unitid} has revoked an App from you`,
               icon: "th",
               link: "teams"
             },
