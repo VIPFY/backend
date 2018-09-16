@@ -3,30 +3,44 @@ import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
 
+/* eslint-disable prefer-const */
+
 export default {
   createAddress: requiresAuth.createResolver(
     (parent, { addressData, department }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           let {
-            // eslint-disable-next-line
             user: { unitid, company }
           } = decode(token);
 
           if (department) {
-            unitid = company;
+            const hasRight = await models.Right.findOne({
+              where: {
+                holder: unitid,
+                forunit: { [models.Op.or]: [company, null] },
+                type: { [models.Op.or]: ["admin", "createAddress"] }
+              }
+            });
+
+            if (!hasRight) {
+              throw new Error("You don't have the necessary rights!");
+            } else {
+              unitid = company;
+            }
           }
 
-          const { zip, street, city, ...normalData } = addressData;
+          const { zip, street, city, tags, ...normalData } = addressData;
           const address = { street, zip, city };
           // Remove main
-          await models.Address.create(
-            { ...normalData, address, unitid },
+          const newAddress = await models.Address.create(
+            { ...normalData, address, unitid, tags },
             { transaction: ta }
           );
-          await createLog(ip, "createAddress", { addressData }, unitid, ta);
 
-          return { ok: true };
+          await createLog(ip, "createaddress", { newAddress }, unitid, ta);
+
+          return newAddress;
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -40,11 +54,28 @@ export default {
     async (parent, args, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const {
-            user: { unitid }
+          let {
+            user: { unitid, company }
           } = decode(token);
 
           let logArgs;
+          let address;
+
+          if (args.department) {
+            const hasRight = await models.Right.findOne({
+              where: {
+                holder: unitid,
+                forunit: { [models.Op.or]: [company, null] },
+                type: { [models.Op.or]: ["admin", "editaddress"] }
+              }
+            });
+
+            if (!hasRight) {
+              throw new Error("You don't have the necessary rights!");
+            } else {
+              unitid = company;
+            }
+          }
 
           if (!args.id) {
             const newAddress = await models.Address.create(
@@ -52,6 +83,7 @@ export default {
               { transaction: ta }
             );
             logArgs = { newAddress };
+            address = newAddress;
           } else {
             const oldAddress = await models.Address.findById(args.id, {
               raw: true,
@@ -62,12 +94,14 @@ export default {
               { where: { id: args.id }, returning: true, transaction: ta }
             );
 
+            // eslint-disable-next-line
+            address = updatedAddress[1];
             logArgs = { oldAddress, updatedAddress: updatedAddress[1] };
           }
 
           await createLog(ip, "updateAddress", logArgs, unitid, ta);
 
-          return { ok: true };
+          return address;
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -75,5 +109,38 @@ export default {
           });
         }
       })
+  ),
+
+  deleteAddress: requiresAuth.createResolver(
+    async (parent, { id, department }, { models, token }) => {
+      try {
+        let {
+          user: { unitid, company }
+        } = decode(token);
+
+        if (department) {
+          const hasRight = await models.Right.findOne({
+            where: {
+              holder: unitid,
+              forunit: { [models.Op.or]: [company, null] },
+              type: { [models.Op.or]: ["admin", "editaddress"] }
+            }
+          });
+
+          if (!hasRight) {
+            throw new Error("You don't have the necessary rights!");
+          } else {
+            unitid = company;
+          }
+        } else await models.Address.destroy({ where: { id, unitid } });
+
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
   )
 };

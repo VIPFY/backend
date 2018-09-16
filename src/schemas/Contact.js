@@ -42,6 +42,7 @@ export const types = `
   }
 
   input AddressInput {
+    department: Boolean
     description: String
     country: String
     street: String
@@ -58,7 +59,8 @@ export const queries = `
 `;
 
 export const mutations = `
-  createAddress(addressData: AddressInput!, department: Boolean): Response!
+  createAddress(addressData: AddressInput!, department: Boolean): Address!
   # Without the id parameter, a new address will be generated. Otherwise it will be updated.
-  updateAddress(id: Int, country: String, address: AddressInput, description: String, priority: Int): Response!
+  updateAddress(id: Int, country: String, address: AddressInput, description: String, priority: Int, department: Boolean): Address!
+  deleteAddress(id: Int!, department: Boolean): Response!
 `;
