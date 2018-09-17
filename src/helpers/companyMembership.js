@@ -50,7 +50,7 @@ export const checkCompanyMembership = async (
 
   companyMembershipCache.set(cacheKey, inDepartment);
 
-  if (inDepartment) {
+  if (!inDepartment) {
     throw new AuthError(
       `This ${entityname} doesn't belong to the user's company!`
     );
