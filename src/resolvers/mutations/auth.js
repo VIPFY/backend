@@ -177,21 +177,16 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           if (newPw != confirmPw) throw new Error("New passwords don't match!");
-          if (pw == newPw)
+          if (pw == newPw) {
             throw new Error("Current and new password can't be the same one!");
+          }
 
           const {
             user: { unitid }
           } = await decode(token);
 
           const findOldPassword = await models.Login.findOne({
-            where: {
-              unitid,
-              verified: true,
-              banned: false,
-              deleted: false,
-              suspended: false
-            },
+            where: { unitid },
             raw: true
           });
           if (!findOldPassword) throw new Error("No database entry found!");

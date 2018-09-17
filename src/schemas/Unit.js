@@ -16,7 +16,6 @@ export const types = `
     lastname: String
     title: String
     sex: SEX
-    passwordhash: String
     birthday: String
     lastactive: String
     resetoption: Int

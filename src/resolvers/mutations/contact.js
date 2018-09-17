@@ -30,11 +30,11 @@ export default {
             }
           }
 
-          const { zip, street, city, tags, ...normalData } = addressData;
+          const { zip, street, city, ...normalData } = addressData;
           const address = { street, zip, city };
           // Remove main
           const newAddress = await models.Address.create(
-            { ...normalData, address, unitid, tags },
+            { ...normalData, address, unitid },
             { transaction: ta }
           );
 
@@ -51,17 +51,14 @@ export default {
   ),
 
   updateAddress: requiresAuth.createResolver(
-    async (parent, args, { models, token, ip }) =>
+    async (parent, { address, id }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           let {
             user: { unitid, company }
           } = decode(token);
 
-          let logArgs;
-          let address;
-
-          if (args.department) {
+          if (address.department) {
             const hasRight = await models.Right.findOne({
               where: {
                 holder: unitid,
@@ -77,31 +74,25 @@ export default {
             }
           }
 
-          if (!args.id) {
-            const newAddress = await models.Address.create(
-              { unitid, ...args },
-              { transaction: ta }
-            );
-            logArgs = { newAddress };
-            address = newAddress;
-          } else {
-            const oldAddress = await models.Address.findById(args.id, {
-              raw: true,
-              transaction: ta
-            });
-            const updatedAddress = await models.Address.update(
-              { ...args },
-              { where: { id: args.id }, returning: true, transaction: ta }
-            );
+          const oldAddress = await models.Address.findById(id, {
+            raw: true,
+            transaction: ta
+          });
 
-            // eslint-disable-next-line
-            address = updatedAddress[1];
-            logArgs = { oldAddress, updatedAddress: updatedAddress[1] };
-          }
+          const updatedAddress = await models.Address.update(
+            { ...address },
+            { where: { id }, returning: true, transaction: ta }
+          );
 
-          await createLog(ip, "updateAddress", logArgs, unitid, ta);
+          await createLog(
+            ip,
+            "updateAddress",
+            { oldAddress, updatedAddress: updatedAddress[1][0] },
+            unitid,
+            ta
+          );
 
-          return address;
+          return updatedAddress[1][0];
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -124,7 +115,8 @@ export default {
               holder: unitid,
               forunit: { [models.Op.or]: [company, null] },
               type: { [models.Op.or]: ["admin", "editaddress"] }
-            }
+            },
+            raw: true
           });
 
           if (!hasRight) {
@@ -132,7 +124,9 @@ export default {
           } else {
             unitid = company;
           }
-        } else await models.Address.destroy({ where: { id, unitid } });
+        }
+
+        await models.Address.destroy({ where: { id, unitid } });
 
         return { ok: true };
       } catch (err) {

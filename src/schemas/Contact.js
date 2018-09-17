@@ -55,12 +55,12 @@ export const types = `
 `;
 
 export const queries = `
-  fetchAddresses(forCompany: Int): [Address]!
+  fetchAddresses(forCompany: Boolean): [Address]!
 `;
 
 export const mutations = `
   createAddress(addressData: AddressInput!, department: Boolean): Address!
   # Without the id parameter, a new address will be generated. Otherwise it will be updated.
-  updateAddress(id: Int, country: String, address: AddressInput, description: String, priority: Int, department: Boolean): Address!
+  updateAddress(id: Int, address: AddressInput): Address!
   deleteAddress(id: Int!, department: Boolean): Response!
 `;
