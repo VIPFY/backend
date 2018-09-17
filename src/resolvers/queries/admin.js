@@ -339,5 +339,9 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  fetchServerStats: requiresVipfyAdmin.createResolver(
+    async (parent, args, context) => ({ data: { auth: getAuthStats() } })
   )
 };

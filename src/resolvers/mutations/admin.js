@@ -686,9 +686,5 @@ export default {
         throw new Error(err);
       }
     }
-  ),
-
-  fetchServerStats: requiresVipfyAdmin.createResolver(
-    async (parent, args, context) => ({ data: { auth: getAuthStats() } })
   )
 };
