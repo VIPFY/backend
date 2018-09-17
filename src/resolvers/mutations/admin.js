@@ -5,7 +5,6 @@ import { createProduct, createPlan, deletePlan } from "../../services/stripe";
 import { uploadFile, deleteFile } from "../../services/gcloud";
 import { appPicFolder, userPicFolder } from "../../constants";
 import { createPassword } from "../../helpers/functions";
-import { getAuthStats } from "../../helpers/auth";
 
 /* eslint-disable default-case */
 
