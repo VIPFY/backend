@@ -135,5 +135,5 @@ export const checkAuthentification = async (models, unitid, company) => {
 
 export const getAuthStats = () => ({
   unitAuthCache: unitAuthCache.getStats(),
-  companyMembershipCache: getCompanyMembershipCacheStats
+  companyMembershipCache: getCompanyMembershipCacheStats()
 });
