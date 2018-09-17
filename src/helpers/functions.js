@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { random } from "lodash";
 import moment from "moment";
 import models from "@vipfy-private/sequelize-setup";
-import { NormalError } from "../errors";
+import { NormalError, AuthError } from "../errors";
 import { pubsub, NEW_NOTIFICATION } from "../constants";
 
 /* eslint-disable no-return-assign */
@@ -32,7 +32,10 @@ export const parentAdminCheck = async user => {
       `Select DISTINCT (id) from department_employee_view where
         id not in (Select childid from department_employee_view where
         childid is Not null) and employee = :userId`,
-      { replacements: { userId: user.id }, type: models.sequelize.QueryTypes.SELECT }
+      {
+        replacements: { userId: user.id },
+        type: models.sequelize.QueryTypes.SELECT
+      }
     )
     .then(roots => roots.map(root => (user.company = root.id)));
 
@@ -50,20 +53,25 @@ export const formatFilename = filename => {
 };
 
 /*
-* Check whether the department belongs to the company
+* Check whether the department/user belongs to the company
 */
-export const checkDepartment = async (company, departmentid) => {
-  if (company == departmentid) return true;
+export const checkCompanyMembership = async (
+  company,
+  userid,
+  entityname = "Entity"
+) => {
+  const departments = await models.sequelize.query(
+    "SELECT childid FROM department_tree_view WHERE id = :company AND childid = :child AND level > 1 LIMIT 1",
+    {
+      replacements: { company, child: userid },
+      raw: true
+    }
+  );
 
-  const departments = await models.sequelize
-    .query("SELECT childid FROM department_tree_view WHERE id = ? AND level > 1", {
-      replacements: [company]
-    })
-    .spread(res => res)
-    .map(department => parseInt(department.childid));
-
-  if (!departments.includes(departmentid)) {
-    throw new Error("This department doesn't belong to the users company!");
+  if (departments.length == 0) {
+    throw new AuthError(
+      `This ${entityname} doesn't belong to the user's company!`
+    );
   }
 
   return true;
@@ -77,9 +85,8 @@ export const checkDepartment = async (company, departmentid) => {
 export const superset = (sup, sub) => {
   sup.sort();
   sub.sort();
-  let i,
-    j;
-  for (i = 0, j = 0; i < sup.length && j < sub.length;) {
+  let i, j;
+  for (i = 0, j = 0; i < sup.length && j < sub.length; ) {
     if (sup[i] < sub[j]) {
       ++i;
     } else if (sup[i] == sub[j]) {
@@ -151,7 +158,9 @@ export const createNotification = async (notificationBody, transaction) => {
       { transaction }
     );
 
-    pubsub.publish(NEW_NOTIFICATION, { newNotification: { ...notification.dataValues } });
+    pubsub.publish(NEW_NOTIFICATION, {
+      newNotification: { ...notification.dataValues }
+    });
 
     return notification;
   } catch (err) {

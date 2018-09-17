@@ -6,7 +6,7 @@
 
 import { decode } from "jsonwebtoken";
 import { checkRights } from "@vipfy-private/messaging";
-import { checkDepartment } from "./functions";
+import { checkCompanyMembership } from "./functions";
 import { AuthError, AdminError } from "../errors";
 
 const createResolver = resolver => {
@@ -35,7 +35,7 @@ export const requiresDepartmentCheck = requiresAuth.createResolver(
           user: { company }
         } = decode(token);
 
-        await checkDepartment(company, args.departmentid);
+        await checkCompanyMembership(company, args.departmentid);
       }
     } catch (err) {
       throw new AuthError(err);
@@ -50,6 +50,18 @@ export const requiresRights = rights =>
         const {
           user: { unitid: holder, company }
         } = await decode(token);
+
+        if (args.departmentid) {
+          await checkCompanyMembership(
+            company,
+            args.departmentid,
+            "department"
+          );
+        }
+
+        if (args.userid) {
+          await checkCompanyMembership(company, args.userid, "user");
+        }
 
         const hasRight = await models.Right.findOne({
           where: models.sequelize.and(
