@@ -76,6 +76,10 @@ export const types = `
     error: Error
   }
 
+  type JsonResponse {
+      data: JSON!
+    }
+
   type Error {
     code: Int!
     message: String!

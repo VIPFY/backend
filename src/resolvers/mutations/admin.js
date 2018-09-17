@@ -689,6 +689,6 @@ export default {
   ),
 
   fetchServerStats: requiresVipfyAdmin.createResolver(
-    async (parent, args, context) => ({ auth: getAuthStats() })
+    async (parent, args, context) => ({ data: { auth: getAuthStats() } })
   )
 };
