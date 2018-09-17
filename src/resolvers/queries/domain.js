@@ -3,7 +3,7 @@ import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
 export default {
-  fetchDomains: requiresRights("view-domains").createResolver(
+  fetchDomains: requiresRights(["view-domains"]).createResolver(
     async (parent, args, { models, token }) => {
       try {
         const {
