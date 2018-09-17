@@ -1,9 +1,9 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
 export default {
-  fetchAddresses: requiresAuth.createResolver(
+  fetchAddresses: requiresRights(["view-addresses"]).createResolver(
     async (parent, { forCompany }, { models, token }) => {
       try {
         let {

@@ -1,12 +1,12 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
 
 /* eslint-disable prefer-const */
 
 export default {
-  createAddress: requiresAuth.createResolver(
+  createAddress: requiresRights(["create-addresses"]).createResolver(
     (parent, { addressData, department }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -50,7 +50,7 @@ export default {
       })
   ),
 
-  updateAddress: requiresAuth.createResolver(
+  updateAddress: requiresRights(["edit-addresses"]).createResolver(
     async (parent, { address, id }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -102,7 +102,7 @@ export default {
       })
   ),
 
-  deleteAddress: requiresAuth.createResolver(
+  deleteAddress: requiresRights(["delete-addresses"]).createResolver(
     async (parent, { id, department }, { models, token }) => {
       try {
         let {

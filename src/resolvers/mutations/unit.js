@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { uploadFile } from "../../services/gcloud";
 import { userPicFolder } from "../../constants";
 import { NormalError } from "../../errors";
@@ -51,7 +51,7 @@ export default {
       })
   ),
 
-  updateUser: requiresAuth.createResolver(
+  updateUser: requiresRights(["edit-employees"]).createResolver(
     async (parent, { user }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {

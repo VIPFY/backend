@@ -145,4 +145,31 @@ describe("calcualtePlanPrice Tests", () => {
   test("test trivial inputs", () => {
     expect(checkPlanInputsSchema({}, {})).toBeTruthy();
   });
+
+  test("", () => {
+    const schema = [
+      {
+        type: "name",
+        default: "companyname",
+        editable: false,
+        required: true,
+        name: "companyname",
+      },
+      {
+        type: "address",
+        default: "companyaddress.contact",
+        possibleValues: ["companyaddresses", "departmentaddresses"],
+        required: true,
+        name: "companyaddress",
+      },
+      {
+        type: "domainname",
+        possibleValues: ["company.domainlist.domainname"],
+        multiselect: true,
+        required: true,
+        name: "domains",
+      },
+    ];
+    const input = 
+  })
 });

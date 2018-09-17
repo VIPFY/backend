@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
-import { requiresRight, requiresAuth } from "../../helpers/permissions";
+import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { createLog, createNotification } from "../../helpers/functions";
 import { calculatePlanPrice } from "../../helpers/apps";
 
@@ -26,7 +26,7 @@ export default {
    * @param {number} departmentid Identifier for the department the card is for.
    * @returns any
    */
-  addPaymentData: requiresRight(["admin", "addPayment"]).createResolver(
+  addPaymentData: requiresRights(["create-paymentdata"]).createResolver(
     async (parent, { data, departmentid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
@@ -127,7 +127,7 @@ export default {
    *
    * @return {any} ok
    */
-  buyPlan: requiresRight(["admin", "buyApps"]).createResolver(
+  buyPlan: requiresRights(["create-boughtplan"]).createResolver(
     async (
       parent,
       { planid, features, price, planinputs },
@@ -339,6 +339,7 @@ export default {
     }
   ),
 
+  /*
   // TODO: Add logging when changed
   createMonthlyBill: async (parent, args, { models, token }) => {
     try {
@@ -411,8 +412,10 @@ export default {
         }
       })
   ),
+  */
+
   // TODO: Add logging when changed
-  downloadBill: requiresAuth.createResolver(
+  downloadBill: requiresRights(["view-paymentdata"]).createResolver(
     async (parent, { billid }, { models, token }) => {
       try {
         const {

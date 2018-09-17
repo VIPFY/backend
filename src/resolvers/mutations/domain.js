@@ -2,7 +2,7 @@ import { decode } from "jsonwebtoken";
 import moment from "moment";
 import dd24Api from "../../services/dd24";
 
-import { requiresRight } from "../../helpers/permissions";
+import { requiresRights } from "../../helpers/permissions";
 import {
   recursiveAddressCheck,
   createLog,
@@ -11,7 +11,7 @@ import {
 import { PartnerError } from "../../errors";
 
 export default {
-  registerDomain: requiresRight(["admin", "registerdomain"]).createResolver(
+  registerDomain: requiresRights(["create-domains"]).createResolver(
     async (parent, { domainData }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
@@ -215,7 +215,7 @@ export default {
    * dns: object[]
    * @returns {any}
    */
-  updateDomain: requiresRight(["admin", "managedomains"]).createResolver(
+  updateDomain: requiresRights(["edit-domains"]).createResolver(
     (parent, { domainData, id }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {

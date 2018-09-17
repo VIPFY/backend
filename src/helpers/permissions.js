@@ -43,28 +43,41 @@ export const requiresDepartmentCheck = requiresAuth.createResolver(
   }
 );
 
-export const requiresRight = rights =>
-  requiresDepartmentCheck.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { unitid: holder, company }
-      } = await decode(token);
+export const requiresRights = rights =>
+  requiresDepartmentCheck.createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { unitid: holder, company }
+        } = await decode(token);
 
-      const hasRight = await models.Right.findOne({
-        where: {
-          holder,
-          forunit: { [models.Op.or]: [company, null] },
-          type: { [models.Op.or]: rights }
+        const hasRight = await models.Right.findOne({
+          where: models.sequelize.and(
+            { holder },
+            { forunit: { [models.Op.or]: [company, null] } },
+            models.sequelize.or(
+              { type: { [models.Op.and]: rights } },
+              { type: "admin" }
+            )
+          )
+        });
+
+        if (!hasRight) {
+          throw new AuthError({
+            message: "You don't have the necessary rights!"
+          });
         }
-      });
-
-      if (!hasRight) throw new AuthError({ message: "You don't have the necessary rights!" });
-    } catch (err) {
-      throw new AuthError({
-        message: "Opps, something went wrong. Please report this error with id auth_1"
-      });
+      } catch (err) {
+        if (err instanceof AuthError) {
+          throw err;
+        }
+        throw new AuthError({
+          message:
+            "Opps, something went wrong. Please report this error with id auth_1"
+        });
+      }
     }
-  });
+  );
 
 export const requiresMessageGroupRights = rights =>
   requiresAuth.createResolver(async (parent, args, { models, token }) => {
@@ -79,21 +92,24 @@ export const requiresMessageGroupRights = rights =>
       }
     } catch (err) {
       throw new AuthError({
-        message: "Oops, something went wrong. Please report this error with id auth_2"
+        message:
+          "Oops, something went wrong. Please report this error with id auth_2"
       });
     }
   });
 
-export const requiresVipfyAdmin = requiresAuth.createResolver(async (parent, args, { token }) => {
-  try {
-    const {
-      user: { unitid }
-    } = decode(token);
+export const requiresVipfyAdmin = requiresAuth.createResolver(
+  async (parent, args, { token }) => {
+    try {
+      const {
+        user: { unitid }
+      } = decode(token);
 
-    if (unitid != 7 && unitid != 22 && unitid != 67) {
+      if (unitid != 7 && unitid != 22 && unitid != 67) {
+        throw new AdminError();
+      }
+    } catch (err) {
       throw new AdminError();
     }
-  } catch (err) {
-    throw new AdminError();
   }
-});
+);

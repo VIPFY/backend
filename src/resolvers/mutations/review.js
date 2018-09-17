@@ -1,11 +1,11 @@
 import jwt from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
 /* eslint-disable no-unused-vars */
 
 export default {
-  writeReview: requiresAuth.createResolver(
+  writeReview: requiresRights(["view-apps"]).createResolver(
     async (parent, { appid, stars, text }, { models, token }) => {
       try {
         const {
@@ -38,7 +38,7 @@ export default {
     }
   ),
 
-  rateReview: requiresAuth.createResolver(
+  rateReview: requiresRights(["view-apps"]).createResolver(
     async (parent, { reviewid, balance }, { models, token }) => {
       try {
         const {

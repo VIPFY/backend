@@ -131,3 +131,7 @@ export const checkAuthentification = async (models, unitid, company) => {
   checkAuthentificationObject(userPerm, "User");
   checkAuthentificationObject(companyPerm, "Company");
 };
+
+export const getAuthStats = () => ({
+  unitAuthCache: unitAuthCache.getStats()
+});
