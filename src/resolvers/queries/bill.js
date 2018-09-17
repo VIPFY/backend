@@ -5,84 +5,90 @@ import { requiresAuth, requiresRight } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
 export default {
-  boughtPlans: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
+  boughtPlans: requiresAuth.createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
 
-      const boughtPlans = await models.BoughtPlan.findAll({
-        where: { usedby: company }
-      });
+        const boughtPlans = await models.BoughtPlan.findAll({
+          where: { usedby: company }
+        });
 
-      const ids = await boughtPlans.map(bp => bp.get("id"));
-      boughtPlans.forEach(bp => {
-        bp.licences = [];
-      });
+        const ids = await boughtPlans.map(bp => bp.get("id"));
+        boughtPlans.forEach(bp => {
+          bp.licences = [];
+        });
 
-      const licences = await models.Licence.findAll({
-        attributes: { exclude: ["key"] },
-        where: {
-          boughtplanid: { [models.sequelize.Op.or]: [...ids] }
-        }
-      });
-
-      await boughtPlans.map(boughtPlan =>
-        licences.forEach(licence => {
-          if (licence.boughtplanid == boughtPlan.id) {
-            boughtPlan.licences.push(licence);
+        const licences = await models.Licence.findAll({
+          attributes: { exclude: ["key"] },
+          where: {
+            boughtplanid: { [models.sequelize.Op.or]: [...ids] }
           }
-        })
-      );
+        });
 
-      return boughtPlans;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
-    }
-  }),
+        await boughtPlans.map(boughtPlan =>
+          licences.forEach(licence => {
+            if (licence.boughtplanid == boughtPlan.id) {
+              boughtPlan.licences.push(licence);
+            }
+          })
+        );
 
-  fetchBills: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { company: unitid }
-      } = decode(token);
-
-      const bills = await models.Bill.findAll({
-        where: { unitid },
-        order: [["billtime", "DESC"]]
-      });
-
-      return bills;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
-    }
-  }),
-
-  fetchPaymentData: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
-
-      const paymentData = await models.Unit.findOne({
-        where: { id: company },
-        attributes: ["payingoptions"],
-        raw: true
-      });
-
-      if (
-        !paymentData.payingoptions ||
-        !paymentData.payingoptions.stripe ||
-        paymentData.payingoptions.stripe.cards.length == 0
-      ) {
-        return [];
+        return boughtPlans;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
-
-      return paymentData.payingoptions.stripe.cards;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
     }
-  }),
+  ),
+
+  fetchBills: requiresAuth.createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { company: unitid }
+        } = decode(token);
+
+        const bills = await models.Bill.findAll({
+          where: { unitid },
+          order: [["billtime", "DESC"]]
+        });
+
+        return bills;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchPaymentData: requiresAuth.createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const paymentData = await models.Unit.findOne({
+          where: { id: company },
+          attributes: ["payingoptions"],
+          raw: true
+        });
+
+        if (
+          !paymentData.payingoptions ||
+          !paymentData.payingoptions.stripe ||
+          paymentData.payingoptions.stripe.cards.length == 0
+        ) {
+          return [];
+        }
+
+        return paymentData.payingoptions.stripe.cards;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
 
   fetchPlans: async (parent, { appid }, { models }) => {
     try {
@@ -92,7 +98,9 @@ export default {
       });
       // Filter out the main plans
       const mainPlans = allPlans.filter(
-        plan => plan.mainplan == null && (plan.enddate > Date.now() || plan.enddate == null)
+        plan =>
+          plan.mainplan == null &&
+          (plan.enddate > Date.now() || plan.enddate == null)
       );
       // Add to each main plan a property sub plan to store them later
       mainPlans.forEach(mainPlan => {
@@ -137,7 +145,7 @@ export default {
           where: { unitid: company, tags: ["billing"] }
         });
 
-        if (!addresses == 0) {
+        if (addresses.length == 0) {
           addresses = await models.Address.findAll({
             where: { unitid: company, tags: ["main"] }
           });
