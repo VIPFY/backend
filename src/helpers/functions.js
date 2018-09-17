@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { random } from "lodash";
 import moment from "moment";
 import models from "@vipfy-private/sequelize-setup";
-import { NormalError, AuthError } from "../errors";
+import { NormalError } from "../errors";
 import { pubsub, NEW_NOTIFICATION } from "../constants";
 
 /* eslint-disable no-return-assign */
@@ -50,31 +50,6 @@ export const formatFilename = filename => {
   const cleanFilename = filename.toLowerCase().replace(/[^a-z0-9]/g, "-");
 
   return `${date}-${randomString}-${cleanFilename}`;
-};
-
-/*
-* Check whether the department/user belongs to the company
-*/
-export const checkCompanyMembership = async (
-  company,
-  userid,
-  entityname = "Entity"
-) => {
-  const departments = await models.sequelize.query(
-    "SELECT childid FROM department_tree_view WHERE id = :company AND childid = :child AND level > 1 LIMIT 1",
-    {
-      replacements: { company, child: userid },
-      raw: true
-    }
-  );
-
-  if (departments.length == 0) {
-    throw new AuthError(
-      `This ${entityname} doesn't belong to the user's company!`
-    );
-  }
-
-  return true;
 };
 
 /**

@@ -6,7 +6,7 @@
 
 import { decode } from "jsonwebtoken";
 import { checkRights } from "@vipfy-private/messaging";
-import { checkCompanyMembership } from "./functions";
+import { checkCompanyMembership } from "./companyMembership";
 import { AuthError, AdminError } from "../errors";
 
 const createResolver = resolver => {
@@ -28,14 +28,19 @@ export const requiresAuth = createResolver(async (parent, args, { token }) => {
 });
 
 export const requiresDepartmentCheck = requiresAuth.createResolver(
-  async (parent, args, { token }) => {
+  async (parent, args, { models, token }) => {
     try {
       if (args.departmentid) {
         const {
           user: { company }
         } = decode(token);
 
-        await checkCompanyMembership(company, args.departmentid);
+        await checkCompanyMembership(
+          models,
+          company,
+          args.departmentid,
+          "department"
+        );
       }
     } catch (err) {
       throw new AuthError(err);
@@ -53,6 +58,7 @@ export const requiresRights = rights =>
 
         if (args.departmentid) {
           await checkCompanyMembership(
+            models,
             company,
             args.departmentid,
             "department"
@@ -60,7 +66,7 @@ export const requiresRights = rights =>
         }
 
         if (args.userid) {
-          await checkCompanyMembership(company, args.userid, "user");
+          await checkCompanyMembership(models, company, args.userid, "user");
         }
 
         const hasRight = await models.Right.findOne({

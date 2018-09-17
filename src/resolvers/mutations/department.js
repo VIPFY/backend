@@ -6,6 +6,7 @@ import { deleteFile, uploadFile } from "../../services/gcloud";
 import { createTokens } from "../../helpers/auth";
 import { NormalError } from "../../errors";
 import { createLog, createNotification } from "../../helpers/functions";
+import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 
 // import { sendRegistrationEmail } from "../../services/mailjet";
 
@@ -83,6 +84,8 @@ export default {
             refreshTokenSecret
           );
 
+          resetCompanyMembershipCache(company.id, unitid);
+
           return { ok: true, token: newToken, refreshToken };
         } catch (err) {
           throw new NormalError({
@@ -136,7 +139,7 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid: adder }
+            user: { unitid: adder, company }
           } = decode(token);
 
           let parentUnit = await models.ParentUnit.create(
@@ -154,6 +157,10 @@ export default {
             ta
           );
 
+          // just in case. This mutation shouldn't change actual company membership
+          resetCompanyMembershipCache(departmentid, unitid);
+          resetCompanyMembershipCache(company, unitid);
+
           return { ok: true };
         } catch (err) {
           throw new NormalError({
@@ -169,7 +176,7 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid }
+            user: { unitid, company }
           } = decode(token);
 
           const isEmail = email.indexOf("@");
@@ -214,6 +221,10 @@ export default {
             unitid,
             ta
           );
+
+          // brand new person, but better to be too careful
+          resetCompanyMembershipCache(departmentid, unit.id);
+          resetCompanyMembershipCache(company, unit.id);
 
           // sendRegistrationEmail(email, passwordhash);
 
@@ -401,7 +412,7 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid: id }
+            user: { unitid: id, company }
           } = decode(token);
 
           const oldParentUnit = await models.ParentUnit.findOne({
@@ -423,6 +434,9 @@ export default {
             ta
           );
 
+          resetCompanyMembershipCache(departmentid, unitid);
+          resetCompanyMembershipCache(company, unitid);
+
           return { ok: true };
         } catch (err) {
           throw new NormalError({
@@ -438,7 +452,7 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid: id }
+            user: { unitid: id, company }
           } = decode(token);
 
           const p1 = await models.Unit.findById(unitid);
@@ -520,6 +534,8 @@ export default {
             id,
             ta
           );
+
+          resetCompanyMembershipCache(company, unitid);
 
           return { ok: true };
         } catch (err) {
