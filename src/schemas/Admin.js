@@ -53,5 +53,5 @@ export const mutations = `
 
   adminFetchUser(name: String!): [User!]
 
-  getServerStats: JSON!
+  fetchServerStats: JSON!
 `;
