@@ -19,7 +19,7 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "create-address"] }
+                type: { [models.Op.or]: ["admin", "create-addresses"] }
               }
             });
 
@@ -63,7 +63,7 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "edit-address"] }
+                type: { [models.Op.or]: ["admin", "edit-addresses"] }
               }
             });
 
@@ -81,7 +81,7 @@ export default {
 
           const updatedAddress = await models.Address.update(
             { ...address },
-            { where: { id }, returning: true, transaction: ta }
+            { where: { id, unitid }, returning: true, transaction: ta }
           );
 
           await createLog(
@@ -115,7 +115,7 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "delete-address"] }
+                type: { [models.Op.or]: ["admin", "delete-addresses"] }
               },
               raw: true
             });
@@ -163,7 +163,7 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "create-phone"] }
+                type: { [models.Op.or]: ["admin", "create-phones"] }
               }
             });
 
@@ -204,7 +204,7 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "edit-phone"] }
+                type: { [models.Op.or]: ["admin", "edit-phones"] }
               }
             });
 
@@ -222,7 +222,7 @@ export default {
 
           const updatedPhone = await models.Address.update(
             { ...phone },
-            { where: { id }, returning: true, transaction: ta }
+            { where: { id, unitid }, returning: true, transaction: ta }
           );
 
           await createLog(
@@ -256,7 +256,7 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "delete-phone"] }
+                type: { [models.Op.or]: ["admin", "delete-phones"] }
               },
               raw: true
             });

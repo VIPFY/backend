@@ -1,11 +1,12 @@
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { userPicFolder } from "../../constants";
-import { requiresAuth, requiresRight } from "../../helpers/permissions";
+import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { deleteFile, uploadFile } from "../../services/gcloud";
 import { createTokens } from "../../helpers/auth";
 import { NormalError } from "../../errors";
 import { createLog, createNotification } from "../../helpers/functions";
+import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 
 // import { sendRegistrationEmail } from "../../services/mailjet";
 
@@ -19,6 +20,13 @@ export default {
           } = decode(token);
 
           if (companyExists) {
+            throw new Error("This user is already assigned to a company!");
+          }
+
+          const parentunit = await models.ParentUnit.findOne({
+            where: { childunit: unitid }
+          });
+          if (parentunit) {
             throw new Error("This user is already assigned to a company!");
           }
 
@@ -76,6 +84,8 @@ export default {
             refreshTokenSecret
           );
 
+          resetCompanyMembershipCache(company.id, unitid);
+
           return { ok: true, token: newToken, refreshToken };
         } catch (err) {
           throw new NormalError({
@@ -86,7 +96,7 @@ export default {
       })
   ),
 
-  updateStatisticData: requiresRight(["admin"]).createResolver(
+  updateStatisticData: requiresRights(["edit-departments"]).createResolver(
     (parent, { data }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -124,12 +134,12 @@ export default {
       })
   ),
 
-  addEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
+  addEmployee: requiresRights(["create-employees"]).createResolver(
     (parent, { unitid, departmentid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid: adder }
+            user: { unitid: adder, company }
           } = decode(token);
 
           let parentUnit = await models.ParentUnit.create(
@@ -147,6 +157,10 @@ export default {
             ta
           );
 
+          // just in case. This mutation shouldn't change actual company membership
+          resetCompanyMembershipCache(departmentid, unitid);
+          resetCompanyMembershipCache(company, unitid);
+
           return { ok: true };
         } catch (err) {
           throw new NormalError({
@@ -157,12 +171,12 @@ export default {
       })
   ),
 
-  addCreateEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
+  addCreateEmployee: requiresRights(["create-employees"]).createResolver(
     async (parent, { email, departmentid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid }
+            user: { unitid, company }
           } = decode(token);
 
           const isEmail = email.indexOf("@");
@@ -208,6 +222,10 @@ export default {
             ta
           );
 
+          // brand new person, but better to be too careful
+          resetCompanyMembershipCache(departmentid, unit.id);
+          resetCompanyMembershipCache(company, unit.id);
+
           // sendRegistrationEmail(email, passwordhash);
 
           return { ok: true };
@@ -220,7 +238,7 @@ export default {
       })
   ),
 
-  addSubDepartment: requiresRight(["admin", "manageemployees"]).createResolver(
+  addSubDepartment: requiresRights(["create-departments"]).createResolver(
     async (parent, { departmentid, name }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -263,132 +281,138 @@ export default {
       })
   ),
 
-  editDepartmentName: requiresRight([
-    "admin",
-    "manageemployees"
-  ]).createResolver((parent, { departmentid, name }, { models, token, ip }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(token);
+  editDepartmentName: requiresRights(["edit-departments"]).createResolver(
+    (parent, { departmentid, name }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
 
-        const updatedDepartment = await models.DepartmentData.update(
-          { name },
-          { where: { unitid: departmentid }, returning: true, transaction: ta }
-        );
+          const updatedDepartment = await models.DepartmentData.update(
+            { name },
+            {
+              where: { unitid: departmentid },
+              returning: true,
+              transaction: ta
+            }
+          );
 
-        await createLog(
-          ip,
-          "editDepartmentName",
-          { updatedDepartment: updatedDepartment[1] },
-          unitid,
-          ta
-        );
+          await createLog(
+            ip,
+            "editDepartmentName",
+            { updatedDepartment: updatedDepartment[1] },
+            unitid,
+            ta
+          );
 
-        return { ok: true };
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    })
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   ),
 
-  deleteSubDepartment: requiresRight([
-    "admin",
-    "manageemployees"
-  ]).createResolver(async (parent, { departmentid }, { models, token, ip }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(token);
+  deleteSubDepartment: requiresRights(["delete-departments"]).createResolver(
+    async (parent, { departmentid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
 
-        const options = { transaction: ta, raw: true };
-        const updateOptions = {
-          where: { id: departmentid },
-          returning: true,
-          ...options
-        };
-        const destroyData = {
-          where: { unitid: departmentid },
-          options
-        };
+          const options = { transaction: ta, raw: true };
+          const updateOptions = {
+            where: { id: departmentid },
+            returning: true,
+            ...options
+          };
+          const destroyData = {
+            where: { unitid: departmentid },
+            options
+          };
 
-        const p1 = models.Unit.findOne(updateOptions);
-        const p2 = models.DepartmentData.findOne(updateOptions);
-        const p3 = models.Email.findOne(destroyData);
-        const p4 = models.Address.findOne(destroyData);
-        const p5 = models.Phone.findOne(destroyData);
-        const p6 = models.ParentUnit.findOne(
-          {
-            where: {
-              [models.Op.or]: [
-                { childunit: departmentid },
-                { parentunit: departmentid }
-              ]
-            }
-          },
-          options
-        );
+          const p1 = models.Unit.findOne(updateOptions);
+          const p2 = models.DepartmentData.findOne(updateOptions);
+          const p3 = models.Email.findOne(destroyData);
+          const p4 = models.Address.findOne(destroyData);
+          const p5 = models.Phone.findOne(destroyData);
+          const p6 = models.ParentUnit.findOne(
+            {
+              where: {
+                [models.Op.or]: [
+                  { childunit: departmentid },
+                  { parentunit: departmentid }
+                ]
+              }
+            },
+            options
+          );
 
-        const p7 = models.Unit.update({ deleted: true }, updateOptions);
-        const p8 = models.DepartmentData.update(
-          { name: "Deleted Department" },
-          updateOptions
-        );
-        const p9 = models.Email.destroy(destroyData);
-        const p10 = models.Address.destroy(destroyData);
-        const p11 = models.Phone.destroy(destroyData);
-        const p12 = models.ParentUnit.destroy(
-          {
-            where: {
-              [models.Op.or]: [
-                { childunit: departmentid },
-                { parentunit: departmentid }
-              ]
-            }
-          },
-          options
-        );
+          const p7 = models.Unit.update({ deleted: true }, updateOptions);
+          const p8 = models.DepartmentData.update(
+            { name: "Deleted Department" },
+            updateOptions
+          );
+          const p9 = models.Email.destroy(destroyData);
+          const p10 = models.Address.destroy(destroyData);
+          const p11 = models.Phone.destroy(destroyData);
+          const p12 = models.ParentUnit.destroy(
+            {
+              where: {
+                [models.Op.or]: [
+                  { childunit: departmentid },
+                  { parentunit: departmentid }
+                ]
+              }
+            },
+            options
+          );
 
-        const [
-          oldUnit,
-          oldDepartment,
-          oldEmail,
-          oldAddress,
-          oldPhone,
-          oldParentUnit
-        ] = await Promise.all([p1, p2, p3, p4, p5, p6]);
-        await Promise.all([p7, p8, p9, p10, p11, p12]);
-
-        await createLog(
-          ip,
-          "deleteSubDepartment",
-          {
+          const [
             oldUnit,
             oldDepartment,
             oldEmail,
             oldAddress,
             oldPhone,
             oldParentUnit
-          },
-          unitid,
-          ta
-        );
+          ] = await Promise.all([p1, p2, p3, p4, p5, p6]);
+          await Promise.all([p7, p8, p9, p10, p11, p12]);
 
-        return { ok: true };
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    })
+          await createLog(
+            ip,
+            "deleteSubDepartment",
+            {
+              oldUnit,
+              oldDepartment,
+              oldEmail,
+              oldAddress,
+              oldPhone,
+              oldParentUnit
+            },
+            unitid,
+            ta
+          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   ),
 
-  removeEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
+  removeEmployee: requiresRights(["delete-employees"]).createResolver(
     async (parent, { unitid, departmentid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid: id }
+            user: { unitid: id, company }
           } = decode(token);
 
           const oldParentUnit = await models.ParentUnit.findOne({
@@ -410,6 +434,9 @@ export default {
             ta
           );
 
+          resetCompanyMembershipCache(departmentid, unitid);
+          resetCompanyMembershipCache(company, unitid);
+
           return { ok: true };
         } catch (err) {
           throw new NormalError({
@@ -420,12 +447,12 @@ export default {
       })
   ),
 
-  fireEmployee: requiresRight(["admin", "manageemployees"]).createResolver(
+  fireEmployee: requiresRights(["delete-employees"]).createResolver(
     async (parent, { unitid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid: id }
+            user: { unitid: id, company }
           } = decode(token);
 
           const p1 = await models.Unit.findById(unitid);
@@ -508,6 +535,8 @@ export default {
             ta
           );
 
+          resetCompanyMembershipCache(company, unitid);
+
           return { ok: true };
         } catch (err) {
           throw new NormalError({
@@ -518,7 +547,7 @@ export default {
       })
   ),
 
-  updateCompanyPic: requiresRight(["admin"]).createResolver(
+  updateCompanyPic: requiresRights(["edit-departments"]).createResolver(
     async (parent, { file }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {

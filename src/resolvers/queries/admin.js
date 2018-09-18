@@ -3,6 +3,7 @@ import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { parentAdminCheck } from "../../helpers/functions";
 import { listInvoices } from "../../services/stripe";
 import { NormalError } from "../../errors";
+import { getAuthStats } from "../../helpers/auth";
 
 export default {
   adminFetchListLength: requiresVipfyAdmin.createResolver(
@@ -55,8 +56,9 @@ export default {
           const p2 = models.Right.findOne({ where: { holder: unitid } });
           const [me, rights] = await Promise.all([p1, p2]);
 
-          if (!rights.type || rights.type != "admin")
+          if (!rights.type || rights.type != "admin") {
             throw new Error("Not an Admin!");
+          }
           if (me.suspended) throw new Error("This User is suspended!");
           if (me.banned) throw new Error("This User is banned!");
           if (me.deleted) throw new Error("This User got deleted!");
@@ -147,26 +149,28 @@ export default {
     }
   ),
 
-  allUsers: async (parent, { limit, offset }, { models }) => {
-    try {
-      const users = await models.User.findAll({
-        limit,
-        offset,
-        order: [
-          [
-            models.sequelize.literal(
-              `CASE WHEN firstName = 'Deleted' THEN 1 ELSE 0 END`
-            ),
-            "ASC"
+  allUsers: requiresVipfyAdmin.createResolver(
+    async (parent, { limit, offset }, { models }) => {
+      try {
+        const users = await models.User.findAll({
+          limit,
+          offset,
+          order: [
+            [
+              models.sequelize.literal(
+                `CASE WHEN firstName = 'Deleted' THEN 1 ELSE 0 END`
+              ),
+              "ASC"
+            ]
           ]
-        ]
-      });
+        });
 
-      return users;
-    } catch (err) {
-      throw new Error(err);
+        return users;
+      } catch (err) {
+        throw new Error(err);
+      }
     }
-  },
+  ),
 
   fetchUser: requiresVipfyAdmin.createResolver(
     async (parent, { id }, { models }) => {
@@ -336,5 +340,9 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  fetchServerStats: requiresVipfyAdmin.createResolver(
+    async (parent, args, context) => ({ data: { auth: getAuthStats() } })
   )
 };

@@ -6,7 +6,7 @@
 
 import { decode } from "jsonwebtoken";
 import { checkRights } from "@vipfy-private/messaging";
-import { checkDepartment } from "./functions";
+import { checkCompanyMembership } from "./companyMembership";
 import { AuthError, AdminError } from "../errors";
 
 const createResolver = resolver => {
@@ -28,14 +28,19 @@ export const requiresAuth = createResolver(async (parent, args, { token }) => {
 });
 
 export const requiresDepartmentCheck = requiresAuth.createResolver(
-  async (parent, args, { token }) => {
+  async (parent, args, { models, token }) => {
     try {
       if (args.departmentid) {
         const {
           user: { company }
         } = decode(token);
 
-        await checkDepartment(company, args.departmentid);
+        await checkCompanyMembership(
+          models,
+          company,
+          args.departmentid,
+          "department"
+        );
       }
     } catch (err) {
       throw new AuthError(err);
@@ -43,28 +48,54 @@ export const requiresDepartmentCheck = requiresAuth.createResolver(
   }
 );
 
-export const requiresRight = rights =>
-  requiresDepartmentCheck.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { unitid: holder, company }
-      } = await decode(token);
+export const requiresRights = rights =>
+  requiresDepartmentCheck.createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { unitid: holder, company }
+        } = await decode(token);
 
-      const hasRight = await models.Right.findOne({
-        where: {
-          holder,
-          forunit: { [models.Op.or]: [company, null] },
-          type: { [models.Op.or]: rights }
+        if (args.departmentid) {
+          await checkCompanyMembership(
+            models,
+            company,
+            args.departmentid,
+            "department"
+          );
         }
-      });
 
-      if (!hasRight) throw new AuthError({ message: "You don't have the necessary rights!" });
-    } catch (err) {
-      throw new AuthError({
-        message: "Opps, something went wrong. Please report this error with id auth_1"
-      });
+        if (args.userid) {
+          await checkCompanyMembership(models, company, args.userid, "user");
+        }
+
+        const hasRight = await models.Right.findOne({
+          where: models.sequelize.and(
+            { holder },
+            { forunit: { [models.Op.or]: [company, null] } },
+            models.sequelize.or(
+              { type: { [models.Op.and]: rights } },
+              { type: "admin" }
+            )
+          )
+        });
+
+        if (!hasRight) {
+          throw new AuthError({
+            message: "You don't have the necessary rights!"
+          });
+        }
+      } catch (err) {
+        if (err instanceof AuthError) {
+          throw err;
+        }
+        throw new AuthError({
+          message:
+            "Opps, something went wrong. Please report this error with id auth_1"
+        });
+      }
     }
-  });
+  );
 
 export const requiresMessageGroupRights = rights =>
   requiresAuth.createResolver(async (parent, args, { models, token }) => {
@@ -79,21 +110,24 @@ export const requiresMessageGroupRights = rights =>
       }
     } catch (err) {
       throw new AuthError({
-        message: "Oops, something went wrong. Please report this error with id auth_2"
+        message:
+          "Oops, something went wrong. Please report this error with id auth_2"
       });
     }
   });
 
-export const requiresVipfyAdmin = requiresAuth.createResolver(async (parent, args, { token }) => {
-  try {
-    const {
-      user: { unitid }
-    } = decode(token);
+export const requiresVipfyAdmin = requiresAuth.createResolver(
+  async (parent, args, { token }) => {
+    try {
+      const {
+        user: { unitid }
+      } = decode(token);
 
-    if (unitid != 7 && unitid != 22 && unitid != 67) {
+      if (unitid != 7 && unitid != 22 && unitid != 67) {
+        throw new AdminError();
+      }
+    } catch (err) {
       throw new AdminError();
     }
-  } catch (err) {
-    throw new AdminError();
   }
-});
+);

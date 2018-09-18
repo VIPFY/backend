@@ -1,12 +1,18 @@
+import { requiresRights } from "../../helpers/permissions";
+
 export default {
-  allReviews: (parent, args, { models }) => models.Review.findAll(),
+  allReviews: requiresRights(["view-apps"]).createResolver(
+    (parent, args, { models }) => models.Review.findAll()
+  ),
 
-  fetchReviews: async (parent, { appid }, { models }) => {
-    const reviews = await models.Review.findAll({
-      where: { appid },
-      attributes: { include: [["unitid", "reviewer"]] }
-    });
+  fetchReviews: requiresRights(["view-apps"]).createResolver(
+    async (parent, { appid }, { models }) => {
+      const reviews = await models.Review.findAll({
+        where: { appid },
+        attributes: { include: [["unitid", "reviewer"]] }
+      });
 
-    return reviews;
-  }
+      return reviews;
+    }
+  )
 };

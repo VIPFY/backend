@@ -1,18 +1,16 @@
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
 import { NormalError } from "../../errors";
-import {
-  requiresDepartmentCheck,
-  requiresRight,
-  requiresAuth
-} from "../../helpers/permissions";
+import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { createLog, createNotification } from "../../helpers/functions";
 import logger from "../../loggers";
 
 /* eslint-disable no-return-await */
 
 export default {
-  distributeLicenceToDepartment: requiresDepartmentCheck.createResolver(
+  distributeLicenceToDepartment: requiresRights([
+    "create-licences"
+  ]).createResolver(
     (
       parent,
       { departmentid, boughtplanid, licencetype },
@@ -181,9 +179,8 @@ export default {
       })
   ),
 
-  revokeLicencesFromDepartment: requiresRight([
-    "distributelicences",
-    "admin"
+  revokeLicencesFromDepartment: requiresRights([
+    "delete-licences"
   ]).createResolver(
     (parent, { departmentid, boughtplanid }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
@@ -246,7 +243,7 @@ export default {
       })
   ),
 
-  distributeLicence: requiresDepartmentCheck.createResolver(
+  distributeLicence: requiresRights(["create-licences"]).createResolver(
     (parent, { boughtplanid, unitid, departmentid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
@@ -420,7 +417,7 @@ export default {
       })
   ),
 
-  revokeLicence: requiresDepartmentCheck.createResolver(
+  revokeLicence: requiresRights(["delete-licences"]).createResolver(
     async (parent, { licenceid: id }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
         const {

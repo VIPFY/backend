@@ -32,7 +32,10 @@ export const parentAdminCheck = async user => {
       `Select DISTINCT (id) from department_employee_view where
         id not in (Select childid from department_employee_view where
         childid is Not null) and employee = :userId`,
-      { replacements: { userId: user.id }, type: models.sequelize.QueryTypes.SELECT }
+      {
+        replacements: { userId: user.id },
+        type: models.sequelize.QueryTypes.SELECT
+      }
     )
     .then(roots => roots.map(root => (user.company = root.id)));
 
@@ -49,26 +52,6 @@ export const formatFilename = filename => {
   return `${date}-${randomString}-${cleanFilename}`;
 };
 
-/*
-* Check whether the department belongs to the company
-*/
-export const checkDepartment = async (company, departmentid) => {
-  if (company == departmentid) return true;
-
-  const departments = await models.sequelize
-    .query("SELECT childid FROM department_tree_view WHERE id = ? AND level > 1", {
-      replacements: [company]
-    })
-    .spread(res => res)
-    .map(department => parseInt(department.childid));
-
-  if (!departments.includes(departmentid)) {
-    throw new Error("This department doesn't belong to the users company!");
-  }
-
-  return true;
-};
-
 /**
  * check if sup is a superset of sub, i.e. if each element of sub is in sup
  * @param {*} sup
@@ -77,9 +60,8 @@ export const checkDepartment = async (company, departmentid) => {
 export const superset = (sup, sub) => {
   sup.sort();
   sub.sort();
-  let i,
-    j;
-  for (i = 0, j = 0; i < sup.length && j < sub.length;) {
+  let i, j;
+  for (i = 0, j = 0; i < sup.length && j < sub.length; ) {
     if (sup[i] < sub[j]) {
       ++i;
     } else if (sup[i] == sub[j]) {
@@ -151,7 +133,9 @@ export const createNotification = async (notificationBody, transaction) => {
       { transaction }
     );
 
-    pubsub.publish(NEW_NOTIFICATION, { newNotification: { ...notification.dataValues } });
+    pubsub.publish(NEW_NOTIFICATION, {
+      newNotification: { ...notification.dataValues }
+    });
 
     return notification;
   } catch (err) {

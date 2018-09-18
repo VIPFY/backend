@@ -1,11 +1,11 @@
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
-import { requiresAuth, requiresRight } from "../../helpers/permissions";
+import { requiresRights } from "../../helpers/permissions";
 // import { fetchCustomer } from "../../services/stripe";
 import { NormalError } from "../../errors";
 
 export default {
-  boughtPlans: requiresAuth.createResolver(
+  boughtPlans: requiresRights(["view-boughtplans"]).createResolver(
     async (parent, args, { models, token }) => {
       try {
         const {
@@ -43,26 +43,27 @@ export default {
     }
   ),
 
-  fetchBills: requiresAuth.createResolver(
-    async (parent, args, { models, token }) => {
-      try {
-        const {
-          user: { company: unitid }
-        } = decode(token);
+  fetchBills: requiresRights([
+    "view-paymentdata",
+    "view-addresses"
+  ]).createResolver(async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { company: unitid }
+      } = decode(token);
 
-        const bills = await models.Bill.findAll({
-          where: { unitid },
-          order: [["billtime", "DESC"]]
-        });
+      const bills = await models.Bill.findAll({
+        where: { unitid },
+        order: [["billtime", "DESC"]]
+      });
 
-        return bills;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
+      return bills;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
-  ),
+  }),
 
-  fetchPaymentData: requiresAuth.createResolver(
+  fetchPaymentData: requiresRights(["view-paymentdata"]).createResolver(
     async (parent, args, { models, token }) => {
       try {
         const {
@@ -90,50 +91,54 @@ export default {
     }
   ),
 
-  fetchPlans: async (parent, { appid }, { models }) => {
-    try {
-      const allPlans = await models.Plan.findAll({
-        where: { appid },
-        order: [["price", "ASC"]]
-      });
-      // Filter out the main plans
-      const mainPlans = allPlans.filter(
-        plan =>
-          plan.mainplan == null &&
-          (plan.enddate > Date.now() || plan.enddate == null)
-      );
-      // Add to each main plan a property sub plan to store them later
-      mainPlans.forEach(mainPlan => {
-        mainPlan.subplans = [];
-      });
-      // Filter out the sub plans
-      const subPlans = allPlans.filter(plan => plan.mainplan != null);
-      // Add the sub plans to it's main plan
-      subPlans.forEach(subPlan => {
-        if (subPlan.enddate == null || subPlan.enddate > Date.now()) {
-          mainPlans.forEach(mainPlan => {
-            if (
-              subPlan.mainplan == mainPlan.id &&
-              (mainPlan.enddate == null || mainPlan.enddate > Date.now())
-            ) {
-              mainPlan.subplans.push(subPlan);
-            }
-          });
-        }
-      });
+  fetchPlans: requiresRights(["view-apps"]).createResolver(
+    async (parent, { appid }, { models }) => {
+      try {
+        const allPlans = await models.Plan.findAll({
+          where: { appid },
+          order: [["price", "ASC"]]
+        });
+        // Filter out the main plans
+        const mainPlans = allPlans.filter(
+          plan =>
+            plan.mainplan == null &&
+            (plan.enddate > Date.now() || plan.enddate == null)
+        );
+        // Add to each main plan a property sub plan to store them later
+        mainPlans.forEach(mainPlan => {
+          mainPlan.subplans = [];
+        });
+        // Filter out the sub plans
+        const subPlans = allPlans.filter(plan => plan.mainplan != null);
+        // Add the sub plans to it's main plan
+        subPlans.forEach(subPlan => {
+          if (subPlan.enddate == null || subPlan.enddate > Date.now()) {
+            mainPlans.forEach(mainPlan => {
+              if (
+                subPlan.mainplan == mainPlan.id &&
+                (mainPlan.enddate == null || mainPlan.enddate > Date.now())
+              ) {
+                mainPlan.subplans.push(subPlan);
+              }
+            });
+          }
+        });
 
-      return mainPlans;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return mainPlans;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  },
+  ),
 
-  fetchPlanInputs: async (parent, { planid }, { models }) => {
-    const plan = await models.Plan.findById(planid, { raw: true });
-    return Services.getPlanBuySchema(plan.appid);
-  },
+  fetchPlanInputs: requiresRights(["view-apps"]).createResolver(
+    async (parent, { planid }, { models }) => {
+      const plan = await models.Plan.findById(planid, { raw: true });
+      return Services.getPlanBuySchema(plan.appid);
+    }
+  ),
 
-  fetchBillingAddresses: requiresRight(["buyapps", "admin"]).createResolver(
+  fetchBillingAddresses: requiresRights(["view-addresses"]).createResolver(
     async (parent, args, { models, token }) => {
       try {
         const {

@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { requiresRight, requiresAuth } from "../../helpers/permissions";
+import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
 export default {
@@ -17,7 +17,7 @@ export default {
     }
   ),
 
-  fetchCompanySize: requiresRight(["admin"]).createResolver(
+  fetchCompanySize: requiresRights(["view-employees"]).createResolver(
     async (parent, args, { models, token }) => {
       try {
         const {
@@ -34,7 +34,7 @@ export default {
     }
   ),
 
-  fetchDepartments: requiresAuth.createResolver(
+  fetchDepartments: requiresRights(["view-departments"]).createResolver(
     async (parent, args, { models, token }) => {
       try {
         const {
@@ -54,7 +54,7 @@ export default {
     }
   ),
 
-  fetchDepartmentsData: requiresAuth.createResolver(
+  fetchDepartmentsData: requiresRights(["view-departments"]).createResolver(
     async (parent, args, { models, token }) => {
       try {
         const {
@@ -74,7 +74,7 @@ export default {
     }
   ),
 
-  fetchEmployees: requiresAuth.createResolver(
+  fetchEmployees: requiresRights(["view-employees"]).createResolver(
     async (parent, args, { models, token }) => {
       try {
         const {

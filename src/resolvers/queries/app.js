@@ -3,54 +3,60 @@ import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
-import { requiresAuth, requiresRight } from "../../helpers/permissions";
+import { requiresAuth, requiresRights } from "../../helpers/permissions";
 
 export default {
-  allApps: async (parent, { limit, offset, sortOptions }, { models }) => {
-    try {
-      const allApps = await models.AppDetails.findAll({
-        limit,
-        offset,
-        attributes: [
-          "id",
-          "icon",
-          "logo",
-          "disabled",
-          "name",
-          "teaserdescription",
-          "features",
-          "cheapestprice",
-          "avgstars",
-          "cheapestpromo"
-        ],
-        order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
-      });
+  allApps: requiresRights(["view-apps"]).createResolver(
+    async (parent, { limit, offset, sortOptions }, { models }) => {
+      try {
+        const allApps = await models.AppDetails.findAll({
+          limit,
+          offset,
+          attributes: [
+            "id",
+            "icon",
+            "logo",
+            "disabled",
+            "name",
+            "teaserdescription",
+            "features",
+            "cheapestprice",
+            "avgstars",
+            "cheapestpromo"
+          ],
+          order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
+        });
 
-      return allApps;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return allApps;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  },
+  ),
 
-  fetchApp: async (parent, { name }, { models }) => {
-    try {
-      const app = await models.AppDetails.findOne({ where: { name } });
+  fetchApp: requiresRights(["view-apps"]).createResolver(
+    async (parent, { name }, { models }) => {
+      try {
+        const app = await models.AppDetails.findOne({ where: { name } });
 
-      return app;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return app;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  },
+  ),
 
-  fetchAppById: async (parent, { id }, { models }) => {
-    try {
-      const app = await models.AppDetails.findById(id);
+  fetchAppById: requiresRights(["view-apps"]).createResolver(
+    async (parent, { id }, { models }) => {
+      try {
+        const app = await models.AppDetails.findById(id);
 
-      return app;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return app;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  },
+  ),
 
   fetchLicences: requiresAuth.createResolver(
     async (parent, { licenceid }, { models, token }, info) => {
@@ -156,7 +162,7 @@ export default {
     }
   ),
 
-  fetchUsersOwnLicences: requiresAuth.createResolver(
+  fetchUsersOwnLicences: requiresRights(["view-licences"]).createResolver(
     async (parent, { unitid }, { models, token }) => {
       try {
         const {
@@ -222,7 +228,7 @@ export default {
     }
   ),
 
-  fetchUnitApps: requiresRight(["distributelicences", "admin"]).createResolver(
+  fetchUnitApps: requiresRights(["view-licences"]).createResolver(
     async (parent, { departmentid }, { models }) => {
       try {
         const userApps = await models.sequelize

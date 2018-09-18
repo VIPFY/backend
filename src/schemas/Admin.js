@@ -21,6 +21,9 @@ export const queries = `
   listStripeInvoices: JSON
   adminFetchListLength: ListCountResponse!
   adminFetchDepartments(company: Int!, limit: Int, offset: Int): [DepartmentDataResponse]!
+
+  # fetch perfomance statistics for this specific server
+  fetchServerStats: JsonResponse!
 `;
 
 export const mutations = `
@@ -52,4 +55,6 @@ export const mutations = `
   adminRemoveLicence(licenceid: Int!): Response!
 
   adminFetchUser(name: String!): [User!]
+
+  flushLocalCaches: Response!
 `;

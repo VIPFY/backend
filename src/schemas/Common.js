@@ -90,9 +90,6 @@ export const mutations = `
   # Checks whether an email already exists in our database
   checkEmail(email: String): Response!
 
-  # Checks whether a name of an app already exists in our database
-  checkName(name: String): Response!
-
   readNotification(id: Int!): Boolean!
   readAllNotifications: Boolean!
 `;
