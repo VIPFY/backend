@@ -25,5 +25,29 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  fetchPhones: requiresAuth.createResolver(
+    async (parent, { forCompany }, { models, token }) => {
+      try {
+        let {
+          // eslint-disable-next-line
+          user: { unitid, company }
+        } = decode(token);
+
+        if (forCompany) {
+          unitid = company;
+        }
+
+        const phones = await models.Phone.findAll({
+          where: { unitid },
+          order: [["priority", "ASC"]]
+        });
+
+        return phones;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };
