@@ -57,7 +57,6 @@ export const types = `
   input PhoneInput {
     department: Boolean
     number: String
-    verified: Boolean
     description: String
     priority: Int
     tags: [String]
