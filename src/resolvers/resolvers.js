@@ -88,7 +88,6 @@ export default {
     employee: "User"
   }),
   Domain: find({
-    unitid: "Department",
     boughtplanid: "BoughtPlan"
   }),
   Email: find({}),
