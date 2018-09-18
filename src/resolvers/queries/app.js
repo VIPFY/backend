@@ -232,7 +232,7 @@ export default {
               bp.usedby AND r.type = 'canuselicences' AND r.holder = :departmentid)
               OR bp.usedby = :departmentid INNER JOIN plan_data p
               on bp.planid = p.id INNER JOIN app_data a on p.appid = a.id
-              WHERE not app_data.disabled`,
+              WHERE not a.disabled`,
             { replacements: { departmentid } }
           )
           .spread(res => res);
