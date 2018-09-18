@@ -2,7 +2,10 @@ import jwt from "jsonwebtoken";
 import { pick } from "lodash";
 import { parentAdminCheck } from "./functions";
 import { AuthError } from "../errors";
-import { getCompanyMembershipCacheStats } from "./companyMembership";
+import {
+  getCompanyMembershipCacheStats,
+  flushCompanyMembershipCache
+} from "./companyMembership";
 
 export const createTokens = async (user, SECRET, SECRET_TWO) => {
   try {
@@ -137,3 +140,8 @@ export const getAuthStats = () => ({
   unitAuthCache: unitAuthCache.getStats(),
   companyMembershipCache: getCompanyMembershipCacheStats()
 });
+
+export const flushAuthCaches = () => {
+  unitAuthCache.flushAll();
+  flushCompanyMembershipCache();
+};

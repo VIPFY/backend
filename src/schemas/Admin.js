@@ -55,4 +55,6 @@ export const mutations = `
   adminRemoveLicence(licenceid: Int!): Response!
 
   adminFetchUser(name: String!): [User!]
+
+  flushLocalCaches: Response!
 `;

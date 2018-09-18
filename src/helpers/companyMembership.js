@@ -70,3 +70,6 @@ export const resetCompanyMembershipCache = async (company, entityid) => {
 
 export const getCompanyMembershipCacheStats = () =>
   companyMembershipCache.getStats();
+
+export const flushCompanyMembershipCache = () =>
+  companyMembershipCache.flushAll();
