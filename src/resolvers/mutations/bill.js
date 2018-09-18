@@ -179,6 +179,15 @@ export default {
             throw new Error(`The plan ${plan.name} has already expired!`);
           }
 
+          const app = await models.App.findOne({
+            where: { id: plan.appid, deprecated: false, disabled: false },
+            raw: true
+          });
+
+          if (!app) {
+            throw new Error("App not found, maybe it is disabled/deprecated");
+          }
+
           const calculatedPrice = calculatePlanPrice(
             plan.price,
             plan.features,

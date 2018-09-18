@@ -2,6 +2,7 @@ import { decode } from "jsonwebtoken";
 import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
+import { checkCompanyMembership } from "../../helpers/companyMembership";
 
 /* eslint-disable prefer-const */
 
@@ -78,6 +79,8 @@ export default {
             raw: true,
             transaction: ta
           });
+
+          await checkCompanyMembership(models, company, oldAddress.unitid);
 
           const updatedAddress = await models.Address.update(
             { ...address },

@@ -1,7 +1,13 @@
 import { company, lorem, internet } from "faker";
-import { executeQuery, testDefault, testAuthentication, context, adminToken } from "./helper";
+import {
+  executeQuery,
+  testDefault,
+  testAuthentication,
+  context,
+  adminToken
+} from "./helper";
 import { dummyApp, dummyNewApp, dummyResponse } from "./dummies";
-import { allApps, fetchApp, fetchAppById } from "./queries";
+import { allApps, fetchAppById } from "./queries";
 import { createApp, updateApp, toggleAppStatus, deleteApp } from "./mutations";
 
 /* eslint array-callback-return: "off" */
@@ -13,15 +19,6 @@ const testQueries = [
     name: "allApps",
     dummy: dummyApp,
     arrayTest: true
-  },
-  {
-    description: "fetchApp should fetch an App when given a correct name",
-    operation: fetchApp,
-    name: "fetchApp",
-    dummy: dummyApp,
-    args: {
-      name: "Weebly"
-    }
   },
   {
     description: "fetchAppById should fetch an App when given an id",
@@ -134,14 +131,26 @@ describe("This workflow", () => {
 
     await expect(newApp.errors).toBeUndefined();
     await expect(newApp.data.createApp).toEqual(dummyResponse);
-    const fetchedApp = await executeQuery(fetchApp, { name: app.name }, context);
-    const { data: { fetchApp: { id } } } = fetchedApp;
+    const fetchedApp = await executeQuery(
+      fetchApp,
+      { name: app.name },
+      context
+    );
+    const {
+      data: {
+        fetchApp: { id }
+      }
+    } = fetchedApp;
 
     const appUpdate = {
       description: lorem.text(),
       website: internet.domainName()
     };
-    const updatedApp = await executeQuery(updateApp, { appid: id, app: appUpdate }, context);
+    const updatedApp = await executeQuery(
+      updateApp,
+      { appid: id, app: appUpdate },
+      context
+    );
 
     await expect(updatedApp.errors).toBeUndefined();
     await expect(updatedApp.data.updateApp).toEqual(dummyResponse);

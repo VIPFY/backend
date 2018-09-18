@@ -77,9 +77,6 @@ export const queries = `
   # Returns all apps in Vipfy
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
 
-  # Returns a specific app by name
-  fetchApp(name: String!): AppDetails
-
   # Returns a specific app by id
   fetchAppById(id: Int!): AppDetails
 
