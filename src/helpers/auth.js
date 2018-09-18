@@ -61,7 +61,6 @@ export const refreshTokens = async (
     }
 
     const refreshSecret = user.passwordhash + SECRET_TWO;
-
     await jwt.verify(refreshToken, refreshSecret);
 
     const refreshUser = await parentAdminCheck(basicUser);
@@ -78,7 +77,7 @@ export const refreshTokens = async (
     };
   } catch (err) {
     console.log(err);
-    return {};
+    throw new Error(err);
   }
 };
 
