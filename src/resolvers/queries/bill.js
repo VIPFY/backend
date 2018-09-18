@@ -101,37 +101,21 @@ export default {
           throw new Error("App unknown or disabled/deprecated");
         }
 
-        const allPlans = await models.Plan.findAll({
-          where: { appid },
-          order: [["price", "ASC"]]
-        });
-        // Filter out the main plans
-        const mainPlans = allPlans.filter(
-          plan =>
-            plan.mainplan == null &&
-            (plan.enddate > Date.now() || plan.enddate == null)
-        );
-        // Add to each main plan a property sub plan to store them later
-        mainPlans.forEach(mainPlan => {
-          mainPlan.subplans = [];
-        });
-        // Filter out the sub plans
-        const subPlans = allPlans.filter(plan => plan.mainplan != null);
-        // Add the sub plans to it's main plan
-        subPlans.forEach(subPlan => {
-          if (subPlan.enddate == null || subPlan.enddate > Date.now()) {
-            mainPlans.forEach(mainPlan => {
-              if (
-                subPlan.mainplan == mainPlan.id &&
-                (mainPlan.enddate == null || mainPlan.enddate > Date.now())
-              ) {
-                mainPlan.subplans.push(subPlan);
-              }
-            });
+        const allPlans = await models.sequelize.query(
+          `Select *
+          FROM plan_data
+          WHERE appid = :appid
+          AND (enddate >= now() OR enddate is null)
+          AND (startdate <= now() OR startdate is null)
+          ORDER BY price ASC`,
+          {
+            replacements: { appid },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT
           }
-        });
+        );
 
-        return mainPlans;
+        return allPlans;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

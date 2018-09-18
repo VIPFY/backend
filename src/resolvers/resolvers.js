@@ -59,7 +59,7 @@ const Mutation = Object.assign(
 const unit = { unitid: "Unit" };
 const unitAndPlan = { sponsor: "Unit", planid: "Plan" };
 const developerAndSupport = { developer: "Unit", supportunit: "Unit" };
-const plans = { appid: "App", gotoplan: "Plan", mainplan: "Plan" };
+const plans = { appid: "App", gotoplan: "Plan" };
 
 export default {
   Query,

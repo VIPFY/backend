@@ -48,8 +48,6 @@ export const types = `
     gototime: String
     appid: App!
     gotoplan: Plan
-    mainplan: Plan
-    subplans: [Plan]
   }
 
   input PlanInput {
@@ -68,7 +66,6 @@ export const types = `
     gototime: String
     appid: Int
     gotoplan: Int
-    mainplan: Int
   }
 
   # The plans a unit bought
