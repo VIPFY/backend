@@ -27,7 +27,7 @@ export default {
     }
   ),
 
-  fetchPhones: requiresAuth.createResolver(
+  fetchPhones: requiresRights(["view-phones"]).createResolver(
     async (parent, { forCompany }, { models, token }) => {
       try {
         let {
