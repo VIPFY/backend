@@ -94,6 +94,13 @@ export default {
   fetchPlans: requiresRights(["view-apps"]).createResolver(
     async (parent, { appid }, { models }) => {
       try {
+        const app = await models.App.findOne({
+          where: { id: appid, disabled: false, deprecated: false }
+        });
+        if (!app) {
+          throw new Error("App unknown or disabled/deprecated");
+        }
+
         const allPlans = await models.Plan.findAll({
           where: { appid },
           order: [["price", "ASC"]]

@@ -110,29 +110,6 @@ export const allApps = `
   }
 `;
 
-export const fetchApp = `
-  query FetchApp($name: String!){
-    fetchApp(name: $name) {
-      id
-      name
-      commission
-      disabled
-      description
-      teaserdescription
-      website
-      features
-      options
-      developer {
-        id
-      }
-      supportunit {
-        id
-      }
-      images
-    }
-  }
-`;
-
 export const fetchAppById = `
   query FetchAppById($id: Int!){
     fetchAppById(id: $id) {

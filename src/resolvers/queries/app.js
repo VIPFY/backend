@@ -24,6 +24,7 @@ export default {
             "avgstars",
             "cheapestpromo"
           ],
+          where: { disabled: false, deprecated: false },
           order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
         });
 
@@ -34,22 +35,12 @@ export default {
     }
   ),
 
-  fetchApp: requiresRights(["view-apps"]).createResolver(
-    async (parent, { name }, { models }) => {
-      try {
-        const app = await models.AppDetails.findOne({ where: { name } });
-
-        return app;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
   fetchAppById: requiresRights(["view-apps"]).createResolver(
     async (parent, { id }, { models }) => {
       try {
-        const app = await models.AppDetails.findById(id);
+        const app = await models.AppDetails.findOne({
+          where: { id, disabled: false, deprecated: false }
+        });
 
         return app;
       } catch (err) {
@@ -68,7 +59,8 @@ export default {
         let query = `SELECT licence_data.*, plan_data.appid FROM licence_data JOIN
            boughtplan_data ON licence_data.boughtplanid = boughtplan_data.id
            JOIN plan_data ON boughtplan_data.planid = plan_data.id
-           WHERE licence_data.unitid = :unitid`;
+           JOIN app_data ON plan_data.appid = app_data.id
+           WHERE licence_data.unitid = :unitid AND not app_data.disabled`;
 
         const replacements = { unitid };
 
@@ -239,7 +231,8 @@ export default {
               FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit =
               bp.usedby AND r.type = 'canuselicences' AND r.holder = :departmentid)
               OR bp.usedby = :departmentid INNER JOIN plan_data p
-              on bp.planid = p.id INNER JOIN app_data a on p.appid = a.id`,
+              on bp.planid = p.id INNER JOIN app_data a on p.appid = a.id
+              WHERE not app_data.disabled`,
             { replacements: { departmentid } }
           )
           .spread(res => res);
