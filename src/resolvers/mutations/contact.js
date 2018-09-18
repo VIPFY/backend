@@ -2,7 +2,6 @@ import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
-import { checkCompanyMembership } from "../../helpers/companyMembership";
 
 /* eslint-disable prefer-const */
 
@@ -80,10 +79,14 @@ export default {
             transaction: ta
           });
 
-          await checkCompanyMembership(models, company, oldAddress.unitid);
+          const { zip, street, city, ...normalData } = address;
+          const addressData = { zip, street, city };
 
           const updatedAddress = await models.Address.update(
-            { ...address },
+            {
+              ...normalData,
+              address: { ...oldAddress.address, ...addressData }
+            },
             { where: { id, unitid }, returning: true, transaction: ta }
           );
 
@@ -223,7 +226,7 @@ export default {
             transaction: ta
           });
 
-          const updatedPhone = await models.Address.update(
+          const updatedPhone = await models.Phone.update(
             { ...phone },
             { where: { id, unitid }, returning: true, transaction: ta }
           );
