@@ -28,7 +28,7 @@ enum ORDER {
 
 type Notification {
   id: Int!
-  receiver: User!
+  receiver: PublicUser!
   sendtime: String!
   readtime: String!
   message: String

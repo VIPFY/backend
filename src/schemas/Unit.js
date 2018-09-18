@@ -1,26 +1,8 @@
 export const types = `
   type Unit {
     id: Int!
-    banned: Boolean!
-    deleted: Boolean!
-    suspended: Boolean!
     profilepicture: String
-    riskvalue: Int
     createdate: String!
-  }
-
-  type Human {
-    unitid: Unit!
-    firstname: String
-    middlename: String
-    lastname: String
-    title: String
-    sex: SEX
-    birthday: String
-    lastactive: String
-    resetoption: Int
-    language: String
-    statisticdata: JSON
   }
 
   type User {
@@ -28,7 +10,6 @@ export const types = `
     firstname: String
     middlename: String
     lastname: String
-    length: Int
     title: String
     sex: SEX
     birthday: String
@@ -38,7 +19,6 @@ export const types = `
     deleted: Boolean!
     suspended: Boolean!
     profilepicture: String
-    riskvalue: Int
     emails: [Email]
     createdate: String
     company: Department
@@ -56,13 +36,23 @@ export const types = `
     password: String
     email: String
     oldemail: String
-    verified: Boolean
-    banned: Boolean
     title: String
     sex: SEX
     birthday: Date
     language: String
     statisticdata: JSON
+  }
+
+  type PublicUser {
+    id: ID!
+    firstname: String
+    middlename: String
+    lastname: String
+    title: String
+    sex: SEX
+    birthday: Date
+    language: String
+    profilepicture: String
   }
 `;
 

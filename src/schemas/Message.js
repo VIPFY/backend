@@ -43,18 +43,6 @@ export const types = `
     createdat: Date
   }
 
-  type PublicUser {
-    id: ID!
-    firstname: String
-    middlename: String
-    lastname: String
-    title: String
-    sex: SEX
-    birthday: Date
-    language: String
-    profilepicture: String
-  }
-
   type MessageGroup {
     id: ID!
     name: String

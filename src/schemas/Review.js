@@ -1,7 +1,7 @@
 export const types = `
   type Review {
     id: ID!
-    unitid: User!
+    unitid: PublicUser!
     appid: App!
     reviewdate: String!
     stars: Int
@@ -14,7 +14,7 @@ export const types = `
 
   type ReviewData {
     id: ID!
-    unitid: User!
+    unitid: PublicUser!
     appid: App!
     reviewdate: String!
     stars: Int
@@ -24,7 +24,7 @@ export const types = `
 
   type ReviewHelpful {
     reviewid: Review!
-    unitid: User!
+    unitid: PublicUser!
     comment: String
     helpfuldate: String!
     balance: Int

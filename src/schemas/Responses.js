@@ -51,7 +51,7 @@ export const types = `
     children: [Int]
     children_data: JSON
     department: Department
-    employees: [User]
+    employees: [PublicUser]
     level: Int
     parent: Int
   }

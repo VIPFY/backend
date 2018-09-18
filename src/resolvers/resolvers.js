@@ -92,7 +92,6 @@ export default {
     boughtplanid: "BoughtPlan"
   }),
   Email: find(unit),
-  Human: find(unit),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),
   Log: find({ user: "User", sudoer: "User" }),
   Message: find({ receiver: "Human" }),

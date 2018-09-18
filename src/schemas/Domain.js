@@ -7,7 +7,6 @@ export const types = `
     renewalmode: String!
     whoisprivacy: Boolean!
     statisticdata: JSON
-    unitid: User!
     dns: JSON,
     boughtplanid: BoughtPlan!
   }
