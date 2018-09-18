@@ -251,20 +251,6 @@ export default {
         });
         // Filter out the main plans
         const mainPlans = allPlans.filter(plan => plan.mainplan == null);
-        // Add to each main plan a property sub plan to store them later
-        mainPlans.forEach(mainPlan => {
-          mainPlan.subplans = [];
-        });
-        // Filter out the sub plans
-        const subPlans = allPlans.filter(plan => plan.mainplan != null);
-        // Add the sub plans to it's main plan
-        subPlans.forEach(subPlan => {
-          mainPlans.forEach(mainPlan => {
-            if (subPlan.mainplan == mainPlan.id) {
-              mainPlan.subplans.push(subPlan);
-            }
-          });
-        });
 
         return mainPlans;
       } catch ({ message }) {

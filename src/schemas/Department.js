@@ -6,8 +6,8 @@ export const types = `
   }
 
   type Right {
-    holder: User!
-    forunit: User
+    holder: PublicUser!
+    forunit: PublicUser
     type: String!
   }
 
@@ -20,7 +20,7 @@ export const types = `
     suspended: Boolean!
     profilepicture: String
     employees: Int
-    employeedata: [User]!
+    employeedata: [PublicUser]!
     manageemployees: Boolean
     managelicences: Boolean
     apps: JSON
@@ -47,7 +47,7 @@ export const types = `
   type DepartmentEmployee {
     id: Department!
     childid: Unit
-    employee: User
+    employee: PublicUser
   }
 
   input CompanyInput {
