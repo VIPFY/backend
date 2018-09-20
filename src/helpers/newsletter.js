@@ -33,8 +33,7 @@ export async function newsletterSignup(models, email, name) {
       reply_to: {
         email: "support@vipfy.store",
         name: "Vipfy Support"
-      },
-      subject: "Please confirm your newsletter signup"
+      }
     }
   });
   logger.debug("Newsletter signup done", { a, b });
