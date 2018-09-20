@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
 import { pick } from "lodash";
-import { parentAdminCheck } from "./functions";
 import { AuthError } from "../errors";
 import {
   getCompanyMembershipCacheStats,
@@ -37,43 +36,35 @@ export const refreshTokens = async (
   SECRET,
   SECRET_TWO
 ) => {
-  let userId = 0;
-
   try {
     const {
       user: { unitid }
     } = await jwt.decode(refreshToken);
-    userId = unitid;
 
-    if (!userId) {
-      return {};
+    if (!unitid) {
+      throw new Error("Token has no valid User!");
     }
 
-    const p1 = await models.Human.findOne({
-      where: { unitid: userId },
+    const user = await models.Login.findOne({
+      where: { unitid },
       raw: true
     });
-    const p2 = await models.User.findOne({ where: { id: userId }, raw: true });
-    const [user, basicUser] = await Promise.all([p1, p2]);
 
     if (!user) {
-      return {};
+      throw new Error("User not found!");
     }
 
     const refreshSecret = user.passwordhash + SECRET_TWO;
     await jwt.verify(refreshToken, refreshSecret);
 
-    const refreshUser = await parentAdminCheck(basicUser);
-
     const [newToken, newRefreshToken] = await createTokens(
-      refreshUser,
+      user,
       SECRET,
       refreshSecret
     );
     return {
       token: newToken,
-      refreshToken: newRefreshToken,
-      refreshUser
+      refreshToken: newRefreshToken
     };
   } catch (err) {
     console.log(err);
@@ -122,6 +113,10 @@ const checkAuthentificationObject = (permissions, name) => {
 };
 
 export const checkAuthentification = async (models, unitid, company) => {
+  if (unitid === undefined || unitid === null || unitid === "null") {
+    throw new AuthError();
+  }
+
   if (company === undefined || company === null || company === "null") {
     company = unitid; // a bit of a hack to make the code simpler
   }
