@@ -300,7 +300,7 @@ export default {
 
   newsletterSignup: async (parent, { email, name }, { models }) => {
     try {
-      newsletterSignup(models, email, name);
+      await newsletterSignup(models, email, name);
       return { ok: true };
     } catch (err) {
       logger.err(err);

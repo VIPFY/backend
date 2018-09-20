@@ -1,5 +1,7 @@
 import * as cryptoRandomString from "crypto-random-string";
 
+import logger from "../../loggers";
+
 const Client = require("@sendgrid/client");
 
 Client.setApiKey(
@@ -9,7 +11,7 @@ Client.setApiKey(
 export async function newsletterSignup(models, email, name) {
   const token = cryptoRandomString(10);
   models.newsletterSignup.create({ email, token, name });
-  await Client.request({
+  const [a, b] = await Client.request({
     method: "POST",
     url: "/v3/mail/send",
     body: {
@@ -35,6 +37,7 @@ export async function newsletterSignup(models, email, name) {
       ]
     }
   });
+  logger.debug("Newsletter signup done", { a, b });
   return true;
 }
 
