@@ -30,8 +30,9 @@ export default {
       try {
         const emailExists = await models.Email.findOne({ where: { email } });
 
-        if (emailExists)
+        if (emailExists) {
           throw new Error("There already exists an account with this email");
+        }
 
         return { ok: true };
       } catch (err) {
@@ -72,6 +73,26 @@ export default {
         );
 
         return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message });
+      }
+    }
+  ),
+
+  checkName: requiresAuth.createResolver(
+    async (parent, { name }, { models }) => {
+      if (!name) return { ok: true };
+
+      try {
+        const nameExists = await models.App.findOne({
+          where: { name: { [models.sequelize.Op.iLike]: `%${name}` } }
+        });
+
+        if (nameExists) {
+          throw new Error("There already exists an app with this name");
+        }
+
+        return { ok: true };
       } catch (err) {
         throw new NormalError({ message: err.message });
       }
