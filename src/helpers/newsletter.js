@@ -23,17 +23,17 @@ export async function newsletterSignup(models, email, name) {
             url: `https://vipfy.store/verifyemail/${encodeURIComponent(
               email
             )}/${token}`
-          },
-          from: {
-            email: "no-reply@vifpy.store",
-            name: "Vipfy Newsletter"
-          },
-          reply_to: {
-            email: "support@vipfy.store",
-            name: "Vipfy Support"
           }
         }
-      ]
+      ],
+      from: {
+        email: "no-reply@vifpy.store",
+        name: "Vipfy Newsletter"
+      },
+      reply_to: {
+        email: "support@vipfy.store",
+        name: "Vipfy Support"
+      }
     }
   });
   logger.debug("Newsletter signup done", { a, b });
