@@ -1,7 +1,6 @@
-import * as cryptoRandomString from "crypto-random-string";
+import logger from "../loggers";
 
-import logger from "../../loggers";
-
+const cryptoRandomString = require("crypto-random-string");
 const Client = require("@sendgrid/client");
 
 Client.setApiKey(
