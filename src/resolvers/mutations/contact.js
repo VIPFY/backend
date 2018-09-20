@@ -303,7 +303,7 @@ export default {
       await newsletterSignup(models, email, name);
       return { ok: true };
     } catch (err) {
-      logger.err(err);
+      logger.error(err);
       throw new NormalError({
         message: "there was a problem with adding you to our newsletter",
         internalData: { err }
