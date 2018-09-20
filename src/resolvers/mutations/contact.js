@@ -2,6 +2,8 @@ import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
+import { newsletterSignup } from "../../helpers/newsletter";
+import logger from "../../loggers";
 
 /* eslint-disable prefer-const */
 
@@ -294,5 +296,18 @@ export default {
           });
         }
       })
-  )
+  ),
+
+  newsletterSignup: async (parent, { email, name }, { models }) => {
+    try {
+      newsletterSignup(models, email, name);
+      return { ok: true };
+    } catch (err) {
+      logger.err(err);
+      throw new NormalError({
+        message: "there was a problem with adding you to our newsletter",
+        internalData: { err }
+      });
+    }
+  }
 };
