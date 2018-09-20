@@ -18,7 +18,7 @@ export async function newsletterSignup(models, email, name) {
       personalizations: [
         {
           to: [{ email, name }],
-          substitutions: {
+          dynamic_template_data: {
             name,
             url: `https://vipfy.store/verifyemail/${encodeURIComponent(
               email
