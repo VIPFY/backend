@@ -17,7 +17,7 @@ export async function newsletterSignup(models, email, name) {
       template_id: "d-8059caceeda04753a138e623ba6f67e5",
       personalizations: [
         {
-          to: { email, name },
+          to: [{ email, name }],
           substitutions: {
             name,
             url: `https://vipfy.store/verifyemail/${encodeURIComponent(
