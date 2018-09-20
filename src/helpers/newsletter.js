@@ -2,14 +2,14 @@ import * as cryptoRandomString from "crypto-random-string";
 
 const Client = require("@sendgrid/client");
 
-const sendgrid = Client(
+Client.setApiKey(
   "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"
 );
 
 export async function newsletterSignup(models, email, name) {
   const token = cryptoRandomString(10);
   models.newsletterSignup.create({ email, token, name });
-  await sendgrid.request({
+  await Client.request({
     method: "POST",
     url: "/v3/mail/send",
     body: {
