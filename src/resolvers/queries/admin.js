@@ -6,6 +6,22 @@ import { NormalError } from "../../errors";
 import { getAuthStats } from "../../helpers/auth";
 
 export default {
+  adminFetchAllApps: requiresVipfyAdmin.createResolver(
+    async (parent, { limit, offset, sortOptions }, { models }) => {
+      try {
+        const allApps = await models.AppDetails.findAll({
+          limit,
+          offset,
+          order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
+        });
+
+        return allApps;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   adminFetchListLength: requiresVipfyAdmin.createResolver(
     async (parent, args, { models }) => {
       try {
@@ -52,13 +68,8 @@ export default {
           const {
             user: { unitid }
           } = decode(token);
-          const p1 = models.User.findById(unitid);
-          const p2 = models.Right.findOne({ where: { holder: unitid } });
-          const [me, rights] = await Promise.all([p1, p2]);
+          const me = await models.User.findById(unitid);
 
-          if (!rights.type || rights.type != "admin") {
-            throw new Error("Not an Admin!");
-          }
           if (me.suspended) throw new Error("This User is suspended!");
           if (me.banned) throw new Error("This User is banned!");
           if (me.deleted) throw new Error("This User got deleted!");
@@ -149,6 +160,18 @@ export default {
     }
   ),
 
+  adminFetchAppById: requiresVipfyAdmin.createResolver(
+    async (parent, { id }, { models }) => {
+      try {
+        const app = await models.AppDetails.findById(id);
+
+        return app;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   allUsers: requiresVipfyAdmin.createResolver(
     async (parent, { limit, offset }, { models }) => {
       try {
@@ -188,26 +211,7 @@ export default {
   allCompanies: requiresVipfyAdmin.createResolver(
     async (parent, { limit, offset }, { models }) => {
       try {
-        const childunits = await models.ParentUnit.findAll({
-          attributes: ["childunit"],
-          limit,
-          offset,
-          raw: true
-        });
-        const ids = childunits.map(id => id.childunit);
-
-        const roots = await models.ParentUnit.findAll({
-          where: { parentunit: { [models.sequelize.Op.notIn]: ids } },
-          attributes: ["parentunit"],
-          limit,
-          offset,
-          raw: true
-        });
-
-        const companyIds = roots.map(root => root.parentunit);
-
         const companies = await models.Department.findAll({
-          where: { unitid: companyIds },
           limit,
           offset
         });
@@ -255,6 +259,18 @@ export default {
         return mainPlans;
       } catch ({ message }) {
         throw new Error(message);
+      }
+    }
+  ),
+
+  adminFetchPlan: requiresVipfyAdmin.createResolver(
+    async (parent, { planid }, { models }) => {
+      try {
+        const plan = await models.Plan.findById(planid);
+
+        return plan;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   ),

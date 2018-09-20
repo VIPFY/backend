@@ -8,7 +8,10 @@ export const queries = `
   # Checks whether the user is an admin
   admin: User
 
+  adminFetchAllApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
+  adminFetchAppById(id: Int!): AppDetails!
   adminFetchPlans(appid: Int!): [Plan]!
+  adminFetchPlan(planid: Int!): Plan!
   # Returns an user. Should only be usable by an admin
   fetchUser(id: Int!): User!
   fetchRecentLogs(user: Int!): [Log]!

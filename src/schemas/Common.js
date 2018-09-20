@@ -89,7 +89,7 @@ export const mutations = `
 
   # Checks whether an email already exists in our database
   checkEmail(email: String): Response!
-
+  checkName(name: String): Response!
   readNotification(id: Int!): Boolean!
   readAllNotifications: Boolean!
 `;

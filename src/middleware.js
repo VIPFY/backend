@@ -25,9 +25,9 @@ export const authMiddleware = async (req, res, next) => {
       req.user = user;
       const { unitid, company } = user;
 
-      checkAuthentification(models, unitid, company);
+      await checkAuthentification(models, unitid, company);
     } catch (err) {
-      console.error(err);
+      logger.info(err);
       if (err.name == "TokenExpiredError") {
         // If the token has expired, we use the refreshToken to assign new ones
         const refreshToken = req.headers["x-refresh-token"];
@@ -43,7 +43,6 @@ export const authMiddleware = async (req, res, next) => {
           res.set("x-token", newTokens.token);
           res.set("x-refresh-token", newTokens.refreshToken);
         }
-        req.user = newTokens.user;
       } else {
         logger.info(err, { token });
         req.headers["x-token"] = undefined;
