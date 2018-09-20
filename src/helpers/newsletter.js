@@ -9,7 +9,7 @@ Client.setApiKey(
 
 export async function newsletterSignup(models, email, name) {
   const token = cryptoRandomString(10);
-  models.NewsletterSignup.create({ email, token, name });
+  await models.NewsletterSignup.create({ email, token, name });
   const [a, b] = await Client.request({
     method: "POST",
     url: "/v3/mail/send",
