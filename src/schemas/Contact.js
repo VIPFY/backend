@@ -73,4 +73,6 @@ export const mutations = `
   createPhone(phoneData: PhoneInput!, department: Boolean): Phone!
   updatePhone(id: Int, phone: PhoneInput): Phone!
   deletePhone(id: Int!, department: Boolean): Response!
+
+  newsletterSignup(email: String!, name: String): Response!
 `;
