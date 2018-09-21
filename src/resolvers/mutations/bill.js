@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
-import { requiresRights, requiresAuth } from "../../helpers/permissions";
+import { requiresRights } from "../../helpers/permissions";
 import { createLog, createNotification } from "../../helpers/functions";
 import { calculatePlanPrice } from "../../helpers/apps";
 
@@ -10,7 +10,8 @@ import {
   createCustomer,
   listCards,
   addCard,
-  createSubscription
+  createSubscription,
+  changeDefaultCard
 } from "../../services/stripe";
 import { BillingError } from "../../errors";
 import logger from "../../loggers";
@@ -115,6 +116,35 @@ export default {
           });
         }
       })
+  ),
+
+  changeDefaultMethod: requiresRights(["edit-paymentData"]).createResolver(
+    async (parent, { card }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const department = await models.Unit.findById(company, {
+          raw: true
+        });
+
+        const stripeId = department.payingoptions.stripe.id;
+
+        const res = await changeDefaultCard(stripeId, card);
+
+        console.log(res.sources.data);
+        const updatedDepartment = await models.Unit.update(
+          { payingoptions: { stripe: { cards: res.sources.data } } },
+          { where: { id: company }, returning: true }
+        );
+        console.log(updatedDepartment);
+
+        return { ok: true };
+      } catch (err) {
+        throw new BillingError({ message: err.message, internalData: { err } });
+      }
+    }
   ),
 
   /**

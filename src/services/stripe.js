@@ -148,3 +148,23 @@ export const listInvoices = async () => {
     throw new Error(err.message);
   }
 };
+
+/**
+ * Changes the default Card
+ *
+ * @exports
+ * @param {string} customer Id of the customer at Stripe
+ * @param {string} card ID of the card to make it the customer’s new default.
+ * @returns {object} Returns the customer object
+ */
+export const changeDefaultCard = async (customer, card) => {
+  try {
+    const res = await stripe.customers.update(customer, {
+      default_source: card
+    });
+
+    return res;
+  } catch (err) {
+    throw new Error({ message: err.message });
+  }
+};
