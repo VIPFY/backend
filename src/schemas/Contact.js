@@ -75,4 +75,5 @@ export const mutations = `
   deletePhone(id: Int!, department: Boolean): Response!
 
   newsletterSignup(email: String!, firstname: String, lastname: String): Response!
+  newsletterSignupConfirm(email: String!, token: String!): Response!
 `;
