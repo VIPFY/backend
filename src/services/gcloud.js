@@ -35,8 +35,8 @@ const { GCLOUD_PLATFORM_ID } = process.env;
 
 // Creates a client
 const storage = new Storage({
-  GCLOUD_PLATFORM_ID,
-  keyFilename: path.join(__dirname, "../..", "Vipfy-4c183d5274a4.json")
+  GCLOUD_PLATFORM_ID
+  // keyFilename: path.join(__dirname, "../..", "Vipfy-4c183d5274a4.json")
 });
 
 // The Buckets name
@@ -48,7 +48,9 @@ export const uploadFile = async ({ path, name }, folder) => {
   const destination = `${folder}/${profilepicture}`;
 
   try {
-    await storage.bucket(imageStore).upload(path, { destination, public: true });
+    await storage
+      .bucket(imageStore)
+      .upload(path, { destination, public: true });
     fs.unlinkSync(path);
 
     return profilepicture;
@@ -60,7 +62,9 @@ export const uploadFile = async ({ path, name }, folder) => {
 
 export const deleteFile = async (file, folder) => {
   try {
-    await storage.bucket(imageStore).deleteFiles({ prefix: `${folder}/${file}` });
+    await storage
+      .bucket(imageStore)
+      .deleteFiles({ prefix: `${folder}/${file}` });
 
     return true;
   } catch (err) {
@@ -91,7 +95,7 @@ export const uploadAttachment = async (attachment, messageId, models) => {
     encryptionKey = crypto.randomBytes(32).toString("base64");
 
     const file = attachBucket.file(blobname, {
-      // encryptionKey: Buffer.from(encryptionKey, "base64")
+      encryptionKey: Buffer.from(encryptionKey, "base64")
     });
 
     const fileExists = await file.exists();
@@ -104,7 +108,9 @@ export const uploadAttachment = async (attachment, messageId, models) => {
       });
 
       await file.get();
-      await file.setMetadata({ metadata: { messages: JSON.stringify([messageId]) } });
+      await file.setMetadata({
+        metadata: { messages: JSON.stringify([messageId]) }
+      });
     } else {
       const [fetchedFile] = await file.getMetadata();
 
@@ -130,14 +136,23 @@ export const uploadAttachment = async (attachment, messageId, models) => {
           WHERE
           e->>'blobname' = :blobname
           LIMIT 1`,
-        { replacements: { messageArray, blobname }, type: models.sequelize.QueryTypes.SELECT }
+        {
+          replacements: { messageArray, blobname },
+          type: models.sequelize.QueryTypes.SELECT
+        }
       );
       encryptionKey = findKey[0].key;
     }
-    const fileInfo = fileType(readChunk.sync(attachment.path, 0, 4 + 4096)) || {};
+    const fileInfo =
+      fileType(readChunk.sync(attachment.path, 0, 4 + 4096)) || {};
 
     fs.unlinkSync(attachment.path);
-    return { key: encryptionKey, blobname, filename: attachment.name, type: fileInfo.mime };
+    return {
+      key: encryptionKey,
+      blobname,
+      filename: attachment.name,
+      type: fileInfo.mime
+    };
   } catch (err) {
     console.log(err);
     fs.unlinkSync(attachment.path);
@@ -149,7 +164,9 @@ export const uploadInvoice = async (path, name, year) => {
   const destination = `${year}/${name}`;
 
   try {
-    await storage.bucket("vipfy-invoices").upload(path, { destination, public: false });
+    await storage
+      .bucket("vipfy-invoices")
+      .upload(path, { destination, public: false });
     await fs.unlinkSync(path);
 
     return true;
