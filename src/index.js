@@ -141,6 +141,7 @@ app.post("/download", async (req, res) => {
     await attachmentLink(req.body.id, res);
     return res.status(200);
   } catch (err) {
+    logger.error(err);
     return res.status(500).send({ error: err });
   }
 });
