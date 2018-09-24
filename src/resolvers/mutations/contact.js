@@ -2,7 +2,10 @@ import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
-import { newsletterSignup } from "../../helpers/newsletter";
+import {
+  newsletterSignup,
+  newsletterConfirmSignup
+} from "../../helpers/newsletter";
 import logger from "../../loggers";
 
 /* eslint-disable prefer-const */
@@ -298,9 +301,13 @@ export default {
       })
   ),
 
-  newsletterSignup: async (parent, { email, name }, { models }) => {
+  newsletterSignup: async (
+    parent,
+    { email, firstname, lastname },
+    { models }
+  ) => {
     try {
-      await newsletterSignup(models, email, name);
+      await newsletterSignup(models, email, firstname, lastname);
       return { ok: true };
     } catch (err) {
       logger.error(err);
@@ -308,6 +315,15 @@ export default {
         message: "there was a problem with adding you to our newsletter",
         internalData: { err }
       });
+    }
+  },
+
+  newsletterSignupConfirm: async (parent, { email, token }, { models }) => {
+    try {
+      const result = await newsletterConfirmSignup(models, email, token);
+      return { ok: result };
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   }
 };
