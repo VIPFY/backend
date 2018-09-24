@@ -84,8 +84,8 @@ export async function newsletterConfirmSignup(models, email, token) {
     }
     await Promise.all(p);
   } catch (err) {
-    logger.log("Couldn't upload newsletter email addresses");
-    logger.log(err);
+    logger.info("Couldn't upload newsletter email addresses");
+    logger.info(err);
   }
 
   return true;
