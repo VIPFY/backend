@@ -58,7 +58,7 @@ export async function newsletterConfirmSignup(models, email, token) {
 
   try {
     const unsentSignups = await models.NewsletterSignup.findAll({
-      where: { uploadedat: null }
+      where: { uploadedat: null, usedat: { [models.Op.ne]: null } }
     });
     const signups = unsentSignups.map(v => ({
       email: v.email,
