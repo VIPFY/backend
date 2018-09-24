@@ -222,6 +222,10 @@ export const attachmentLink = async (id, res) => {
       attributes: ["payload"]
     });
 
+    if (!message.payload.files) {
+      return false;
+    }
+
     const { blobname, key } = message.payload.files[0];
     const remoteFile = attachBucket.file(blobname, {
       encryptionKey: Buffer.from(key, "base64")
@@ -245,7 +249,7 @@ export const attachmentLink = async (id, res) => {
 
     await new Promise(promise);
 
-    return;
+    return true;
   } catch (err) {
     throw new Error(err);
   }
