@@ -78,7 +78,7 @@ export async function newsletterConfirmSignup(models, email, token) {
       }
     }
     const p = [];
-    for (const s of signups) {
+    for (const s of unsentSignups) {
       if (s === null) continue;
       p.push(s.update({ uploadedat: new Date() }));
     }
