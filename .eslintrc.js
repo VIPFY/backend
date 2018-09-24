@@ -26,7 +26,8 @@ module.exports = {
     "no-param-reassign": "off",
     radix: "off",
     "linebreak-style": "off",
-    "no-continue": "off"
+    "no-continue": "off",
+    "no-restricted-syntax": "off"
   },
   globals: {
     describe: 1,
