@@ -33,10 +33,16 @@ const fileHash = (filename, algorithm = "sha256") =>
 
 const { GCLOUD_PLATFORM_ID } = process.env;
 
+// the server doesn't need the key file
+let keyFilename = path.join(__dirname, "../..", "Vipfy-4c183d5274a4.json");
+if (!path.exists(keyFilename)) {
+  keyFilename = undefined;
+}
+
 // Creates a client
 const storage = new Storage({
-  GCLOUD_PLATFORM_ID
-  // keyFilename: path.join(__dirname, "../..", "Vipfy-4c183d5274a4.json")
+  GCLOUD_PLATFORM_ID,
+  keyFilename
 });
 
 // The Buckets name
