@@ -10,12 +10,12 @@ import models from "@vipfy-private/sequelize-setup";
 import { formatFilename } from "../helpers/functions";
 
 /* eslint-disable no-shadow */
-const fileHash = (filename, algorithm = "sha256") =>
+const fileHash = (filename, algorithm = "SHA256") =>
   // eslint-disable-next-line
   new Promise((resolve, reject) => {
     // Algorithm depends on availability of OpenSSL on platform
     // Another algorithms: 'sha1', 'md5', 'sha256', 'sha512' ...
-    const shasum = crypto.createHash(algorithm.toUpperCase());
+    const shasum = crypto.createHash(algorithm);
     try {
       const s = fs.ReadStream(filename);
       s.on("data", data => {
@@ -93,7 +93,7 @@ export const uploadAttachment = async (attachment, messageId, models) => {
     const attachBucket = storage.bucket(messageStore);
     let encryptionKey;
     const p1 = fileHash(attachment.path);
-    const p2 = fileHash(attachment.path, "blake2b512");
+    const p2 = fileHash(attachment.path, "BLAKE2b512");
 
     const [hash1, hash2] = await Promise.all([p1, p2]);
     const blobname = `${hash1}-${hash2}`;
