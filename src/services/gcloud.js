@@ -100,11 +100,13 @@ export const uploadAttachment = async (attachment, messageId, models) => {
 
     encryptionKey = crypto.randomBytes(32).toString("base64");
 
+    console.log("File Exists pre");
     const file = attachBucket.file(blobname, {
       encryptionKey: Buffer.from(encryptionKey, "base64")
     });
 
     const fileExists = await file.exists();
+    console.log("File Exists", fileExists[0]);
 
     if (fileExists[0] == false) {
       await attachBucket.upload(attachment.path, {
