@@ -35,7 +35,7 @@ const { GCLOUD_PLATFORM_ID } = process.env;
 
 // the server doesn't need the key file
 let keyFilename = path.join(__dirname, "../..", "Vipfy-4c183d5274a4.json");
-if (!path.exists(keyFilename)) {
+if (!fs.existsSync(keyFilename)) {
   keyFilename = undefined;
 }
 
