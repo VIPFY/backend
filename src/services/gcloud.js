@@ -112,8 +112,8 @@ export const uploadAttachment = async (attachment, messageId, models) => {
     if (fileExists[0] == false) {
       await attachBucket.upload(attachment.path, {
         private: true,
-        destination: blobname,
-        encryptionKey: Buffer.from(encryptionKey, "base64")
+        destination: blobname
+        // encryptionKey: Buffer.from(encryptionKey, "base64")
       });
 
       logger.debug("File Uploaded", fileExists[0]);
