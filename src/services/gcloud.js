@@ -107,7 +107,7 @@ export const uploadAttachment = async (attachment, messageId, models) => {
     });
 
     const fileExists = await file.exists();
-    logger.debug("File Exists", fileExists[0]);
+    logger.debug("File Exists", { exists: fileExists[0], blobname });
 
     if (fileExists[0] == false) {
       await attachBucket.upload(attachment.path, {
