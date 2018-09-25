@@ -8,6 +8,7 @@ import Storage from "@google-cloud/storage";
 
 import models from "@vipfy-private/sequelize-setup";
 import { formatFilename } from "../helpers/functions";
+import logger from "../loggers";
 
 /* eslint-disable no-shadow */
 const fileHash = (filename, algorithm = "SHA256") =>
@@ -100,13 +101,13 @@ export const uploadAttachment = async (attachment, messageId, models) => {
 
     encryptionKey = crypto.randomBytes(32).toString("base64");
 
-    console.log("File Exists pre");
+    logger.debug("File Exists pre");
     const file = attachBucket.file(blobname, {
       encryptionKey: Buffer.from(encryptionKey, "base64")
     });
 
     const fileExists = await file.exists();
-    console.log("File Exists", fileExists[0]);
+    logger.debug("File Exists", fileExists[0]);
 
     if (fileExists[0] == false) {
       await attachBucket.upload(attachment.path, {
@@ -115,10 +116,13 @@ export const uploadAttachment = async (attachment, messageId, models) => {
         encryptionKey: Buffer.from(encryptionKey, "base64")
       });
 
+      logger.debug("File Uploaded", fileExists[0]);
+
       await file.get();
       await file.setMetadata({
         metadata: { messages: JSON.stringify([messageId]) }
       });
+      logger.debug("Metadata set");
     } else {
       const [fetchedFile] = await file.getMetadata();
 
