@@ -120,7 +120,12 @@ export const loggingMiddleWare = (req, res, next) => {
     let eventdata;
 
     try {
-      const parsedBody = JSON.parse(body);
+      let parsedBody = {};
+      try {
+        parsedBody = JSON.parse(body);
+      } catch (err) {
+        parsedBody = { data: { unparsedBody: body } };
+      }
       const { variables } = req.body;
       const token = req.headers["x-token"];
 
