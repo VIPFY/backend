@@ -15,7 +15,7 @@ const fileHash = (filename, algorithm = "sha256") =>
   new Promise((resolve, reject) => {
     // Algorithm depends on availability of OpenSSL on platform
     // Another algorithms: 'sha1', 'md5', 'sha256', 'sha512' ...
-    const shasum = crypto.createHash(algorithm);
+    const shasum = crypto.createHash(algorithm.toUpperCase());
     try {
       const s = fs.ReadStream(filename);
       s.on("data", data => {
