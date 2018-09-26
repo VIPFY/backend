@@ -29,6 +29,10 @@ export const AuthError = createError("AuthError", {
   internalData: { error: "An auth error." }
 });
 
+export const RightsError = createError("RightsError", {
+  message: "You don't have the nessesary rights."
+});
+
 export const AdminError = createError("AdminError", {
   message: "You're not a Vipfy Admin!",
   internalData: { error: "Someone tried to login as an Admin." }

@@ -7,7 +7,7 @@
 import { decode } from "jsonwebtoken";
 import { checkRights } from "@vipfy-private/messaging";
 import { checkCompanyMembership } from "./companyMembership";
-import { AuthError, AdminError } from "../errors";
+import { AuthError, AdminError, RightsError } from "../errors";
 
 const createResolver = resolver => {
   const baseResolver = resolver;
@@ -81,12 +81,10 @@ export const requiresRights = rights =>
         });
 
         if (!hasRight) {
-          throw new AuthError({
-            message: "You don't have the necessary rights!"
-          });
+          throw new RightsError();
         }
       } catch (err) {
-        if (err instanceof AuthError) {
+        if (err instanceof RightsError) {
           throw err;
         }
         throw new AuthError({
@@ -106,9 +104,12 @@ export const requiresMessageGroupRights = rights =>
 
       const hasRights = await checkRights(models, rights, unitid, args);
       if (!hasRights) {
-        throw new Error("User doesn't have the neccesary rights");
+        throw new RightsError("User doesn't have the neccesary rights");
       }
     } catch (err) {
+      if (err instanceof RightsError) {
+        throw err;
+      }
       throw new AuthError({
         message:
           "Oops, something went wrong. Please report this error with id auth_2"
