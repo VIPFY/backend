@@ -95,5 +95,5 @@ export const mutations = `
 `;
 
 export const subscriptions = `
-  newNotification(receiver: Int!): Notification!
+  newNotification: Notification!
 `;
