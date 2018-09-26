@@ -90,7 +90,7 @@ export default {
             {
               receiver: unitid,
               message: "Credit Card successfully added",
-              icon: "cc-stripe",
+              icon: "credit-card",
               link: "billing"
             },
             ta
@@ -104,7 +104,7 @@ export default {
             {
               receiver: unitid,
               message: "Adding Credit Card failed",
-              icon: "cc-stripe",
+              icon: "credit-card",
               link: "billing"
             },
             ta
@@ -118,33 +118,70 @@ export default {
       })
   ),
 
-  changeDefaultMethod: requiresRights(["edit-paymentData"]).createResolver(
-    async (parent, { card }, { models, token }) => {
-      try {
+  changeDefaultMethod: requiresRights(["edit-paymentdata"]).createResolver(
+    async (parent, { card }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
         const {
-          user: { company }
+          user: { company, unitid }
         } = decode(token);
 
-        const department = await models.Unit.findById(company, {
-          raw: true
-        });
+        try {
+          const department = await models.Unit.findById(company, {
+            raw: true
+          });
 
-        const stripeId = department.payingoptions.stripe.id;
+          const stripeId = department.payingoptions.stripe.id;
+          const res = await changeDefaultCard(stripeId, card);
 
-        const res = await changeDefaultCard(stripeId, card);
+          const updatedDepartment = await models.Unit.update(
+            {
+              payingoptions: {
+                stripe: {
+                  ...department.payingoptions.stripe,
+                  cards: res.sources.data
+                }
+              }
+            },
+            { where: { id: company }, returning: true }
+          );
 
-        console.log(res.sources.data);
-        const updatedDepartment = await models.Unit.update(
-          { payingoptions: { stripe: { cards: res.sources.data } } },
-          { where: { id: company }, returning: true }
-        );
-        console.log(updatedDepartment);
+          const p1 = createLog(
+            ip,
+            "changeDefaultMethod",
+            { department, updatedDepartment },
+            unitid,
+            ta
+          );
 
-        return { ok: true };
-      } catch (err) {
-        throw new BillingError({ message: err.message, internalData: { err } });
-      }
-    }
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: "New default Credit Card",
+              icon: "credit-card",
+              link: "billing"
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
+
+          return { ok: true };
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Switching of default Card failed",
+              icon: "credit-card",
+              link: "billing"
+            },
+            ta
+          );
+          throw new BillingError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   ),
 
   /**
