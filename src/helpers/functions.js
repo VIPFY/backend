@@ -134,7 +134,10 @@ export const createNotification = async (notificationBody, transaction) => {
     );
 
     pubsub.publish(NEW_NOTIFICATION, {
-      newNotification: { ...notification.dataValues }
+      newNotification: {
+        ...notification.dataValues,
+        changed: notificationBody.changed
+      }
     });
 
     return notification;

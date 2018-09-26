@@ -378,7 +378,8 @@ export default {
                 user.lastname
               }`,
               icon: "th",
-              link: "teams"
+              link: "teams",
+              changed: ["foreignLicences"]
             },
             ta
           );
@@ -389,7 +390,8 @@ export default {
               message: `User ${giver} has given you access to a new App.
               Please relog in`,
               icon: "th",
-              link: "teams"
+              link: "teams",
+              changed: ["ownLicences"]
             },
             ta
           );
@@ -403,7 +405,8 @@ export default {
               receiver: giver,
               message: "Distribution of App failed",
               icon: "th",
-              link: "teams"
+              link: "teams",
+              changed: ["foreignLicences"]
             },
             ta
           );
@@ -467,7 +470,8 @@ export default {
               receiver: unitid,
               message: `App revoked from ${oldLicence.unitid}`,
               icon: "th",
-              link: "teams"
+              link: "teams",
+              changed: ["foreignLicences"]
             },
             ta
           );
@@ -477,7 +481,8 @@ export default {
               receiver: oldLicence.unitid,
               message: `User ${unitid} has revoked an App from you`,
               icon: "th",
-              link: "teams"
+              link: "teams",
+              changed: ["ownLicenses"]
             },
             ta
           );
@@ -491,7 +496,8 @@ export default {
               receiver: unitid,
               message: "Revokation failed",
               icon: "th",
-              link: "teams"
+              link: "teams",
+              changed: ["foreignLicences"]
             },
             ta
           );

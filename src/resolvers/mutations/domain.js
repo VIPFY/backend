@@ -175,7 +175,8 @@ export default {
               receiver: unitid,
               message: `${domainData.domain} successfully registered.`,
               icon: "laptop",
-              link: "domains"
+              link: "domains",
+              changed: ["domains"]
             },
             ta
           );
@@ -188,7 +189,8 @@ export default {
             receiver: unitid,
             message: `Registration of ${domainData.domain} failed.`,
             icon: "bug",
-            link: "domains"
+            link: "domains",
+            changed: ["domains"]
           });
 
           throw new PartnerError({
@@ -272,7 +274,8 @@ export default {
                   receiver: unitid,
                   message,
                   icon: "laptop",
-                  link: "domains"
+                  link: "domains",
+                  changed: ["domains"]
                 },
                 ta
               );
@@ -389,7 +392,8 @@ export default {
                 receiver: unitid,
                 message,
                 icon: "laptop",
-                link: "domains"
+                link: "domains",
+                changed: ["domains"]
               },
               ta
             );
@@ -406,7 +410,8 @@ export default {
               receiver: unitid,
               message: "Update failed",
               icon: "laptop",
-              link: "domains"
+              link: "domains",
+              changed: ["domains"]
             },
             ta
           );

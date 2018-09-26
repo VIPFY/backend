@@ -34,6 +34,7 @@ type Notification {
   message: String
   icon: String
   link: String
+  changed: [String]
 }
 
 type Newsletter {
