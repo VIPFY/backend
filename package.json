@@ -28,7 +28,7 @@
   "dependencies": {
     "@google-cloud/logging-winston": "^0.9.0",
     "@google-cloud/profiler": "^0.1.14",
-    "@google-cloud/storage": "^1.7.0",
+    "@google-cloud/storage": "~1.6.0",
     "@google-cloud/trace-agent": "^2.11.0",
     "@sendgrid/client": "^6.3.0",
     "@vipfy-private/messaging": "latest",

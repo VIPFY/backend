@@ -8,9 +8,10 @@ import Storage from "@google-cloud/storage";
 
 import models from "@vipfy-private/sequelize-setup";
 import { formatFilename } from "../helpers/functions";
+import logger from "../loggers";
 
 /* eslint-disable no-shadow */
-const fileHash = (filename, algorithm = "sha256") =>
+const fileHash = (filename, algorithm = "SHA256") =>
   // eslint-disable-next-line
   new Promise((resolve, reject) => {
     // Algorithm depends on availability of OpenSSL on platform
@@ -33,10 +34,16 @@ const fileHash = (filename, algorithm = "sha256") =>
 
 const { GCLOUD_PLATFORM_ID } = process.env;
 
+// the server doesn't need the key file
+let keyFilename = path.join(__dirname, "../..", "Vipfy-4c183d5274a4.json");
+if (!fs.existsSync(keyFilename)) {
+  keyFilename = undefined;
+}
+
 // Creates a client
 const storage = new Storage({
   GCLOUD_PLATFORM_ID,
-  keyFilename: path.join(__dirname, "../..", "Vipfy-4c183d5274a4.json")
+  keyFilename
 });
 
 // The Buckets name
@@ -48,7 +55,9 @@ export const uploadFile = async ({ path, name }, folder) => {
   const destination = `${folder}/${profilepicture}`;
 
   try {
-    await storage.bucket(imageStore).upload(path, { destination, public: true });
+    await storage
+      .bucket(imageStore)
+      .upload(path, { destination, public: true });
     fs.unlinkSync(path);
 
     return profilepicture;
@@ -60,7 +69,9 @@ export const uploadFile = async ({ path, name }, folder) => {
 
 export const deleteFile = async (file, folder) => {
   try {
-    await storage.bucket(imageStore).deleteFiles({ prefix: `${folder}/${file}` });
+    await storage
+      .bucket(imageStore)
+      .deleteFiles({ prefix: `${folder}/${file}` });
 
     return true;
   } catch (err) {
@@ -83,18 +94,18 @@ export const uploadAttachment = async (attachment, messageId, models) => {
     const attachBucket = storage.bucket(messageStore);
     let encryptionKey;
     const p1 = fileHash(attachment.path);
-    const p2 = fileHash(attachment.path, "blake2b512");
+    const p2 = fileHash(attachment.path, "BLAKE2b512");
 
     const [hash1, hash2] = await Promise.all([p1, p2]);
     const blobname = `${hash1}-${hash2}`;
 
     encryptionKey = crypto.randomBytes(32).toString("base64");
 
-    const file = attachBucket.file(blobname, {
-      // encryptionKey: Buffer.from(encryptionKey, "base64")
-    });
+    logger.debug("File Exists pre");
+    const file = attachBucket.file(blobname, {});
 
     const fileExists = await file.exists();
+    logger.debug("File Exists", { exists: fileExists[0], blobname });
 
     if (fileExists[0] == false) {
       await attachBucket.upload(attachment.path, {
@@ -103,8 +114,13 @@ export const uploadAttachment = async (attachment, messageId, models) => {
         encryptionKey: Buffer.from(encryptionKey, "base64")
       });
 
+      logger.debug("File Uploaded", fileExists[0]);
+
       await file.get();
-      await file.setMetadata({ metadata: { messages: JSON.stringify([messageId]) } });
+      await file.setMetadata({
+        metadata: { messages: JSON.stringify([messageId]) }
+      });
+      logger.debug("Metadata set");
     } else {
       const [fetchedFile] = await file.getMetadata();
 
@@ -130,14 +146,23 @@ export const uploadAttachment = async (attachment, messageId, models) => {
           WHERE
           e->>'blobname' = :blobname
           LIMIT 1`,
-        { replacements: { messageArray, blobname }, type: models.sequelize.QueryTypes.SELECT }
+        {
+          replacements: { messageArray, blobname },
+          type: models.sequelize.QueryTypes.SELECT
+        }
       );
       encryptionKey = findKey[0].key;
     }
-    const fileInfo = fileType(readChunk.sync(attachment.path, 0, 4 + 4096)) || {};
+    const fileInfo =
+      fileType(readChunk.sync(attachment.path, 0, 4 + 4096)) || {};
 
     fs.unlinkSync(attachment.path);
-    return { key: encryptionKey, blobname, filename: attachment.name, type: fileInfo.mime };
+    return {
+      key: encryptionKey,
+      blobname,
+      filename: attachment.name,
+      type: fileInfo.mime
+    };
   } catch (err) {
     console.log(err);
     fs.unlinkSync(attachment.path);
@@ -149,7 +174,9 @@ export const uploadInvoice = async (path, name, year) => {
   const destination = `${year}/${name}`;
 
   try {
-    await storage.bucket("vipfy-invoices").upload(path, { destination, public: false });
+    await storage
+      .bucket("vipfy-invoices")
+      .upload(path, { destination, public: false });
     await fs.unlinkSync(path);
 
     return true;
@@ -199,6 +226,10 @@ export const attachmentLink = async (id, res) => {
       attributes: ["payload"]
     });
 
+    if (!message.payload.files) {
+      return false;
+    }
+
     const { blobname, key } = message.payload.files[0];
     const remoteFile = attachBucket.file(blobname, {
       encryptionKey: Buffer.from(key, "base64")
@@ -222,7 +253,7 @@ export const attachmentLink = async (id, res) => {
 
     await new Promise(promise);
 
-    return;
+    return true;
   } catch (err) {
     throw new Error(err);
   }

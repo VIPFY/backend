@@ -138,9 +138,13 @@ app.post("/download", async (req, res) => {
       return res.status(403).send({ error: "Not Authenticated!" });
     }
 
-    await attachmentLink(req.body.id, res);
+    const idHasFile = await attachmentLink(req.body.id, res);
+    if (!idHasFile) {
+      return res.status(404).send("This message has no attachment");
+    }
     return res.status(200);
   } catch (err) {
+    logger.error(err);
     return res.status(500).send({ error: err });
   }
 });
