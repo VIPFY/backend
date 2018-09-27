@@ -482,7 +482,7 @@ export default {
               message: `User ${unitid} has revoked an App from you`,
               icon: "th",
               link: "teams",
-              changed: ["ownLicenses"]
+              changed: ["ownLicences"]
             },
             ta
           );
