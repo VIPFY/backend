@@ -128,15 +128,19 @@ export const createNotification = async (notificationBody, transaction) => {
   try {
     const sendtime = getDate();
 
-    const notification = await models.Notification.create(
-      { ...notificationBody, sendtime },
-      { transaction }
-    );
+    let notification = { dataValues: notificationBody };
+    if (notificationBody.show !== false) {
+      notification = await models.Notification.create(
+        { ...notificationBody, sendtime },
+        { transaction }
+      );
+    }
 
     pubsub.publish(NEW_NOTIFICATION, {
       newNotification: {
         ...notification.dataValues,
-        changed: notificationBody.changed
+        changed: notificationBody.changed,
+        show: notificationBody.show
       }
     });
 
