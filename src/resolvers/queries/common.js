@@ -20,6 +20,5 @@ export default {
         throw new NormalError({ message: err.message });
       }
     }
-  ),
-  ping: async (parent, args, context) => ({ ok: true })
+  )
 };
