@@ -93,6 +93,9 @@ export const mutations = `
   checkName(name: String): Response!
   readNotification(id: Int!): Boolean!
   readAllNotifications: Boolean!
+
+  # for uptime checks and dummy queries
+  ping: Response!
 `;
 
 export const subscriptions = `
