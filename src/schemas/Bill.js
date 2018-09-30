@@ -2,7 +2,7 @@ export const types = `
   type Bill {
     id: Int!
     billtime: String!
-    billName: String!
+    billname: String!
     paytime: String
     stornotime: String
     unitid: Unit!
@@ -11,7 +11,7 @@ export const types = `
   type BillPosition {
     id: Int!
     positiontext: String
-    amount: Float
+    price: Float
     currency: String!
     billid: Bill!
     planid: Plan!
@@ -20,7 +20,7 @@ export const types = `
 
   input BillInput {
     positiontext: String
-    amount: Float
+    price: Float
     currency: String
     billid: Int
     billname: String
@@ -48,8 +48,6 @@ export const types = `
     gototime: String
     appid: App!
     gotoplan: Plan
-    mainplan: Plan
-    subplans: [Plan]
   }
 
   input PlanInput {
@@ -68,7 +66,6 @@ export const types = `
     gototime: String
     appid: Int
     gotoplan: Int
-    mainplan: Int
   }
 
   # The plans a unit bought
@@ -76,17 +73,15 @@ export const types = `
     id: Int!
     buytime: String
     endtime: String
+    description: String
     key: JSON
     buyer: Unit!
     payer: Unit!
+    usedby: Unit!
     planid: Plan!
     predecessor: Plan
     licences: [Licence]
-  }
-
-  type BoughtSubplanData {
-    boughtplanid: BoughtPlan!
-    subplanid: Plan!
+    totalprice: Float
   }
 
   type PlansRunning {
@@ -127,59 +122,53 @@ export const types = `
     sponsor: Unit!
   }
 
-  type Licence {
-    options: JSON
-    starttime: String
-    endtime: String
-    agreed: Boolean
-    disabled: Boolean
-    key: JSON
-    boughtplanid: BoughtPlan!
-    unitid: Unit!
+  input OptionalPlanData {
+    amount: Int!
+    planid: Int!
   }
 
-  input LicenceData {
-    options: JSON
-    starttime: String
-    endtime: String
-    agreed: Boolean
-    disabled: Boolean
-    key: JSON
-    unitid: Int
+  type Card {
+    id: String!
+    brand: String!
+    exp_month: Int!
+    exp_year: Int!
+    last4: String!
+    name: String!
+    country: String!
+    cvc_check: String!
+  }
+
+  input CardInput {
+    id: String!
+    brand: String!
+    exp_month: Int!
+    exp_year: Int!
+    last4: String!
+    name: String!
+    country: String!
+    cvc_check: String!
   }
 `;
 
 export const queries = `
   boughtPlans: [BoughtPlan]!
-  fetchPlan(planid: Int!): Plan!
   fetchPlans(appid: Int!): [Plan]!
+  fetchPlanInputs(planid: ID!): JSON!
   createLoginLink(boughtplanid: Int!): ProductResponse!
 
   fetchBills: [Bill]!
-
-  # This mutation checks whether an user has the right to log into an app
-  fetchLicences(boughtplanid: Int): [Licence]!
-  adminFetchLicences(id: Int!): [Licence]!
-  # This mutation checks whether an user has the right to log into an app by providing an app id
-  fetchLicencesByApp(appid: Int!): [Licence]!
+  fetchBillingAddresses: [Address]!
+  fetchPaymentData: [Card]!
 `;
 
 export const mutations = `
-  # This creates a product which can be linked to a plan
-  createStripePlan(name: String, productid: String, amount: Int!): Response!
-
-  createPlan(plan: PlanInput!): Response!
-  updatePlan(id: Int!, plan: PlanInput!): Response!
-
-  # This allows the user to buy a plan
-  buyPlan(planid: Int!, amount: Int!): ProductResponse!
-
-  endPlan(id: Int!, enddate: String!): Response!
+  addPaymentData(data: JSON, departmentid: Int!): Response!
+  # The buying process
+  buyPlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
 
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!
-  addBillPos(bill: BillInput!): Response!
+  addBillPos(bill: BillInput!, billid: Int): Response!
   downloadBill(billid: Int!): String!
-
-  adminUpdateLicence(unitid: Int!, boughtplanid: Int! licenceData: LicenceData!): Response!
+  changeDefaultMethod(card: String!): Response!
 `;

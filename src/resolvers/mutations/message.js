@@ -1,82 +1,147 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
+import * as messaging from "@vipfy-private/messaging";
+import { requiresAuth, requiresMessageGroupRights } from "../../helpers/permissions";
+import { parentAdminCheck, superset, createLog } from "../../helpers/functions";
+import { uploadAttachment } from "../../services/gcloud";
+import { NormalError } from "../../errors";
 import { NEW_MESSAGE, pubsub } from "../../constants";
+import logger from "../../loggers";
 
-/* eslint-disable no-unused-vars */
 export default {
-  setDeleteStatus: requiresAuth.createResolver(async (parent, { id, type }, { models }) => {
-    const messageExists = await models.MessageData.findById(id);
-    if (!messageExists) throw new Error("Message doesn't exist!");
+  /**
+   * Create a new group between two people. This is only possible if the current user and
+   * the receiver are in the same company. Return an error otherwise
+   */
+  startConversation: requiresAuth.createResolver(
+    async (parent, { receiver, defaultrights }, { models, token }) => {
+      if (
+        !superset(
+          ["speak", "upload", "highlight", "modifyown", "deleteown", "deleteother"],
+          defaultrights
+        )
+      ) {
+        throw new Error("Defaultrights contains illegal right");
+      }
 
-    try {
-      await models.MessageData.update({ [type]: true }, { where: { id } });
-      return {
-        ok: true
-      };
-    } catch (err) {
-      throw new Error(err.message);
-    }
-  }),
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
 
-  setReadtime: requiresAuth.createResolver(async (parent, { id }, { models }) => {
-    try {
-      const message = await models.MessageData.findById(id);
-      const { readtime } = message;
+        const p1 = models.User.findById(unitid);
+        const p2 = models.User.findById(receiver);
 
-      if (!readtime) {
-        const now = Date.now();
-        await models.MessageData.update({ readtime: now }, { where: { id } });
+        const [senderExists, receiverExists] = await Promise.all([p1, p2]);
+
+        if (!receiverExists) {
+          throw new Error("The receiver doesn't exist!");
+        }
+
+        // annotate users with their company
+        const p3 = parentAdminCheck(senderExists);
+        const p4 = parentAdminCheck(receiverExists);
+        const [senderHas, receiverHas] = await Promise.all([p3, p4]);
+
+        if (senderHas.company != receiverHas.company) {
+          throw new Error("Sender and receiver are not in the same Company!");
+        }
+
+        const groupId = await messaging.startConversation(models, unitid, receiver, defaultrights);
+
         return {
           ok: true,
-          id,
-          message: now
+          messagegroup: groupId
         };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
-      throw new Error("Message already read");
-    } catch (err) {
-      throw new Error(err.message);
     }
-  }),
+  ),
 
-  sendMessage: requiresAuth.createResolver(
-    async (parent, { touser, message }, { models, token }) => {
-      const { user: { unitid } } = decode(token);
-      const p1 = models.User.findById(unitid);
-      const p2 = models.User.findById(touser);
-      const [sender, receiver] = await Promise.all([p1, p2]);
-
-      if (!sender || !receiver) {
-        throw new Error("User doesn't exist!");
-      } else if (sender.id == receiver.id) {
-        throw new Error("Sender and Receiver can't be the same User!");
-      } else if (message && sender && receiver) {
+  /**
+   * Post a message to the group with the supplied message,
+   * and call markAsRead with the id of the new message.
+   * Also sanitzes the message before posting
+   * @param {integer} groupid
+   * @param {string} message
+   */
+  sendMessage: requiresMessageGroupRights(["speak"]).createResolver(
+    (parent, { groupid, message, file }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
         try {
-          const createMessage = await models.MessageData.create({
-            sender: unitid,
-            receiver: touser,
-            messagetext: message
-          });
+          const {
+            user: { unitid }
+          } = decode(token);
+          let newMessage;
 
-          const newMessage = {
-            ...createMessage.dataValues,
-            sender: sender.dataValues,
-            receiver: receiver.dataValues
-          };
+          if (file) {
+            newMessage = await messaging.sendMessage(
+              models,
+              unitid,
+              file,
+              uploadAttachment,
+              groupid,
+              "",
+              ta,
+              logger
+            );
+          } else {
+            newMessage = await messaging.sendMessage(
+              models,
+              unitid,
+              null,
+              () => {},
+              groupid,
+              message,
+              ta,
+              logger
+            );
+          }
 
-          pubsub.publish(NEW_MESSAGE, {
-            userId: receiver.dataValues.unitid,
-            newMessage
-          });
+          pubsub.publish(NEW_MESSAGE, { newMessage: { ...newMessage.dataValues } });
 
           return {
             ok: true,
-            id: newMessage.id,
-            message
+            message: newMessage.dataValues.id
           };
         } catch (err) {
-          throw new Error(err.message);
+          console.log(err);
+          throw new NormalError({ message: err.message, internalData: { err } });
         }
-      } else throw new Error("Empty Message!");
-    }
+      })
+  ),
+
+  // TODO: update
+  setDeleteStatus: requiresAuth.createResolver(
+    async (parent, { id, type }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
+
+          const oldMessage = await models.MessageData.findById(id, { raw: true });
+          if (!oldMessage) {
+            throw new Error("Message doesn't exist!");
+          }
+
+          const deletedMessage = await models.MessageData.update(
+            { [type]: true },
+            { where: { id }, returning: true, transaction: ta }
+          );
+
+          await createLog(
+            ip,
+            "setDeleteStatus",
+            { oldMessage, deletedMessage: deletedMessage[1] },
+            unitid,
+            ta
+          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({ message: err.message, internalData: { err } });
+        }
+      })
   )
 };

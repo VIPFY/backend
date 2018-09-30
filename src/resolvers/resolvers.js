@@ -1,46 +1,56 @@
-import userQueries from "./queries/user";
+import adminQueries from "./queries/admin";
+import authQueries from "./queries/auth";
 import appQueries from "./queries/app";
+import billQueries from "./queries/bill";
+import commonQueries from "./queries/common";
+import contactQueries from "./queries/contact";
+import demoQueries from "./queries/demo";
+import domainQueries from "./queries/domain";
+import departmentQueries from "./queries/department";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
-import billQueries from "./queries/bill";
-import contactQueries from "./queries/contact";
-import authQueries from "./queries/auth";
-import demoQueries from "./queries/demo";
 
-import appMutations from "./mutations/app";
-import messageMutations from "./mutations/message";
+import adminMutations from "./mutations/admin";
 import authMutations from "./mutations/auth";
-import userMutations from "./mutations/user";
-import reviewMutations from "./mutations/review";
-import commonMutations from "./mutations/common";
-import dd24Mutations from "./mutations/dd24";
+import appMutations from "./mutations/app";
 import billMutations from "./mutations/bill";
+import commonMutations from "./mutations/common";
 import contactMutations from "./mutations/contact";
 import demoMutations from "./mutations/demo";
+import departmentMutations from "./mutations/department";
+import domainMutations from "./mutations/domain";
+import messageMutations from "./mutations/message";
+import reviewMutations from "./mutations/review";
+import userMutations from "./mutations/unit";
 
 import Subscription from "./subscriptions";
 
-import { find, findDepartment, implementDate, implementJSON } from "./CustomResolvers";
+import { find, implementDate, implementJSON } from "./customResolvers";
 
 const Query = Object.assign(
-  authQueries,
-  userQueries,
-  contactQueries,
+  adminQueries,
   appQueries,
-  messageQueries,
-  reviewQueries,
+  authQueries,
   billQueries,
-  demoQueries
+  commonQueries,
+  contactQueries,
+  demoQueries,
+  departmentQueries,
+  domainQueries,
+  messageQueries,
+  reviewQueries
 );
 
 const Mutation = Object.assign(
+  adminMutations,
   appMutations,
   authMutations,
+  departmentMutations,
+  domainMutations,
   messageMutations,
   userMutations,
   reviewMutations,
   commonMutations,
-  dd24Mutations,
   billMutations,
   contactMutations,
   demoMutations
@@ -49,7 +59,7 @@ const Mutation = Object.assign(
 const unit = { unitid: "Unit" };
 const unitAndPlan = { sponsor: "Unit", planid: "Plan" };
 const developerAndSupport = { developer: "Unit", supportunit: "Unit" };
-const plans = { appid: "App", gotoplan: "Plan", mainplan: "Plan" };
+const plans = { appid: "App", gotoplan: "Plan" };
 
 export default {
   Query,
@@ -57,32 +67,53 @@ export default {
   Subscription,
   Date: implementDate,
   JSON: implementJSON,
-  Address: find(unit),
+  Address: find({}),
   App: find(developerAndSupport),
+  AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   AppDetails: find(developerAndSupport),
   Bill: find(unit),
   BillPosition: find({ vendor: "Unit", billid: "Bill", planid: "Plan" }),
-  BoughtPlan: find({ buyer: "Unit", planid: "Plan", payer: "Unit" }),
+  BoughtPlan: find({
+    buyer: "Unit",
+    usedby: "Unit",
+    planid: "Plan",
+    payer: "Unit"
+  }),
   Department: find(unit),
   DepartmentData: find(unit),
-  DepartmentEmail: find({ departmentid: "Unit", emailownerid: "Unit" }),
-  DepartmentEmployee: find({ id: "Unit", childid: "Unit", employee: "User" }),
-  Email: find(unit),
-  Human: find(unit),
+  DepartmentEmail: find({ departmentid: "Department", emailownerid: "Unit" }),
+  DepartmentEmployee: find({
+    id: "Department",
+    childid: "Unit",
+    employee: "User"
+  }),
+  Domain: find({
+    boughtplanid: "BoughtPlan"
+  }),
+  Email: find({}),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),
   Log: find({ user: "User", sudoer: "User" }),
-  Message: find({ receiver: "Unit" }),
-  MessageData: find({ sender: "Unit", receiver: "Unit" }),
+  Message: find({ receiver: "Human" }),
+  MessageData: find({ sender: "User", receiver: "MessageGroup" }),
+  MessageGroupMembership: find({ groupid: "MessageGroup", unitid: "User" }),
+  MessageTag: find({ unitid: "User", messageid: "MessageTag" }),
+  MessageGroup: find({
+    lastmessage: "MessageData",
+    memberships: "[MessageGroupMembership]"
+  }),
+  MessageResponse: find({ message: "MessageData" }),
   Newsletter: find({ email: "Email" }),
+  Notification: find({ receiver: "Unit" }),
   ParentUnit: find({ parentunit: "Unit", childunit: "Unit" }),
-  Phone: find(unit),
+  Phone: find({}),
   Plan: find(plans),
   PlansRunning: find({ appid: "App" }),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
-  Review: find({ reviewer: "User", appid: "App", answerto: "Review" }),
-  ReviewHelpful: find({ reviewer: "User", reviewid: "Review" }),
-  Right: find({ holder: "User", forunit: "User" }),
-  User: findDepartment({ company: "Department" }),
-  Website: find(unit)
+  Review: find({ unitid: "User", appid: "App", answerto: "Review" }),
+  ReviewHelpful: find({ unitid: "User", reviewid: "Review" }),
+  Right: find({ holder: "Unit", forunit: "Unit" }),
+  StartGroupResponse: find({ messagegroup: "MessageGroup" }),
+  User: find({ company: "Department", emails: "[Email]" }),
+  Website: find({})
 };

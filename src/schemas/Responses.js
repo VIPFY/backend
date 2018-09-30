@@ -12,11 +12,11 @@ export const types = `
       id: Int
     }
 
-  # Contains the id of the Message
-    type MessageResponse {
-      ok: Boolean!
-      message: String
-      id: Int
+  # Contains the amount of the respective Unit
+    type ListCountResponse {
+      allUsers: Int!
+      allApps: Int!
+      allCompanies: Int!
     }
 
   # If the registration was successful, a boolean will be given back
@@ -44,5 +44,84 @@ export const types = `
   type ProductResponse {
     ok: Boolean!
     loginLink: String
+  }
+
+  type DepartmentDataResponse {
+    id: Int
+    children: [Int]
+    children_data: JSON
+    department: Department
+    employees: [PublicUser]
+    level: Int
+    parent: Int
+  }
+
+  type DepartmentResponse {
+    id: Int
+    childids: [Int]
+    department: Department
+    employees: [emp]
+    level: Int
+  }
+
+  type emp {
+    employeeid: Int
+    firstname: String
+    lastname: String
+    profilepicture: String
+  }
+
+  type DistributeResponse {
+    ok: Boolean
+    error: Error
+  }
+
+  type JsonResponse {
+      data: JSON!
+    }
+
+  type Error {
+    code: Int!
+    message: String!
+  }
+
+  type AppBoughtPlanResponse {
+    id: ID!
+    usedby: Unit
+    boughtplan: BoughtPlan!
+    description: String
+    appname: String!
+    appicon: String
+    applogo: String
+    appid: Int!
+  }
+
+  # The Api-Resonse from DD24
+  type DD24Response {
+    code: Int!
+    description: String!
+    availability: Int
+    alternative: [String]
+    extension: String
+    realtime: Int
+    cid: String
+    status: String
+    renewalmode: String
+    transferlock: Int
+    whoisprivacy: Int
+    trustee: Int
+    reserveduntil: String
+    nameserver: [String]
+    ttl: Int
+    vatvalid: Int
+    event: [Int]
+    parameter: eventResponse
+    class: String
+    subclass: String
+    object: String
+    objecttype: String
+    onetimepassword: String
+    loginuri: String
+    error: String
   }
 `;

@@ -1,11 +1,13 @@
 import * as App from "./App";
+import * as Admin from "./Admin";
 import * as Bill from "./Bill";
 import * as Common from "./Common";
 import * as Contact from "./Contact";
+import * as Domain from "./Domain";
+import * as Department from "./Department";
 import * as Message from "./Message";
 import * as Unit from "./Unit";
 import * as Review from "./Review";
-import * as DD24 from "./DD24";
 import * as Responses from "./Responses";
 import * as Demo from "./Demo";
 
@@ -16,7 +18,20 @@ const mutations = [];
 const subscriptions = [];
 
 // Enter every schema into this array to map over it's data
-const schemas = [Unit, App, Bill, Contact, Demo, DD24, Review, Responses, Message, Common];
+const schemas = [
+  App,
+  Admin,
+  Bill,
+  Common,
+  Contact,
+  Domain,
+  Demo,
+  Department,
+  Message,
+  Review,
+  Responses,
+  Unit
+];
 
 // Push the value into the corresponding Array to export it
 schemas.forEach(schema => {

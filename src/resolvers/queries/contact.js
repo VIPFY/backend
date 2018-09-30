@@ -1,32 +1,53 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth, requiresVipfyAdmin } from "../../helpers/permissions";
+import { requiresRights } from "../../helpers/permissions";
+import { NormalError } from "../../errors";
 
 export default {
-  fetchAddresses: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const { user: { unitid, company } } = decode(token);
+  fetchAddresses: requiresRights(["view-addresses"]).createResolver(
+    async (parent, { forCompany }, { models, token }) => {
+      try {
+        let {
+          // eslint-disable-next-line
+          user: { unitid, company }
+        } = decode(token);
 
-      const addresses = await models.Address.findAll({
-        where: { unitid: [unitid, company] },
-        order: [["priority", "ASC"]]
-      });
+        if (forCompany) {
+          unitid = company;
+        }
 
-      return addresses;
-    } catch (err) {
-      throw new Error(err.message);
+        const addresses = await models.Address.findAll({
+          where: { unitid },
+          order: [["priority", "ASC"]]
+        });
+
+        return addresses;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  }),
+  ),
 
-  fetchUserAddresses: requiresVipfyAdmin.createResolver(async (parent, { unitid }, { models }) => {
-    try {
-      const addresses = await models.Address.findAll({
-        where: { unitid },
-        order: [["priority", "ASC"]]
-      });
+  fetchPhones: requiresRights(["view-phones"]).createResolver(
+    async (parent, { forCompany }, { models, token }) => {
+      try {
+        let {
+          // eslint-disable-next-line
+          user: { unitid, company }
+        } = decode(token);
 
-      return addresses;
-    } catch ({ message }) {
-      throw new Error(message);
+        if (forCompany) {
+          unitid = company;
+        }
+
+        const phones = await models.Phone.findAll({
+          where: { unitid },
+          order: [["priority", "ASC"]]
+        });
+
+        return phones;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  })
+  )
 };

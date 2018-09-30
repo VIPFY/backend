@@ -1,38 +1,170 @@
-/*
-This is the payment provider we use. The component contains methods to create
-plans and products. To create a Plan, we must first create a product with which it
-will be associated.
-*/
+/**
+ * This is the payment provider we use. The component contains methods to create
+ * plans and products. To create a Plan, we must first create a product with which it
+ * will be associated.
+ */
 
 import stripePackage from "stripe";
-import { STRIPE_SECRET_KEY } from "../login-data";
+import moment from "moment";
 
-const stripe = stripePackage(STRIPE_SECRET_KEY);
+const stripe = stripePackage(process.env.STRIPE_SECRET_KEY);
 
-export const createPlan = async (product, amount) => {
-  try {
-    const res = await stripe.plans.create({
-      currency: "USD",
-      interval: "month",
-      product,
-      amount
-    });
-
-    return res;
-  } catch ({ message }) {
-    throw new Error(message);
-  }
-};
-
-export const createProduct = async name => {
+export const createProduct = async app => {
   try {
     const res = await stripe.products.create({
-      name,
+      name: app,
       type: "service"
     });
 
     return res;
-  } catch ({ message }) {
-    throw new Error(message);
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+export const createPlan = async data => {
+  try {
+    const res = await stripe.plans.create(data);
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+// The plan’s ID, amount, currency, or billing cycle can't be changed
+export const updatePlan = async (id, data) => {
+  try {
+    const res = await stripe.plans.update(id, data);
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+// Deleting plans means new subscribers can’t be added. Existing subscribers aren’t affected.
+export const deletePlan = async id => {
+  try {
+    const res = await stripe.plans.delete(id);
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * Creates a customer object in Stride
+ * source should be a token passed on from the Frontend through a Stripe Library
+ * @param customer: object
+ * @param source: object
+ */
+export const createCustomer = async (customer, source) => {
+  try {
+    const res = await stripe.customers.create({
+      description: `${customer.id} ${customer.name}`,
+      source
+    });
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * List the cards from a stripe customer
+ * @param id: string
+ */
+export const listCards = async id => {
+  try {
+    const res = await stripe.customers.listCards(id);
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * Adds a card to a stripe customer
+ * The source is a token created from a Stripe library in the Frontend
+ * @param id: string
+ * @param source: string
+ */
+export const addCard = async (id, source) => {
+  try {
+    const res = await stripe.customers.createSource(id, { source });
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * Creates a subscription for a customer in Stride
+ * items should contain an array of plans the customer gets subscribed to.
+ * Starts with the first of next month
+ * @param customer: object
+ * @param items: object[]
+ */
+export const createSubscription = async (customer, items) => {
+  try {
+    const nextMonth = moment()
+      .add(1, "months")
+      .startOf("month")
+      .unix();
+
+    const res = await stripe.subscriptions.create({
+      customer,
+      items,
+      billing_cycle_anchor: nextMonth
+    });
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+export const fetchCustomer = async id => {
+  try {
+    const res = await stripe.customers.retrieve(id);
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+export const listInvoices = async () => {
+  try {
+    const res = await stripe.invoiceItems.list();
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * Changes the default Card
+ *
+ * @exports
+ * @param {string} customer Id of the customer at Stripe
+ * @param {string} card ID of the card to make it the customer’s new default.
+ * @returns {object} Returns the customer object
+ */
+export const changeDefaultCard = async (customer, card) => {
+  try {
+    const res = await stripe.customers.update(customer, {
+      default_source: card
+    });
+
+    return res;
+  } catch (err) {
+    throw new Error({ message: err.message });
   }
 };

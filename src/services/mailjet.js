@@ -1,6 +1,11 @@
-import { MAILJET_KEY, MAILJET_SECRET } from "../login-data";
+import Mailjet from "node-mailjet";
 
-const Mailjet = require("node-mailjet").connect(MAILJET_KEY, MAILJET_SECRET);
+const { MAILJET_KEY, MAILJET_SECRET } = process.env;
+
+Mailjet.connect(
+  MAILJET_KEY,
+  MAILJET_SECRET
+);
 
 const sendMailjetEmail = async options => {
   // Don't send emails when testing the database!
@@ -14,7 +19,7 @@ const sendMailjetEmail = async options => {
   }
 };
 
-export const sendRegistrationEmail = (email, password) => {
+export const sendRegistrationEmail = (Email, Password) => {
   if (process.env.ENVIRONMENT == "testing") return;
 
   const options = {
@@ -22,7 +27,7 @@ export const sendRegistrationEmail = (email, password) => {
     FromName: "Vipfy Office",
     "MJ-TemplateID": "298815",
     "MJ-TemplateLanguage": "true",
-    Recipients: [{ Email: email }]
+    Recipients: [{ Email, Password }]
   };
 
   sendMailjetEmail(options);

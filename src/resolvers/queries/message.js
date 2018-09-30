@@ -1,41 +1,47 @@
-import { Op } from "sequelize";
 import { decode } from "jsonwebtoken";
+import * as messaging from "@vipfy-private/messaging";
 import { requiresAuth } from "../../helpers/permissions";
+import { NormalError } from "../../errors";
 
 export default {
-  fetchMessages: requiresAuth.createResolver(async (parent, { read }, { models, token }) => {
-    let messages;
-    const { user: { unitid } } = decode(token);
+  /**
+   * Return all messages the current user can see from the messagegroup "groupid"
+   * (i.e. all messages between visibletimestart and visibletimeend of all group memberships
+   * of the user for that group), sorted by sendtime.
+   */
+  fetchDialog: requiresAuth.createResolver(
+    async (parent, { groupid, limit, cursor }, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
 
-    try {
-      if (read === true) {
-        messages = await models.Message.findAll({
-          where: {
-            receiver: unitid,
-            archivetimereceiver: { [Op.eq]: null },
-            readtime: { [Op.not]: null }
-          },
-          order: [["sendtime", "DESC"]]
-        });
-      } else if (read === false) {
-        messages = await models.Message.findAll({
-          where: {
-            receiver: unitid,
-            archivetimereceiver: { [Op.eq]: null },
-            readtime: { [Op.eq]: null }
-          },
-          order: [["sendtime", "DESC"]]
-        });
-      } else {
-        messages = await models.Message.findAll({
-          where: { receiver: unitid, archivetimereceiver: { [Op.eq]: null } },
-          order: [["sendtime", "DESC"]]
-        });
+        return await messaging.fetchDialog(cursor, groupid, limit, models, unitid);
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { error: err } });
       }
+    }
+  ),
 
-      return messages;
+  fetchGroups: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { unitid }
+      } = decode(token);
+
+      return await messaging.fetchGroups(models, unitid);
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }),
+
+  fetchPublicUser: requiresAuth.createResolver(async (parent, { userid }, { models }) => {
+    try {
+      const user = await models.User.findById(userid);
+
+      return user;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   })
 };

@@ -1,210 +1,156 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth, requiresVipfyAdmin } from "../../helpers/permissions";
-import { weeblyApi } from "../../services/weebly";
-
-/* eslint-disable no-param-reassign, array-callback-return */
+import * as Services from "@vipfy-private/services";
+import { requiresRights } from "../../helpers/permissions";
+// import { fetchCustomer } from "../../services/stripe";
+import { NormalError } from "../../errors";
 
 export default {
-  fetchBills: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const { user: { company: unitid } } = decode(token);
+  boughtPlans: requiresRights(["view-boughtplans"]).createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
 
-      const bills = await models.Bill.findAll({ where: { unitid }, order: [["billtime", "DESC"]] });
+        const boughtPlans = await models.BoughtPlan.findAll({
+          where: { usedby: company }
+        });
+
+        const ids = await boughtPlans.map(bp => bp.get("id"));
+        boughtPlans.forEach(bp => {
+          bp.licences = [];
+        });
+
+        const licences = await models.Licence.findAll({
+          attributes: { exclude: ["key"] },
+          where: {
+            boughtplanid: { [models.sequelize.Op.or]: [...ids] }
+          }
+        });
+
+        await boughtPlans.map(boughtPlan =>
+          licences.forEach(licence => {
+            if (licence.boughtplanid == boughtPlan.id) {
+              boughtPlan.licences.push(licence);
+            }
+          })
+        );
+
+        return boughtPlans;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchBills: requiresRights([
+    "view-paymentdata",
+    "view-addresses"
+  ]).createResolver(async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { company: unitid }
+      } = decode(token);
+
+      const bills = await models.Bill.findAll({
+        where: { unitid },
+        order: [["billtime", "DESC"]]
+      });
 
       return bills;
     } catch (err) {
-      throw new Error(err.message);
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   }),
 
-  boughtPlans: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const { user: { company } } = decode(token);
-      const boughtPlans = await models.BoughtPlan.findAll({ where: { payer: company } });
-      const ids = await boughtPlans.map(bp => bp.get("id"));
-      boughtPlans.forEach(bp => {
-        bp.licences = [];
-      });
-
-      const licences = await models.Licence.findAll({
-        attributes: { exclude: ["key"] },
-        where: { boughtplanid: { [models.sequelize.Op.or]: [...ids] } }
-      });
-
-      await boughtPlans.map(boughtPlan =>
-        licences.map(licence => {
-          if (licence.boughtplanid == boughtPlan.id) {
-            boughtPlan.licences.push(licence);
-          }
-        })
-      );
-
-      return boughtPlans;
-    } catch ({ message }) {
-      throw new Error(message);
-    }
-  }),
-
-  fetchPlans: async (parent, { appid }, { models }) => {
-    try {
-      const allPlans = await models.Plan.findAll({ where: { appid } });
-      // Filter out the main plans
-      const mainPlans = allPlans.filter(plan => plan.mainplan == null);
-      // Add to each main plan a property sub plan to store them later
-      mainPlans.forEach(mainPlan => {
-        mainPlan.subplans = [];
-      });
-      // Filter out the sub plans
-      const subPlans = allPlans.filter(plan => plan.mainplan != null);
-      // Add the sub plans to it's main plan
-      subPlans.forEach(subPlan => {
-        mainPlans.forEach(mainPlan => {
-          if (subPlan.mainplan == mainPlan.id) {
-            mainPlan.subplans.push(subPlan);
-          }
-        });
-      });
-
-      return mainPlans;
-    } catch ({ message }) {
-      throw new Error(message);
-    }
-  },
-
-  fetchLicences: requiresAuth.createResolver(
-    async (parent, { boughtplanid }, { models, token }) => {
-      const startTime = Date.now();
+  fetchPaymentData: requiresRights(["view-paymentdata"]).createResolver(
+    async (parent, args, { models, token }) => {
       try {
-        const { user: { unitid } } = decode(token);
-        let licences;
+        const {
+          user: { company }
+        } = decode(token);
 
-        if (boughtplanid) {
-          licences = await models.Licence.findAll({ where: { unitid, boughtplanid } });
-        } else {
-          licences = await models.Licence.findAll({ where: { unitid } });
+        const paymentData = await models.Unit.findOne({
+          where: { id: company },
+          attributes: ["payingoptions"],
+          raw: true
+        });
+
+        if (
+          !paymentData.payingoptions ||
+          !paymentData.payingoptions.stripe ||
+          paymentData.payingoptions.stripe.cards.length == 0
+        ) {
+          return [];
         }
 
-        await licences.map(licence => {
-          if (licence.disabled) {
-            licence.set({ agreed: false, key: null });
-          }
-
-          if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
-            licence.set({ key: null });
-          }
-
-          if (licence.endtime) {
-            if (Date.parse(licence.endtime) < startTime) {
-              licence.set({ key: null });
-            }
-          }
-        });
-
-        return licences;
+        return paymentData.payingoptions.stripe.cards;
       } catch (err) {
-        throw new Error(err);
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   ),
 
-  adminFetchLicences: requiresVipfyAdmin.createResolver(async (parent, { id }, { models }) => {
-    try {
-      const licences = await models.Licence.findAll({ where: { unitid: id } });
-
-      return licences;
-    } catch (err) {
-      throw new Error(err);
-    }
-  }),
-
-  fetchLicencesByApp: requiresAuth.createResolver(async (parent, { appid }, { models, token }) => {
-    try {
-      const { user: { unitid } } = decode(token);
-      const plans = await models.Plan.findAll({
-        attributes: ["id"],
-        where: { appid }
-      });
-      const planIds = plans.map(plan => plan.get("id"));
-
-      if (planIds.length == 0) {
-        throw new Error("This App has no plans!");
-      }
-
-      const boughtPlans = await models.BoughtPlan.findAll({
-        where: { planid: { [models.sequelize.Op.in]: [...planIds] } }
-      });
-      const boughtPlanIds = boughtPlans.map(pb => pb.get("id"));
-
-      const licences = await models.Licence.findAll({
-        where: { unitid, boughtplanid: { [models.sequelize.Op.in]: [...boughtPlanIds] } }
-      });
-
-      await licences.map(licence => {
-        if (licence.disabled) {
-          licence.set({ agreed: false, key: null });
-        }
-      });
-
-      return licences;
-    } catch (err) {
-      throw new Error(err.message);
-    }
-  }),
-
-  // change to requiresAdmin in Production!
-  createLoginLink: requiresAuth.createResolver(
-    async (parent, { boughtplanid }, { models, token }) => {
+  fetchPlans: requiresRights(["view-apps"]).createResolver(
+    async (parent, { appid }, { models }) => {
       try {
-        const { user: { unitid } } = decode(token);
-        const licenceBelongsToUser = await models.Licence.findOne({
-          where: { unitid, boughtplanid }
+        const app = await models.App.findOne({
+          where: { id: appid, disabled: false, deprecated: false }
         });
-
-        if (!licenceBelongsToUser) {
-          throw new Error("This licence doesn't belong to this user!");
+        if (!app) {
+          throw new Error("App unknown or disabled/deprecated");
         }
 
-        const credentials = licenceBelongsToUser.get("key");
-        const endpoint = `user/${credentials.weeblyid}/loginLink`;
-        const res = await weeblyApi("POST", endpoint, "");
+        const allPlans = await models.sequelize.query(
+          `Select *
+          FROM plan_data
+          WHERE appid = :appid
+          AND (enddate >= now() OR enddate is null)
+          AND (startdate <= now() OR startdate is null)
+          ORDER BY price ASC`,
+          {
+            replacements: { appid },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
 
-        return {
-          ok: true,
-          loginLink: res.link
-        };
+        return allPlans;
       } catch (err) {
-        throw new Error(err.message);
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   ),
 
-  fetchPlan: (parent, { planid }, { models }) => models.Plan.findById(planid)
+  fetchPlanInputs: requiresRights(["view-apps"]).createResolver(
+    async (parent, { planid }, { models }) => {
+      const plan = await models.Plan.findById(planid, { raw: true });
+      return Services.getPlanBuySchema(plan.appid);
+    }
+  ),
 
-  // fetchPayers: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-  //   const { user: { unitid } } = decode(token);
-  //   const payers = [];
-  //   const directParent = await models.ParentUnit.findOne({
-  //     attributes: ["parentunit"],
-  //     where: { childunit: unitid }
-  //   });
-  //   const findRoot = async unit => {
-  //     if (unit == null) {
-  //       return;
-  //     }
-  //     unit = null;
-  //     unit = await models.ParentUnit.findOne({
-  //       attributes: ["parentunit"],
-  //       where: { childunit: unitid }
-  //     });
-  //
-  //     if (unit != null) {
-  //       payers.push(unit);
-  //     }
-  //     findRoot(unit);
-  //   };
-  //
-  //   findRoot(directParent);
-  //   console.log(payers);
-  //   return payers;
-  // })
+  fetchBillingAddresses: requiresRights(["view-addresses"]).createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        let addresses;
+        addresses = await models.Address.findAll({
+          where: { unitid: company, tags: ["billing"] }
+        });
+
+        if (addresses.length == 0) {
+          addresses = await models.Address.findAll({
+            where: { unitid: company, tags: ["main"] }
+          });
+        }
+
+        return addresses;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  )
 };

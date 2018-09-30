@@ -1,29 +1,40 @@
 module.exports = {
-  "plugins": ["import"],
-  "extends": "airbnb-base",
+  plugins: ["import"],
+  extends: "airbnb-base",
   env: {
     node: true,
     es6: true
   },
-  "rules": {
-    "eqeqeq": "off",
+  rules: {
+    "implicit-arrow-linebreak": "off",
+    "no-prototype-builtins": "off",
+    "one-var": "off",
+    "no-buffer-constructor": "off",
+    "function-paren-newline": "off",
+    "no-else-return": "off",
+    "operator-linebreak": "off",
+    "object-curly-newline": "off",
+    eqeqeq: "off",
     "func-names": "off",
     "arrow-parens": "off",
-    "camelcase": "off",
+    camelcase: "off",
     "no-console": "off",
     "comma-dangle": "off",
-    'quotes': [2, 'double', {'allowTemplateLiterals': true}],
+    quotes: [2, "double", { allowTemplateLiterals: true }],
     "no-new": "off",
     "no-plusplus": "off",
-    "no-param-reassign": "off"
+    "no-param-reassign": "off",
+    radix: "off",
+    "linebreak-style": "off",
+    "no-continue": "off",
+    "no-restricted-syntax": "off"
   },
-  // Allow global functions for testing to avoid unnecessary warnings
-  "globals": {
-    "describe": 1,
-    "test": 1,
-    "expect": 1,
-    "beforeAll": 1,
-    "afterAll": 1,
-    "jest": 1
+  globals: {
+    describe: 1,
+    test: 1,
+    expect: 1,
+    beforeAll: 1,
+    afterAll: 1,
+    jest: 1
   }
 };

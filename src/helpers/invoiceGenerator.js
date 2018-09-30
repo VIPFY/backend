@@ -52,7 +52,7 @@ function _classCallCheck(instance, Constructor) {
  *    - `currencyBalance` (Object):
  *      - `unitPrice` (Number): The main balance.
  *      - `secondary` (Number): The converted main balance.
- *      - `tasks` (Array): An array with the tasks (description of the services you did).
+ *      - `billItems` (Array): An array with the billItems (description of the services you did).
  *      - `invoice` (Object): Information about invoice.
  *  - `seller` (Object): Information about seller.
  *  - `buyer` (Object): Information about buyer.
@@ -123,13 +123,12 @@ module.exports = (function () {
           output = null;
         }
 
-        const options = this.options;
-        const tasks = options.data.billItems;
+        const { data, seller, buyer } = this.options;
         let invoiceHtml = "";
         const invoiceData = {
-          seller: options.seller,
-          buyer: options.buyer,
-          invoice: options.data.invoice,
+          seller,
+          buyer,
+          invoice: data.invoice,
           description_rows: "",
           total: 0
         };
@@ -139,7 +138,7 @@ module.exports = (function () {
             return callback(err);
           }
 
-          iterateObject(tasks, (cTask, i) => {
+          iterateObject(data.billItems, (cTask, i) => {
             // Set the additional fields and compute data
             cTask.nrCrt = i + 1;
 
