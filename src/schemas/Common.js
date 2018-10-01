@@ -34,6 +34,7 @@ type Notification {
   message: String
   icon: String
   link: String
+  changed: [String]
 }
 
 type Newsletter {
@@ -92,8 +93,11 @@ export const mutations = `
   checkName(name: String): Response!
   readNotification(id: Int!): Boolean!
   readAllNotifications: Boolean!
+
+  # for uptime checks and dummy queries
+  ping: Response!
 `;
 
 export const subscriptions = `
-  newNotification(receiver: Int!): Notification!
+  newNotification: Notification!
 `;

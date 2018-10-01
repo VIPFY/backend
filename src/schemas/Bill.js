@@ -81,6 +81,7 @@ export const types = `
     planid: Plan!
     predecessor: Plan
     licences: [Licence]
+    totalprice: Float
   }
 
   type PlansRunning {

@@ -91,7 +91,8 @@ export default {
               receiver: unitid,
               message: "Credit Card successfully added",
               icon: "credit-card",
-              link: "billing"
+              link: "billing",
+              changed: ["paymentMethods"]
             },
             ta
           );
@@ -105,7 +106,8 @@ export default {
               receiver: unitid,
               message: "Adding Credit Card failed",
               icon: "credit-card",
-              link: "billing"
+              link: "billing",
+              changed: ["paymentMethods"]
             },
             ta
           );
@@ -158,7 +160,8 @@ export default {
               receiver: unitid,
               message: "New default Credit Card",
               icon: "credit-card",
-              link: "billing"
+              link: "billing",
+              changed: ["paymentMethods"]
             },
             ta
           );
@@ -172,7 +175,8 @@ export default {
               receiver: unitid,
               message: "Switching of default Card failed",
               icon: "credit-card",
-              link: "billing"
+              link: "billing",
+              changed: ["paymentMethods"]
             },
             ta
           );

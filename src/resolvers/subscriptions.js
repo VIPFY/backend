@@ -13,9 +13,7 @@ export default {
   newMessage: {
     subscribe: withFilter(
       (parent, args, { token }) => {
-        const { user } = decode(token);
-
-        if (!token || token == "null" || !user || !user.unitid) {
+        if (!token || token == "null") {
           throw new AuthError();
         }
 
@@ -31,14 +29,18 @@ export default {
   },
 
   newNotification: {
-    subscribe: withFilter((parent, args, { token }) => {
-      const { user } = decode(token);
+    subscribe: withFilter(
+      (parent, args, { token }) => {
+        if (!token || token == "null") {
+          throw new AuthError();
+        }
 
-      if (!token || token == "null" || !user || !user.unitid) {
-        throw new AuthError();
+        return pubsub.asyncIterator(NEW_NOTIFICATION);
+      },
+      (payload, args, { token }) => {
+        const { user } = decode(token);
+        return payload.newNotification.receiver == user.unitid;
       }
-
-      return pubsub.asyncIterator(NEW_NOTIFICATION);
-    }, (payload, args) => payload.newNotification.receiver == args.receiver)
+    )
   }
 };
