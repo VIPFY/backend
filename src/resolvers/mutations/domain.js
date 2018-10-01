@@ -24,8 +24,8 @@ export default {
             raw: true
           });
 
-          let totalprice;
           let register;
+          let whoisprivacy = false;
           const additionalfeatures = {};
           const totalfeatures = {
             domain: domainData.domain,
@@ -34,22 +34,17 @@ export default {
           let partnerLogs = {};
           domainData.renewalmode = "AUTORENEW";
 
-          // eslint-disable-next-line
-          switch (domainData.tld) {
-            case "com":
-              totalprice = 10;
-              break;
+          const findPrice = await models.Plan.findOne({
+            where: { name: domainData.tld, appid: 11 },
+            attributes: ["price", "id"],
+            raw: true
+          });
 
-            case "org":
-              totalprice = 15;
-              break;
-
-            case "net":
-              totalprice = 20;
-          }
+          let totalprice = findPrice.price;
 
           if (domainData.whoisprivacy == 1) {
             totalprice += 5;
+            whoisprivacy = true;
             additionalfeatures.whoisprivacy = true;
             totalfeatures.whoisprivacy = true;
           }
@@ -135,7 +130,7 @@ export default {
             {
               buyer: unitid,
               payer: company,
-              planid: 25,
+              planid: findPrice.id,
               disabled: false,
               totalprice,
               description: `Registration of ${domainData.domain}`,
@@ -153,7 +148,8 @@ export default {
               domainname: domainData.domain,
               renewalmode: "AUTORENEWAL",
               renewaldate,
-              unitid: company
+              unitid: company,
+              whoisprivacy
             },
             { transaction: ta }
           );
