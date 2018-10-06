@@ -123,53 +123,60 @@ import crypto from "crypto";
 (async () => {
   try {
     const password = crypto.randomBytes(15).toString("hex");
-    const email = "info@vipfy.store";
+    const email = `${password}@vipfy.store`;
     console.log({ email, password });
 
-    const res = await axios({
-      method: "POST",
-      url: "https://my.freshbooks.com/service/auth/api/v1/smux/registrations",
-      headers: {
-        Host: "my.freshbooks.com",
-        "User-Agent":
-          "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:62.0) Gecko/20100101 Firefox/62.0",
-        Accept: "application/json, text/javascript, */*; q=0.01",
-        "Accept-Language": "en-US,en;q=0.5",
-        "Accept-Encoding": "gzip, deflate, br",
-        Referer: "https://my.freshbooks.com/",
-        "Content-Type": "application/json; charset=utf-8",
-        Authorization: "Bearer undefined",
-        "X-Requested-With": "XMLHttpRequest"
-      },
-      data: {
-        id: "info@vipfy.com",
-        company_name: null,
-        email,
-        password,
-        country: "United States",
-        currencyCode: "USD",
-        access_token: null,
-        direct_buy: false,
-        skip_system: false,
-        skip_business: false,
-        send_confirmation_notification: true,
-        capacity: null,
-        provisioner: "magnum",
-        referring_url: null,
-        landing_url: "https://www.vipfy.store/",
-        referralid: null,
-        web_promo: null,
-        visitor_id: null,
-        optimizely_user_id: null,
-        optimizely_buckets: null
-      }
-    });
+    const headers = {
+      Host: "my.freshbooks.com",
+      "User-Agent":
+        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:62.0) Gecko/20100101 Firefox/62.0",
+      Accept: "application/json, text/javascript, */*; q=0.01",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate, br",
+      Referer: "https://my.freshbooks.com/",
+      "Content-Type": "application/json; charset=utf-8",
+      Authorization: "Bearer undefined",
+      "X-Requested-With": "XMLHttpRequest"
+    };
 
-    console.log(res.data.response);
+    const data = {
+      id: "info@vipfy.com",
+      company_name: null,
+      email,
+      password,
+      country: "United States",
+      currencyCode: "USD",
+      access_token: null,
+      direct_buy: false,
+      skip_system: false,
+      skip_business: false,
+      send_confirmation_notification: true,
+      capacity: null,
+      provisioner: "magnum",
+      referring_url: null,
+      landing_url: "https://www.vipfy.store/",
+      referralid: null,
+      web_promo: null,
+      visitor_id: null,
+      optimizely_user_id: null,
+      optimizely_buckets: null
+    };
+
+    const config = {
+      method: "POST",
+      baseURL: "https://my.freshbooks.com/service/auth/api/v1",
+      url: "smux/registrations",
+      headers,
+      data
+    };
+
+    const createAcc = await axios(config);
+
+    console.log(createAcc.data.response);
     if (
-      !res.data.response ||
-      !res.data.response.access_token ||
-      res.data.response.access_token == null
+      !createAcc.data.response ||
+      !createAcc.data.response.access_token ||
+      createAcc.data.response.access_token == null
     ) {
       throw new Error("Botting failed!");
     }

@@ -9,6 +9,7 @@ export const types = `
     statisticdata: JSON
     dns: JSON,
     boughtplanid: BoughtPlan!
+    external: Boolean!
   }
 
 # Data of a specific event
@@ -23,6 +24,8 @@ export const types = `
     tld: TLD
     renewalmode: RENEWALMODE
     whoisprivacy: Int
+    renewaldate: Date
+    createdate: Date
     dns: [DNSRecord]
   }
 
@@ -65,4 +68,6 @@ export const queries = `
 export const mutations = `
   registerDomain(domainData: DD24!): Domain!
   updateDomain(domainData: DD24!, id: Int!): Response!
+  registerExternalDomain(domainData: DD24!): Domain!
+  deleteExternalDomain(id: Int!): Response!
 `;

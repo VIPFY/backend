@@ -56,6 +56,7 @@ export const deletePlan = async id => {
 
 /**
  * Creates a customer object in Stride
+ * @exports
  * source should be a token passed on from the Frontend through a Stripe Library
  * @param customer: object
  * @param source: object
@@ -75,6 +76,7 @@ export const createCustomer = async (customer, source) => {
 
 /**
  * List the cards from a stripe customer
+ * @exports
  * @param id: string
  */
 export const listCards = async id => {
@@ -89,6 +91,7 @@ export const listCards = async id => {
 
 /**
  * Adds a card to a stripe customer
+ * @exports
  * The source is a token created from a Stripe library in the Frontend
  * @param id: string
  * @param source: string
@@ -104,11 +107,13 @@ export const addCard = async (id, source) => {
 };
 
 /**
- * Creates a subscription for a customer in Stride
- * items should contain an array of plans the customer gets subscribed to.
+ * Creates a subscription for a customer in Stripe
+ * @exports
+ *
  * Starts with the first of next month
  * @param customer: object
- * @param items: object[]
+ * @param items: object[] items should contain an array of plans the customer gets
+ * subscribed to.
  */
 export const createSubscription = async (customer, items) => {
   try {
@@ -129,6 +134,11 @@ export const createSubscription = async (customer, items) => {
   }
 };
 
+/**
+ * Fetches a customer from Stripe
+ * @exports
+ * @param {number} id
+ */
 export const fetchCustomer = async id => {
   try {
     const res = await stripe.customers.retrieve(id);
@@ -139,6 +149,10 @@ export const fetchCustomer = async id => {
   }
 };
 
+/**
+ * Lists all invoices from a customer from Stripe
+ * @exports
+ */
 export const listInvoices = async () => {
   try {
     const res = await stripe.invoiceItems.list();
