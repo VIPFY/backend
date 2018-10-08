@@ -1,3 +1,5 @@
+import axios from "axios";
+import crypto from "crypto";
 // import weeblyApi from "../services/weebly";
 //
 // async function testWeebly() {
@@ -45,7 +47,6 @@
 //
 // getToken("development@vipfy.com", "0892309jJSfjspjf?9f9rewj9fgjwa");
 // ============================================================================
-// import axios from "axios";
 // import { SHOPIFY_KEY, SHOPIFY_SECRET } from "../login-data";
 //
 // const config = {
@@ -81,13 +82,105 @@
 
 // doStuff("Pipedrive")
 // ============================================================================
-import {attachmentLink} from "../services/gcloud"
+// import { attachmentLink } from "../services/gcloud";
 
-const doStuff = async () => {
+// const doStuff = async () => {
+//   try {
+//     const res = await attachmentLink(
+//       "9a6f8a58dd106aec4e05bbca7386fdbcb477855faaa68520ee3e4b60e7f4c711-2664ada43da62875f3ca61a8f53aa02792bfa55cd4c0bec8bbee8809e1d2b802c20f14625d7641de4ded4e4b715d9a06449557dafc26c1d55731fbcb83ba7c91"
+//     );
+//     console.log(res);
+//   } catch (err) {
+//     console.log(err);
+//   }
+// };
+
+// doStuff();
+// =============================================================================
+// import { Builder, By, Key, until } from "selenium-webdriver";
+// import chrome from "selenium-webdriver/chrome";
+
+// let driver = new webdriver.Builder()
+//     .forBrowser('chrome')
+//     .setChromeOptions(/* ... */)
+//     .build();
+
+// (async () => {
+//   const driver = await new Builder().forBrowser("chrome").build();
+//   try {
+//     await driver.get("https://my.freshbooks.com/#/signup");
+//     await driver
+//       .findElement(By.id("ember563"))
+//       .sendKeys("Hallo Lisa, ich beobachte dich");
+
+//     await driver.findElement(By.id("ember566")).sendKeys("password");
+//     await driver.wait(until.titleIs("webdriver - Google Search"), 10000);
+//   } finally {
+//     await driver.quit();
+//   }
+// })();
+
+(async () => {
   try {
-    const res = await attachmentLink("9a6f8a58dd106aec4e05bbca7386fdbcb477855faaa68520ee3e4b60e7f4c711-2664ada43da62875f3ca61a8f53aa02792bfa55cd4c0bec8bbee8809e1d2b802c20f14625d7641de4ded4e4b715d9a06449557dafc26c1d55731fbcb83ba7c91")
-console.log(res)
-  } catch (err) { console.log(err) }
-}
+    const password = crypto.randomBytes(15).toString("hex");
+    const email = `${password}@vipfy.store`;
+    console.log({ email, password });
 
-doStuff()
+    const headers = {
+      Host: "my.freshbooks.com",
+      "User-Agent":
+        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:62.0) Gecko/20100101 Firefox/62.0",
+      Accept: "application/json, text/javascript, */*; q=0.01",
+      "Accept-Language": "en-US,en;q=0.5",
+      "Accept-Encoding": "gzip, deflate, br",
+      Referer: "https://my.freshbooks.com/",
+      "Content-Type": "application/json; charset=utf-8",
+      Authorization: "Bearer undefined",
+      "X-Requested-With": "XMLHttpRequest"
+    };
+
+    const data = {
+      id: "info@vipfy.com",
+      company_name: null,
+      email,
+      password,
+      country: "United States",
+      currencyCode: "USD",
+      access_token: null,
+      direct_buy: false,
+      skip_system: false,
+      skip_business: false,
+      send_confirmation_notification: true,
+      capacity: null,
+      provisioner: "magnum",
+      referring_url: null,
+      landing_url: "https://www.vipfy.store/",
+      referralid: null,
+      web_promo: null,
+      visitor_id: null,
+      optimizely_user_id: null,
+      optimizely_buckets: null
+    };
+
+    const config = {
+      method: "POST",
+      baseURL: "https://my.freshbooks.com/service/auth/api/v1",
+      url: "smux/registrations",
+      headers,
+      data
+    };
+
+    const createAcc = await axios(config);
+
+    console.log(createAcc.data.response);
+    if (
+      !createAcc.data.response ||
+      !createAcc.data.response.access_token ||
+      createAcc.data.response.access_token == null
+    ) {
+      throw new Error("Botting failed!");
+    }
+  } catch (error) {
+    console.log(error);
+  }
+})();

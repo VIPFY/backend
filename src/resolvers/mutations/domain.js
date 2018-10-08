@@ -8,9 +8,15 @@ import {
   createLog,
   createNotification
 } from "../../helpers/functions";
-import { PartnerError } from "../../errors";
+import { PartnerError, NormalError } from "../../errors";
 
 export default {
+  /**
+   * Register a Domain with our Partner DD24
+   *
+   * @param {object} domainData Contains the domain as well as the options
+   * @returns {object} domain The registered Domain
+   */
   registerDomain: requiresRights(["create-domains"]).createResolver(
     async (parent, { domainData }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
@@ -24,8 +30,8 @@ export default {
             raw: true
           });
 
-          let totalprice;
           let register;
+          let whoisprivacy = false;
           const additionalfeatures = {};
           const totalfeatures = {
             domain: domainData.domain,
@@ -34,22 +40,17 @@ export default {
           let partnerLogs = {};
           domainData.renewalmode = "AUTORENEW";
 
-          // eslint-disable-next-line
-          switch (domainData.tld) {
-            case "com":
-              totalprice = 10;
-              break;
+          const findPrice = await models.Plan.findOne({
+            where: { name: domainData.tld, appid: 11 },
+            attributes: ["price", "id"],
+            raw: true
+          });
 
-            case "org":
-              totalprice = 15;
-              break;
-
-            case "net":
-              totalprice = 20;
-          }
+          let totalprice = findPrice.price;
 
           if (domainData.whoisprivacy == 1) {
             totalprice += 5;
+            whoisprivacy = true;
             additionalfeatures.whoisprivacy = true;
             totalfeatures.whoisprivacy = true;
           }
@@ -135,7 +136,7 @@ export default {
             {
               buyer: unitid,
               payer: company,
-              planid: 25,
+              planid: findPrice.id,
               disabled: false,
               totalprice,
               description: `Registration of ${domainData.domain}`,
@@ -153,7 +154,8 @@ export default {
               domainname: domainData.domain,
               renewalmode: "AUTORENEWAL",
               renewaldate,
-              unitid: company
+              unitid: company,
+              whoisprivacy
             },
             { transaction: ta }
           );
@@ -204,9 +206,134 @@ export default {
       })
   ),
 
+  registerExternalDomain: requiresRights(["create-domains"]).createResolver(
+    async (parent, { domainData }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        try {
+          const domain = await models.Domain.create(
+            {
+              ...domainData,
+              domainname: domainData.domain,
+              boughtplanid: 17,
+              external: true,
+              accountid: "external",
+              accountemail: "external@vipfy.com",
+              renewalmode: "AUTODELETE",
+              unitid: company
+            },
+            { transaction: ta }
+          );
+
+          const p1 = createLog(
+            ip,
+            "registerExternalDomain",
+            {
+              domain
+            },
+            unitid,
+            ta
+          );
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: `${domainData.domain} successfully added.`,
+              icon: "laptop",
+              link: "domains",
+              changed: ["domains"]
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
+
+          return domain;
+        } catch (err) {
+          createNotification({
+            receiver: unitid,
+            message: `Couldn't add external Domain ${domainData.domain}.`,
+            icon: "bug",
+            link: "domains",
+            changed: ["domains"]
+          });
+
+          throw new NormalError({
+            message: err.message,
+            internalData: {
+              err
+            }
+          });
+        }
+      })
+  ),
+
   /**
-   * Update Whois Privacy or Renewal Mode of a domain. Updating both at the same
-   * time is not possible!
+   * Deletes an external Domain from our database
+   *
+   * @param {number} id The domains id
+   *
+   * @returns {obj} ok
+   */
+  deleteExternalDomain: async (parent, { id }, { models, token, ip }) =>
+    models.sequelize.transaction(async ta => {
+      const {
+        user: { unitid }
+      } = decode(token);
+
+      try {
+        const domain = await models.Domain.findById(id, { raw: true });
+        console.log(domain);
+
+        await models.Domain.destroy({ where: { id } });
+
+        const p1 = createLog(
+          ip,
+          "registerExternalDomain",
+          {
+            domain
+          },
+          unitid,
+          ta
+        );
+
+        const p2 = createNotification(
+          {
+            receiver: unitid,
+            message: `${domain.domainname} successfully deleted.`,
+            icon: "laptop",
+            link: "domains",
+            changed: ["domains"]
+          },
+          ta
+        );
+
+        await Promise.all([p1, p2]);
+
+        return { ok: true };
+      } catch (err) {
+        createNotification({
+          receiver: unitid,
+          message: `Couldn't delete external Domain.`,
+          icon: "bug",
+          link: "domains",
+          changed: ["domains"]
+        });
+
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }),
+
+  /**
+   * Update Whois Privacy or Renewal Mode of a domain. Updating both at the
+   * same time is not possible!
+   *
    * @param id: integer
    * @param domainData: object
    * domainData can contain the properties:

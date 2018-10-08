@@ -91,36 +91,34 @@ export default {
     }
   ),
 
-  fetchPlans: requiresRights(["view-apps"]).createResolver(
-    async (parent, { appid }, { models }) => {
-      try {
-        const app = await models.App.findOne({
-          where: { id: appid, disabled: false, deprecated: false }
-        });
-        if (!app) {
-          throw new Error("App unknown or disabled/deprecated");
-        }
+  fetchPlans: async (parent, { appid }, { models }) => {
+    try {
+      const app = await models.App.findOne({
+        where: { id: appid, disabled: false, deprecated: false }
+      });
 
-        const allPlans = await models.sequelize.query(
-          `Select *
+      if (!app) {
+        throw new Error("App unknown or disabled/deprecated");
+      }
+
+      const allPlans = await models.sequelize.query(
+        `Select *
           FROM plan_data
           WHERE appid = :appid
           AND (enddate >= now() OR enddate is null)
           AND (startdate <= now() OR startdate is null)
           ORDER BY price ASC`,
-          {
-            replacements: { appid },
-            raw: true,
-            type: models.sequelize.QueryTypes.SELECT
-          }
-        );
+        {
+          replacements: { appid },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
 
-        return allPlans;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
+      return allPlans;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
-  ),
+  },
 
   fetchPlanInputs: requiresRights(["view-apps"]).createResolver(
     async (parent, { planid }, { models }) => {
