@@ -546,5 +546,44 @@ export default {
           });
         }
       })
+  ),
+
+  trackMinutesSpent: requiresAuth.createResolver(
+    async (parent, { licenceid, minutes }, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
+        const licence = await models.Licence.findOne({
+          where: { id: licenceid, unitid },
+          raw: true
+        });
+        if (!licence) {
+          throw new Error("licence not found");
+        }
+        await models.sequelize.query(
+          `INSERT INTO timetracking_data (licenceid, unitid, boughtplanid, day, minutesspent)
+            VALUES (:licenceid, :unitid, :boughtplanid, now(), :minutesspent)
+            ON CONFLICT (licenceid, unitid, day)
+            DO UPDATE SET minutesspent = timetracking_data.minutesspent + EXCLUDED.minutesspent
+            `,
+          {
+            replacements: {
+              licenceid,
+              unitid,
+              boughtplanid: licence.boughtplanid,
+              minutesspent: minutes
+            },
+            type: models.sequelize.QueryTypes.INSERT
+          }
+        );
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
   )
 };

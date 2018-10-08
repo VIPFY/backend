@@ -111,4 +111,6 @@ export const mutations = `
 
   # Agree to all terms and conditions of a licence
   agreeToLicence(licenceid: ID!): Response!
+
+  trackMinutesSpent(licenceid: ID!, minutes: Int!): Response!
 `;
