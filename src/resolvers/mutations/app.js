@@ -551,6 +551,10 @@ export default {
   trackMinutesSpent: requiresAuth.createResolver(
     async (parent, { licenceid, minutes }, { models, token }) => {
       try {
+        if (minutes <= 0) {
+          throw new Error("minutes must be positive");
+        }
+
         const {
           user: { unitid }
         } = decode(token);
