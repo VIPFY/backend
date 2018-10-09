@@ -14,6 +14,7 @@ export const types = `
     options: JSON
     developer: Unit!
     supportunit: Unit!
+    color: String!
   }
 
   type AppDetails {
