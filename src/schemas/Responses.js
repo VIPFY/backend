@@ -94,6 +94,8 @@ export const types = `
     appicon: String
     applogo: String
     appid: Int!
+    licencesused: Int!
+    licencestotal: Int!
   }
 
   # The Api-Resonse from DD24

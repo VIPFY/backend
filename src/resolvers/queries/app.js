@@ -225,14 +225,33 @@ export default {
       try {
         const userApps = await models.sequelize
           .query(
-            `SELECT DISTINCT bp.id || '-' || :departmentid AS id, bp.usedby,
-              bp.id AS boughtplan, bp.description,
-              a.name AS appname, p.appid, a.icon AS appicon, a.logo AS applogo
-              FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit =
-              bp.usedby AND r.type = 'canuselicences' AND r.holder = :departmentid)
-              OR bp.usedby = :departmentid INNER JOIN plan_data p
-              on bp.planid = p.id INNER JOIN app_data a on p.appid = a.id
-              WHERE not a.disabled`,
+            `SELECT DISTINCT
+              bp.id || '-' || :departmentid AS id,
+              bp.usedby,
+              bp.id                         AS boughtplan,
+              bp.description,
+              a.name                        AS appname,
+              p.appid,
+              a.icon                        AS appicon,
+              a.logo                        AS applogo,
+              l.used                        AS licencesused,
+              l.total                       AS licencestotal
+            FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit =
+                                                                  bp.usedby AND r.type = 'canuselicences' AND
+                                                                  r.holder = :departmentid)
+                                                                  OR bp.usedby = :departmentid
+              INNER JOIN plan_data p
+                on bp.planid = p.id
+              INNER JOIN app_data a on p.appid = a.id
+              LEFT OUTER JOIN (SELECT
+                                boughtplanid,
+                                count(*)
+                                  FILTER (WHERE unitid IS NOT NULL) as used,
+                                count(*)                            as total
+                              FROM licence_data
+                              WHERE endtime IS NULL OR endtime > now()
+                              GROUP BY boughtplanid) l ON (l.boughtplanid = bp.id)
+            WHERE not a.disabled;`,
             { replacements: { departmentid } }
           )
           .spread(res => res);
