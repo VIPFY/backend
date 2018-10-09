@@ -261,5 +261,45 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  fetchUnitAppsSimpleStats: requiresRights(["view-licences"]).createResolver(
+    async (parent, { departmentid }, { models }) => {
+      try {
+        const userApps = await models.sequelize
+          .query(
+            `SELECT DISTINCT
+              bp.id || '-' || :departmentid AS id,
+              bp.usedby,
+              bp.id                         AS boughtplan,
+              COALESCE(l.minutestotal, 0)   AS minutestotal,
+              COALESCE(l.minutesavg, 0)   AS minutesavg,
+              COALESCE(l.minutesmedian, 0)   AS minutesmedian,
+              COALESCE(l.minutesmin, 0)   AS minutesmin,
+              COALESCE(l.minutesmax, 0)   AS minutesmax
+            FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit =
+                                                                  bp.usedby AND r.type = 'canuselicences' AND
+                                                                  r.holder = :departmentid)
+                                                                  OR bp.usedby = :departmentid
+              LEFT OUTER JOIN (SELECT
+                                boughtplanid,
+                                sum(minutesspent) as minutestotal,
+                avg(minutesspent) as minutesavg,
+                percentile_disc(0.5) WITHIN GROUP (ORDER BY minutesspent)  as minutesmedian,
+                min(minutesspent) as minutesmin,
+                max(minutesspent) as minutesmax
+                              FROM timetracking_data
+                              WHERE date_trunc('month', now()) = date_trunc('month', day)
+                              GROUP BY boughtplanid)
+                              l ON (l.boughtplanid = bp.id);`,
+            { replacements: { departmentid } }
+          )
+          .spread(res => res);
+
+        return userApps;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };
