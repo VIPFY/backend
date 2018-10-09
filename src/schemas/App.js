@@ -39,6 +39,7 @@ export const types = `
     developerwebsite: String
     developer: Unit!
     supportunit: Unit!
+    color: String!
   }
 
   input AppInput {
