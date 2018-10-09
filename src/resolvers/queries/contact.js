@@ -4,7 +4,7 @@ import { NormalError } from "../../errors";
 
 export default {
   fetchAddresses: requiresRights(["view-addresses"]).createResolver(
-    async (parent, { forCompany }, { models, token }) => {
+    async (parent, { forCompany, tag }, { models, token }) => {
       try {
         let {
           // eslint-disable-next-line
@@ -17,7 +17,8 @@ export default {
 
         const addresses = await models.Address.findAll({
           where: { unitid },
-          order: [["priority", "ASC"]]
+          order: [["priority", "ASC"]],
+          tags: [tag]
         });
 
         return addresses;

@@ -157,7 +157,6 @@ export const queries = `
   createLoginLink(boughtplanid: Int!): ProductResponse!
 
   fetchBills: [Bill]!
-  fetchBillingAddresses: [Address]!
   fetchPaymentData: [Card]!
 `;
 

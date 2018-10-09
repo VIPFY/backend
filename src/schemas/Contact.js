@@ -60,7 +60,7 @@ export const types = `
 `;
 
 export const queries = `
-  fetchAddresses(forCompany: Boolean): [Address]!
+  fetchAddresses(forCompany: Boolean, tag: String): [Address]!
   fetchPhones(forCompany: Boolean): [Phone]!
 `;
 

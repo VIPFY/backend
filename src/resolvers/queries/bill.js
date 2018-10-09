@@ -125,30 +125,5 @@ export default {
       const plan = await models.Plan.findById(planid, { raw: true });
       return Services.getPlanBuySchema(plan.appid);
     }
-  ),
-
-  fetchBillingAddresses: requiresRights(["view-addresses"]).createResolver(
-    async (parent, args, { models, token }) => {
-      try {
-        const {
-          user: { company }
-        } = decode(token);
-
-        let addresses;
-        addresses = await models.Address.findAll({
-          where: { unitid: company, tags: ["billing"] }
-        });
-
-        if (addresses.length == 0) {
-          addresses = await models.Address.findAll({
-            where: { unitid: company, tags: ["main"] }
-          });
-        }
-
-        return addresses;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
   )
 };

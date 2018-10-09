@@ -68,6 +68,7 @@ export default {
               department.payingoptions.stripe.id,
               data.id
             );
+
             await models.Unit.update(
               {
                 payingoptions: {
