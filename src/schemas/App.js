@@ -14,6 +14,7 @@ export const types = `
     options: JSON
     developer: Unit!
     supportunit: Unit!
+    color: String!
   }
 
   type AppDetails {
@@ -38,6 +39,7 @@ export const types = `
     developerwebsite: String
     developer: Unit!
     supportunit: Unit!
+    color: String!
   }
 
   input AppInput {
@@ -111,4 +113,6 @@ export const mutations = `
 
   # Agree to all terms and conditions of a licence
   agreeToLicence(licenceid: ID!): Response!
+
+  trackMinutesSpent(licenceid: ID!, minutes: Int!): Response!
 `;
