@@ -28,14 +28,14 @@ export default {
    * @returns any
    */
   addPaymentData: requiresRights(["create-paymentdata"]).createResolver(
-    async (parent, { data, departmentid }, { models, token, ip }) =>
+    async (parent, { data, address }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
-          user: { unitid }
+          user: { unitid, company }
         } = decode(token);
 
         try {
-          const department = await models.Unit.findById(departmentid, {
+          const department = await models.Unit.findById(company, {
             raw: true
           });
           const logArgs = { department };
@@ -58,7 +58,7 @@ export default {
                   }
                 }
               },
-              { where: { id: departmentid } }
+              { where: { id: company } }
             );
 
             logArgs.stripeCustomer = stripeCustomer;
@@ -81,7 +81,7 @@ export default {
                   }
                 }
               },
-              { where: { id: departmentid } }
+              { where: { id: company } }
             );
             logArgs.newCard = card;
           }
@@ -98,7 +98,22 @@ export default {
             ta
           );
 
-          await Promise.all([p1, p2]);
+          let p3;
+          if (address) {
+            const { street, zip, city } = address;
+            p3 = models.Address.create({
+              ...address,
+              tags: ["billing"],
+              unitid: company,
+              address: {
+                street,
+                zip,
+                city
+              }
+            });
+          }
+
+          await Promise.all([p1, p2, p3]);
 
           return { ok: true };
         } catch (err) {
