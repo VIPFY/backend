@@ -73,6 +73,17 @@ export const types = `
     boughtplanid: BoughtPlan!
     unitid: Unit
   }
+
+  type SimpleStats {
+    id: ID!
+    usedby: Unit
+    boughtplan: BoughtPlan!
+    minutestotal: Float!
+    minutesavg: Float!
+    mintesmedian: Float!
+    minutesmin: Float!
+    minutesmax: Float!
+  }
 `;
 
 export const queries = `
@@ -90,6 +101,8 @@ export const queries = `
 
   # Returns all Licences of a current user that are not department licences
   fetchUsersOwnLicences(unitid: Int!): [Licence]
+
+  fetchUnitAppsSimpleStats(departmentid: Int!): [SimpleStats]
 `;
 
 export const mutations = `
