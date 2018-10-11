@@ -48,6 +48,7 @@ export const types = `
     gototime: String
     appid: App!
     gotoplan: Plan
+    hidden: Boolean!
   }
 
   input PlanInput {

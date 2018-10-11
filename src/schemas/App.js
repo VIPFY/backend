@@ -15,6 +15,8 @@ export const types = `
     developer: Unit!
     supportunit: Unit!
     color: String!
+    deprecated: Boolean!
+    hidden: Boolean!
   }
 
   type AppDetails {
@@ -40,6 +42,7 @@ export const types = `
     developer: Unit!
     supportunit: Unit!
     color: String!
+    hidden: Boolean!
   }
 
   input AppInput {

@@ -24,7 +24,7 @@ export default {
             "avgstars",
             "cheapestpromo"
           ],
-          where: { disabled: false, deprecated: false },
+          where: { disabled: false, deprecated: false, hidden: false },
           order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
         });
 

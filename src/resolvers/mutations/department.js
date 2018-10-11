@@ -183,7 +183,11 @@ export default {
   ),
 
   addCreateEmployee: requiresRights(["create-employees"]).createResolver(
-    async (parent, { email, departmentid }, { models, token, ip }) =>
+    async (
+      parent,
+      { email, password, name, departmentid },
+      { models, token, ip }
+    ) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -196,17 +200,24 @@ export default {
             throw new Error("Please enter a valid Email!");
           }
 
-          const firstname = email.slice(0, email.indexOf("@"));
           const emailInUse = await models.Email.findOne({ where: { email } });
           if (emailInUse) throw new Error("Email already in use!");
 
-          const passwordhash = await bcrypt.hash("test", 12);
+          const passwordhash = await bcrypt.hash(password, 12);
 
           let unit = await models.Unit.create({}, { transaction: ta });
           unit = unit.get();
 
           const p1 = models.Human.create(
-            { firstname, unitid: unit.id, passwordhash },
+            {
+              firstname: name.firstname,
+              middlename: name.middlename,
+              lastname: name.lastname,
+              title: name.title,
+              suffix: name.suffix,
+              unitid: unit.id,
+              passwordhash
+            },
             { transaction: ta }
           );
 
