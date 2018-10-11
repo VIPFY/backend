@@ -107,6 +107,7 @@ export default {
           WHERE appid = :appid
           AND (enddate >= now() OR enddate is null)
           AND (startdate <= now() OR startdate is null)
+          AND not plan_data.hidden
           ORDER BY price ASC`,
         {
           replacements: { appid },
