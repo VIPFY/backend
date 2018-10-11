@@ -133,5 +133,7 @@ export const mutations = `
   trackMinutesSpent(licenceid: ID!, minutes: Int!): Response!
 
   # Adds the data of an external App
-  addExternalAppData(username: String!, password: String!, appid: Int!): Response!
-`;
+  addExternalAccount(username: String!, password: String!, appid: Int!): Response!
+
+  removeExternalAccount(licenceid: Int!): Response!
+  `;

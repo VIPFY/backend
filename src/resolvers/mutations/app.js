@@ -599,7 +599,7 @@ export default {
    *
    * @returns {object}
    */
-  addExternalAppData: requiresAuth.createResolver(
+  addExternalAccount: requiresAuth.createResolver(
     (parent, { username, password, appid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
@@ -648,8 +648,8 @@ export default {
 
           const p1 = await createLog(
             ip,
-            "addExternalAppData",
-            { licence, appid, boughtPlan },
+            "addExternalAccount",
+            { licence: licence.id, appid, boughtPlan },
             unitid,
             ta
           );
@@ -685,5 +685,56 @@ export default {
           });
         }
       })
-  )
+  ),
+
+  removeExternalAccount: async (parent, { licenceid }, { models, ip, token }) =>
+    models.sequelize.transaction(async ta => {
+      const {
+        user: { unitid }
+      } = decode(token);
+      try {
+        const deleted = await models.Licence.destroy({
+          where: { id: licenceid, unitid, key: { external: true } }
+        });
+
+        if (deleted == 0) {
+          throw new Error("Licence not found!");
+        }
+
+        const p1 = await createLog(
+          ip,
+          "addExternalAccount",
+          { licence: licenceid },
+          unitid,
+          ta
+        );
+
+        const p2 = await createNotification(
+          {
+            receiver: unitid,
+            message: `Removed external Account`,
+            icon: "user-circle",
+            link: `teams`,
+            changed: ["ownLicences"]
+          },
+          ta
+        );
+
+        await Promise.all([p1, p2]);
+
+        return { ok: true };
+      } catch (err) {
+        await createNotification(
+          {
+            receiver: unitid,
+            message: "Deletion of external Account failed",
+            icon: "bug",
+            link: `teams`,
+            changed: []
+          },
+          ta
+        );
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    })
 };
