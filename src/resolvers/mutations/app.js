@@ -589,5 +589,101 @@ export default {
         });
       }
     }
+  ),
+  /**
+   * Adds an external Account of an App to the Users personal Account
+   *
+   * @param {username} string Username at the external App
+   * @param {password} string Password at the external App
+   * @param {appid} number Id of the external App
+   *
+   * @returns {object}
+   */
+  addExternalAppData: requiresAuth.createResolver(
+    (parent, { username, password, appid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+        try {
+          const plan = await models.Plan.findOne({
+            where: { appid, options: { external: true } },
+            attributes: ["id"],
+            raw: true
+          });
+
+          if (!plan) {
+            throw new Error(
+              "This App is not integrated to handle external Accounts yet."
+            );
+          }
+
+          const boughtPlan = await models.BoughtPlan.create(
+            {
+              planid: plan.id,
+              disabled: false,
+              buyer: unitid,
+              payer: company,
+              usedby: company
+            },
+            { transaction: ta }
+          );
+
+          if (!boughtPlan) {
+            throw new Error(
+              "This App is not integrated to handle external Accounts yet."
+            );
+          }
+
+          const licence = await models.Licence.create(
+            {
+              unitid,
+              disabled: false,
+              boughtplanid: boughtPlan.id,
+              agreed: true,
+              key: { username, password, appid, external: true }
+            },
+            { transaction: ta }
+          );
+
+          const p1 = await createLog(
+            ip,
+            "addExternalAppData",
+            { licence, appid, boughtPlan },
+            unitid,
+            ta
+          );
+
+          const p2 = await createNotification(
+            {
+              receiver: unitid,
+              message: `Added external Account`,
+              icon: "user-circle",
+              link: `marketplace/${appid}`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
+
+          return { ok: true };
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Adding of external Account failed",
+              icon: "bug",
+              link: `marketplace/${appid}`,
+              changed: []
+            },
+            ta
+          );
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };

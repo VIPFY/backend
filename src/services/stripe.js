@@ -59,12 +59,28 @@ export const deletePlan = async id => {
  * @exports
  * source should be a token passed on from the Frontend through a Stripe Library
  * @param customer: object
- * @param source: object
+ * @param source: object A representation of the credit card data of the customer.
+ * @param address: object Contains the users address.
+ *
+ * @returns {object} res
  */
-export const createCustomer = async (customer, source) => {
+export const createCustomer = async ({ customer, address, source }) => {
   try {
     const res = await stripe.customers.create({
       description: `${customer.id} ${customer.name}`,
+      tax_info: {
+        tax_id: customer.vatid,
+        type: "vat"
+      },
+      shipping: {
+        name: customer.name,
+        address: {
+          line1: address.street,
+          city: address.city,
+          country: address.country,
+          postal_code: address.zip
+        }
+      },
       source
     });
 

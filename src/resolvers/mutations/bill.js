@@ -41,10 +41,16 @@ export default {
           const logArgs = { department };
 
           if (!department.payingoptions || !department.payingoptions.stripe) {
-            const stripeCustomer = await createCustomer(
-              { name: data.card.name, id: data.client_ip },
-              data.id
-            );
+            const stripeCustomer = await createCustomer({
+              customer: {
+                name: data.card.name,
+                id: data.client_ip,
+                vatid: "DE1234213"
+                //  department.payingoptions.vatid
+              },
+              address,
+              source: data.id
+            });
             const card = await listCards(stripeCustomer.id);
 
             await models.Unit.update(
