@@ -55,6 +55,14 @@ export const types = `
     user: Int!
     statisticdata: JSON
   }
+
+  input HumanName {
+    title: String!
+    firstname: String!
+    middlename: String!
+    lastname: String!
+    suffix: String!
+  }
 `;
 
 export const queries = `
@@ -78,7 +86,7 @@ export const mutations = `
   deleteSubDepartment(departmentid: Int!): Response!
 
   addEmployee(unitid: Int!, departmentid: Int!): Response!
-  addCreateEmployee(email: String!, departmentid: Int!): Response!
+  addCreateEmployee(email: String!, password: String!, name: HumanName, departmentid: Int!): Response!
   removeEmployee(unitid: Int!, departmentid: Int!): Response!
   fireEmployee(unitid: Int!): Response!
 `;
