@@ -221,7 +221,9 @@ export default {
               title: name.title,
               suffix: name.suffix,
               unitid: unit.id,
-              passwordhash
+              passwordhash,
+              needspasswortchange: true,
+              firstlogin: true
             },
             { transaction: ta }
           );
