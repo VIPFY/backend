@@ -234,8 +234,8 @@ export default {
               p.appid,
               a.icon                        AS appicon,
               a.logo                        AS applogo,
-              l.used                        AS licencesused,
-              l.total                       AS licencestotal
+              COALESCE(l.used, 0)           AS licencesused,
+              COALESCE(l.total, 0)          AS licencestotal
             FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit =
                                                                   bp.usedby AND r.type = 'canuselicences' AND
                                                                   r.holder = :departmentid)
