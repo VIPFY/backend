@@ -100,7 +100,13 @@ export default {
         }
       })
   ),
-
+  /**
+   * Updates the statistics of a company like industry and sets the vatid.
+   *
+   * @param {object} data contains various data
+   *
+   * @returns {object}
+   */
   updateStatisticData: requiresRights(["edit-departments"]).createResolver(
     (parent, { data }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
@@ -109,15 +115,20 @@ export default {
             user: { unitid: id, company: unitid }
           } = decode(token);
 
-          const currentData = await models.DepartmentData.findOne({
+          const currentData = await models.Department.findOne({
             where: { unitid },
-            attributes: ["statisticdata"],
+            attributes: ["statisticdata", "payingoptions"],
             raw: true,
             transaction: ta
           });
 
+          const { vatid, ...statistics } = data;
+
           const newData = await models.DepartmentData.update(
-            { statisticdata: { ...currentData.statisticdata, ...data } },
+            {
+              statisticdata: { ...currentData.statisticdata, ...statistics },
+              payingoptions: { ...currentData.payingoptions, vatid }
+            },
             { where: { unitid }, transaction: ta, returning: true }
           );
 

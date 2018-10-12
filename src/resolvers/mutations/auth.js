@@ -236,12 +236,17 @@ export default {
         });
 
         if (!emailExists) throw new Error("Email or Password incorrect!");
-        if (emailExists.verified == false)
+        if (emailExists.verified == false) {
           throw new Error("Sorry, this email isn't verified yet.");
-        if (emailExists.banned == true)
+        }
+
+        if (emailExists.banned == true) {
           throw new Error("Sorry, this account is banned!");
-        if (emailExists.suspended == true)
+        }
+
+        if (emailExists.suspended == true) {
           throw new Error("Sorry, this account is suspended!");
+        }
 
         const user = await models.Human.findOne({
           where: { unitid: emailExists.unitid },

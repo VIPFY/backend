@@ -162,7 +162,7 @@ export const queries = `
 `;
 
 export const mutations = `
-  addPaymentData(data: JSON, departmentid: Int!): Response!
+  addPaymentData(data: JSON, address: AddressInput): Response!
   # The buying process
   buyPlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
 

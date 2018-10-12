@@ -131,4 +131,9 @@ export const mutations = `
   agreeToLicence(licenceid: ID!): Response!
 
   trackMinutesSpent(licenceid: ID!, minutes: Int!): Response!
-`;
+
+  # Adds the data of an external App
+  addExternalAccount(username: String!, password: String!, appid: Int!): Response!
+
+  removeExternalAccount(licenceid: Int!): Response!
+  `;

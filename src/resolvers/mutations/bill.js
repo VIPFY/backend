@@ -28,23 +28,29 @@ export default {
    * @returns any
    */
   addPaymentData: requiresRights(["create-paymentdata"]).createResolver(
-    async (parent, { data, departmentid }, { models, token, ip }) =>
+    async (parent, { data, address }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
-          user: { unitid }
+          user: { unitid, company }
         } = decode(token);
 
         try {
-          const department = await models.Unit.findById(departmentid, {
+          const department = await models.Unit.findById(company, {
             raw: true
           });
           const logArgs = { department };
 
           if (!department.payingoptions || !department.payingoptions.stripe) {
-            const stripeCustomer = await createCustomer(
-              { name: data.card.name, id: data.client_ip },
-              data.id
-            );
+            const stripeCustomer = await createCustomer({
+              customer: {
+                name: data.card.name,
+                id: data.client_ip,
+                vatid: "DE1234213"
+                //  department.payingoptions.vatid
+              },
+              address,
+              source: data.id
+            });
             const card = await listCards(stripeCustomer.id);
 
             await models.Unit.update(
@@ -58,7 +64,7 @@ export default {
                   }
                 }
               },
-              { where: { id: departmentid } }
+              { where: { id: company } }
             );
 
             logArgs.stripeCustomer = stripeCustomer;
@@ -81,7 +87,7 @@ export default {
                   }
                 }
               },
-              { where: { id: departmentid } }
+              { where: { id: company } }
             );
             logArgs.newCard = card;
           }
@@ -98,7 +104,22 @@ export default {
             ta
           );
 
-          await Promise.all([p1, p2]);
+          let p3;
+          if (address) {
+            const { street, zip, city } = address;
+            p3 = models.Address.create({
+              ...address,
+              tags: ["billing"],
+              unitid: company,
+              address: {
+                street,
+                zip,
+                city
+              }
+            });
+          }
+
+          await Promise.all([p1, p2, p3]);
 
           return { ok: true };
         } catch (err) {
