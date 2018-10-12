@@ -1,4 +1,5 @@
 import { Client as ClientClass } from "@sendgrid/client";
+import logger from "../loggers";
 
 const Client = new ClientClass();
 
@@ -8,7 +9,7 @@ Client.setApiKey(
 
 // eslint-disable-next-line import/prefer-default-export
 export const sendEmail = async ({ templateId, personalizations, fromName }) => {
-  await Client.request({
+  const [a, b] = await Client.request({
     method: "POST",
     url: "/v3/mail/send",
     body: {
@@ -24,4 +25,5 @@ export const sendEmail = async ({ templateId, personalizations, fromName }) => {
       }
     }
   });
+  logger.debug("Sent email", { a, b });
 };
