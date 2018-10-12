@@ -1,5 +1,12 @@
+import { Client as ClientClass } from "@sendgrid/client";
 import logger from "../loggers";
 import { sendEmail } from "./email";
+
+const Client = new ClientClass();
+
+Client.setApiKey(
+  "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"
+);
 
 const cryptoRandomString = require("crypto-random-string");
 
