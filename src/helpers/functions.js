@@ -114,6 +114,9 @@ export const createLog = (ip, eventtype, eventdata, user, transaction) =>
     { transaction, raw: true }
   );
 
+export const formatHumanName = human =>
+  `${human.firstname} ${human.lastname} ${human.suffix}`;
+
 /**
  * Create a notification and send it to the user via Webhooks
  * @param {object} notificationBody

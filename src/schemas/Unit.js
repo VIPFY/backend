@@ -27,6 +27,8 @@ export const types = `
     marketplace: Boolean
     billing: Boolean
     statisticdata: JSON
+    needspasswordchange: Boolean!
+    firstlogin: Boolean!
   }
 
   input UserInput {

@@ -5,8 +5,13 @@ import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { deleteFile, uploadFile } from "../../services/gcloud";
 import { createTokens } from "../../helpers/auth";
 import { NormalError } from "../../errors";
-import { createLog, createNotification } from "../../helpers/functions";
+import {
+  createLog,
+  createNotification,
+  formatHumanName
+} from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
+import { sendEmail } from "../../helpers/email";
 
 // import { sendRegistrationEmail } from "../../services/mailjet";
 
@@ -216,7 +221,9 @@ export default {
               title: name.title,
               suffix: name.suffix,
               unitid: unit.id,
-              passwordhash
+              passwordhash,
+              needspasswortchange: true,
+              firstlogin: true
             },
             { transaction: ta }
           );
@@ -231,7 +238,19 @@ export default {
             { transaction: ta }
           );
 
-          let [human, newEmail, parentUnit] = await Promise.all([p1, p2, p3]);
+          const p4 = models.Human.findOne({ where: { unitid } });
+
+          const p5 = models.DepartmentData.findOne({
+            where: { unitid: company }
+          });
+
+          let [
+            human,
+            newEmail,
+            parentUnit,
+            requester,
+            companyObj
+          ] = await Promise.all([p1, p2, p3, p4, p5]);
           human = human.get();
           newEmail = newEmail.get();
           parentUnit = parentUnit.get();
@@ -248,7 +267,27 @@ export default {
           resetCompanyMembershipCache(departmentid, unit.id);
           resetCompanyMembershipCache(company, unit.id);
 
-          // sendRegistrationEmail(email, passwordhash);
+          await sendEmail({
+            templateId: "d-e049cce50d20428d81f011e521605d4c",
+            fromName: "VIPFY",
+            personalizations: [
+              {
+                to: [
+                  {
+                    email,
+                    name: formatHumanName(name)
+                  }
+                ],
+                dynamic_template_data: {
+                  name: formatHumanName(name),
+                  creator: formatHumanName(requester),
+                  companyname: companyObj.name,
+                  email,
+                  password
+                }
+              }
+            ]
+          });
 
           return { ok: true };
         } catch (err) {
