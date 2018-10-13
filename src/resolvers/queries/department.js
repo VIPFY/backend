@@ -1,6 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
+import { googleMapsClient } from "../../services/gcloud";
 
 export default {
   fetchCompany: requiresAuth.createResolver(
@@ -93,6 +94,29 @@ export default {
         return employees;
       } catch (err) {
         throw new Error(err.message);
+      }
+    }
+  ),
+
+  fetchAddressProposal: requiresAuth.createResolver(
+    async (parent, { placeid }) => {
+      try {
+        const res = await googleMapsClient
+          .place({
+            placeid,
+            fields: [
+              "name",
+              "formatted_address",
+              "international_phone_number",
+              "icon",
+              "website"
+            ]
+          })
+          .asPromise();
+
+        return res.json.result;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   )

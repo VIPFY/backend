@@ -604,5 +604,19 @@ export default {
           });
         }
       })
-  )
+  ),
+
+  saveProposalData: async (parent, { data }, { models, token }) => {
+    try {
+      const {
+        user: { unitid, company }
+      } = decode(token);
+      console.log(company);
+      console.log(data);
+
+      return { ok: true };
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };

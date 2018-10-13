@@ -49,6 +49,7 @@ export const types = `
     name: String
     developername: String
     commission: String
+    color: String
     avgstars: Float
     supportphone: String
     supportwebsite: String

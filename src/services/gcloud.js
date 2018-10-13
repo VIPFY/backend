@@ -5,6 +5,7 @@ import moment from "moment";
 import readChunk from "read-chunk";
 import fileType from "file-type";
 import Storage from "@google-cloud/storage";
+import { createClient } from "@google/maps";
 
 import models from "@vipfy-private/sequelize-setup";
 import { formatFilename } from "../helpers/functions";
@@ -32,7 +33,7 @@ const fileHash = (filename, algorithm = "SHA256") =>
     }
   });
 
-const { GCLOUD_PLATFORM_ID } = process.env;
+const { GCLOUD_PLATFORM_ID, GOOGLE_PLACES_API } = process.env;
 
 // the server doesn't need the key file
 let keyFilename = path.join(__dirname, "../..", "Vipfy-4c183d5274a4.json");
@@ -40,7 +41,12 @@ if (!fs.existsSync(keyFilename)) {
   keyFilename = undefined;
 }
 
-// Creates a client
+export const googleMapsClient = createClient({
+  key: GOOGLE_PLACES_API,
+  Promise
+});
+
+// Creates a client for GCLOUD
 const storage = new Storage({
   GCLOUD_PLATFORM_ID,
   keyFilename

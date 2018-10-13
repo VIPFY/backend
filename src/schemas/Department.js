@@ -63,6 +63,14 @@ export const types = `
     lastname: String!
     suffix: String!
   }
+
+  input ProposalInput {
+    formatted_address: String
+    icon: String
+    name: String
+    international_phone_number: String
+    website: String
+  }
 `;
 
 export const queries = `
@@ -71,9 +79,12 @@ export const queries = `
   fetchDepartments: [DepartmentResponse]!
   fetchDepartmentsData: [DepartmentDataResponse]!
 
-# Returns the amount of units in a Department
+  # Returns the amount of units in a Department
   fetchCompanySize: Int!
   fetchEmployees: [DepartmentEmployee]!
+
+  # Returns the address data fetched in sign-up process
+  fetchAddressProposal(placeid: String!): JSON!
 `;
 
 export const mutations = `
@@ -89,4 +100,7 @@ export const mutations = `
   addCreateEmployee(email: String!, password: String!, name: HumanName!, departmentid: Int!): Response!
   removeEmployee(unitid: Int!, departmentid: Int!): Response!
   fireEmployee(unitid: Int!): Response!
+
+  # Saves data we fetched in the Business Advisor
+  saveProposalData(data: ProposalInput!): Response!
 `;

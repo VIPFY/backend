@@ -157,8 +157,10 @@ export default {
     async (parent, { app, file, file2, files }, { models }) => {
       try {
         const nameExists = await models.App.findOne({
-          where: { name: app.name }
+          where: { name: app.name },
+          raw: true
         });
+
         if (nameExists) throw new Error("Name is already in Database!");
 
         const developerExists = await models.Unit.findOne({

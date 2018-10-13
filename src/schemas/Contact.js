@@ -76,4 +76,7 @@ export const mutations = `
 
   newsletterSignup(email: String!, firstname: String, lastname: String): Response!
   newsletterSignupConfirm(email: String!, token: String!): Response!
+
+  searchAddressByCompanyName(input: String!): JSON!
+  searchAddress(input: String!, region: String!): JSON!
 `;

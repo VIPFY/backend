@@ -4,7 +4,6 @@ import { sendEmailToVipfy } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
-
 /* eslint-disable consistent-return, no-unused-vars */
 
 export default {

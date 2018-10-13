@@ -7,6 +7,7 @@ import {
   newsletterConfirmSignup
 } from "../../helpers/newsletter";
 import logger from "../../loggers";
+import { googleMapsClient } from "../../services/gcloud";
 
 /* eslint-disable prefer-const */
 
@@ -322,6 +323,39 @@ export default {
     try {
       const result = await newsletterConfirmSignup(models, email, token);
       return { ok: result };
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
+
+  searchAddressByCompanyName: async (parent, { input }, { ip }) => {
+    try {
+      console.log(ip);
+      const res = await googleMapsClient
+        .placesQueryAutoComplete({
+          input
+          // language: region
+        })
+        .asPromise();
+
+      return res.json.predictions;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
+
+  searchAddress: async (parent, { input, region }) => {
+    try {
+      const res = await googleMapsClient
+        .findPlace({
+          input,
+          inputtype: "textquery",
+          language: region,
+          fields: ["formatted_address", "place_id", "name"]
+        })
+        .asPromise();
+
+      return res.json;
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
