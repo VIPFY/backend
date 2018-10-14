@@ -108,8 +108,8 @@ export default {
               "name",
               "formatted_address",
               "international_phone_number",
-              "icon",
-              "website"
+              "website",
+              "address_component"
             ]
           })
           .asPromise();

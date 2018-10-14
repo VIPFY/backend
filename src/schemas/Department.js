@@ -66,10 +66,10 @@ export const types = `
 
   input ProposalInput {
     formatted_address: String
-    icon: String
     name: String
     international_phone_number: String
     website: String
+    address_components: [JSON]
   }
 `;
 

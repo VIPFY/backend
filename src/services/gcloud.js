@@ -69,6 +69,7 @@ export const uploadFile = async ({ path, name }, folder) => {
     return profilepicture;
   } catch (err) {
     fs.unlinkSync(path);
+
     throw new Error(err.message);
   }
 };
