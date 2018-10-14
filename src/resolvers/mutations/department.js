@@ -657,7 +657,7 @@ export default {
           user: { unitid, company }
         } = decode(token);
 
-        const { website, international_phone_number } = data;
+        const { website, international_phone_number, name } = data;
         const promises = [];
         const addressData = { unitid: company, tags: ["main"] };
         const address = {};
@@ -706,6 +706,18 @@ export default {
         const p1 = models.Address.create(addressData, { transaction: ta });
 
         promises.push(p1);
+
+        if (name) {
+          const p2 = models.DepartmentData.update(
+            { name },
+            {
+              transaction: ta,
+              where: { unitid: company }
+            }
+          );
+
+          promises.push(p2);
+        }
 
         if (website) {
           const p3 = models.Website.create(
