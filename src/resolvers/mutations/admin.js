@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import { split } from "lodash";
+import { flushAll as flushServices } from "@vipfy-private/services";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { createProduct, createPlan, deletePlan } from "../../services/stripe";
 import { uploadFile, deleteFile } from "../../services/gcloud";
@@ -693,6 +694,7 @@ export default {
   flushLocalCaches: requiresVipfyAdmin.createResolver(
     async (parent, args, context) => {
       flushAuthCaches();
+      flushServices();
       return { ok: true };
     }
   )
