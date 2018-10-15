@@ -28,6 +28,31 @@ export default {
     }
   ),
 
+  fetchEmails: requiresRights(["view-emails"]).createResolver(
+    async (parent, { forCompany, tag }, { models, token }) => {
+      try {
+        let {
+          // eslint-disable-next-line
+          user: { unitid, company }
+        } = decode(token);
+
+        if (forCompany) {
+          unitid = company;
+        }
+
+        const emails = await models.Email.findAll({
+          where: { unitid },
+          order: [["priority", "ASC"]],
+          tags: [tag]
+        });
+
+        return emails;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   fetchPhones: requiresRights(["view-phones"]).createResolver(
     async (parent, { forCompany }, { models, token }) => {
       try {

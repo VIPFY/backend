@@ -33,20 +33,21 @@ export default {
         const {
           user: { unitid, company }
         } = decode(token);
-
+        console.log(data);
         try {
           const department = await models.Unit.findById(company, {
             raw: true
           });
           const logArgs = { department };
+          const { payingoptions } = department;
 
-          if (!department.payingoptions || !department.payingoptions.stripe) {
+          if (!payingoptions || !payingoptions.stripe) {
             const stripeCustomer = await createCustomer({
               customer: {
                 name: data.card.name,
-                id: data.client_ip,
+                ip: data.client_ip,
                 vatid: "DE1234213"
-                //  department.payingoptions.vatid
+                //  payingoptions.vatid
               },
               address,
               source: data.id
@@ -56,6 +57,7 @@ export default {
             await models.Unit.update(
               {
                 payingoptions: {
+                  ...payingoptions,
                   stripe: {
                     id: stripeCustomer.id,
                     created: stripeCustomer.created,
@@ -70,20 +72,15 @@ export default {
             logArgs.stripeCustomer = stripeCustomer;
             logArgs.card = card;
           } else {
-            const card = await addCard(
-              department.payingoptions.stripe.id,
-              data.id
-            );
+            const card = await addCard(payingoptions.stripe.id, data.id);
 
             await models.Unit.update(
               {
                 payingoptions: {
+                  ...payingoptions,
                   stripe: {
-                    ...department.payingoptions.stripe,
-                    cards: [
-                      ...department.payingoptions.stripe.cards,
-                      { ...card }
-                    ]
+                    ...payingoptions.stripe,
+                    cards: [...payingoptions.stripe.cards, { ...card }]
                   }
                 }
               },
@@ -104,7 +101,7 @@ export default {
             ta
           );
 
-          let p3;
+          let p3 = new Promise(resolve => resolve(true));
           if (address) {
             const { street, zip, city } = address;
             p3 = models.Address.create({

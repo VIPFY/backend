@@ -31,6 +31,12 @@ export default {
           const parentunit = await models.ParentUnit.findOne({
             where: { childunit: unitid }
           });
+
+          const founderEmail = models.Email.findOne(
+            { where: { unitid } },
+            { raw: true }
+          );
+
           if (parentunit) {
             throw new Error("This user is already assigned to a company!");
           }
@@ -53,34 +59,44 @@ export default {
             { transaction: ta }
           );
 
-          let [rights, department, parentUnit] = await Promise.all([
+          const p4 = models.Email.create({
+            ...founderEmail,
+            unitid: company,
+            tags: ["main", "billing"]
+          });
+
+          let [rights, department, parentUnit, email] = await Promise.all([
             p1,
             p2,
-            p3
+            p3,
+            p4
           ]);
+
           rights = rights.get();
           department = department.get();
           parentUnit = parentUnit.get();
+          email = email.get();
 
-          const p4 = createLog(
+          const p5 = createLog(
             ip,
             "createCompany",
             {
               company,
               rights,
               department,
-              parentUnit
+              parentUnit,
+              email
             },
             unitid,
             ta
           );
 
-          const p5 = await models.Login.findOne(
+          const p6 = await models.Login.findOne(
             { where: { unitid } },
             { transaction: ta }
           );
 
-          const [user] = await Promise.all([p5, p4]);
+          const [user] = await Promise.all([p6, p5]);
 
           const refreshTokenSecret = user.passwordhash + SECRET_TWO;
           const [newToken, refreshToken] = await createTokens(
