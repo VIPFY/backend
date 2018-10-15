@@ -153,23 +153,23 @@ describe("calcualtePlanPrice Tests", () => {
         default: "companyname",
         editable: false,
         required: true,
-        name: "companyname",
+        name: "companyname"
       },
       {
         type: "address",
         default: "companyaddress.contact",
         possibleValues: ["companyaddresses", "departmentaddresses"],
         required: true,
-        name: "companyaddress",
+        name: "companyaddress"
       },
       {
         type: "domainname",
         possibleValues: ["company.domainlist.domainname"],
         multiselect: true,
         required: true,
-        name: "domains",
-      },
+        name: "domains"
+      }
     ];
-    const input = 
-  })
+    // const input =
+  });
 });

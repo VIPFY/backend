@@ -23,6 +23,11 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/old/"
+    ],
+    "collectCoverage": true,
+    "coverageReporters": [
+      "json",
+      "html"
     ]
   },
   "dependencies": {
