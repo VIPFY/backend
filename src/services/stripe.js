@@ -67,7 +67,11 @@ export const deletePlan = async id => {
 export const createCustomer = async ({ customer, address, source }) => {
   try {
     const res = await stripe.customers.create({
-      description: `${customer.id} ${customer.name}`,
+      description: customer.name,
+      email: "pc@vipfy.com",
+      metadata: {
+        ip: customer.ip
+      },
       tax_info: {
         tax_id: customer.vatid,
         type: "vat"
@@ -108,9 +112,8 @@ export const listCards = async id => {
 /**
  * Adds a card to a stripe customer
  * @exports
- * The source is a token created from a Stripe library in the Frontend
- * @param id: string
- * @param source: string
+ * @param {string} id
+ * @param {string} source Token created from a Stripe library in the Frontend
  */
 export const addCard = async (id, source) => {
   try {
