@@ -230,6 +230,37 @@ export default {
       })
   ),
 
+  agreeTos: requiresAuth.createResolver(
+    async (parent, args, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = await decode(token);
+
+          const updatedUser = await models.Human.update(
+            { firstlogin: false },
+            { where: { unitid }, returning: true, transaction: ta }
+          );
+
+          await createLog(
+            ip,
+            "agreeTos",
+            { updatedUser: updatedUser[1] },
+            unitid,
+            ta
+          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   forgotPassword: async (parent, { email }, { models, ip }) =>
     models.sequelize.transaction(async ta => {
       try {
