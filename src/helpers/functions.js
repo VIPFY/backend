@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import { random } from "lodash";
 import moment from "moment";
 import models from "@vipfy-private/sequelize-setup";
+import zxcvbn from "zxcvbn";
 import { NormalError } from "../errors";
 import { pubsub, NEW_NOTIFICATION } from "../constants";
 
@@ -152,3 +153,13 @@ export const createNotification = async (notificationBody, transaction) => {
     return new NormalError({ message: err.message });
   }
 };
+
+/**
+ * Computes the strength of the password on a scale from 0 to 4, with 0 being the weakest
+ *
+ * Only uses the first 50 characters of password for performance reasons
+ *
+ * @param {string} password
+ */
+export const computePasswortScore = password =>
+  zxcvbn(password.substring(0, 50)).score;

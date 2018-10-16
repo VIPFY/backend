@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
-import { userPicFolder } from "../../constants";
+import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { deleteFile, uploadFile } from "../../services/gcloud";
 import { createTokens } from "../../helpers/auth";
@@ -8,7 +8,8 @@ import { NormalError } from "../../errors";
 import {
   createLog,
   createNotification,
-  formatHumanName
+  formatHumanName,
+  computePasswortScore
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
@@ -223,8 +224,12 @@ export default {
 
           const emailInUse = await models.Email.findOne({ where: { email } });
           if (emailInUse) throw new Error("Email already in use!");
+          if (password.length > MAX_PASSWORD_LENGTH) {
+            throw new Error("Password too long");
+          }
 
           const passwordhash = await bcrypt.hash(password, 12);
+          const passwordstrength = computePasswortScore(password);
 
           let unit = await models.Unit.create({}, { transaction: ta });
           unit = unit.get();
@@ -239,7 +244,9 @@ export default {
               unitid: unit.id,
               passwordhash,
               needspasswortchange: true,
-              firstlogin: true
+              firstlogin: true,
+              passwordlength: password.length,
+              passwordstrength
             },
             { transaction: ta }
           );
