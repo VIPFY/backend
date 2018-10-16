@@ -196,7 +196,7 @@ export default {
           const passwordhash = await bcrypt.hash(newPw, 12);
 
           const p1 = models.Human.update(
-            { passwordhash },
+            { passwordhash, needspasswordchange: false },
             { where: { unitid }, returning: true, transaction: ta }
           );
           const p2 = models.User.findById(unitid);
