@@ -85,6 +85,8 @@ export const queries = `
 
   # Returns the address data fetched in sign-up process
   fetchAddressProposal(placeid: String!): JSON!
+
+  fetchUserSecurityOverview: [UserSecurityOverview]!
 `;
 
 export const mutations = `
