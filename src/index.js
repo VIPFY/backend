@@ -34,9 +34,9 @@ import logger from "./loggers";
 import { formatError, AuthError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
 
-const rateLimit = require("express-rate-limit");
-var RedisStore = require("rate-limit-redis");
-var Redis = require("ioredis");
+const RateLimit = require("express-rate-limit");
+const RedisStore = require("rate-limit-redis");
+const Redis = require("ioredis");
 
 Services.setLogger(logger);
 
@@ -80,10 +80,10 @@ app.enable("trust proxy");
 
 // TODO: we really want rate limiting with different limits per endpoint
 // but we have to build that ourselves, no such packet exists for graphql
-const limiter = rateLimit({
+const limiter = RateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10, // limit each IP to 100 requests per windowMs
-  store: new RedisStore({
+  max: 10 // limit each IP to 100 requests per windowMs
+  /* store: new RedisStore({
     expiry: 60, // set to equivalent of windowMs, but in seconds
     client: new Redis({
       port: 5379,
@@ -91,7 +91,7 @@ const limiter = rateLimit({
       password: "FrxPxFCN96Cu6CCtt98WMrsn",
       db: 0
     })
-  })
+  }) */
 });
 
 console.log(limiter);
