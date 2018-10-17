@@ -78,6 +78,8 @@ if (ENVIRONMENT == "production") {
 // in production we run behind an nginx proxy
 app.enable("trust proxy");
 
+// TODO: we really want rate limiting with different limits per endpoint
+// but we have to build that ourselves, no such packet exists for graphql
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 10, // limit each IP to 100 requests per windowMs
@@ -91,6 +93,8 @@ const limiter = rateLimit({
     })
   })
 });
+
+console.log(limiter);
 
 // apply rate limit to all requests
 app.use(limiter);
