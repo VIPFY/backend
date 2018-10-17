@@ -17,6 +17,7 @@ import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
 import { makeExecutableSchema } from "graphql-tools";
 import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
+import depthLimit from "graphql-depth-limit";
 import { createContext } from "dataloader-sequelize";
 import models from "@vipfy-private/sequelize-setup";
 import * as Services from "@vipfy-private/services";
@@ -32,6 +33,10 @@ import { refreshTokens } from "./helpers/auth";
 import logger from "./loggers";
 import { formatError, AuthError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
+
+const rateLimit = require("express-rate-limit");
+var RedisStore = require("rate-limit-redis");
+var Redis = require("ioredis");
 
 Services.setLogger(logger);
 
@@ -70,6 +75,26 @@ if (ENVIRONMENT == "production") {
   server = http.createServer(app);
 }
 
+// in production we run behind an nginx proxy
+app.enable("trust proxy");
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // limit each IP to 100 requests per windowMs
+  store: new RedisStore({
+    expiry: 60, // set to equivalent of windowMs, but in seconds
+    client: new Redis({
+      port: 5379,
+      host: "a.redis.vipfy.store",
+      password: "FrxPxFCN96Cu6CCtt98WMrsn",
+      db: 0
+    })
+  })
+});
+
+// apply rate limit to all requests
+app.use(limiter);
+
 // eslint-disable-next-line
 export const schema = makeExecutableSchema({ typeDefs, resolvers });
 // eslint-disable-next-line
@@ -94,6 +119,7 @@ const corsOptions = {
 app.use(authMiddleware);
 app.use(cors(corsOptions));
 app.use(loggingMiddleWare);
+app.use();
 app.use(
   "/graphql",
   bodyParser.json(),
@@ -112,7 +138,8 @@ app.use(
         SECRET_TWO,
         ip
       },
-      debug: ENVIRONMENT == "development"
+      debug: ENVIRONMENT == "development",
+      validationRules: [depthLimit(10)]
     };
   })
 );
