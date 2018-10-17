@@ -126,7 +126,7 @@ export default {
         throw new Error(err.message);
       }
     }
-  )
+  ),
 
   fetchAddressProposal: requiresAuth.createResolver(
     async (parent, { placeid }) => {
