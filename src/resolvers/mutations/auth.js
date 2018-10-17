@@ -145,7 +145,7 @@ export default {
     { models, SECRET, SECRET_TWO, ip }
   ) => {
     try {
-      if (password > MAX_PASSWORD_LENGTH) {
+      if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
       }
       const message = "Email or Password incorrect!";
