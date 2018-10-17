@@ -25,6 +25,7 @@ export const types = `
     managelicences: Boolean
     apps: JSON
     domains: [Domain]
+    createdate: String!
   }
 
   type DepartmentData {
