@@ -82,7 +82,7 @@ app.enable("trust proxy");
 // but we have to build that ourselves, no such packet exists for graphql
 const limiter = RateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 10, // limit each IP to 100 requests per windowMs
+  max: 100, // limit each IP to 100 requests per windowMs
   store: new RedisStore({
     expiry: 60, // set to equivalent of windowMs, but in seconds
     client: new Redis({
