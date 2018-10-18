@@ -4,8 +4,13 @@ import { decode } from "jsonwebtoken";
 import { createTokens, checkAuthentification } from "../../helpers/auth";
 import { sendRegistrationEmail } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
-import { parentAdminCheck, createLog } from "../../helpers/functions";
-import { AuthError } from "../../errors";
+import {
+  parentAdminCheck,
+  createLog,
+  computePasswordScore
+} from "../../helpers/functions";
+import { AuthError, NormalError } from "../../errors";
+import { MAX_PASSWORD_LENGTH } from "../../constants";
 
 export default {
   signUp: async (
@@ -21,12 +26,20 @@ export default {
           throw new Error("Email already in use!");
         }
 
+        const password = "test";
         // const passwordhash = await createPassword(email);
-        const passwordhash = await bcrypt.hash("test", 12);
+        const passwordhash = await bcrypt.hash(password, 12);
+        const passwordstrength = computePasswordScore(password);
 
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
-          { unitid: unit.id, passwordhash },
+          {
+            unitid: unit.id,
+            passwordhash,
+            passwordstrength,
+            passwordlength: password.length,
+            firstlogin: false
+          },
           { transaction: ta }
         );
         // delete verified: true
@@ -61,6 +74,9 @@ export default {
     { email, password },
     { models, SECRET, SECRET_TWO, ip }
   ) => {
+    if (password.length > MAX_PASSWORD_LENGTH) {
+      throw new Error("Password too long");
+    }
     const emailExists = await models.Email.findOne({ where: { email } });
     if (!emailExists) throw new Error("Email not found!");
 
@@ -75,10 +91,15 @@ export default {
         const p2 = models.Human.findOne({
           where: { unitid: emailExists.unitid }
         });
+        const passwordstrength = computePasswordScore(password);
         const [pw, user] = await Promise.all([p1, p2]);
 
         const p3 = models.Human.update(
-          { passwordhash: pw },
+          {
+            passwordhash: pw,
+            passwordstrength,
+            passwordlength: password.length
+          },
           { where: { unitid: user.unitid }, transaction: ta, raw: true }
         );
 
@@ -124,6 +145,9 @@ export default {
     { models, SECRET, SECRET_TWO, ip }
   ) => {
     try {
+      if (password.length > MAX_PASSWORD_LENGTH) {
+        throw new Error("Password too long");
+      }
       const message = "Email or Password incorrect!";
 
       const emailExists = await models.Login.findOne({
@@ -137,6 +161,14 @@ export default {
       if (!valid) throw new Error(message);
 
       checkAuthentification(models, emailExists.unitid, emailExists.company);
+
+      // update password length and strength.
+      // This is temporary to fill values we didn't catch before implementing these metrics
+      const passwordstrength = computePasswordScore(password);
+      await models.Human.update(
+        { passwordstrength, passwordlength: password.length },
+        { where: { unitid: emailExists.unitid } }
+      );
 
       const refreshTokenSecret = emailExists.passwordhash + SECRET_TWO;
 
@@ -196,7 +228,7 @@ export default {
           const passwordhash = await bcrypt.hash(newPw, 12);
 
           const p1 = models.Human.update(
-            { passwordhash },
+            { passwordhash, needspasswordchange: false },
             { where: { unitid }, returning: true, transaction: ta }
           );
           const p2 = models.User.findById(unitid);
@@ -222,7 +254,41 @@ export default {
 
           return { ok: true, user, token: newToken, refreshToken };
         } catch (err) {
-          throw new AuthError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  agreeTos: requiresAuth.createResolver(
+    async (parent, args, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = await decode(token);
+
+          const updatedUser = await models.Human.update(
+            { firstlogin: false },
+            { where: { unitid }, returning: true, transaction: ta }
+          );
+
+          await createLog(
+            ip,
+            "agreeTos",
+            { updatedUser: updatedUser[1] },
+            unitid,
+            ta
+          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),

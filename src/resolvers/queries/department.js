@@ -98,6 +98,36 @@ export default {
     }
   ),
 
+  fetchUserSecurityOverview: requiresRights(["view-security"]).createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const employees = await models.sequelize.query(
+          `SELECT
+            human_data.*,
+            u.*
+          FROM human_data
+            JOIN (SELECT DISTINCT employee
+                  FROM department_employee_view
+                  WHERE id = :company AND employee NOTNULL) t ON (t.employee = human_data.unitid)
+            JOIN unit_data u on human_data.unitid = u.id
+          WHERE not u.deleted`,
+          {
+            replacements: { company },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+
+        return employees;
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
+
   fetchAddressProposal: requiresAuth.createResolver(
     async (parent, { placeid }) => {
       try {

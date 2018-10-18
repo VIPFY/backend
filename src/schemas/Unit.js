@@ -80,6 +80,9 @@ export const mutations = `
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!
 
+  # Agree to Vipfy Terms of Service and Privacy Agreement
+  agreeTos: Response!
+
   # Send the user a new link for sign up
   forgotPassword(email: String!): ForgotPwResponse!
 `;

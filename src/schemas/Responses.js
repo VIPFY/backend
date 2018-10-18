@@ -126,4 +126,16 @@ export const types = `
     loginuri: String
     error: String
   }
+
+  type UserSecurityOverview {
+    id: ID!
+    unitid: PublicUser!
+    lastactive: String
+    needspasswordchange: Boolean!
+    passwordlength: Int
+    passwordstrength: Int
+    banned: Boolean!
+    suspended: Boolean!
+    createdate: String!
+  }
 `;

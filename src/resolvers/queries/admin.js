@@ -1,9 +1,11 @@
 import { decode } from "jsonwebtoken";
+import { getStats as serviceStats } from "@vipfy-private/services";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { parentAdminCheck } from "../../helpers/functions";
 import { listInvoices } from "../../services/stripe";
 import { NormalError } from "../../errors";
 import { getAuthStats } from "../../helpers/auth";
+import { version as serverVersion } from "../../../package.json";
 
 export default {
   adminFetchAllApps: requiresVipfyAdmin.createResolver(
@@ -345,6 +347,16 @@ export default {
   ),
 
   fetchServerStats: requiresVipfyAdmin.createResolver(
-    async (parent, args, context) => ({ data: { auth: getAuthStats() } })
+    async (parent, args, context) => ({
+      data: {
+        caches: { auth: getAuthStats(), services: serviceStats() },
+        server: {
+          memory: process.memoryUsage(),
+          uptime: process.uptime(),
+          nodeVersion: process.version,
+          version: serverVersion
+        }
+      }
+    })
   )
 };
