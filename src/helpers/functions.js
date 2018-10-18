@@ -161,5 +161,5 @@ export const createNotification = async (notificationBody, transaction) => {
  *
  * @param {string} password
  */
-export const computePasswortScore = password =>
+export const computePasswordScore = password =>
   zxcvbn(password.substring(0, 50)).score;

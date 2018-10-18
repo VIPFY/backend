@@ -9,7 +9,7 @@ import {
   userPicFolder,
   MAX_PASSWORD_LENGTH
 } from "../../constants";
-import { createPassword, computePasswortScore } from "../../helpers/functions";
+import { createPassword, computePasswordScore } from "../../helpers/functions";
 import { flushAuthCaches } from "../../helpers/auth";
 
 /* eslint-disable default-case */
@@ -420,7 +420,7 @@ export default {
         try {
           const password = await createPassword(email);
           const passwordhash = await createPassword(email);
-          const passwordstrength = computePasswortScore(password);
+          const passwordstrength = computePasswordScore(password);
           const unit = await models.Unit.create(
             { ...unitData },
             { transaction: ta }
@@ -466,7 +466,7 @@ export default {
             throw new Error("Password too long");
           }
           const passwordhash = await bcrypt.hash(password, 12);
-          const passwordstrength = computePasswortScore(password);
+          const passwordstrength = computePasswordScore(password);
           await models.Human.update(
             { passwordhash, passwordstrength, passwordlength: password.length },
             { where: { unitid } }

@@ -7,7 +7,7 @@ import { requiresAuth } from "../../helpers/permissions";
 import {
   parentAdminCheck,
   createLog,
-  computePasswortScore
+  computePasswordScore
 } from "../../helpers/functions";
 import { AuthError, NormalError } from "../../errors";
 import { MAX_PASSWORD_LENGTH } from "../../constants";
@@ -29,7 +29,7 @@ export default {
         const password = "test";
         // const passwordhash = await createPassword(email);
         const passwordhash = await bcrypt.hash(password, 12);
-        const passwordstrength = computePasswortScore(password);
+        const passwordstrength = computePasswordScore(password);
 
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
@@ -91,7 +91,7 @@ export default {
         const p2 = models.Human.findOne({
           where: { unitid: emailExists.unitid }
         });
-        const passwordstrength = computePasswortScore(password);
+        const passwordstrength = computePasswordScore(password);
         const [pw, user] = await Promise.all([p1, p2]);
 
         const p3 = models.Human.update(
@@ -164,7 +164,7 @@ export default {
 
       // update password length and strength.
       // This is temporary to fill values we didn't catch before implementing these metrics
-      const passwordstrength = computePasswortScore(password);
+      const passwordstrength = computePasswordScore(password);
       await models.Human.update(
         { passwordstrength, passwordlength: password.length },
         { where: { unitid: emailExists.unitid } }

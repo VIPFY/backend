@@ -9,7 +9,7 @@ import {
   createLog,
   createNotification,
   formatHumanName,
-  computePasswortScore
+  computePasswordScore
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
@@ -229,7 +229,7 @@ export default {
           }
 
           const passwordhash = await bcrypt.hash(password, 12);
-          const passwordstrength = computePasswortScore(password);
+          const passwordstrength = computePasswordScore(password);
 
           let unit = await models.Unit.create({}, { transaction: ta });
           unit = unit.get();
@@ -243,7 +243,7 @@ export default {
               suffix: name.suffix,
               unitid: unit.id,
               passwordhash,
-              needspasswortchange: true,
+              needspasswordchange: true,
               firstlogin: true,
               passwordlength: password.length,
               passwordstrength
