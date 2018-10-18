@@ -102,18 +102,17 @@ export default {
 
   checkVat: async (parent, { vat, cc }) => {
     try {
-      console.log(vat, cc);
-      const vatNumber = vat.substr(2);
-
       if (vat.substr(0, 2) != cc) {
         throw new Error("Prefix doesn't match with provided country");
       }
+
+      const vatNumber = vat.substr(2).trim();
 
       const apiWSDL =
         "http://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl";
       const res = await soap.createClientAsync(apiWSDL).then(client =>
         client
-          .checkVatAsync({ countryCode: cc, vatNumber: vat.substr(2) })
+          .checkVatAsync({ countryCode: cc, vatNumber })
           .then(result => result[0])
           .catch(err => {
             throw new Error(err);
