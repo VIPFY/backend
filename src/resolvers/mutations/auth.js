@@ -162,6 +162,14 @@ export default {
 
       checkAuthentification(models, emailExists.unitid, emailExists.company);
 
+      // update password length and strength.
+      // This is temporary to fill values we didn't catch before implementing these metrics
+      const passwordstrength = computePasswortScore(password);
+      await models.Human.update(
+        { passwordstrength, passwordlength: password.length },
+        { where: { unitid: emailExists.unitid } }
+      );
+
       const refreshTokenSecret = emailExists.passwordhash + SECRET_TWO;
 
       const p1 = models.User.findOne({
