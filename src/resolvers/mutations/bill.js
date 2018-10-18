@@ -314,7 +314,7 @@ export default {
 
           console.log("FEATURES----->", features);
           console.log("PLANINPUTS----->", planinputs);
-          throw new Error("DEBUG");
+          //throw new Error("DEBUG");
           // const stripePlans = [];
           // billItems.push({
           //   description: plan.name,
@@ -380,10 +380,10 @@ export default {
           partnerLogs.licences = newLicences;
           logger.debug(`created ${mergedFeatures.users} licences`);
 
-          await createSubscription(
+          /*await createSubscription(
             department.payingoptions.stripe.id,
             stripePlans
-          );
+          );*/
 
           await createLog(
             ip,
