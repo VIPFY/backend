@@ -94,6 +94,8 @@ export const mutations = `
   readNotification(id: Int!): Boolean!
   readAllNotifications: Boolean!
 
+  checkVat(vat: String!, cc: String!): Response!
+
   # for uptime checks and dummy queries
   ping: Response!
 `;

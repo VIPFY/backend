@@ -90,7 +90,7 @@ export default {
   Domain: find({
     boughtplanid: "BoughtPlan"
   }),
-  Email: find({}),
+  Email: find(unit),
   Licence: find({ unitid: "Unit", boughtplanid: "BoughtPlan" }),
   Log: find({ user: "User", sudoer: "User" }),
   Message: find({ receiver: "Human" }),

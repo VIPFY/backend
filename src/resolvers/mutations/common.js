@@ -4,6 +4,8 @@ import { sendEmailToVipfy } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
+import axios from "axios";
+import soap from "soap";
 /* eslint-disable consistent-return, no-unused-vars */
 
 export default {
@@ -22,23 +24,21 @@ export default {
       }
     }),
 
-  checkEmail: requiresAuth.createResolver(
-    async (parent, { email }, { models }) => {
-      if (!email) return { ok: true };
+  checkEmail: async (parent, { email }, { models }) => {
+    if (!email) return { ok: true };
 
-      try {
-        const emailExists = await models.Email.findOne({ where: { email } });
+    try {
+      const emailExists = await models.Email.findOne({ where: { email } });
 
-        if (emailExists) {
-          throw new Error("There already exists an account with this email");
-        }
-
-        return { ok: true };
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
+      if (emailExists) {
+        throw new Error("There already exists an account with this email");
       }
+
+      return { ok: true };
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
-  ),
+  },
 
   readNotification: requiresAuth.createResolver(
     async (parent, { id }, { models, token }) => {
@@ -98,5 +98,36 @@ export default {
     }
   ),
 
-  ping: async (parent, args, context) => ({ ok: true })
+  ping: async (parent, args, context) => ({ ok: true }),
+
+  checkVat: async (parent, { vat, cc }) => {
+    try {
+      console.log(vat, cc);
+      const vatNumber = vat.substr(2);
+
+      if (vat.substr(0, 2) != cc) {
+        throw new Error("Prefix doesn't match with provided country");
+      }
+
+      const apiWSDL =
+        "http://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl";
+      const res = await soap.createClientAsync(apiWSDL).then(client =>
+        client
+          .checkVatAsync({ countryCode: cc, vatNumber: vat.substr(2) })
+          .then(result => result[0])
+          .catch(err => {
+            throw new Error(err);
+          })
+      );
+
+      if (res.valid == false) {
+        console.log(res);
+        throw new Error(res);
+      } else {
+        return { ok: true };
+      }
+    } catch (err) {
+      throw new Error("Invalid Vatnumber!");
+    }
+  }
 };

@@ -45,7 +45,7 @@ export default {
           order: [["priority", "ASC"]],
           tags: [tag]
         });
-
+        console.log(emails);
         return emails;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });

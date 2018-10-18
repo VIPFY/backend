@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
 import {
@@ -12,7 +12,7 @@ import { googleMapsClient } from "../../services/gcloud";
 /* eslint-disable prefer-const */
 
 export default {
-  createAddress: requiresAuth.createResolver(
+  createAddress: requiresRights(["create-address"]).createResolver(
     (parent, { addressData, department }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -56,7 +56,7 @@ export default {
       })
   ),
 
-  updateAddress: requiresAuth.createResolver(
+  updateAddress: requiresRights(["edit-address"]).createResolver(
     async (parent, { address, id }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -114,7 +114,7 @@ export default {
       })
   ),
 
-  deleteAddress: requiresAuth.createResolver(
+  deleteAddress: requiresRights(["delete-address"]).createResolver(
     async (parent, { id, department }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -162,7 +162,102 @@ export default {
       })
   ),
 
-  createPhone: requiresAuth.createResolver(
+  /**
+   * Create a new Email
+   *
+   * @param {string} email
+   * @param {boolean} forCompany
+   * @param {string[]} tags
+   *
+   * @returns {object} newEmail The newly generated Email.
+   */
+  createEmail: requiresRights(["create-email"]).createResolver(
+    async (parent, { emailData, forCompany, tags }, { models, ip, token }) => {
+      try {
+        const {
+          user: { company, unitid }
+        } = decode(token);
+
+        // Necessary for correct logs
+        let id;
+
+        if (forCompany) {
+          id = company;
+        } else {
+          id = unitid;
+        }
+
+        const emailExists = await models.Email.findOne({
+          where: { email: emailData.email }
+        });
+
+        if (emailExists) {
+          throw new Error("Email already exists!");
+        }
+
+        const newEmail = await models.Email.create({
+          ...emailData,
+          unitid: id,
+          tags
+        });
+        await createLog(ip, "createEmail", { newEmail }, unitid, "");
+
+        return newEmail;
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
+  /**
+   * Deletes an existing Email
+   * @param {string} email
+   * @param {boolean} forCompany
+   *
+   * @returns {object}
+   */
+  deleteEmail: requiresRights(["delete-email"]).createResolver(
+    async (parent, { email, forCompany }, { models, ip, token }) => {
+      try {
+        const {
+          user: { company, unitid }
+        } = decode(token);
+
+        let id;
+
+        if (forCompany) {
+          id = company;
+        } else {
+          id = unitid;
+        }
+
+        const p1 = models.Email.findOne({ where: { email, unitid: id } });
+        const p2 = models.Email.findAll({ where: { unitid: id } });
+        const [belongsToUser, userHasAnotherEmail] = await Promise.all([
+          p1,
+          p2
+        ]);
+
+        if (!belongsToUser) {
+          throw new Error("The email doesn't belong to this user!");
+        }
+
+        if (!userHasAnotherEmail || userHasAnotherEmail.length < 2) {
+          throw new Error(
+            "This is the users last email address. He needs at least one!"
+          );
+        }
+
+        await models.Email.destroy({ where: { email: id } });
+        await createLog(ip, "deleteEmail", { belongsToUser }, unitid, "");
+
+        return { ok: true };
+      } catch (err) {
+        throw new Error(err.message);
+      }
+    }
+  ),
+
+  createPhone: requiresRights(["create-phone"]).createResolver(
     (parent, { phoneData, department }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -203,7 +298,7 @@ export default {
       })
   ),
 
-  updatePhone: requiresAuth.createResolver(
+  updatePhone: requiresRights(["edit-phone"]).createResolver(
     async (parent, { phone, id }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -255,7 +350,7 @@ export default {
       })
   ),
 
-  deletePhone: requiresAuth.createResolver(
+  deletePhone: requiresRights(["delete-phone"]).createResolver(
     async (parent, { id, department }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {

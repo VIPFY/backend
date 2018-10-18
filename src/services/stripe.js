@@ -68,7 +68,7 @@ export const createCustomer = async ({ customer, address, source }) => {
   try {
     const res = await stripe.customers.create({
       description: customer.name,
-      email: "pc@vipfy.com",
+      email: customer.email,
       metadata: {
         ip: customer.ip
       },
@@ -130,7 +130,7 @@ export const addCard = async (id, source) => {
  * @exports
  *
  * Starts with the first of next month
- * @param customer: object
+ * @param customer: string
  * @param items: object[] items should contain an array of plans the customer gets
  * subscribed to.
  */
@@ -143,8 +143,8 @@ export const createSubscription = async (customer, items) => {
 
     const res = await stripe.subscriptions.create({
       customer,
-      items,
-      billing_cycle_anchor: nextMonth
+      items
+      // billing_cycle_anchor: nextMonth
     });
 
     return res;

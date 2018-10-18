@@ -28,12 +28,12 @@ export default {
    * @returns any
    */
   addPaymentData: requiresRights(["create-paymentdata"]).createResolver(
-    async (parent, { data, address }, { models, token, ip }) =>
+    async (parent, { data, address, email }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid, company }
         } = decode(token);
-        console.log(data);
+
         try {
           const department = await models.Unit.findById(company, {
             raw: true
@@ -45,6 +45,7 @@ export default {
             const stripeCustomer = await createCustomer({
               customer: {
                 name: data.card.name,
+                email,
                 ip: data.client_ip,
                 vatid: "DE1234213"
                 //  payingoptions.vatid
@@ -62,6 +63,7 @@ export default {
                     id: stripeCustomer.id,
                     created: stripeCustomer.created,
                     currency: stripeCustomer.currency,
+                    billingEmail: email,
                     cards: [{ ...card.data[0] }]
                   }
                 }
@@ -228,7 +230,6 @@ export default {
       } = decode(token);
       try {
         await models.sequelize.transaction(async ta => {
-          // const billItems = [];
           const key = {};
 
           logger.debug("start buying process", {
@@ -311,14 +312,17 @@ export default {
             internaldescription: plan.internaldescription
           });
 
+          console.log("FEATURES----->", features);
+          console.log("PLANINPUTS----->", planinputs);
+          throw new Error("DEBUG");
           // const stripePlans = [];
-          /* billItems.push({
-            description: plan.name,
-            quantity: numlicences,
-            unitPrice: plan.price
-          });
+          // billItems.push({
+          //   description: plan.name,
+          //   quantity: numlicences,
+          //   unitPrice: plan.price
+          // });
 
-          stripePlans.push({ plan: plan.stripedata.id }); */
+          // stripePlans.push({ plan: plan.stripedata.id });
 
           const partnerLogs = {};
 
@@ -376,37 +380,10 @@ export default {
           partnerLogs.licences = newLicences;
           logger.debug(`created ${mergedFeatures.users} licences`);
 
-          /* await createSubscription(
+          await createSubscription(
             department.payingoptions.stripe.id,
             stripePlans
-          ); */
-          // const bill = await models.Bill.create({ unitid: company }, { transaction: ta });
-
-          // const res = await createInvoice(false, models, company, bill.id, billItems);
-          // if (res.ok !== true) {
-          //   throw new Error(res.err);
-          // }
-          //
-          // await models.Bill.update(
-          //   { billname: res.billName },
-          //   { where: { id: bill.id }, transaction: ta }
-          // );
-          //
-          // const createBillPositions = boughtPlans.map(
-          //   async plan =>
-          //     await models.BillPosition.create(
-          //       {
-          //         billid: bill.id,
-          //         positiontext: `Plan ${plan.planid}, Licences ${plan.amount}`,
-          //         price: plan.totalprice,
-          //         planid: plan.planid,
-          //         currency: "USD"
-          //       },
-          //       { transaction: ta }
-          //     )
-          // );
-          //
-          // await Promise.all(createBillPositions);
+          );
 
           await createLog(
             ip,

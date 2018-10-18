@@ -159,10 +159,11 @@ export const queries = `
 
   fetchBills: [Bill]!
   fetchPaymentData: [Card]!
+  fetchBillingEmails: [Email]!
 `;
 
 export const mutations = `
-  addPaymentData(data: JSON, address: AddressInput): Response!
+  addPaymentData(data: JSON, address: AddressInput, email: String): Response!
   # The buying process
   buyPlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
 

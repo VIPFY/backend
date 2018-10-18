@@ -12,6 +12,7 @@ import {
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
+import { RFC_2822 } from "moment";
 
 // import { sendRegistrationEmail } from "../../services/mailjet";
 
@@ -31,11 +32,6 @@ export default {
           const parentunit = await models.ParentUnit.findOne({
             where: { childunit: unitid }
           });
-
-          const founderEmail = models.Email.findOne(
-            { where: { unitid } },
-            { raw: true }
-          );
 
           if (parentunit) {
             throw new Error("This user is already assigned to a company!");
@@ -59,44 +55,34 @@ export default {
             { transaction: ta }
           );
 
-          const p4 = models.Email.create({
-            ...founderEmail,
-            unitid: company,
-            tags: ["main", "billing"]
-          });
-
-          let [rights, department, parentUnit, email] = await Promise.all([
+          let [rights, department, parentUnit] = await Promise.all([
             p1,
             p2,
-            p3,
-            p4
+            p3
           ]);
-
           rights = rights.get();
           department = department.get();
           parentUnit = parentUnit.get();
-          email = email.get();
 
-          const p5 = createLog(
+          const p4 = createLog(
             ip,
             "createCompany",
             {
               company,
               rights,
               department,
-              parentUnit,
-              email
+              parentUnit
             },
             unitid,
             ta
           );
 
-          const p6 = await models.Login.findOne(
+          const p5 = await models.Login.findOne(
             { where: { unitid } },
             { transaction: ta }
           );
 
-          const [user] = await Promise.all([p6, p5]);
+          const [user] = await Promise.all([p5, p4]);
 
           const refreshTokenSecret = user.passwordhash + SECRET_TWO;
           const [newToken, refreshToken] = await createTokens(
@@ -675,7 +661,7 @@ export default {
 
         const { website, international_phone_number, name } = data;
         const promises = [];
-        const addressData = { unitid: company, tags: ["main"] };
+        const addressData = { unitid: company, tags: ["main, billing"] };
         const address = {};
         const street = [];
 

@@ -126,5 +126,21 @@ export default {
       const plan = await models.Plan.findById(planid, { raw: true });
       return Services.getPlanBuySchema(plan.appid);
     }
-  )
+  ),
+
+  fetchBillingEmails: async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { company }
+      } = decode(token);
+
+      const emails = models.DepartmentEmail.findAll({
+        where: { departmentid: company, tags: ["billing"] }
+      });
+
+      return emails;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };

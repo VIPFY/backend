@@ -31,7 +31,7 @@ export default {
                   stripe: { id, active, created, name, type, updated }
                 }
               },
-              { where: { id: appId }, raw: true, transaction: ta }
+              { where: { id: appId }, transaction: ta }
             );
 
             product = id;
