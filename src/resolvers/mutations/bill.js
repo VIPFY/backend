@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
-import { requiresRights } from "../../helpers/permissions";
+import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { createLog, createNotification } from "../../helpers/functions";
 import { calculatePlanPrice } from "../../helpers/apps";
 
@@ -13,7 +13,7 @@ import {
   createSubscription,
   changeDefaultCard
 } from "../../services/stripe";
-import { BillingError } from "../../errors";
+import { BillingError, NormalError } from "../../errors";
 import logger from "../../loggers";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
@@ -513,6 +513,24 @@ export default {
         return downloadLink;
       } catch (err) {
         throw new BillingError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+  setBoughtPlanAlias: requiresAuth.createResolver(
+    async (parent, { alias, boughtplanid }, { models, token }) => {
+      try {
+        const bill = await models.BoughtPlan.update(
+          {
+            alias
+          },
+          {
+            where: { id: boughtplanid }
+          }
+        );
+
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   )
