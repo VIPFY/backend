@@ -72,6 +72,20 @@ export const types = `
     website: String
     address_components: [JSON]
   }
+
+  input LegalInput {
+    vatId: String
+    termsOfService: Date!
+    privacy: Date!
+    noVatRequired: Boolean!
+  }
+
+  input StatisticInput {
+    industry: String
+    country: String
+    subIndustry: String
+    companyStage: String
+  }
 `;
 
 export const queries = `
@@ -91,9 +105,9 @@ export const queries = `
 `;
 
 export const mutations = `
-  createCompany(name: String!): RegisterResponse!
+  createCompany(name: String!, legalinformation: LegalInput!): RegisterResponse!
   updateCompanyPic(file: File!): String!
-  updateStatisticData(data: JSON!): Response!
+  updateStatisticData(data: StatisticInput!): Response!
 
   addSubDepartment(departmentid: Int! ,name: String!): Response!
   editDepartmentName(departmentid: Int!, name: String!): Response!
