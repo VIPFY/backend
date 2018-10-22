@@ -321,15 +321,15 @@ export default {
 
           console.log("FEATURES----->", features);
           console.log("PLANINPUTS----->", planinputs);
-          //throw new Error("DEBUG");
-          // const stripePlans = [];
+
+          const stripePlans = [];
           // billItems.push({
           //   description: plan.name,
           //   quantity: numlicences,
           //   unitPrice: plan.price
           // });
 
-          // stripePlans.push({ plan: plan.stripedata.id });
+          stripePlans.push({ plan: plan.stripedata.id });
 
           const partnerLogs = {};
 
@@ -387,10 +387,10 @@ export default {
           partnerLogs.licences = newLicences;
           logger.debug(`created ${mergedFeatures.users} licences`);
 
-          /*await createSubscription(
+          await createSubscription(
             department.payingoptions.stripe.id,
             stripePlans
-          );*/
+          );
 
           await createLog(
             ip,

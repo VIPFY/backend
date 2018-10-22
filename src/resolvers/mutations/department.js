@@ -669,7 +669,7 @@ export default {
 
         const { website, international_phone_number, name } = data;
         const promises = [];
-        const addressData = { unitid: company, tags: ["main, billing"] };
+        const addressData = { unitid: company, tags: ["main", "billing"] };
         const address = {};
         const street = [];
 

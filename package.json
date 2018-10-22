@@ -54,6 +54,7 @@
     "express-rate-limit": "^3.2.1",
     "file-type": "^9.0.0",
     "formidable": "^1.2.1",
+    "geoip-country": "^3.1.10",
     "graphql": "^0.13.2",
     "graphql-depth-limit": "^1.1.0",
     "graphql-subscriptions": "^0.5.8",
