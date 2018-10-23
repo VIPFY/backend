@@ -546,7 +546,7 @@ export default {
       try {
         const bill = await models.BoughtPlan.update(
           {
-            endtime: now()
+            endtime: now
           },
           {
             where: { id: boughtplanid }
