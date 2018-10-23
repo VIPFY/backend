@@ -11,6 +11,7 @@ import {
   listCards,
   addCard,
   createSubscription,
+  cancelSubscription,
   changeDefaultCard
 } from "../../services/stripe";
 import { BillingError, NormalError } from "../../errors";
@@ -422,6 +423,27 @@ export default {
     }
   ),
 
+  cancelPlan: async (parent, { planid }, { models, token }) => {
+    try {
+      const {
+        user: { unitid, company }
+      } = decode(token);
+
+      const { stripeplan } = await models.BoughtPlan.findOne({
+        where: { id: planid },
+        raw: true,
+        attributes: ["stripeplan"]
+      });
+      console.log(stripeplan);
+      const res = await cancelSubscription(stripeplan.id);
+
+      console.log(res);
+      return { ok: true };
+    } catch (err) {
+      throw new BillingError({ message: err.message, internalData: { err } });
+    }
+  },
+
   /*
   // TODO: Add logging when changed
   createMonthlyBill: async (parent, args, { models, token }) => {
@@ -523,6 +545,7 @@ export default {
       }
     }
   ),
+
   setBoughtPlanAlias: requiresAuth.createResolver(
     async (parent, { alias, boughtplanid }, { models, token }) => {
       try {

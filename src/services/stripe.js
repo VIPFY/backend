@@ -136,15 +136,32 @@ export const addCard = async (id, source) => {
  */
 export const createSubscription = async (customer, items) => {
   try {
-    const nextMonth = moment()
-      .add(1, "months")
-      .startOf("month")
-      .unix();
+    // const nextMonth = moment()
+    //   .add(1, "months")
+    //   .startOf("month")
+    //   .unix();
 
     const res = await stripe.subscriptions.create({
       customer,
       items
       // billing_cycle_anchor: nextMonth
+    });
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+/**
+ * @exports
+ * @param {string} id The id from the plan
+ *
+ *  @returns {object}
+ */
+export const cancelSubscription = async id => {
+  try {
+    const res = await stripe.subscriptions.update(id, {
+      cancel_at_period_end: true
     });
 
     return res;
