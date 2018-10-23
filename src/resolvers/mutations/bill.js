@@ -533,5 +533,23 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+  endBoughtPlan: requiresAuth.createResolver(
+    async (parent, { boughtplanid }, { models, token }) => {
+      try {
+        const bill = await models.BoughtPlan.update(
+          {
+            endtime: now()
+          },
+          {
+            where: { id: boughtplanid }
+          }
+        );
+
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };
