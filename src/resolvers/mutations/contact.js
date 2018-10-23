@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import geoip from "geoip-country";
 import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
@@ -44,7 +45,7 @@ export default {
             { transaction: ta }
           );
 
-          await createLog(ip, "createaddress", { newAddress }, unitid, ta);
+          await createLog(ip, "createAddress", { newAddress }, unitid, ta);
 
           return newAddress;
         } catch (err) {
@@ -425,12 +426,22 @@ export default {
 
   searchAddressByCompanyName: async (parent, { input }, { ip }) => {
     try {
-      console.log(ip);
+      const config = { input };
+      const geo = geoip.lookup(ip);
+
+      if (geo && geo.range) {
+        config.location = {
+          latitude: geo.range[0],
+          longitude: geo.range[1]
+        };
+      }
+
+      if (geo && geo.country) {
+        config.language = geo.country;
+      }
+
       const res = await googleMapsClient
-        .placesQueryAutoComplete({
-          input
-          // language: region
-        })
+        .placesQueryAutoComplete(config)
         .asPromise();
 
       return res.json.predictions;

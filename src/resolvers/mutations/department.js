@@ -19,7 +19,11 @@ import { RFC_2822 } from "moment";
 
 export default {
   createCompany: requiresAuth.createResolver(
-    async (parent, { name }, { models, token, SECRET, SECRET_TWO, ip }) =>
+    async (
+      parent,
+      { name, legalinformation },
+      { models, token, SECRET, SECRET_TWO, ip }
+    ) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -47,7 +51,7 @@ export default {
           );
 
           const p2 = models.DepartmentData.create(
-            { unitid: company.id, name },
+            { unitid: company.id, name, legalinformation },
             { transaction: ta }
           );
 
@@ -125,12 +129,9 @@ export default {
             transaction: ta
           });
 
-          const { vatid, ...statistics } = data;
-
           const newData = await models.DepartmentData.update(
             {
-              statisticdata: { ...currentData.statisticdata, ...statistics },
-              payingoptions: { ...currentData.payingoptions, vatid }
+              statisticdata: { ...currentData.statisticdata, ...data }
             },
             { where: { unitid }, transaction: ta, returning: true }
           );
@@ -668,7 +669,7 @@ export default {
 
         const { website, international_phone_number, name } = data;
         const promises = [];
-        const addressData = { unitid: company, tags: ["main, billing"] };
+        const addressData = { unitid: company, tags: ["main", "billing"] };
         const address = {};
         const street = [];
 

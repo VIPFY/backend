@@ -334,14 +334,14 @@ export default {
    * Update Whois Privacy or Renewal Mode of a domain. Updating both at the
    * same time is not possible!
    *
-   * @param id: integer
-   * @param domainData: object
+   * @param id: {integer}
+   * @param domainData: {object}
    * domainData can contain the properties:
-   * domain: string
-   * renewalmode: enum
-   * whoisPrivacy: integer
-   * cid: string
-   * dns: object[]
+   * @param domain: {string}
+   * @param renewalmode: {enum}
+   * @param whoisPrivacy: {integer}
+   * @param cid: {string}
+   * @param dns: {object[]}
    * @returns {any}
    */
   updateDomain: requiresRights(["edit-domains"]).createResolver(

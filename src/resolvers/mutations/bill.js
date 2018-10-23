@@ -35,11 +35,14 @@ export default {
         } = decode(token);
 
         try {
-          const department = await models.Unit.findById(company, {
-            raw: true
-          });
+          const department = await models.Department.findOne(
+            { where: { unitid: company } },
+            {
+              raw: true
+            }
+          );
           const logArgs = { department };
-          const { payingoptions } = department;
+          const { payingoptions, legalinformation } = department;
 
           if (!payingoptions || !payingoptions.stripe) {
             const stripeCustomer = await createCustomer({
@@ -47,10 +50,14 @@ export default {
                 name: data.card.name,
                 email,
                 ip: data.client_ip,
-                vatid: "DE1234213"
-                //  payingoptions.vatid
+                vatId: legalinformation.vatId ? legalinformation.vatId : ""
               },
-              address,
+              address: {
+                address_city: data.card.address_city,
+                address_line1: data.card.address_line1,
+                address_country: data.card.address_country,
+                address_zip: data.card.address_zip
+              },
               source: data.id
             });
             const card = await listCards(stripeCustomer.id);
@@ -314,15 +321,15 @@ export default {
 
           console.log("FEATURES----->", features);
           console.log("PLANINPUTS----->", planinputs);
-          //throw new Error("DEBUG");
-          // const stripePlans = [];
+
+          const stripePlans = [];
           // billItems.push({
           //   description: plan.name,
           //   quantity: numlicences,
           //   unitPrice: plan.price
           // });
 
-          // stripePlans.push({ plan: plan.stripedata.id });
+          stripePlans.push({ plan: plan.stripedata.id });
 
           const partnerLogs = {};
 
@@ -380,10 +387,10 @@ export default {
           partnerLogs.licences = newLicences;
           logger.debug(`created ${mergedFeatures.users} licences`);
 
-          /*await createSubscription(
+          await createSubscription(
             department.payingoptions.stripe.id,
             stripePlans
-          );*/
+          );
 
           await createLog(
             ip,
