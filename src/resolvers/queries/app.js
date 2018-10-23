@@ -230,6 +230,7 @@ export default {
               bp.usedby,
               bp.id                         AS boughtplan,
               bp.description,
+              bp.endtime,
               a.name                        AS appname,
               p.appid,
               a.icon                        AS appicon,

@@ -96,6 +96,7 @@ export const types = `
     appid: Int!
     licencesused: Int!
     licencestotal: Int!
+    endtime: String
   }
 
   # The Api-Resonse from DD24

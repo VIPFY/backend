@@ -212,6 +212,12 @@ export default {
           if (pw == newPw) {
             throw new Error("Current and new password can't be the same one!");
           }
+          if (
+            pw.length > MAX_PASSWORD_LENGTH ||
+            newPw.length > MAX_PASSWORD_LENGTH
+          ) {
+            throw new Error("password too long");
+          }
 
           const {
             user: { unitid }
@@ -226,9 +232,15 @@ export default {
           const valid = await bcrypt.compare(pw, findOldPassword.passwordhash);
           if (!valid) throw new Error("Incorrect old password!");
           const passwordhash = await bcrypt.hash(newPw, 12);
+          const passwordstrength = computePasswordScore(newPw);
 
           const p1 = models.Human.update(
-            { passwordhash, needspasswordchange: false },
+            {
+              passwordhash,
+              needspasswordchange: false,
+              passwordstrength,
+              passwordlength: newPw.length
+            },
             { where: { unitid }, returning: true, transaction: ta }
           );
           const p2 = models.User.findById(unitid);

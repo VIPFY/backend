@@ -165,6 +165,7 @@ export const queries = `
 
 export const mutations = `
   setBoughtPlanAlias(boughtplanid: ID!, alias: String): Response!
+  endBoughtPlan(boughtplanid: ID!): Response!
   addPaymentData(data: JSON, address: AddressInput, email: String): Response!
   # The buying process
   buyPlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
