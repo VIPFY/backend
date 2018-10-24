@@ -382,7 +382,18 @@ export default {
             { where: { id: boughtPlan.id }, transaction: ta }
           );
 
-          await createLog(
+          const notification = createNotification(
+            {
+              receiver: unitid,
+              message: "Buying plan successful",
+              icon: "shopping-cart",
+              link: "team",
+              changed: []
+            },
+            ta
+          );
+
+          const log = createLog(
             ip,
             "buyPlan",
             {
@@ -398,11 +409,19 @@ export default {
             unitid,
             ta
           );
+          await Promise.all([log, notification]);
 
           logger.debug("created log");
         });
         return { ok: true };
       } catch (err) {
+        await createNotification({
+          receiver: unitid,
+          message: "Buying plan failed",
+          icon: "bug",
+          link: "marketplace",
+          changed: []
+        });
         logger.error(err);
         throw new BillingError({
           message: err.message,
