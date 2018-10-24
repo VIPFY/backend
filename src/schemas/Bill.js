@@ -164,11 +164,11 @@ export const queries = `
 
 export const mutations = `
   setBoughtPlanAlias(boughtplanid: ID!, alias: String): Response!
-  endBoughtPlan(boughtplanid: ID!): Response!
   addPaymentData(data: JSON, address: AddressInput, email: String): Response!
   # The buying process
   buyPlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
-  cancelPlan(planid: Int!): Response!
+  cancelPlan(planid: Int!): BoughtPlan!
+  reactivatePlan(planid: Int!): BoughtPlan!
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!
   addBillPos(bill: BillInput!, billid: Int): Response!

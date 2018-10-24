@@ -163,3 +163,27 @@ export const createNotification = async (notificationBody, transaction) => {
  */
 export const computePasswordScore = password =>
   zxcvbn(password.substring(0, 50)).score;
+
+/**
+ * Checks whether a Plan and an App are still valid
+ *
+ * @param {object} plan
+ *
+ * @returns {boolean}
+ */
+export const checkPlanValidity = async plan => {
+  if (plan.enddate && plan.enddate < Date.now()) {
+    throw new Error(`The plan ${plan.name} has already expired!`);
+  }
+
+  const app = await models.App.findOne({
+    where: { id: plan.appid, deprecated: false, disabled: false },
+    raw: true
+  });
+
+  if (!app) {
+    throw new Error("App not found, maybe it is disabled/deprecated");
+  }
+
+  return true;
+};

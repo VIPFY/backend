@@ -170,6 +170,18 @@ export const cancelSubscription = async id => {
   }
 };
 
+export const reactivateSubscription = async id => {
+  try {
+    const res = await stripe.subscriptions.update(id, {
+      cancel_at_period_end: false
+    });
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
 /**
  * Fetches a customer from Stripe
  * @exports

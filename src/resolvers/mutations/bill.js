@@ -1,7 +1,11 @@
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
-import { requiresRights, requiresAuth } from "../../helpers/permissions";
-import { createLog, createNotification } from "../../helpers/functions";
+import { requiresRights } from "../../helpers/permissions";
+import {
+  createLog,
+  createNotification,
+  checkPlanValidity
+} from "../../helpers/functions";
 import { calculatePlanPrice } from "../../helpers/apps";
 
 // import createInvoice from "../../helpers/createInvoice";
@@ -12,7 +16,8 @@ import {
   addCard,
   createSubscription,
   cancelSubscription,
-  changeDefaultCard
+  changeDefaultCard,
+  reactivateSubscription
 } from "../../services/stripe";
 import { BillingError, NormalError } from "../../errors";
 import logger from "../../loggers";
@@ -238,8 +243,6 @@ export default {
       } = decode(token);
       try {
         await models.sequelize.transaction(async ta => {
-          const key = {};
-
           logger.debug("start buying process", {
             planid,
             features,
@@ -274,18 +277,7 @@ export default {
             raw: true
           });
 
-          if (plan.enddate && plan.enddate < Date.now()) {
-            throw new Error(`The plan ${plan.name} has already expired!`);
-          }
-
-          const app = await models.App.findOne({
-            where: { id: plan.appid, deprecated: false, disabled: false },
-            raw: true
-          });
-
-          if (!app) {
-            throw new Error("App not found, maybe it is disabled/deprecated");
-          }
+          await checkPlanValidity(plan);
 
           const calculatedPrice = calculatePlanPrice(
             plan.price,
@@ -320,15 +312,7 @@ export default {
             internaldescription: plan.internaldescription
           });
 
-          console.log("FEATURES----->", features);
-          console.log("PLANINPUTS----->", planinputs);
-
           const stripePlans = [];
-          // billItems.push({
-          //   description: plan.name,
-          //   quantity: numlicences,
-          //   unitPrice: plan.price
-          // });
 
           stripePlans.push({ plan: plan.stripedata.id });
 
@@ -377,7 +361,7 @@ export default {
                   boughtplanid: boughtPlan.id,
                   agreed: false,
                   disabled: false,
-                  key
+                  key: {}
                 },
                 { transaction: ta }
               )
@@ -448,7 +432,13 @@ export default {
             transaction: ta
           });
 
-          const [deletedBoughtPlan, licences] = await Promise.all([p1, p2]);
+          const [cancelledBoughtPlan, licences] = await Promise.all([p1, p2]);
+
+          const { appid } = await models.Plan.findOne({
+            where: { id: cancelledBoughtPlan.planid },
+            raw: true,
+            transaction: ta
+          });
 
           const assignedLicences = licences.filter(
             licence => licence.unitid != null
@@ -458,31 +448,125 @@ export default {
             throw new Error("There are still licences assigned for this plan");
           }
 
-          const res = await cancelSubscription(deletedBoughtPlan.stripeplan);
+          await Services.cancelAccount(
+            models,
+            appid,
+            cancelledBoughtPlan.id,
+            ta
+          );
+
+          const cancelledSubscription = await cancelSubscription(
+            cancelledBoughtPlan.stripeplan
+          );
 
           const p3 = models.BoughtPlan.update(
-            { endtime: new Date(res.current_period_end) },
             {
-              where: { id: deletedBoughtPlan.id, payer: company },
-              transaction: ta
+              endtime: new Date(cancelledSubscription.current_period_end * 1000)
+            },
+            {
+              where: { id: cancelledBoughtPlan.id, payer: company },
+              transaction: ta,
+              returning: true
             }
           );
 
           const p4 = models.Licence.destroy(
-            { where: { id: deletedBoughtPlan.id } },
+            { where: { id: cancelledBoughtPlan.id } },
             { transaction: ta }
           );
 
           const p5 = createLog(
             ip,
             "cancelPlan",
-            { deletedBoughtPlan, res, licences },
+            {
+              cancelledBoughtPlan,
+              cancelledSubscription,
+              licences
+            },
             unitid,
             ta
           );
 
-          await Promise.all([p3, p4, p5]);
-          return { ok: true };
+          const promises = await Promise.all([p3, p4, p5]);
+          return promises[0][1][0];
+        } catch (err) {
+          throw new BillingError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  reactivatePlan: requiresRights(["edit-boughtplan"]).createResolver(
+    async (parent, { planid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const boughtPlan = await models.BoughtPlan.findOne({
+            where: { id: planid, payer: company },
+            raw: true
+          });
+
+          const plan = await models.Plan.findOne({
+            where: { id: boughtPlan.planid },
+            raw: true
+          });
+
+          await checkPlanValidity(plan);
+          const createLicences = [];
+
+          for (let i = 0; i < boughtPlan.totalfeatures.users; i++) {
+            createLicences.push(
+              models.Licence.create(
+                {
+                  unitid: null,
+                  boughtplanid: boughtPlan.id,
+                  agreed: false,
+                  disabled: false,
+                  key: {}
+                },
+                { transaction: ta }
+              )
+            );
+          }
+
+          await Services.createAccount(
+            models,
+            plan.appid,
+            planinputs,
+            boughtPlan.totalfeatures,
+            boughtPlan.id,
+            ta
+          );
+
+          const reactivatedSubscription = await reactivateSubscription(
+            boughtPlan.stripeplan
+          );
+
+          const updatedBoughtPlan = await models.BoughtPlan.update(
+            { endtime: null },
+            { where: { id: boughtPlan.id }, transaction: ta, returning: true }
+          );
+
+          const newLicences = await Promise.all(createLicences);
+
+          await createLog(
+            ip,
+            "reactivatePlan",
+            {
+              newLicences,
+              reactivatedSubscription,
+              updatedBoughtPlan: updatedBoughtPlan[1][0]
+            },
+            unitid,
+            ta
+          );
+
+          return updatedBoughtPlan[1][0];
         } catch (err) {
           throw new BillingError({
             message: err.message,
@@ -594,30 +678,12 @@ export default {
     }
   ),
 
-  setBoughtPlanAlias: requiresAuth.createResolver(
+  setBoughtPlanAlias: requiresRights(["edit-boughtplan"]).createResolver(
     async (parent, { alias, boughtplanid }, { models, token }) => {
       try {
         const bill = await models.BoughtPlan.update(
           {
             alias
-          },
-          {
-            where: { id: boughtplanid }
-          }
-        );
-
-        return { ok: true };
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-  endBoughtPlan: requiresAuth.createResolver(
-    async (parent, { boughtplanid }, { models, token }) => {
-      try {
-        const bill = await models.BoughtPlan.update(
-          {
-            endtime: models.sequelize.fn("NOW")
           },
           {
             where: { id: boughtplanid }
