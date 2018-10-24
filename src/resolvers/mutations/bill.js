@@ -431,16 +431,13 @@ export default {
         });
         return { ok: true };
       } catch (err) {
-        await createNotification(
-          {
-            receiver: unitid,
-            message: "Buying plan failed",
-            icon: "bug",
-            link: "marketplace",
-            changed: []
-          },
-          ta
-        );
+        await createNotification({
+          receiver: unitid,
+          message: "Buying plan failed",
+          icon: "bug",
+          link: "marketplace",
+          changed: []
+        });
         logger.error(err);
         throw new BillingError({
           message: err.message,
