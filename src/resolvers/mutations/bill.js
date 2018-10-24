@@ -388,9 +388,14 @@ export default {
           partnerLogs.licences = newLicences;
           logger.debug(`created ${mergedFeatures.users} licences`);
 
-          await createSubscription(
+          const subscription = await createSubscription(
             department.payingoptions.stripe.id,
             stripePlans
+          );
+
+          await models.BoughtPlan.update(
+            { stripeplan: subscription.id },
+            { where: { id: boughtPlan.id }, transaction: ta }
           );
 
           await createLog(
@@ -423,26 +428,69 @@ export default {
     }
   ),
 
-  cancelPlan: async (parent, { planid }, { models, token }) => {
-    try {
-      const {
-        user: { unitid, company }
-      } = decode(token);
+  cancelPlan: requiresRights(["delete-boughtplan"]).createResolver(
+    async (parent, { planid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
 
-      const { stripeplan } = await models.BoughtPlan.findOne({
-        where: { id: planid },
-        raw: true,
-        attributes: ["stripeplan"]
-      });
-      console.log(stripeplan);
-      const res = await cancelSubscription(stripeplan.id);
+          const p1 = models.BoughtPlan.findOne({
+            where: { id: planid, payer: company },
+            raw: true,
+            transaction: ta
+          });
 
-      console.log(res);
-      return { ok: true };
-    } catch (err) {
-      throw new BillingError({ message: err.message, internalData: { err } });
-    }
-  },
+          const p2 = models.Licence.findAll({
+            where: { boughtplanid: planid },
+            raw: true,
+            transaction: ta
+          });
+
+          const [deletedBoughtPlan, licences] = await Promise.all([p1, p2]);
+
+          const assignedLicences = licences.filter(
+            licence => licence.unitid != null
+          );
+
+          if (assignedLicences.length > 0) {
+            throw new Error("There are still licences assigned for this plan");
+          }
+
+          const res = await cancelSubscription(deletedBoughtPlan.stripeplan);
+
+          const p3 = models.BoughtPlan.update(
+            { endtime: new Date(res.current_period_end) },
+            {
+              where: { id: deletedBoughtPlan.id, payer: company },
+              transaction: ta
+            }
+          );
+
+          const p4 = models.Licence.destroy(
+            { where: { id: deletedBoughtPlan.id } },
+            { transaction: ta }
+          );
+
+          const p5 = createLog(
+            ip,
+            "cancelPlan",
+            { deletedBoughtPlan, res, licences },
+            unitid,
+            ta
+          );
+
+          await Promise.all([p3, p4, p5]);
+          return { ok: true };
+        } catch (err) {
+          throw new BillingError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
 
   /*
   // TODO: Add logging when changed

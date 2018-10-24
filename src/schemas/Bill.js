@@ -81,7 +81,6 @@ export const types = `
     payer: Unit!
     usedby: Unit!
     planid: Plan!
-    predecessor: Plan
     licences: [Licence]
     totalprice: Float
   }

@@ -348,6 +348,7 @@ export default {
             rights: [],
             email: "test@example.com"
           };
+
           await Services.addUser(
             models,
             boughtPlan["plan_datum.appid"],
