@@ -401,7 +401,7 @@ export default {
           const notification = createNotification(
             {
               receiver: unitid,
-              message,
+              message: "Buying plan successful",
               icon: "shopping-cart",
               link: "team",
               changed: []
