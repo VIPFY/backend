@@ -1,4 +1,3 @@
-import { random } from "lodash";
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import {
@@ -6,7 +5,6 @@ import {
   checkAuthentification,
   getNewPasswordData
 } from "../../helpers/auth";
-import { sendRegistrationEmail } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
 import {
   parentAdminCheck,
