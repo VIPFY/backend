@@ -23,26 +23,29 @@ export default {
   signUp: async (
     parent,
     { email, newsletter },
-    { models, SECRET, SECRET_TWO }
+    { models, SECRET, SECRET_TWO, ip }
   ) =>
     models.sequelize.transaction(async ta => {
       try {
         // Check whether the email is already in use
-        const emailInUse = await models.Email.findOne({ where: { email } });
+        const emailInUse = await models.Email.findOne({
+          where: { email }
+        });
         if (emailInUse) {
           throw new Error("Email already in use!");
         }
 
-        const password = "test";
-        // const passwordhash = await createPassword(email);
+        // generate a new random password
+        const password = await randomPassword(3, 2);
         const pwData = await getNewPasswordData(password);
 
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
             unitid: unit.id,
-            ...pwData,
-            firstlogin: false
+            firstlogin: false,
+            needspasswordchange: true,
+            ...pwData
           },
           { transaction: ta }
         );
@@ -52,19 +55,45 @@ export default {
           { transaction: ta }
         );
 
-        const [user] = await Promise.all([p1, p2]);
+        const [user, emailDbo] = await Promise.all([p1, p2]);
 
         if (newsletter) {
-          await models.Newsletter.create({ email }, { transaction: ta });
+          throw new Error("newsletter signup not supported");
         }
 
-        // sendRegistrationEmail(email, passwordhash);
+        await sendEmail({
+          templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
+          fromName: "VIPFY",
+          personalizations: [
+            {
+              to: [
+                {
+                  email,
+                  name: "New Vipfy User"
+                }
+              ],
+              dynamic_template_data: {
+                name: "",
+                password,
+                email
+              }
+            }
+          ]
+        });
 
         const refreshSecret = user.passwordhash + SECRET_TWO;
         const [token, refreshToken] = await createTokens(
           user,
           SECRET,
           refreshSecret
+        );
+
+        await createLog(
+          ip,
+          "signUp",
+          { human: user, email: emailDbo },
+          unit.id,
+          ta
         );
 
         return { ok: true, token, refreshToken };
@@ -334,7 +363,7 @@ export default {
         const pwData = await getNewPasswordData(newPw);
 
         const updatedHuman = await models.Human.update(
-          { ...pwData },
+          { ...pwData, needspasswordchange: true },
           { where: { unitid: user.unitid }, returning: true, transaction: ta }
         );
 
