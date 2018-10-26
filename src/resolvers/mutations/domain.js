@@ -12,6 +12,23 @@ import { createSubscription, cancelSubscription } from "../../services/stripe";
 import { PartnerError, NormalError } from "../../errors";
 
 export default {
+  checkDomain: async (parent, { domain }) => {
+    try {
+      const { code, availability } = await dd24Api("CheckDomain", { domain });
+
+      if (code < 200 && code > 300) {
+        throw new Error("Something went wrong");
+      }
+
+      if (availability != 1) {
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
   /**
    * Register a Domain with our Partner DD24
    *
