@@ -16,8 +16,8 @@ import {
 } from "../../helpers/functions";
 import { AuthError, NormalError } from "../../errors";
 import { MAX_PASSWORD_LENGTH } from "../../constants";
-import { randomPassword } from "../../helpers/passwordgen";
 import { sendEmail } from "../../helpers/email";
+import { randomPassword } from "../../helpers/passwordgen";
 
 export default {
   signUp: async (
