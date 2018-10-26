@@ -251,7 +251,7 @@ export default {
           });
 
           const department = await models.Unit.findById(company, { raw: true });
-          // TODO: check whether the card is valid
+
           if (
             !department.payingoptions ||
             !department.payingoptions.stripe ||
@@ -327,7 +327,8 @@ export default {
               disabled: false,
               totalprice: calculatedPrice,
               additionalfeatures: features,
-              totalfeatures: mergedFeatures
+              totalfeatures: mergedFeatures,
+              planinputs
             },
             {
               transaction: ta
@@ -556,7 +557,7 @@ export default {
           await Services.createAccount(
             models,
             plan.appid,
-            planinputs,
+            boughtPlan.planinputs,
             boughtPlan.totalfeatures,
             boughtPlan.id,
             ta

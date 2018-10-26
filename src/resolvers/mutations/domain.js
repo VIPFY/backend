@@ -8,9 +8,27 @@ import {
   createLog,
   createNotification
 } from "../../helpers/functions";
+import { createSubscription, cancelSubscription } from "../../services/stripe";
 import { PartnerError, NormalError } from "../../errors";
 
 export default {
+  checkDomain: async (parent, { domain }) => {
+    try {
+      const { code, availability } = await dd24Api("CheckDomain", { domain });
+
+      if (code < 200 && code > 300) {
+        throw new Error("Something went wrong");
+      }
+
+      if (availability != 1) {
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
   /**
    * Register a Domain with our Partner DD24
    *
@@ -25,12 +43,39 @@ export default {
         } = decode(token);
 
         try {
-          const hasAccount = await models.Domain.findOne({
+          const p1 = models.Domain.findOne({
             where: { unitid: company },
             raw: true
           });
 
+          const p2 = models.Department.findOne({
+            raw: true,
+            where: { unitid: company }
+          });
+
+          const p3 = models.Plan.findOne({
+            where: { name: domainData.tld, appid: 11 },
+            attributes: ["price", "id", "stripedata"],
+            raw: true
+          });
+
+          const [hasAccount, organization, findPrice] = await Promise.all([
+            p1,
+            p2,
+            p3
+          ]);
+
+          if (
+            !organization.payingoptions ||
+            !organization.payingoptions.stripe ||
+            !organization.payingoptions.stripe.cards ||
+            organization.payingoptions.stripe.cards.length < 1
+          ) {
+            throw new Error("Missing payment information!");
+          }
+
           let register;
+          let totalprice = findPrice.price;
           let whoisprivacy = false;
           const additionalfeatures = {};
           const totalfeatures = {
@@ -39,14 +84,6 @@ export default {
           };
           let partnerLogs = {};
           domainData.renewalmode = "AUTORENEW";
-
-          const findPrice = await models.Plan.findOne({
-            where: { name: domainData.tld, appid: 11 },
-            attributes: ["price", "id"],
-            raw: true
-          });
-
-          let totalprice = findPrice.price;
 
           if (domainData.whoisprivacy == 1) {
             totalprice += 5;
@@ -110,11 +147,6 @@ export default {
               unitid: company
             };
 
-            const organization = await models.Department.findOne({
-              attributes: ["name"],
-              raw: true,
-              where: { unitid: company }
-            });
             newOptions.organization = organization.name;
 
             register = await dd24Api("AddDomain", newOptions);
@@ -160,11 +192,17 @@ export default {
             { transaction: ta }
           );
 
-          const p1 = createLog(
+          const subscription = await createSubscription(
+            organization.payingoptions.stripe.id,
+            [{ plan: findPrice.stripedata.id }]
+          );
+
+          const p4 = createLog(
             ip,
             "registerDomain",
             {
               ...partnerLogs,
+              subscription,
               domain,
               boughtPlan
             },
@@ -172,7 +210,7 @@ export default {
             ta
           );
 
-          const p2 = createNotification(
+          const p5 = createNotification(
             {
               receiver: unitid,
               message: `${domainData.domain} successfully registered.`,
@@ -183,7 +221,7 @@ export default {
             ta
           );
 
-          await Promise.all([p1, p2]);
+          await Promise.all([p4, p5]);
 
           return domain;
         } catch (err) {
@@ -363,6 +401,11 @@ export default {
           domainData.domain = oldDomain.domainname;
           let message;
 
+          const predecessor = await models.BoughtPlan.findOne(
+            { where: { id: oldDomain.boughtplanid } },
+            { raw: true }
+          );
+
           // Update of the domains DNS settings
           if (domainData.dns) {
             message = `DNS update of ${domainData.domain} was successful`;
@@ -442,11 +485,6 @@ export default {
               totalprice += 20;
             }
 
-            const predecessor = await models.BoughtPlan.findOne(
-              { where: { id: oldDomain.boughtplanid } },
-              { raw: true }
-            );
-
             const bpOld = models.BoughtPlan.update(
               {
                 endtime,
@@ -471,7 +509,8 @@ export default {
                 totalprice,
                 description: `Registration of ${domainData.domain}`,
                 additionalfeatures,
-                totalfeatures
+                totalfeatures,
+                stripeplan: predecessor.stripeplan
               },
               { transaction: ta, returning: true }
             );
@@ -491,7 +530,31 @@ export default {
                 ? "AUTODELETE"
                 : "AUTORENEW";
 
-            message = `Renewal of ${domainData.domain} was successful`;
+            if (toUpdate.renewalmode == "AUTODELETE") {
+              const cancelledDomain = await cancelSubscription(
+                predecessor.stripeplan
+              );
+
+              p1 = models.BoughtPlan.update(
+                {
+                  endtime: new Date(cancelledDomain.current_period_end * 1000),
+                  planid: 25
+                },
+                {
+                  where: {
+                    id: predecessor.id
+                  },
+                  transaction: ta,
+                  returning: true
+                }
+              );
+              addLogs.cancelledDomain = cancelledDomain;
+              message = `Renewalmode of ${
+                domainData.domain
+              } changed to AUTODELETE`;
+            } else {
+              message = `Renewal of ${domainData.domain} was successful`;
+            }
           }
           const updateDomain = await dd24Api("UpdateDomain", domainData);
 

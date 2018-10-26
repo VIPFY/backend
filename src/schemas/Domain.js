@@ -66,6 +66,7 @@ export const queries = `
 `;
 
 export const mutations = `
+  checkDomain(domain: String!): Boolean!
   registerDomain(domainData: DD24!): Domain!
   updateDomain(domainData: DD24!, id: Int!): Response!
   registerExternalDomain(domainData: DD24!): Domain!
