@@ -1,5 +1,3 @@
-import bcrypt from "bcrypt";
-import { random } from "lodash";
 import moment from "moment";
 import models from "@vipfy-private/sequelize-setup";
 import zxcvbn from "zxcvbn";
@@ -9,18 +7,6 @@ import { pubsub, NEW_NOTIFICATION } from "../constants";
 /* eslint-disable no-return-assign */
 
 export const getDate = () => new Date().toUTCString();
-
-export const createPassword = async email => {
-  // A password musst be created because otherwise the not null rule of the
-  // database is violated
-  const passwordHash = await bcrypt.hash(email, 5);
-
-  // Change the given hash to improve security
-  const start = random(3, 8);
-  const newHash = await passwordHash.replace("/", 2).substr(start);
-
-  return newHash;
-};
 
 /**
  * Add the property company to the user object and set it to the companyid of the user

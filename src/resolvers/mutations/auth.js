@@ -1,16 +1,23 @@
 import { random } from "lodash";
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
-import { createTokens, checkAuthentification } from "../../helpers/auth";
+import {
+  createTokens,
+  checkAuthentification,
+  getNewPasswordData
+} from "../../helpers/auth";
 import { sendRegistrationEmail } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
 import {
   parentAdminCheck,
   createLog,
-  computePasswordScore
+  computePasswordScore,
+  formatHumanName
 } from "../../helpers/functions";
 import { AuthError, NormalError } from "../../errors";
 import { MAX_PASSWORD_LENGTH } from "../../constants";
+import { randomPassword } from "../../helpers/passwordgen";
+import { sendEmail } from "../../helpers/email";
 
 export default {
   signUp: async (
@@ -28,16 +35,13 @@ export default {
 
         const password = "test";
         // const passwordhash = await createPassword(email);
-        const passwordhash = await bcrypt.hash(password, 12);
-        const passwordstrength = computePasswordScore(password);
+        const pwData = await getNewPasswordData(password);
 
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
             unitid: unit.id,
-            passwordhash,
-            passwordstrength,
-            passwordlength: password.length,
+            ...pwData,
             firstlogin: false
           },
           { transaction: ta }
@@ -87,18 +91,15 @@ export default {
 
     return models.sequelize.transaction(async ta => {
       try {
-        const p1 = bcrypt.hash(password, 12);
+        const p1 = await getNewPasswordData(password);
         const p2 = models.Human.findOne({
           where: { unitid: emailExists.unitid }
         });
-        const passwordstrength = computePasswordScore(password);
-        const [pw, user] = await Promise.all([p1, p2]);
+        const [pwData, user] = await Promise.all([p1, p2]);
 
         const p3 = models.Human.update(
           {
-            passwordhash: pw,
-            passwordstrength,
-            passwordlength: password.length
+            ...pwData
           },
           { where: { unitid: user.unitid }, transaction: ta, raw: true }
         );
@@ -231,15 +232,12 @@ export default {
 
           const valid = await bcrypt.compare(pw, findOldPassword.passwordhash);
           if (!valid) throw new Error("Incorrect old password!");
-          const passwordhash = await bcrypt.hash(newPw, 12);
-          const passwordstrength = computePasswordScore(newPw);
+          const pwData = await getNewPasswordData(newPw);
 
           const p1 = models.Human.update(
             {
-              passwordhash,
               needspasswordchange: false,
-              passwordstrength,
-              passwordlength: newPw.length
+              ...pwData
             },
             { where: { unitid }, returning: true, transaction: ta }
           );
@@ -331,12 +329,12 @@ export default {
           raw: true
         });
 
-        // Change the given hash to improve security
-        const start = random(3, 8);
-        const newHash = await user.passwordhash.replace("/", 2).substr(start);
+        // generate a new random password
+        const newPw = await randomPassword(3, 2);
+        const pwData = await getNewPasswordData(newPw);
 
         const updatedHuman = await models.Human.update(
-          { passwordhash: newHash },
+          { ...pwData },
           { where: { unitid: user.unitid }, returning: true, transaction: ta }
         );
 
@@ -348,7 +346,25 @@ export default {
           ta
         );
 
-        sendRegistrationEmail(email, newHash);
+        await sendEmail({
+          templateId: "d-9d74fbd6021449fcb59109bd8000a683",
+          fromName: "VIPFY",
+          personalizations: [
+            {
+              to: [
+                {
+                  email,
+                  name: formatHumanName(user)
+                }
+              ],
+              dynamic_template_data: {
+                name: formatHumanName(user),
+                password: newPw,
+                email
+              }
+            }
+          ]
+        });
 
         return {
           ok: true,

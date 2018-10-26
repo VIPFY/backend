@@ -3,7 +3,7 @@ import { decode } from "jsonwebtoken";
 import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { deleteFile, uploadFile } from "../../services/gcloud";
-import { createTokens } from "../../helpers/auth";
+import { createTokens, getNewPasswordData } from "../../helpers/auth";
 import { NormalError } from "../../errors";
 import {
   createLog,
@@ -215,8 +215,7 @@ export default {
             throw new Error("Password too long");
           }
 
-          const passwordhash = await bcrypt.hash(password, 12);
-          const passwordstrength = computePasswordScore(password);
+          const pwData = await getNewPasswordData(password);
 
           let unit = await models.Unit.create({}, { transaction: ta });
           unit = unit.get();
@@ -229,11 +228,9 @@ export default {
               title: name.title,
               suffix: name.suffix,
               unitid: unit.id,
-              passwordhash,
               needspasswordchange: true,
               firstlogin: true,
-              passwordlength: password.length,
-              passwordstrength
+              ...pwData
             },
             { transaction: ta }
           );

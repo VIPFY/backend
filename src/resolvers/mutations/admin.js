@@ -1,4 +1,3 @@
-import bcrypt from "bcrypt";
 import { split } from "lodash";
 import { flushAll as flushServices } from "@vipfy-private/services";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
@@ -9,8 +8,7 @@ import {
   userPicFolder,
   MAX_PASSWORD_LENGTH
 } from "../../constants";
-import { createPassword, computePasswordScore } from "../../helpers/functions";
-import { flushAuthCaches } from "../../helpers/auth";
+import { flushAuthCaches, getNewPasswordData } from "../../helpers/auth";
 
 /* eslint-disable default-case */
 
@@ -411,6 +409,9 @@ export default {
       const { email, ...userData } = user;
       const unitData = {};
 
+      // used by admin interface
+      throw new Error("not implemented");
+      /*
       if (file) {
         const profilepicture = await uploadFile(file, userPicFolder);
         unitData.profilepicture = profilepicture;
@@ -419,20 +420,13 @@ export default {
       return models.sequelize.transaction(async ta => {
         try {
           const password = await createPassword(email);
-          const passwordhash = await createPassword(email);
-          const passwordstrength = computePasswordScore(password);
+          const pwdata = await getNewPasswordData(password);
           const unit = await models.Unit.create(
             { ...unitData },
             { transaction: ta }
           );
           const p1 = models.Human.create(
-            {
-              unitid: unit.id,
-              ...userData,
-              passwordhash,
-              passwordstrength,
-              passwordlength: password.length
-            },
+            { unitid: unit.id, ...userData, ...pwdata },
             { transaction: ta }
           );
           const p2 = models.Email.create(
@@ -447,6 +441,7 @@ export default {
           throw new Error(message);
         }
       });
+      */
     }
   ),
 
@@ -465,12 +460,8 @@ export default {
           if (password.length > MAX_PASSWORD_LENGTH) {
             throw new Error("Password too long");
           }
-          const passwordhash = await bcrypt.hash(password, 12);
-          const passwordstrength = computePasswordScore(password);
-          await models.Human.update(
-            { passwordhash, passwordstrength, passwordlength: password.length },
-            { where: { unitid } }
-          );
+          const pwData = await getNewPasswordData(password);
+          await models.Human.update({ ...pwData }, { where: { unitid } });
         } else if (verified != null && email) {
           await models.Email.update({ verified }, { where: { email } });
         } else if (oldemail && email) {
