@@ -1,10 +1,12 @@
 import jwt from "jsonwebtoken";
 import { pick } from "lodash";
+import bcrypt from "bcrypt";
 import { AuthError } from "../errors";
 import {
   getCompanyMembershipCacheStats,
   flushCompanyMembershipCache
 } from "./companyMembership";
+import { computePasswordScore } from "./functions";
 
 export const createTokens = async (user, SECRET, SECRET_TWO) => {
   try {
@@ -138,4 +140,11 @@ export const getAuthStats = () => ({
 export const flushAuthCaches = () => {
   unitAuthCache.flushAll();
   flushCompanyMembershipCache();
+};
+
+export const getNewPasswordData = async password => {
+  const passwordhash = await bcrypt.hash(password, 12);
+  const passwordstrength = computePasswordScore(password);
+  const passwordlength = password.length;
+  return { passwordhash, passwordstrength, passwordlength };
 };

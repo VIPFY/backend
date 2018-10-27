@@ -390,7 +390,7 @@ export default {
               message: "Buying plan successful",
               icon: "shopping-cart",
               link: "team",
-              changed: []
+              changed: ["foreignLicences"]
             },
             ta
           );

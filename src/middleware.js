@@ -9,7 +9,11 @@ import formidable from "formidable";
 import mkdirp from "mkdirp";
 import bcrypt from "bcrypt";
 import models from "@vipfy-private/sequelize-setup";
-import { refreshTokens, checkAuthentification } from "./helpers/auth";
+import {
+  refreshTokens,
+  checkAuthentification,
+  getNewPasswordData
+} from "./helpers/auth";
 import Utility from "./helpers/createHmac";
 import logger from "./loggers";
 import { AuthError } from "./errors";
@@ -137,7 +141,16 @@ export const loggingMiddleWare = (req, res, next) => {
       }
 
       if (variables && variables.password) {
-        variables.password = await bcrypt.hash(variables.password, 12);
+        variables.password = await getNewPasswordData(variables.password);
+      }
+      if (variables && variables.pw) {
+        variables.pw = await getNewPasswordData(variables.pw);
+      }
+      if (variables && variables.newPw) {
+        variables.newPw = await getNewPasswordData(variables.newPw);
+      }
+      if (variables && variables.confirmPw) {
+        variables.confirmPw = await getNewPasswordData(variables.confirmPw);
       }
 
       if (parsedBody.data && parsedBody.data != {}) {

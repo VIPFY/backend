@@ -1,44 +1,49 @@
-import { random } from "lodash";
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
-import { createTokens, checkAuthentification } from "../../helpers/auth";
-import { sendRegistrationEmail } from "../../services/mailjet";
+import {
+  createTokens,
+  checkAuthentification,
+  getNewPasswordData
+} from "../../helpers/auth";
 import { requiresAuth } from "../../helpers/permissions";
 import {
   parentAdminCheck,
   createLog,
-  computePasswordScore
+  computePasswordScore,
+  formatHumanName
 } from "../../helpers/functions";
 import { AuthError, NormalError } from "../../errors";
 import { MAX_PASSWORD_LENGTH } from "../../constants";
+import { sendEmail } from "../../helpers/email";
+import { randomPassword } from "../../helpers/passwordgen";
 
 export default {
   signUp: async (
     parent,
     { email, newsletter },
-    { models, SECRET, SECRET_TWO }
+    { models, SECRET, SECRET_TWO, ip }
   ) =>
     models.sequelize.transaction(async ta => {
       try {
         // Check whether the email is already in use
-        const emailInUse = await models.Email.findOne({ where: { email } });
+        const emailInUse = await models.Email.findOne({
+          where: { email }
+        });
         if (emailInUse) {
           throw new Error("Email already in use!");
         }
 
-        const password = "test";
-        // const passwordhash = await createPassword(email);
-        const passwordhash = await bcrypt.hash(password, 12);
-        const passwordstrength = computePasswordScore(password);
+        // generate a new random password
+        const password = await randomPassword(3, 2);
+        const pwData = await getNewPasswordData(password);
 
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
             unitid: unit.id,
-            passwordhash,
-            passwordstrength,
-            passwordlength: password.length,
-            firstlogin: false
+            firstlogin: false,
+            needspasswordchange: true,
+            ...pwData
           },
           { transaction: ta }
         );
@@ -48,19 +53,45 @@ export default {
           { transaction: ta }
         );
 
-        const [user] = await Promise.all([p1, p2]);
+        const [user, emailDbo] = await Promise.all([p1, p2]);
 
         if (newsletter) {
-          await models.Newsletter.create({ email }, { transaction: ta });
+          throw new Error("newsletter signup not supported");
         }
 
-        // sendRegistrationEmail(email, passwordhash);
+        await sendEmail({
+          templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
+          fromName: "VIPFY",
+          personalizations: [
+            {
+              to: [
+                {
+                  email,
+                  name: "New Vipfy User"
+                }
+              ],
+              dynamic_template_data: {
+                name: "",
+                password,
+                email
+              }
+            }
+          ]
+        });
 
         const refreshSecret = user.passwordhash + SECRET_TWO;
         const [token, refreshToken] = await createTokens(
           user,
           SECRET,
           refreshSecret
+        );
+
+        await createLog(
+          ip,
+          "signUp",
+          { human: user, email: emailDbo },
+          unit.id,
+          ta
         );
 
         return { ok: true, token, refreshToken };
@@ -87,18 +118,15 @@ export default {
 
     return models.sequelize.transaction(async ta => {
       try {
-        const p1 = bcrypt.hash(password, 12);
+        const p1 = await getNewPasswordData(password);
         const p2 = models.Human.findOne({
           where: { unitid: emailExists.unitid }
         });
-        const passwordstrength = computePasswordScore(password);
-        const [pw, user] = await Promise.all([p1, p2]);
+        const [pwData, user] = await Promise.all([p1, p2]);
 
         const p3 = models.Human.update(
           {
-            passwordhash: pw,
-            passwordstrength,
-            passwordlength: password.length
+            ...pwData
           },
           { where: { unitid: user.unitid }, transaction: ta, raw: true }
         );
@@ -231,15 +259,12 @@ export default {
 
           const valid = await bcrypt.compare(pw, findOldPassword.passwordhash);
           if (!valid) throw new Error("Incorrect old password!");
-          const passwordhash = await bcrypt.hash(newPw, 12);
-          const passwordstrength = computePasswordScore(newPw);
+          const pwData = await getNewPasswordData(newPw);
 
           const p1 = models.Human.update(
             {
-              passwordhash,
               needspasswordchange: false,
-              passwordstrength,
-              passwordlength: newPw.length
+              ...pwData
             },
             { where: { unitid }, returning: true, transaction: ta }
           );
@@ -331,12 +356,12 @@ export default {
           raw: true
         });
 
-        // Change the given hash to improve security
-        const start = random(3, 8);
-        const newHash = await user.passwordhash.replace("/", 2).substr(start);
+        // generate a new random password
+        const newPw = await randomPassword(3, 2);
+        const pwData = await getNewPasswordData(newPw);
 
         const updatedHuman = await models.Human.update(
-          { passwordhash: newHash },
+          { ...pwData, needspasswordchange: true },
           { where: { unitid: user.unitid }, returning: true, transaction: ta }
         );
 
@@ -348,7 +373,25 @@ export default {
           ta
         );
 
-        sendRegistrationEmail(email, newHash);
+        await sendEmail({
+          templateId: "d-9d74fbd6021449fcb59109bd8000a683",
+          fromName: "VIPFY",
+          personalizations: [
+            {
+              to: [
+                {
+                  email,
+                  name: formatHumanName(user)
+                }
+              ],
+              dynamic_template_data: {
+                name: formatHumanName(user),
+                password: newPw,
+                email
+              }
+            }
+          ]
+        });
 
         return {
           ok: true,
