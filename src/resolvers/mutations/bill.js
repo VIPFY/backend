@@ -16,6 +16,7 @@ import {
   addCard,
   createSubscription,
   cancelSubscription,
+  updateSubscription,
   changeDefaultCard,
   reactivateSubscription
 } from "../../services/stripe";
@@ -517,6 +518,153 @@ export default {
         }
       })
   ),
+
+  updatePlan: async (
+    parent,
+    { planid, features, price, planinputs },
+    { ip, models, token }
+  ) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        const oldBoughtPlan = await models.BoughtPlan.findOne(
+          { where: { id: planid, payer: company } },
+          { raw: true, transaction: ta }
+        );
+
+        if (!oldBoughtPlan) {
+          throw new Error("Couldn't find Plan!");
+        }
+
+        const plan = await models.Plan.findOne(
+          { where: { id: oldBoughtPlan.planid } },
+          { raw: true, transaction: ta }
+        );
+
+        await checkPlanValidity(plan);
+
+        const calculatedPrice = calculatePlanPrice(
+          plan.price,
+          plan.features,
+          JSON.parse(JSON.stringify(features)) // hacky deep copy
+        );
+
+        logger.debug(
+          `calulated price: ${calculatedPrice}, supplied price: ${price}`
+        );
+
+        if (price != calculatedPrice) {
+          logger.error(
+            `calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`,
+            { planid, features, price, planinputs, unitid }
+          );
+          throw new Error(
+            `Calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`
+          );
+        }
+
+        const mergedFeatures = plan.internaldescription;
+        // eslint-disable-next-line no-restricted-syntax
+
+        for (const fkey of Object.keys(features)) {
+          mergedFeatures[fkey] = features[fkey].value;
+        }
+
+        logger.debug("mergedFeatures", {
+          mergedFeatures,
+          features,
+          internaldescription: plan.internaldescription
+        });
+
+        const closedBoughtPlan = await models.BoughtPlan.update(
+          {
+            endtime: Date.now(),
+            disabled: true
+          },
+          {
+            transaction: ta,
+            where: {
+              payer: company,
+              id: planid,
+              returning: true
+            }
+          }
+        );
+
+        let newBoughtPlan = await models.BoughtPlan.create(
+          {
+            buyer: unitid,
+            payer: company,
+            usedby: company,
+            predecessor: oldBoughtPlan.id,
+            planid: plan.id,
+            disabled: false,
+            totalprice: calculatedPrice,
+            additionalfeatures: features,
+            totalfeatures: mergedFeatures,
+            planinputs,
+            stripeplan: oldBoughtPlan.stripeplan
+          },
+          { transaction: ta }
+        );
+        newBoughtPlan = newBoughtPlan.get();
+        console.log(newBoughtPlan);
+
+        const createLicences = [];
+
+        for (let i = 0; i < mergedFeatures.users; i++) {
+          createLicences.push(
+            models.Licence.create(
+              {
+                unitid: null,
+                boughtplanid: newBoughtPlan.id,
+                agreed: false,
+                disabled: false,
+                key: {}
+              },
+              { transaction: ta }
+            )
+          );
+        }
+
+        const newLicences = await Promise.all(createLicences);
+
+        await Services.changePlan(
+          models,
+          plan.appid,
+          oldBoughtPlan.id,
+          newBoughtPlan.id,
+          plan.id,
+          ta
+        );
+
+        const updatedSubscription = updateSubscription(
+          oldBoughtPlan.stripeplan,
+          plan.stripedata.id
+        );
+
+        await createLog(
+          ip,
+          "updatePlan",
+          {
+            oldBoughtPlan,
+            closedBoughtPlan: closedBoughtPlan[1][0],
+            newBoughtPlan,
+            newLicences,
+            updatedSubscription
+          },
+          unitid,
+          ta
+        );
+
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }),
 
   reactivatePlan: requiresRights(["edit-boughtplan"]).createResolver(
     async (parent, { planid }, { models, token, ip }) =>

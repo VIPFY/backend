@@ -154,7 +154,7 @@ export const createSubscription = async (customer, items) => {
 };
 /**
  * @exports
- * @param {string} id The id from the plan
+ * @param {string} id The id of the plan
  *
  *  @returns {object}
  */
@@ -170,6 +170,36 @@ export const cancelSubscription = async id => {
   }
 };
 
+/**
+ * Switches the customer to another plan at Stripe
+ *
+ * @exports
+ * @param {string} id The id of the subscription at Stripe
+ * @param {string} plan The id of the plan which should be
+ * switched to at Stripe
+ *
+ * @returns {object}
+ */
+export const updateSubscription = async (id, plan) => {
+  try {
+    const res = await stripe.subscriptions.update(id, {
+      cancel_at_period_end: false,
+      items: [{ plan }]
+    });
+
+    return res;
+  } catch (error) {
+    throw new Error(err.message);
+  }
+};
+/**
+ * Reactivates a Subscription at Stripe
+ *
+ * @exports
+ * @param {string} id The id of the Plan
+ *
+ * @returns {object}
+ */
 export const reactivateSubscription = async id => {
   try {
     const res = await stripe.subscriptions.update(id, {

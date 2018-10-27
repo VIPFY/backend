@@ -167,6 +167,7 @@ export const mutations = `
   addPaymentData(data: JSON, address: AddressInput, email: String): Response!
   # The buying process
   buyPlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
+  updatePlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
   cancelPlan(planid: Int!): BoughtPlan!
   reactivatePlan(planid: Int!): BoughtPlan!
   # This function will be used by a cronjob which runs once a month
