@@ -52,9 +52,10 @@ export const types = `
   }
 
   input CompanyInput {
-    name: String!
-    user: Int!
+    name: String
+    user: Int
     statisticdata: JSON
+    legalinformation: LegalInput
   }
 
   input HumanName {
@@ -105,7 +106,6 @@ export const queries = `
 `;
 
 export const mutations = `
-  createCompany(name: String!, legalinformation: LegalInput!): RegisterResponse!
   updateCompanyPic(file: File!): String!
   updateStatisticData(data: StatisticInput!): Response!
 

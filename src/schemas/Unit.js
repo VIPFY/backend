@@ -31,6 +31,12 @@ export const types = `
     firstlogin: Boolean!
   }
 
+  input NameInput {
+    firstname: String
+    middlename: String
+    lastname: String
+  }
+
   input UserInput {
     firstname: String
     middlename: String
@@ -69,7 +75,7 @@ export const mutations = `
   updateProfilePic(file: File!): String!
 
   # Only an email is required for the signup
-  signUp(email: String!, newsletter: Boolean): RegisterResponse!
+  signUp(email: String!, name: NameInput!, companyData: CompanyInput!): RegisterResponse!
 
   # The user will be passed back a JSON Web token for authentication
   signIn(email: String!, password: String!): LoginResponse!

@@ -20,7 +20,7 @@ import { randomPassword } from "../../helpers/passwordgen";
 export default {
   signUp: async (
     parent,
-    { email, newsletter },
+    { email, name, companyData },
     { models, SECRET, SECRET_TWO, ip }
   ) =>
     models.sequelize.transaction(async ta => {
@@ -40,6 +40,7 @@ export default {
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
+            ...name,
             unitid: unit.id,
             firstlogin: false,
             needspasswordchange: true,
@@ -55,10 +56,6 @@ export default {
 
         const [user, emailDbo] = await Promise.all([p1, p2]);
 
-        if (newsletter) {
-          throw new Error("newsletter signup not supported");
-        }
-
         await sendEmail({
           templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
           fromName: "VIPFY",
@@ -67,7 +64,9 @@ export default {
               to: [
                 {
                   email,
-                  name: "New Vipfy User"
+                  name: `${name.firstname} ${
+                    name.middlename ? `${name.middlename} ` : ""
+                  }${name.lastname}`
                 }
               ],
               dynamic_template_data: {
@@ -79,19 +78,53 @@ export default {
           ]
         });
 
+        // Companymutation
+        const { legalinformation, name: companyName } = companyData;
+        let company = await models.Unit.create({}, { transaction: ta });
+        company = company.get();
+
+        const p3 = models.Right.create(
+          { holder: unit.id, forunit: company.id, type: "admin" },
+          { transaction: ta }
+        );
+
+        const p4 = models.DepartmentData.create(
+          { unitid: company.id, name: companyName, legalinformation },
+          { transaction: ta }
+        );
+
+        const p5 = models.ParentUnit.create(
+          { parentunit: company.id, childunit: unit.id },
+          { transaction: ta }
+        );
+
+        let [rights, department, parentUnit] = await Promise.all([p3, p4, p5]);
+        rights = rights.get();
+        department = department.get();
+        parentUnit = parentUnit.get();
+
+        // resetCompanyMembershipCache(company.id, unit.id);
+
+        await createLog(
+          ip,
+          "signUp",
+          {
+            human: user,
+            email: emailDbo,
+            rights,
+            department,
+            parentUnit,
+            company
+          },
+          unit.id,
+          ta
+        );
+
         const refreshSecret = user.passwordhash + SECRET_TWO;
         const [token, refreshToken] = await createTokens(
           user,
           SECRET,
           refreshSecret
-        );
-
-        await createLog(
-          ip,
-          "signUp",
-          { human: user, email: emailDbo },
-          unit.id,
-          ta
         );
 
         return { ok: true, token, refreshToken };
