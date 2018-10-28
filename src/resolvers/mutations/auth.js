@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import axios from "axios";
 import { decode } from "jsonwebtoken";
 import {
   createTokens,
@@ -10,7 +11,8 @@ import {
   parentAdminCheck,
   createLog,
   computePasswordScore,
-  formatHumanName
+  formatHumanName,
+  checkVat
 } from "../../helpers/functions";
 import { AuthError, NormalError } from "../../errors";
 import { MAX_PASSWORD_LENGTH } from "../../constants";
@@ -54,7 +56,8 @@ export default {
           { transaction: ta }
         );
 
-        const [user, emailDbo] = await Promise.all([p1, p2]);
+        const [newUser, emailDbo] = await Promise.all([p1, p2]);
+        const user = newUser.get();
 
         await sendEmail({
           templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
@@ -78,8 +81,21 @@ export default {
           ]
         });
 
-        // Companymutation
-        const { legalinformation, name: companyName } = companyData;
+        let { legalinformation, name: companyName } = companyData;
+
+        if (!legalinformation.noVatRequired) {
+          const { vatId } = legalinformation;
+          const vatNumber = vatId.substr(2).trim();
+          const cc = vatId.substr(0, 2).toUpperCase();
+
+          if (cc != "DE") {
+            const checkedName = await checkVat(cc, vatNumber);
+            const res = await axios.get("https://euvat.ga/rates.json");
+            companyName = checkedName;
+            legalinformation.vatPercentage = res.data.rates[cc].standard_rate;
+          }
+        }
+
         let company = await models.Unit.create({}, { transaction: ta });
         company = company.get();
 
@@ -120,7 +136,9 @@ export default {
           ta
         );
 
-        const refreshSecret = user.passwordhash + SECRET_TWO;
+        user.company = company.id;
+
+        const refreshSecret = pwData.passwordhash + SECRET_TWO;
         const [token, refreshToken] = await createTokens(
           user,
           SECRET,
@@ -179,7 +197,7 @@ export default {
 
         await Promise.all([p3, p4, p5]);
 
-        const refreshSecret = pw + SECRET_TWO;
+        const refreshSecret = pwData.passwordhash + SECRET_TWO;
         const [token, refreshToken] = await createTokens(
           user,
           SECRET,
@@ -291,6 +309,7 @@ export default {
           if (!findOldPassword) throw new Error("No database entry found!");
 
           const valid = await bcrypt.compare(pw, findOldPassword.passwordhash);
+
           if (!valid) throw new Error("Incorrect old password!");
           const pwData = await getNewPasswordData(newPw);
 
@@ -301,7 +320,7 @@ export default {
             },
             { where: { unitid }, returning: true, transaction: ta }
           );
-          const p2 = models.User.findById(unitid);
+          const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
 
           const [updatedUser, basicUser] = await Promise.all([p1, p2]);
           await createLog(
@@ -312,10 +331,9 @@ export default {
             ta
           );
 
-          const refreshTokenSecret = basicUser.passwordhash + SECRET_TWO;
+          const refreshTokenSecret = pwData.passwordhash + SECRET_TWO;
           const user = await parentAdminCheck(basicUser);
           findOldPassword.company = user.company;
-
           const [newToken, refreshToken] = await createTokens(
             findOldPassword,
             SECRET,

@@ -1,4 +1,5 @@
 import moment from "moment";
+import soap from "soap";
 import models from "@vipfy-private/sequelize-setup";
 import zxcvbn from "zxcvbn";
 import { NormalError } from "../errors";
@@ -172,4 +173,36 @@ export const checkPlanValidity = async plan => {
   }
 
   return true;
+};
+/**
+ * Checks whether a vat number is valid
+ *
+ * @exports
+ * @param {string} cc The two-digit country code
+ * @param {string} vatNumber The vat number
+ *
+ * @returns {boolean}
+ */
+export const checkVat = async (cc, vatNumber) => {
+  try {
+    const apiWSDL =
+      "http://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl";
+    const res = await soap.createClientAsync(apiWSDL).then(client =>
+      client
+        .checkVatAsync({ countryCode: cc, vatNumber })
+        .then(result => result[0])
+        .catch(err => {
+          throw new Error(err);
+        })
+    );
+
+    if (res.valid == false) {
+      console.log(res);
+      throw new Error(res);
+    } else {
+      return res.name;
+    }
+  } catch (error) {
+    throw new Error("Invalid Vatnumber!");
+  }
 };

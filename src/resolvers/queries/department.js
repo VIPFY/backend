@@ -11,7 +11,9 @@ export default {
           user: { company }
         } = decode(token);
 
-        return await models.Department.findOne({ where: { unitid: company } });
+        return await models.Department.findOne({
+          where: { unitid: company }
+        });
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
@@ -129,13 +131,23 @@ export default {
   ),
 
   fetchAddressProposal: requiresAuth.createResolver(
-    async (parent, { placeid }) => {
+    async (parent, { placeid }, { models, token }) => {
       try {
+        const {
+          user: { company }
+        } = decode(token);
+        const { name } = await models.Department.findOne({
+          where: {
+            unitid: company
+          },
+          attributes: ["name"],
+          raw: true
+        });
+
         const res = await googleMapsClient
           .place({
             placeid,
             fields: [
-              "name",
               "formatted_address",
               "international_phone_number",
               "website",
@@ -144,6 +156,8 @@ export default {
           })
           .asPromise();
 
+        res.json.result.name = name;
+        console.log(res.json.result);
         return res.json.result;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });

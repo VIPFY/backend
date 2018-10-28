@@ -3,9 +3,7 @@ import { decode } from "jsonwebtoken";
 import { sendEmailToVipfy } from "../../services/mailjet";
 import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
-import { createLog } from "../../helpers/functions";
-import axios from "axios";
-import soap from "soap";
+import { createLog, checkVat } from "../../helpers/functions";
 /* eslint-disable consistent-return, no-unused-vars */
 
 export default {
@@ -108,23 +106,14 @@ export default {
 
       const vatNumber = vat.substr(2).trim();
 
-      const apiWSDL =
-        "http://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl";
-      const res = await soap.createClientAsync(apiWSDL).then(client =>
-        client
-          .checkVatAsync({ countryCode: cc, vatNumber })
-          .then(result => result[0])
-          .catch(err => {
-            throw new Error(err);
-          })
-      );
-
-      if (res.valid == false) {
-        console.log(res);
-        throw new Error(res);
-      } else {
+      // No check for German Vatnumbers needed
+      if (cc.toUpperCase() == "DE") {
         return { ok: true };
       }
+
+      const companyName = await checkVat(cc, vatNumber);
+
+      return companyName;
     } catch (err) {
       throw new Error("Invalid Vatnumber!");
     }

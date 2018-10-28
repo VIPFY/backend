@@ -251,7 +251,9 @@ export default {
             planinputs
           });
 
-          const department = await models.Unit.findById(company, { raw: true });
+          const department = await models.Department.findById(company, {
+            raw: true
+          });
 
           if (
             !department.payingoptions ||
@@ -374,9 +376,16 @@ export default {
           partnerLogs.licences = newLicences;
           logger.debug(`created ${mergedFeatures.users} licences`);
 
+          let vatPercentage = null;
+
+          if (!department.legalinformation.noVatRequired) {
+            vatPercentage = department.legalinformation.vatPercentage;
+          }
+
           const subscription = await createSubscription(
             department.payingoptions.stripe.id,
-            stripePlans
+            stripePlans,
+            vatPercentage
           );
 
           await models.BoughtPlan.update(

@@ -134,7 +134,7 @@ export const addCard = async (id, source) => {
  * @param items: object[] items should contain an array of plans the customer gets
  * subscribed to.
  */
-export const createSubscription = async (customer, items) => {
+export const createSubscription = async (customer, items, tax) => {
   try {
     const nextMonth = moment()
       .add(1, "months")
@@ -144,7 +144,8 @@ export const createSubscription = async (customer, items) => {
     const res = await stripe.subscriptions.create({
       customer,
       items,
-      billing_cycle_anchor: nextMonth
+      billing_cycle_anchor: nextMonth,
+      tax_percent: tax
     });
 
     return res;
