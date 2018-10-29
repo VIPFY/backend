@@ -180,6 +180,7 @@ app.post("/download", async (req, res) => {
     if (!idHasFile) {
       return res.status(404).send("This message has no attachment");
     }
+
     return res.status(200);
   } catch (err) {
     logger.error(err);
@@ -216,6 +217,7 @@ if (ENVIRONMENT != "testing") {
                   SECRET,
                   SECRET_TWO
                 );
+                console.log(newTokens);
 
                 return { models, token: newTokens.token };
               } else {

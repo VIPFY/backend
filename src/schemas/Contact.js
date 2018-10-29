@@ -1,5 +1,6 @@
 export const types = `
   type Website {
+    id: Int!
     website: String!
     tags: [String]
     verified: Boolean!

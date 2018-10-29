@@ -18,10 +18,12 @@ import {
   cancelSubscription,
   updateSubscription,
   changeDefaultCard,
-  reactivateSubscription
+  reactivateSubscription,
+  abortSubscription
 } from "../../services/stripe";
 import { BillingError, NormalError } from "../../errors";
 import logger from "../../loggers";
+import { sleep } from "@vipfy-private/service-base";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
@@ -242,6 +244,9 @@ export default {
       const {
         user: { unitid, company }
       } = decode(token);
+
+      let subscription = null;
+
       try {
         await models.sequelize.transaction(async ta => {
           logger.debug("start buying process", {
@@ -251,8 +256,10 @@ export default {
             planinputs
           });
 
-          const department = await models.Department.findById(company, {
-            raw: true
+          const department = await models.Department.findOne({
+            where: { unitid: company },
+            raw: true,
+            transaction: ta
           });
 
           if (
@@ -341,20 +348,6 @@ export default {
 
           logger.debug("createdBoughtPlan", { boughtPlan });
 
-          const { dns } = await Services.createAccount(
-            models,
-            plan.appid,
-            planinputs,
-            mergedFeatures,
-            boughtPlan.id,
-            ta
-          );
-
-          // if (dns && dns.length > 0) {
-          //   throw new Error("setting dns settings not implemented yet");
-          // }
-          logger.debug("created Service Account");
-
           const createLicences = [];
 
           for (let i = 0; i < mergedFeatures.users; i++) {
@@ -376,17 +369,32 @@ export default {
           partnerLogs.licences = newLicences;
           logger.debug(`created ${mergedFeatures.users} licences`);
 
-          let vatPercentage = null;
-
-          if (!department.legalinformation.noVatRequired) {
-            vatPercentage = department.legalinformation.vatPercentage;
-          }
-
-          const subscription = await createSubscription(
+          subscription = await createSubscription(
             department.payingoptions.stripe.id,
-            stripePlans,
-            vatPercentage
+            stripePlans
           );
+
+          await sleep(500);
+
+          const { dns } = await Services.createAccount(
+            models,
+            plan.appid,
+            planinputs,
+            mergedFeatures,
+            boughtPlan.id,
+            ta
+          );
+
+          // if (dns && dns.length > 0) {
+          //   throw new Error("setting dns settings not implemented yet");
+          // }
+          logger.debug("created Service Account");
+
+          // let vatPercentage = null;
+
+          // if (!department.legalinformation.noVatRequired) {
+          //   vatPercentage = department.legalinformation.vatPercentage;
+          // }
 
           await models.BoughtPlan.update(
             { stripeplan: subscription.id },
@@ -433,7 +441,21 @@ export default {
           link: "marketplace",
           changed: []
         });
+
         logger.error(err);
+
+        if (subscription && subscription.id) {
+          const {
+            stripesubscriptionid,
+            stripeinvoiceid
+          } = await models.Bill.findOne({
+            where: { unitid: company, stripesubscriptionid: subscription.id },
+            raw: true
+          });
+
+          await abortSubscription(stripesubscriptionid, stripeinvoiceid);
+        }
+
         throw new BillingError({
           message: err.message,
           internalData: { err, planid, features, price, planinputs, unitid }
@@ -856,15 +878,11 @@ export default {
   ),
 
   setBoughtPlanAlias: requiresRights(["edit-boughtplan"]).createResolver(
-    async (parent, { alias, boughtplanid }, { models, token }) => {
+    async (parent, { alias, boughtplanid }, { models }) => {
       try {
         const bill = await models.BoughtPlan.update(
-          {
-            alias
-          },
-          {
-            where: { id: boughtplanid }
-          }
+          { alias },
+          { where: { id: boughtplanid } }
         );
 
         return { ok: true };

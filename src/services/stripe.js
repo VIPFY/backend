@@ -134,7 +134,7 @@ export const addCard = async (id, source) => {
  * @param items: object[] items should contain an array of plans the customer gets
  * subscribed to.
  */
-export const createSubscription = async (customer, items, tax) => {
+export const createSubscription = async (customer, items) => {
   try {
     const nextMonth = moment()
       .add(1, "months")
@@ -144,8 +144,8 @@ export const createSubscription = async (customer, items, tax) => {
     const res = await stripe.subscriptions.create({
       customer,
       items,
-      billing_cycle_anchor: nextMonth,
-      tax_percent: tax
+      billing_cycle_anchor: nextMonth
+      // tax_percent: tax
     });
 
     return res;
@@ -154,8 +154,11 @@ export const createSubscription = async (customer, items, tax) => {
   }
 };
 /**
+ * Cancels a running subscription at the end of it's lifecycle. Case is if the
+ * customer doesn't want to use the product anymore
+ *
  * @exports
- * @param {string} id The id of the plan
+ * @param {string} id The id of the subscription
  *
  *  @returns {object}
  */
@@ -166,6 +169,26 @@ export const cancelSubscription = async id => {
     });
 
     return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * Directly aborts the subscription and refunds the customer
+ * @exports
+ * @param {string} subscriptionId The id of the subscription
+ * @param {string} invoiceId The id of the invoice to refund
+ *
+ *  @returns {object}
+ */
+export const abortSubscription = async (subscriptionId, invoiceId) => {
+  try {
+    const abort = await stripe.subscriptions.del(subscriptionId);
+    const charge = await stripe.invoices.retrieve(invoiceId);
+    const refund = await stripe.refunds.create({ charge });
+
+    return { abort, charge, refund };
   } catch (err) {
     throw new Error(err.message);
   }
