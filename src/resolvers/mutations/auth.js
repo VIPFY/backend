@@ -101,20 +101,24 @@ export default {
 
         let zendeskdata = await axios({
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+          },
           data: JSON.stringify({
             organization: { name: `Company-${company.id}`, notes: companyName }
           }),
-          url: "https://vipfy.zendesk.com/api/v2/organizations.json",
-          auth: {
-            username: "nv@vipfy.store",
-            password: "XxLRMT2FTLhdLgTFkusC"
-          }
+          url: "https://vipfy.zendesk.com/api/v2/organizations.json"
         });
 
         await axios({
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+          },
           data: JSON.stringify({
             user: {
               name: `${name.firstname} ${
@@ -124,11 +128,11 @@ export default {
               organization: { name: company.id }
             }
           }),
-          url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json",
-          auth: {
+          url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
+          /*auth: {
             username: "nv@vipfy.store",
             password: "XxLRMT2FTLhdLgTFkusC"
-          }
+          }*/
         });
 
         const p3 = models.Right.create(
