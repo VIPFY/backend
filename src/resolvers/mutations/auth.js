@@ -108,7 +108,7 @@ export default {
           url: "https://vipfy.zendesk.com/api/v2/organizations.json",
           auth: {
             username: "nv@vipfy.store",
-            password: "VIPFY18!"
+            password: "XxLRMT2FTLhdLgTFkusC"
           }
         });
 
@@ -127,7 +127,7 @@ export default {
           url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json",
           auth: {
             username: "nv@vipfy.store",
-            password: "VIPFY18!"
+            password: "XxLRMT2FTLhdLgTFkusC"
           }
         });
 
