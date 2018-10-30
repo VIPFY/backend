@@ -99,6 +99,38 @@ export default {
         let company = await models.Unit.create({}, { transaction: ta });
         company = company.get();
 
+        let zendeskdata = await axios({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          data: JSON.stringify({
+            organization: { name: `Company-${company.id}`, notes: companyName }
+          }),
+          url: "https://vipfy.zendesk.com/api/v2/organizations.json",
+          auth: {
+            username: "nv@vipfy.store",
+            password: "VIPFY18!"
+          }
+        });
+
+        await axios({
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          data: JSON.stringify({
+            user: {
+              name: `${name.firstname} ${
+                name.middlename ? `${name.middlename} ` : ""
+              }${name.lastname}`,
+              email: email,
+              organization: { name: company.id }
+            }
+          }),
+          url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json",
+          auth: {
+            username: "nv@vipfy.store",
+            password: "VIPFY18!"
+          }
+        });
+
         const p3 = models.Right.create(
           { holder: unit.id, forunit: company.id, type: "admin" },
           { transaction: ta }
