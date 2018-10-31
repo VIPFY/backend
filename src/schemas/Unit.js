@@ -22,13 +22,10 @@ export const types = `
     emails: [Email]
     createdate: String
     company: Department
-    teams: Boolean
-    domains: Boolean
-    marketplace: Boolean
-    billing: Boolean
     statisticdata: JSON
     needspasswordchange: Boolean!
     firstlogin: Boolean!
+    isadmin: Boolean!
   }
 
   input NameInput {
