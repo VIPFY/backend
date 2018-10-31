@@ -328,7 +328,10 @@ export default {
           raw: true
         });
 
-        const [userdata, useremail] = Promise.all([puserdata, puseremail]);
+        const [userdata, useremail] = await Promise.all([
+          puserdata,
+          puseremail
+        ]);
 
         payload = {
           iat: new Date().getTime() / 1000,
