@@ -322,7 +322,7 @@ export default {
 
         //TODO Mehrere EmailAdressen
 
-        const puseremail = models.User.findOne({
+        const puseremail = models.Email.findOne({
           where: {
             id: unitid
           },
