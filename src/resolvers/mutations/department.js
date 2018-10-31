@@ -694,6 +694,8 @@ export default {
 
             await Promise.all([p1, p2]);
           }
+
+          return { ok: true };
         } catch (err) {
           throw new NormalError({
             message: err.message,

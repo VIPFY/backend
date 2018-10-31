@@ -6,7 +6,7 @@ import {
   checkAuthentification,
   getNewPasswordData
 } from "../../helpers/auth";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
   parentAdminCheck,
   createLog,
@@ -18,6 +18,7 @@ import { AuthError, NormalError } from "../../errors";
 import { MAX_PASSWORD_LENGTH } from "../../constants";
 import { sendEmail } from "../../helpers/email";
 import { randomPassword } from "../../helpers/passwordgen";
+import { checkCompanyMembership } from "../../helpers/companyMembership";
 
 export default {
   signUp: async (
@@ -516,5 +517,50 @@ export default {
       } catch (err) {
         throw new AuthError({ message: err.message, internalData: { err } });
       }
-    })
+    }),
+
+  forcePasswordChange: requiresRights(["view-security"]).createResolver(
+    async (parent, { userids }, { models, token, ip }) =>
+      models.sequelize.transaction(async transaction => {
+        try {
+          const {
+            user: { unitid, company }
+          } = await decode(token);
+
+          // check that user has rights
+          const checks = [];
+          for (const userid of userids) {
+            checks.push(
+              checkCompanyMembership(models, company, userid, "department")
+            );
+          }
+          await Promise.all(checks);
+
+          // execute
+          await models.Human.update(
+            { needspasswordchange: true },
+            {
+              where: { unitid: { [models.Op.in]: userids } },
+              transaction
+            }
+          );
+
+          // log (not logging new/old human objects because of GDPR, change is trivial anyway)
+          await createLog(
+            ip,
+            "forcePasswordChange",
+            { units: userids },
+            unitid,
+            transaction
+          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  )
 };

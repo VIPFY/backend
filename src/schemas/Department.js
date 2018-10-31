@@ -123,4 +123,7 @@ export const mutations = `
 
   # (un)makes user an admin of their company
   changeAdminStatus(unitid: ID!, admin: Boolean!): Response!
+
+  # force the given users to change their password on next login
+  forcePasswordChange(userids: [ID]!): Response!
 `;
