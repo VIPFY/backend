@@ -107,6 +107,8 @@ export const queries = `
   fetchUsersOwnLicences(unitid: Int!): [Licence]
 
   fetchUnitAppsSimpleStats(departmentid: Int!): [SimpleStats]
+
+  fetchSupportToken:String
 `;
 
 export const mutations = `
