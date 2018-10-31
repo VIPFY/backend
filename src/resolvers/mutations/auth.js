@@ -306,6 +306,7 @@ export default {
             where: { unitid },
             raw: true
           });
+
           if (!findOldPassword) throw new Error("No database entry found!");
 
           const valid = await bcrypt.compare(pw, findOldPassword.passwordhash);

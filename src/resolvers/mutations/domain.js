@@ -8,7 +8,12 @@ import {
   createLog,
   createNotification
 } from "../../helpers/functions";
-import { createSubscription, cancelSubscription } from "../../services/stripe";
+import {
+  createSubscription,
+  cancelSubscription,
+  abortSubscription,
+  reactivateSubscription
+} from "../../services/stripe";
 import { PartnerError, NormalError } from "../../errors";
 
 export default {
@@ -41,6 +46,7 @@ export default {
         const {
           user: { unitid, company }
         } = decode(token);
+        let subscription = null;
 
         try {
           const p1 = models.Domain.findOne({
@@ -76,7 +82,6 @@ export default {
 
           let register;
           let totalprice = findPrice.price;
-          let whoisprivacy = false;
           const additionalfeatures = {};
           const totalfeatures = {
             domain: domainData.domain,
@@ -84,13 +89,6 @@ export default {
           };
           let partnerLogs = {};
           domainData.renewalmode = "AUTORENEW";
-
-          if (domainData.whoisprivacy == 1) {
-            totalprice += 5;
-            whoisprivacy = true;
-            additionalfeatures.whoisprivacy = true;
-            totalfeatures.whoisprivacy = true;
-          }
 
           if (hasAccount) {
             const mergedData = {
@@ -186,13 +184,12 @@ export default {
               domainname: domainData.domain,
               renewalmode: "AUTORENEWAL",
               renewaldate,
-              unitid: company,
-              whoisprivacy
+              unitid: company
             },
             { transaction: ta }
           );
 
-          const subscription = await createSubscription(
+          subscription = await createSubscription(
             organization.payingoptions.stripe.id,
             [{ plan: findPrice.stripedata.id }]
           );
@@ -233,6 +230,10 @@ export default {
             changed: ["domains"]
           });
 
+          if (subscription && subscription.id) {
+            await abortSubscription(subscription.id);
+          }
+
           throw new PartnerError({
             message: err.message,
             internalData: {
@@ -251,12 +252,23 @@ export default {
           user: { unitid, company }
         } = decode(token);
 
+        const boughtPlan = await models.BoughtPlan.create(
+          {
+            planid: 106,
+            disabled: false,
+            buyer: unitid,
+            payer: company,
+            usedby: company
+          },
+          { transaction: ta }
+        );
+
         try {
           const domain = await models.Domain.create(
             {
               ...domainData,
               domainname: domainData.domain,
-              boughtplanid: 17,
+              boughtplanid: boughtPlan.id,
               external: true,
               accountid: "external",
               accountemail: "external@vipfy.com",
@@ -269,9 +281,7 @@ export default {
           const p1 = createLog(
             ip,
             "registerExternalDomain",
-            {
-              domain
-            },
+            { domain, boughtPlan },
             unitid,
             ta
           );
@@ -324,7 +334,6 @@ export default {
 
       try {
         const domain = await models.Domain.findById(id, { raw: true });
-        console.log(domain);
 
         await models.Domain.destroy({ where: { id } });
 
@@ -388,6 +397,7 @@ export default {
         const {
           user: { unitid, company }
         } = decode(token);
+        let cancelledDomain = null;
 
         try {
           const oldDomain = await models.Domain.findOne(
@@ -531,7 +541,7 @@ export default {
                 : "AUTORENEW";
 
             if (toUpdate.renewalmode == "AUTODELETE") {
-              const cancelledDomain = await cancelSubscription(
+              cancelledDomain = await cancelSubscription(
                 predecessor.stripeplan
               );
 
@@ -605,6 +615,11 @@ export default {
             },
             ta
           );
+
+          if (cancelledDomain) {
+            await reactivateSubscription(cancelledDomain.id);
+          }
+
           throw new PartnerError({
             message: err.message,
             internalData: { err }

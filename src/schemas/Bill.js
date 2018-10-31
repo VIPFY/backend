@@ -4,8 +4,6 @@ export const types = `
     billtime: String!
     pdflink: String
     invoicelink: String
-    stripesubscriptionid: String!
-    stripeinvoiceid: String!
     paytime: String
     stornotime: String
     unitid: Unit!

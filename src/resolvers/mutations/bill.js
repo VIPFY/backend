@@ -273,20 +273,9 @@ export default {
 
           const plan = await models.Plan.findOne({
             where: { id: planid },
-            attributes: [
-              "price",
-              "id",
-              "appid",
-              "name",
-              "numlicences",
-              "enddate",
-              "stripedata",
-              "features",
-              "internaldescription"
-            ],
             raw: true
           });
-
+          console.log(plan);
           await checkPlanValidity(plan);
 
           const calculatedPrice = calculatePlanPrice(
@@ -442,19 +431,11 @@ export default {
           changed: []
         });
 
-        logger.error(err);
-
         if (subscription && subscription.id) {
-          const {
-            stripesubscriptionid,
-            stripeinvoiceid
-          } = await models.Bill.findOne({
-            where: { unitid: company, stripesubscriptionid: subscription.id },
-            raw: true
-          });
-
-          await abortSubscription(stripesubscriptionid, stripeinvoiceid);
+          await abortSubscription(subscription.id);
         }
+
+        logger.error(err);
 
         throw new BillingError({
           message: err.message,

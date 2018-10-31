@@ -57,20 +57,17 @@ export const refreshTokens = async (
     }
 
     const refreshSecret = user.passwordhash + SECRET_TWO;
-    await jwt.verify(refreshToken, refreshSecret);
 
+    await jwt.verify(refreshToken, refreshSecret);
     const [newToken, newRefreshToken] = await createTokens(
       user,
       SECRET,
       refreshSecret
     );
-    return {
-      token: newToken,
-      refreshToken: newRefreshToken
-    };
+    return [newToken, newRefreshToken];
   } catch (err) {
     console.log(err);
-    throw new Error(err);
+    throw new AuthError(err);
   }
 };
 

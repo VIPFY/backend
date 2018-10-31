@@ -607,13 +607,13 @@ export default {
           user: { unitid, company }
         } = decode(token);
         try {
-          const plan = await models.Plan.findOne({
+          const { id: planid } = await models.Plan.findOne({
             where: { appid, options: { external: true } },
             attributes: ["id"],
             raw: true
           });
 
-          if (!plan) {
+          if (!planid) {
             throw new Error(
               "This App is not integrated to handle external Accounts yet."
             );
@@ -621,7 +621,7 @@ export default {
 
           const boughtPlan = await models.BoughtPlan.create(
             {
-              planid: plan.id,
+              planid,
               disabled: false,
               buyer: unitid,
               payer: company,

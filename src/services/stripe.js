@@ -182,13 +182,11 @@ export const cancelSubscription = async id => {
  *
  *  @returns {object}
  */
-export const abortSubscription = async (subscriptionId, invoiceId) => {
+export const abortSubscription = async subscriptionId => {
   try {
     const abort = await stripe.subscriptions.del(subscriptionId);
-    const charge = await stripe.invoices.retrieve(invoiceId);
-    const refund = await stripe.refunds.create({ charge });
 
-    return { abort, charge, refund };
+    return { abort };
   } catch (err) {
     throw new Error(err.message);
   }

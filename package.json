@@ -31,7 +31,7 @@
     ]
   },
   "dependencies": {
-    "@google-cloud/logging-winston": "^0.9.0",
+    "@google-cloud/logging-winston": "^0.9.1",
     "@google-cloud/profiler": "^0.1.14",
     "@google-cloud/storage": "~1.6.0",
     "@google-cloud/trace-agent": "^2.11.0",
@@ -45,7 +45,7 @@
     "apollo-upload-server": "^5.0.0",
     "axios": "^0.18.0",
     "babel-runtime": "^6.26.0",
-    "bcrypt": "^3.0.0",
+    "bcrypt": "^3.0.2",
     "body-parser": "^1.18.3",
     "cors": "^2.8.4",
     "crypto-random-string": "^1.0.0",

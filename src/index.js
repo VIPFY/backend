@@ -210,16 +210,14 @@ if (ENVIRONMENT != "testing") {
               return { models, token };
             } catch (err) {
               if (err.name == "TokenExpiredError") {
-                console.log("Token expired in Subscription");
                 const newTokens = await refreshTokens(
                   refreshToken,
                   models,
                   SECRET,
                   SECRET_TWO
                 );
-                console.log(newTokens);
 
-                return { models, token: newTokens.token };
+                return { models, ...newTokens };
               } else {
                 throw new AuthError({
                   message: err.message,
