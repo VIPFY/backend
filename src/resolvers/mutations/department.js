@@ -665,31 +665,41 @@ export default {
     }),
 
   changeAdminStatus: requiresRights(["edit-rights"]).createResolver(
-   async (parent, { unitid, admin }, { models, token, ip }) =>
-    models.sequelize.transaction(async transaction => {
-      try {
-        const {
-          user: { unitid: requester, company }
-        } = decode(token);
+    async (parent, { unitid, admin }, { models, token, ip }) =>
+      models.sequelize.transaction(async transaction => {
+        try {
+          const {
+            user: { unitid: requester, company }
+          } = decode(token);
 
-        const data = {
-          holder: unitid,
-          forunit: company,
-          type: "admin"
-        };
-        if (admin) {
-          const p1 = await models.Right.create(data, { transaction });
-          const p2 = await createLog(ip, "adminAdd", {}, requester, transaction);
-          
-          await Promise.all([p1, p2]);
-        } else {
-          const p1 = models.Right.destroy({ where: data, transaction });
-          const p2 = createLog(ip, "adminRemove", {}, requester, transaction);
-          
-          await Promise.all([p1, p2]);
+          const data = {
+            holder: unitid,
+            forunit: company,
+            type: "admin"
+          };
+          if (admin) {
+            const p1 = await models.Right.create(data, { transaction });
+            const p2 = await createLog(
+              ip,
+              "adminAdd",
+              {},
+              requester,
+              transaction
+            );
+
+            await Promise.all([p1, p2]);
+          } else {
+            const p1 = models.Right.destroy({ where: data, transaction });
+            const p2 = createLog(ip, "adminRemove", {}, requester, transaction);
+
+            await Promise.all([p1, p2]);
+          }
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    })
+      })
+  )
 };
