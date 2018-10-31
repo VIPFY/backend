@@ -310,7 +310,9 @@ export default {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = await decode(token);
+
+        logger.info("Info", user, token);
 
         const puserdata = models.User.findOne({
           where: {
@@ -333,12 +335,16 @@ export default {
           puseremail
         ]);
 
+        logger.info("Promises", userdata, useremail);
+
         const payload = {
           iat: new Date().getTime() / 1000,
           jti: uuid.v4(),
           name: `${userdata.firstname} ${userdata.lastname}`,
           email: useremail.email
         };
+
+        logger.info("payload", payload);
 
         const token = sign(
           payload,
