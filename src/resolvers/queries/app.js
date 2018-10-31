@@ -324,7 +324,7 @@ export default {
 
         const puseremail = models.Email.findOne({
           where: {
-            id: unitid
+            unitid: unitid
           },
           raw: true
         });
