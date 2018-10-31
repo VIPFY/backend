@@ -5,6 +5,7 @@ import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import uuid from "uuid";
+import logger from "../../loggers";
 
 export default {
   allApps: requiresRights(["view-apps"]).createResolver(
@@ -310,9 +311,9 @@ export default {
       try {
         const {
           user: { unitid }
-        } = await decode(token);
+        } = decode(token);
 
-        logger.info("Info", user, token);
+        logger.info("Info", { user, token });
 
         const puserdata = models.User.findOne({
           where: {
@@ -335,7 +336,7 @@ export default {
           puseremail
         ]);
 
-        logger.info("Promises", userdata, useremail);
+        logger.info("Promises", { userdata, useremail });
 
         const payload = {
           iat: new Date().getTime() / 1000,
@@ -346,12 +347,12 @@ export default {
 
         logger.info("payload", payload);
 
-        const token = sign(
+        const token1 = sign(
           payload,
           "k29s4aV67MB6oWwPQzW8vjmveuOpZmLkDbA2Cl7R1NxV2Wk4"
         );
 
-        return token;
+        return token1;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
