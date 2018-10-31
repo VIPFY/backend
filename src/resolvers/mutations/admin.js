@@ -187,8 +187,8 @@ export default {
 
         if (files) {
           // eslint-disable-next-line
-          const imagesToUpload = files.map(
-            async fi => await uploadFile(fi, app.name)
+          const imagesToUpload = files.map(async fi =>
+            uploadFile(fi, app.name)
           );
           const images = await Promise.all(imagesToUpload);
           app.images = images;
