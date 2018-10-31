@@ -333,14 +333,14 @@ export default {
           puseremail
         ]);
 
-        payload = {
+        const payload = {
           iat: new Date().getTime() / 1000,
           jti: uuid.v4(),
           name: `${userdata.firstname} ${userdata.lastname}`,
           email: useremail.email
         };
 
-        token = sign(
+        const token = sign(
           payload,
           "k29s4aV67MB6oWwPQzW8vjmveuOpZmLkDbA2Cl7R1NxV2Wk4"
         );
