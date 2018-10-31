@@ -2,11 +2,14 @@ export const types = `
   type Bill {
     id: Int!
     billtime: String!
-    pdflink: String
-    invoicelink: String
+    pdflink: String!
+    invoicelink: String!
     paytime: String
     stornotime: String
     unitid: Unit!
+    amount: String!
+    currency: String!
+    refundedtime: String
   }
 
   type BillPosition {
