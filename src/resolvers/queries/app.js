@@ -307,13 +307,11 @@ export default {
   ),
 
   fetchSupportToken: requiresAuth.createResolver(
-    async (parent, { licenceid }, { models, token }, info) => {
+    async (parent, { licenceid }, { models, token }) => {
       try {
         const {
           user: { unitid }
         } = decode(token);
-
-        logger.info("Info", { user, token });
 
         const puserdata = models.User.findOne({
           where: {
@@ -336,8 +334,6 @@ export default {
           puseremail
         ]);
 
-        logger.info("Promises", { userdata, useremail });
-
         const payload = {
           iat: new Date().getTime() / 1000,
           jti: uuid.v4(),
@@ -345,14 +341,12 @@ export default {
           email: useremail.email
         };
 
-        logger.info("payload", payload);
-
-        const token1 = sign(
+        const supportToken = sign(
           payload,
           "k29s4aV67MB6oWwPQzW8vjmveuOpZmLkDbA2Cl7R1NxV2Wk4"
         );
 
-        return token1;
+        return supportToken;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
