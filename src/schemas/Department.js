@@ -120,4 +120,7 @@ export const mutations = `
 
   # Saves data we fetched in the Business Advisor
   saveProposalData(data: ProposalInput!): Response!
+
+  # (un)makes user an admin of their company
+  changeAdminStatus(unitid: ID!, admin: Boolean!): Response!
 `;

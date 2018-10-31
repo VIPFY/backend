@@ -662,5 +662,38 @@ export default {
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
+    }),
+
+  changeAdminStatus: requiresRights(["edit-rights"]).createResolver(
+   async (parent, { unitid, admin }, { models, token, ip }) =>
+    models.sequelize.transaction(async transaction => {
+      try {
+        const {
+          user: { unitid: requester, company }
+        } = decode(token);
+
+        const data = {
+          holder: unitid,
+          forunit: company,
+          type: "admin"
+        };
+        if (admin) {
+          await models.Right.create(data, { transaction });
+          await createLog(ip, "adminAdd", {}, requester, transaction);
+        } else {
+          const p1 = models.Right.destroy({ where: data, transaction });
+
+          // create default rights
+          const p2 = models.Right.create(
+            { ...data, type: "view-apps" },
+            { transaction }
+          );
+
+          const p3 = createLog(ip, "adminRemove", {}, requester, transaction);
+          await Promise.all([p1, p2, p3]);
+        }
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     })
 };
