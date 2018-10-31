@@ -1,9 +1,10 @@
-import { decode } from "jsonwebtoken";
+import { decode, sign } from "jsonwebtoken";
 // import { getLoginData } from "@vipfy-private/weebly";
 import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
+import uuid from "uuid";
 
 export default {
   allApps: requiresRights(["view-apps"]).createResolver(
@@ -298,6 +299,50 @@ export default {
           .spread(res => res);
 
         return userApps;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchSupportToken: requiresAuth.createResolver(
+    async (parent, { licenceid }, { models, token }, info) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        const puserdata = models.User.findOne({
+          where: {
+            id: unitid
+          },
+          raw: true
+        });
+
+        //TODO Mehrere EmailAdressen
+
+        const puseremail = models.User.findOne({
+          where: {
+            unitid: unitid
+          },
+          raw: true
+        });
+
+        const [userdata, useremail] = Promise.all([puserdata, puseremail]);
+
+        payload = {
+          iat: new Date().getTime() / 1000,
+          jti: uuid.v4(),
+          name: `${userdata.firstname} ${userdata.lastname}`,
+          email: useremail.email
+        };
+
+        token = sign(
+          payload,
+          "k29s4aV67MB6oWwPQzW8vjmveuOpZmLkDbA2Cl7R1NxV2Wk4"
+        );
+
+        return token;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

@@ -112,7 +112,7 @@ export default {
           url: "https://vipfy.zendesk.com/api/v2/organizations.json"
         });
 
-        await axios({
+        let zenuserdata = await axios({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -121,11 +121,11 @@ export default {
           },
           data: JSON.stringify({
             user: {
-              name: `${name.firstname} ${
-                name.middlename ? `${name.middlename} ` : ""
-              }${name.lastname}`,
-              email: email,
-              organization: { name: company.id }
+              name: `${name.firstname} ${name.lastname}`,
+              email: email, //TODO Mehrere Email-Adressen
+              verified: true,
+              organization: { name: `Company-${company.id}` },
+              external_id: `User-${user.id}`
             }
           }),
           url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
@@ -222,6 +222,34 @@ export default {
           { verified: true },
           { where: { email }, raw: true, transaction: ta }
         );
+
+        let supportUserArray = await axios({
+          method: "GET",
+          url: `https://vipfy.zendesk.com/api/v2/users/show_many.json?external_ids=User-${
+            user.unitid
+          }`,
+          headers: {
+            Authorization:
+              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+          }
+        });
+
+        logger.info("supportUserArray", supportUserArray);
+
+        let zendeskdata = await axios({
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+          },
+          data: JSON.stringify({
+            password: "newpassword"
+          }),
+          url: `https://vipfy.zendesk.com/api/v2/users/${
+            supportUserArray.users[0].user_id
+          }/password.json`
+        });
 
         const p5 = createLog(
           ip,
