@@ -55,15 +55,15 @@ export const refreshTokens = async (
     if (!user) {
       throw new Error("User not found!");
     }
-
     const refreshSecret = user.passwordhash + SECRET_TWO;
-
     await jwt.verify(refreshToken, refreshSecret);
+
     const [newToken, newRefreshToken] = await createTokens(
       user,
       SECRET,
       refreshSecret
     );
+
     return [newToken, newRefreshToken];
   } catch (err) {
     console.log(err);

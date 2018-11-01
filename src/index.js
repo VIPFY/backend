@@ -207,17 +207,21 @@ if (ENVIRONMENT != "testing") {
             try {
               jwt.verify(token, SECRET);
 
-              return { models, token };
+              return { models, token, refreshToken };
             } catch (err) {
               if (err.name == "TokenExpiredError") {
-                const newTokens = await refreshTokens(
+                const [newToken, newRefreshToken] = await refreshTokens(
                   refreshToken,
                   models,
                   SECRET,
                   SECRET_TWO
                 );
 
-                return { models, ...newTokens };
+                return {
+                  models,
+                  token: newToken,
+                  refreshToken: newRefreshToken
+                };
               } else {
                 throw new AuthError({
                   message: err.message,
