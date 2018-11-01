@@ -116,5 +116,6 @@ export default {
   SimpleStats: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
   User: find({ company: "Department", emails: "[Email]" }),
+  UserSecurityOverview: find({ unitid: "User" }),
   Website: find({})
 };

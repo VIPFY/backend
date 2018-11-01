@@ -58,6 +58,7 @@ export const types = `
     birthday: Date
     language: String
     profilepicture: String
+    isadmin: Boolean!
   }
 `;
 
