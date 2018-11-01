@@ -14,6 +14,7 @@ export const types = `
   type Department {
     name: String!
     legalinformation: JSON
+    promocode: String
     unitid: Unit!
     banned: Boolean!
     deleted: Boolean!

@@ -126,6 +126,23 @@ export const addCard = async (id, source) => {
 };
 
 /**
+ *  Fetches a subscription.
+ *
+ * @param {string} id Id of the subscription at Stripe
+ *
+ * @returns {object}
+ */
+const fetchSubscription = async id => {
+  try {
+    const res = await stripe.subscriptions.retrieve(id);
+
+    return res;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
  * Creates a subscription for a customer in Stripe
  * @exports
  *
@@ -141,10 +158,15 @@ export const createSubscription = async (customer, items) => {
       .startOf("month")
       .unix();
 
+    // const inTenMinutes = moment()
+    //   .add(10, "minutes")
+    //   .unix();
+
     const res = await stripe.subscriptions.create({
       customer,
       items,
       billing_cycle_anchor: nextMonth
+      // trial_end: inTenMinutes
       // tax_percent: tax
     });
 
@@ -202,11 +224,11 @@ export const abortSubscription = async subscriptionId => {
  *
  * @returns {object}
  */
-export const updateSubscription = async (id, plan) => {
+export const updateSubscription = async (id, items) => {
   try {
     const res = await stripe.subscriptions.update(id, {
       cancel_at_period_end: false,
-      items: [{ plan }]
+      items
     });
 
     return res;
@@ -214,6 +236,72 @@ export const updateSubscription = async (id, plan) => {
     throw new Error(err.message);
   }
 };
+
+/**
+ * Adds an item to the customers subscription
+ *
+ * @exports
+ * @param {string} subscription The id of the Subscription at Stripe
+ * @param {string} plan The Stripe Plan
+ *
+ * @returns {object}
+ */
+export const addSubscriptionItem = async (subscription, plan) => {
+  try {
+    const res = await stripe.subscriptionItems.create({
+      subscription,
+      plan
+    });
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * Removes an item from the customers subscription
+ *
+ * @exports
+ * @param {string} item The subscription item
+ *
+ * @returns {object}
+ */
+export const removeSubscriptionItem = async (item, subscriptionId) => {
+  try {
+    const lastItem = await fetchSubscription(subscriptionId);
+    let res;
+
+    if (lastItem.items.data.length < 2) {
+      res = await cancelSubscription(subscriptionId);
+    } else {
+      res = await stripe.subscriptionItems.del(item);
+    }
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * Updates a subscription at Stripe
+ *
+ * @exports
+ * @param {string} item The subscription item
+ * @param {string} plan The id of the plan at Stripe
+ *
+ * @exports {object}
+ */
+export const updateSubscriptionItem = async (item, plan) => {
+  try {
+    const res = await stripe.subscriptionItems.update(item, { plan });
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
 /**
  * Reactivates a Subscription at Stripe
  *

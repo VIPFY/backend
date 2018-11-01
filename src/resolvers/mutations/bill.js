@@ -15,11 +15,10 @@ import {
   listCards,
   addCard,
   createSubscription,
-  cancelSubscription,
-  updateSubscription,
-  changeDefaultCard,
-  reactivateSubscription,
-  abortSubscription
+  addSubscriptionItem,
+  updateSubscriptionItem,
+  removeSubscriptionItem,
+  changeDefaultCard
 } from "../../services/stripe";
 import { BillingError, NormalError } from "../../errors";
 import logger from "../../loggers";
@@ -275,7 +274,7 @@ export default {
             where: { id: planid },
             raw: true
           });
-          console.log(plan);
+
           await checkPlanValidity(plan);
 
           const calculatedPrice = calculatePlanPrice(
@@ -358,10 +357,27 @@ export default {
           partnerLogs.licences = newLicences;
           logger.debug(`created ${mergedFeatures.users} licences`);
 
-          subscription = await createSubscription(
-            department.payingoptions.stripe.id,
-            stripePlans
-          );
+          if (department.payingoptions.stripe.subscription) {
+            subscription = await addSubscriptionItem(
+              department.payingoptions.stripe.subscription,
+              plan.stripedata.id
+            );
+
+            await models.Department.update({
+              payingoptions: {
+                ...department.payingoptions,
+                stripe: {
+                  ...department.payingoptions.stripe,
+                  subscription: subscription.subscription
+                }
+              }
+            });
+          } else {
+            subscription = await createSubscription(
+              department.payingoptions.stripe.id,
+              stripePlans
+            );
+          }
 
           await sleep(500);
 
@@ -385,8 +401,14 @@ export default {
           //   vatPercentage = department.legalinformation.vatPercentage;
           // }
 
+          let stripeplan = subscription.id;
+
+          if (subscription.object == "subscription") {
+            stripeplan = subscription.items.data[0].id;
+          }
+
           await models.BoughtPlan.update(
-            { stripeplan: subscription.id },
+            { stripeplan },
             { where: { id: boughtPlan.id }, transaction: ta }
           );
 
@@ -396,7 +418,7 @@ export default {
               message: "Buying plan successful",
               icon: "shopping-cart",
               link: "team",
-              changed: ["foreignLicences"]
+              changed: ["foreignLicences", "invoices"]
             },
             ta
           );
@@ -432,7 +454,7 @@ export default {
         });
 
         if (subscription && subscription.id) {
-          await abortSubscription(subscription.id);
+          await removeSubscriptionItem(subscription.id);
         }
 
         logger.error(err);
@@ -465,7 +487,17 @@ export default {
             transaction: ta
           });
 
-          const [cancelledBoughtPlan, licences] = await Promise.all([p1, p2]);
+          const p3 = models.Department.findOne({
+            where: { unitid: company },
+            raw: true,
+            attributes: ["payingoptions"]
+          });
+
+          const [
+            cancelledBoughtPlan,
+            licences,
+            { payingoptions }
+          ] = await Promise.all([p1, p2, p3]);
 
           const { appid } = await models.Plan.findOne({
             where: { id: cancelledBoughtPlan.planid },
@@ -488,11 +520,12 @@ export default {
             ta
           );
 
-          const cancelledSubscription = await cancelSubscription(
-            cancelledBoughtPlan.stripeplan
+          const cancelledSubscription = await removeSubscriptionItem(
+            cancelledBoughtPlan.stripeplan,
+            payingoptions.stripe.subscription
           );
 
-          const p3 = models.BoughtPlan.update(
+          const p4 = models.BoughtPlan.update(
             {
               endtime: new Date(cancelledSubscription.current_period_end * 1000)
             },
@@ -503,12 +536,12 @@ export default {
             }
           );
 
-          const p4 = models.Licence.destroy(
+          const p5 = models.Licence.destroy(
             { where: { id: cancelledBoughtPlan.id } },
             { transaction: ta }
           );
 
-          const p5 = createLog(
+          const p6 = createLog(
             ip,
             "cancelPlan",
             {
@@ -520,7 +553,7 @@ export default {
             ta
           );
 
-          const promises = await Promise.all([p3, p4, p5]);
+          const promises = await Promise.all([p4, p5, p6]);
           return promises[0][1][0];
         } catch (err) {
           throw new BillingError({
@@ -653,7 +686,7 @@ export default {
           ta
         );
 
-        const updatedSubscription = updateSubscription(
+        const updatedSubscription = updateSubscriptionItem(
           oldBoughtPlan.stripeplan,
           plan.stripedata.id
         );
@@ -686,10 +719,17 @@ export default {
             user: { unitid, company }
           } = decode(token);
 
-          const boughtPlan = await models.BoughtPlan.findOne({
+          const p1 = models.BoughtPlan.findOne({
             where: { id: planid, payer: company },
             raw: true
           });
+
+          const p2 = models.Department.findOne({
+            where: { unitid: company },
+            raw: true
+          });
+
+          const [boughtPlan, department] = await Promise.all([p1, p2]);
 
           const plan = await models.Plan.findOne({
             where: { id: boughtPlan.planid },
@@ -723,8 +763,9 @@ export default {
             ta
           );
 
-          const reactivatedSubscription = await reactivateSubscription(
-            boughtPlan.stripeplan
+          const reactivatedSubscription = await addSubscriptionItem(
+            department.payingoptions.stripe.subscription,
+            plan.stripedata.id
           );
 
           const updatedBoughtPlan = await models.BoughtPlan.update(
@@ -830,33 +871,6 @@ export default {
       })
   ),
   */
-
-  // TODO: Add logging when changed
-  downloadBill: requiresRights(["view-paymentdata"]).createResolver(
-    async (parent, { billid }, { models, token }) => {
-      try {
-        const {
-          user: { company: unitid }
-        } = await decode(token);
-        const bill = await models.Bill.findOne({
-          where: { unitid, id: billid },
-          attributes: ["billname", "billtime"]
-        });
-
-        if (!bill) {
-          throw new BillingError("Couldn't find invoice!");
-        }
-        const name = bill.get("billname");
-        const time = bill.get("billtime");
-
-        const downloadLink = await invoiceLink(name, time);
-
-        return downloadLink;
-      } catch (err) {
-        throw new BillingError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
 
   setBoughtPlanAlias: requiresRights(["edit-boughtplan"]).createResolver(
     async (parent, { alias, boughtplanid }, { models }) => {

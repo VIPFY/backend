@@ -10,8 +10,9 @@ import {
 } from "../../helpers/functions";
 import {
   createSubscription,
+  addSubscriptionItem,
   cancelSubscription,
-  abortSubscription,
+  removeSubscriptionItem,
   reactivateSubscription
 } from "../../services/stripe";
 import { PartnerError, NormalError } from "../../errors";
@@ -71,11 +72,13 @@ export default {
             p3
           ]);
 
+          const { payingoptions } = organization;
+
           if (
-            !organization.payingoptions ||
-            !organization.payingoptions.stripe ||
-            !organization.payingoptions.stripe.cards ||
-            organization.payingoptions.stripe.cards.length < 1
+            !payingoptions ||
+            !payingoptions.stripe ||
+            !payingoptions.stripe.cards ||
+            payingoptions.stripe.cards.length < 1
           ) {
             throw new Error("Missing payment information!");
           }
@@ -189,10 +192,26 @@ export default {
             { transaction: ta }
           );
 
-          subscription = await createSubscription(
-            organization.payingoptions.stripe.id,
-            [{ plan: findPrice.stripedata.id }]
-          );
+          if (payingoptions.stripe.subscription) {
+            subscription = await addSubscriptionItem(
+              payingoptions.stripe.subscription,
+              findPrice.stripedata.id
+            );
+
+            await models.Department.update({
+              payingoptions: {
+                ...payingoptions,
+                stripe: {
+                  ...payingoptions.stripe,
+                  subscription: subscription.subscription
+                }
+              }
+            });
+          } else {
+            subscription = await createSubscription(payingoptions.stripe.id, [
+              { plan: findPrice.stripedata.id }
+            ]);
+          }
 
           const p4 = createLog(
             ip,
@@ -231,7 +250,7 @@ export default {
           });
 
           if (subscription && subscription.id) {
-            await abortSubscription(subscription.id);
+            await removeSubscriptionItem(subscription.id);
           }
 
           throw new PartnerError({
@@ -496,10 +515,7 @@ export default {
             }
 
             const bpOld = models.BoughtPlan.update(
-              {
-                endtime,
-                planid: 25
-              },
+              { endtime, planid: 25 },
               {
                 where: {
                   id: predecessor.id

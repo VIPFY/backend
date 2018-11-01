@@ -19,23 +19,25 @@ import { MAX_PASSWORD_LENGTH } from "../../constants";
 import { sendEmail } from "../../helpers/email";
 import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
+import { sleep } from "@vipfy-private/service-base";
 
 export default {
   signUp: async (
     parent,
-    { email, name, companyData },
+    { email, name, companyData, promocode },
     { models, SECRET, SECRET_TWO, ip }
   ) =>
     models.sequelize.transaction(async ta => {
       try {
         // Check whether the email is already in use
         const emailInUse = await models.Email.findOne({
-          where: { email }
+          where: { email },
+          raw: true
         });
+
         if (emailInUse) {
           throw new Error("Email already in use!");
         }
-
         // generate a new random password
         const password = await randomPassword(3, 2);
         const pwData = await getNewPasswordData(password);
@@ -113,7 +115,7 @@ export default {
           url: "https://vipfy.zendesk.com/api/v2/organizations.json"
         });
 
-        let zenuserdata = await axios({
+        await axios({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -123,17 +125,17 @@ export default {
           data: JSON.stringify({
             user: {
               name: `${name.firstname} ${name.lastname}`,
-              email: email, //TODO Mehrere Email-Adressen
+              email, //TODO Mehrere Email-Adressen
               verified: true,
-              organization: { name: `Company-${company.id}` },
+              organization_id: zendeskdata.data.organization.id,
               external_id: `User-${user.id}`
             }
           }),
           url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
-          /*auth: {
-            username: "nv@vipfy.store",
-            password: "XxLRMT2FTLhdLgTFkusC"
-          }*/
+          // /*auth: {
+          //   username: "nv@vipfy.store",
+          //   password: "XxLRMT2FTLhdLgTFkusC"
+          // }*/
         });
 
         const p3 = models.Right.create(
@@ -184,7 +186,8 @@ export default {
 
         return { ok: true, token, refreshToken };
       } catch (err) {
-        throw new AuthError({ message: err.message, internalData: { err } });
+        console.log(err);
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }),
 
