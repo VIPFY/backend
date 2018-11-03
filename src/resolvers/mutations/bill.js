@@ -18,7 +18,8 @@ import {
   addSubscriptionItem,
   updateSubscriptionItem,
   removeSubscriptionItem,
-  changeDefaultCard
+  changeDefaultCard,
+  updateBillingEmails
 } from "../../services/stripe";
 import { BillingError, NormalError } from "../../errors";
 import logger from "../../loggers";
@@ -564,152 +565,158 @@ export default {
       })
   ),
 
-  updatePlan: async (
-    parent,
-    { planid, features, price, planinputs },
-    { ip, models, token }
-  ) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { unitid, company }
-        } = decode(token);
-
-        const oldBoughtPlan = await models.BoughtPlan.findOne(
-          { where: { id: planid, payer: company } },
-          { raw: true, transaction: ta }
-        );
-
-        if (!oldBoughtPlan) {
-          throw new Error("Couldn't find Plan!");
-        }
-
-        const plan = await models.Plan.findOne(
-          { where: { id: oldBoughtPlan.planid } },
-          { raw: true, transaction: ta }
-        );
-
-        await checkPlanValidity(plan);
-
-        const calculatedPrice = calculatePlanPrice(
-          plan.price,
-          plan.features,
-          JSON.parse(JSON.stringify(features)) // hacky deep copy
-        );
-
-        logger.debug(
-          `calulated price: ${calculatedPrice}, supplied price: ${price}`
-        );
-
-        if (price != calculatedPrice) {
-          logger.error(
-            `calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`,
-            { planid, features, price, planinputs, unitid }
+  updatePlan: requiresRights(["edit-boughtplan"]).createResolver(
+    async (
+      parent,
+      { planid, features, price, planinputs },
+      { ip, models, token }
+    ) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+          console.log(planid, features, price, planinputs);
+          throw new Error("DEBUG");
+          const oldBoughtPlan = await models.BoughtPlan.findOne(
+            { where: { id: planid, payer: company } },
+            { raw: true, transaction: ta }
           );
-          throw new Error(
-            `Calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`
-          );
-        }
 
-        const mergedFeatures = plan.internaldescription;
-        // eslint-disable-next-line no-restricted-syntax
-
-        for (const fkey of Object.keys(features)) {
-          mergedFeatures[fkey] = features[fkey].value;
-        }
-
-        logger.debug("mergedFeatures", {
-          mergedFeatures,
-          features,
-          internaldescription: plan.internaldescription
-        });
-
-        const closedBoughtPlan = await models.BoughtPlan.update(
-          {
-            endtime: Date.now(),
-            disabled: true
-          },
-          {
-            transaction: ta,
-            where: {
-              payer: company,
-              id: planid,
-              returning: true
-            }
+          if (!oldBoughtPlan) {
+            throw new Error("Couldn't find Plan!");
           }
-        );
 
-        let newBoughtPlan = await models.BoughtPlan.create(
-          {
-            buyer: unitid,
-            payer: company,
-            usedby: company,
-            predecessor: oldBoughtPlan.id,
-            planid: plan.id,
-            disabled: false,
-            totalprice: calculatedPrice,
-            additionalfeatures: features,
-            totalfeatures: mergedFeatures,
-            planinputs,
-            stripeplan: oldBoughtPlan.stripeplan
-          },
-          { transaction: ta }
-        );
-        newBoughtPlan = newBoughtPlan.get();
-        console.log(newBoughtPlan);
-
-        const createLicences = [];
-
-        for (let i = 0; i < mergedFeatures.users; i++) {
-          createLicences.push(
-            models.Licence.create(
-              {
-                unitid: null,
-                boughtplanid: newBoughtPlan.id,
-                agreed: false,
-                disabled: false,
-                key: {}
-              },
-              { transaction: ta }
-            )
+          const plan = await models.Plan.findOne(
+            { where: { id: oldBoughtPlan.planid } },
+            { raw: true, transaction: ta }
           );
+
+          await checkPlanValidity(plan);
+
+          const calculatedPrice = calculatePlanPrice(
+            plan.price,
+            plan.features,
+            JSON.parse(JSON.stringify(features)) // hacky deep copy
+          );
+
+          logger.debug(
+            `calulated price: ${calculatedPrice}, supplied price: ${price}`
+          );
+
+          if (price != calculatedPrice) {
+            logger.error(
+              `calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`,
+              { planid, features, price, planinputs, unitid }
+            );
+            throw new Error(
+              `Calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`
+            );
+          }
+
+          const mergedFeatures = plan.internaldescription;
+          // eslint-disable-next-line no-restricted-syntax
+
+          for (const fkey of Object.keys(features)) {
+            mergedFeatures[fkey] = features[fkey].value;
+          }
+
+          logger.debug("mergedFeatures", {
+            mergedFeatures,
+            features,
+            internaldescription: plan.internaldescription
+          });
+
+          const closedBoughtPlan = await models.BoughtPlan.update(
+            {
+              endtime: Date.now(),
+              disabled: true
+            },
+            {
+              transaction: ta,
+              where: {
+                payer: company,
+                id: planid,
+                returning: true
+              }
+            }
+          );
+
+          let newBoughtPlan = await models.BoughtPlan.create(
+            {
+              buyer: unitid,
+              payer: company,
+              usedby: company,
+              predecessor: oldBoughtPlan.id,
+              planid: plan.id,
+              disabled: false,
+              totalprice: calculatedPrice,
+              additionalfeatures: features,
+              totalfeatures: mergedFeatures,
+              planinputs,
+              stripeplan: oldBoughtPlan.stripeplan
+            },
+            { transaction: ta }
+          );
+          newBoughtPlan = newBoughtPlan.get();
+          console.log(newBoughtPlan);
+
+          const createLicences = [];
+
+          for (let i = 0; i < mergedFeatures.users; i++) {
+            createLicences.push(
+              models.Licence.create(
+                {
+                  unitid: null,
+                  boughtplanid: newBoughtPlan.id,
+                  agreed: false,
+                  disabled: false,
+                  key: {}
+                },
+                { transaction: ta }
+              )
+            );
+          }
+
+          const newLicences = await Promise.all(createLicences);
+
+          await Services.changePlan(
+            models,
+            plan.appid,
+            oldBoughtPlan.id,
+            newBoughtPlan.id,
+            plan.id,
+            ta
+          );
+
+          const updatedSubscription = updateSubscriptionItem(
+            oldBoughtPlan.stripeplan,
+            plan.stripedata.id
+          );
+
+          await createLog(
+            ip,
+            "updatePlan",
+            {
+              oldBoughtPlan,
+              closedBoughtPlan: closedBoughtPlan[1][0],
+              newBoughtPlan,
+              newLicences,
+              updatedSubscription
+            },
+            unitid,
+            ta
+          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
-
-        const newLicences = await Promise.all(createLicences);
-
-        await Services.changePlan(
-          models,
-          plan.appid,
-          oldBoughtPlan.id,
-          newBoughtPlan.id,
-          plan.id,
-          ta
-        );
-
-        const updatedSubscription = updateSubscriptionItem(
-          oldBoughtPlan.stripeplan,
-          plan.stripedata.id
-        );
-
-        await createLog(
-          ip,
-          "updatePlan",
-          {
-            oldBoughtPlan,
-            closedBoughtPlan: closedBoughtPlan[1][0],
-            newBoughtPlan,
-            newLicences,
-            updatedSubscription
-          },
-          unitid,
-          ta
-        );
-
-        return { ok: true };
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }),
+      })
+  ),
 
   reactivatePlan: requiresRights(["edit-boughtplan"]).createResolver(
     async (parent, { planid }, { models, token, ip }) =>
@@ -885,5 +892,99 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  removeBillingEmail: requiresRights(["edit-billing"]).createResolver(
+    async (parent, { email }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        try {
+          const p1 = models.DepartmentEmail.findAll({
+            where: { tags: ["billing"], departmentid: company },
+            raw: true
+          });
+
+          const p2 = models.Department.findOne({
+            where: { unitid: company },
+            raw: true
+          });
+
+          const [billingEmails, department] = await Promise.all([p1, p2]);
+
+          if (billingEmails.length < 2) {
+            throw new Error("You need at least one billing Email");
+          }
+
+          const oldEmail = billingEmails.find(bill => bill.email == email);
+
+          if (!oldEmail) {
+            throw new Error(
+              "Couldn't find email in database or email is not a billing email"
+            );
+          }
+
+          const tags = oldEmail.tags.filter(tag => tag != "billing");
+
+          const removedEmail = await models.Email.update(
+            { tags },
+            {
+              where: { email },
+              returning: true,
+              transaction: ta
+            }
+          );
+
+          const stripeEmails = billingEmails.filter(
+            bill => bill.email != email
+          );
+
+          const res = await updateBillingEmails(
+            department.payingoptions.stripe.id,
+            stripeEmails
+          );
+
+          const p3 = createLog(
+            ip,
+            "createEmail",
+            { removedEmail, res },
+            unitid,
+            ta
+          );
+
+          const p4 = createNotification(
+            {
+              receiver: unitid,
+              message: "Removed Billing Email",
+              icon: "envelope",
+              link: "billing",
+              changed: ["billingEmails"]
+            },
+            ta
+          );
+
+          await Promise.all([p3, p4]);
+
+          return { ok: true };
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Removing of Billing Email failed",
+              icon: "bug",
+              link: "billing",
+              changed: ["billingEmails"]
+            },
+            ""
+          );
+
+          throw new BillingError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };

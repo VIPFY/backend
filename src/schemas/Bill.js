@@ -179,4 +179,5 @@ export const mutations = `
   addBillPos(bill: BillInput!, billid: Int): Response!
   downloadBill(billid: Int!): String!
   changeDefaultMethod(card: String!): Response!
+  removeBillingEmail(email: String!): Response!
 `;

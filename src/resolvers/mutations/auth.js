@@ -132,10 +132,6 @@ export default {
             }
           }),
           url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
-          // /*auth: {
-          //   username: "nv@vipfy.store",
-          //   password: "XxLRMT2FTLhdLgTFkusC"
-          // }*/
         });
 
         const p3 = models.Right.create(
@@ -144,7 +140,12 @@ export default {
         );
 
         const p4 = models.DepartmentData.create(
-          { unitid: company.id, name: companyName, legalinformation },
+          {
+            unitid: company.id,
+            name: companyName,
+            legalinformation,
+            promocode
+          },
           { transaction: ta }
         );
 

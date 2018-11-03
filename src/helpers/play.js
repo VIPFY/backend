@@ -1,5 +1,7 @@
 import axios from "axios";
 import crypto from "crypto";
+import models from "@vipfy-private/sequelize-setup";
+import { formatHumanName } from "./functions";
 // import weeblyApi from "../services/weebly";
 //
 // async function testWeebly() {
@@ -120,67 +122,107 @@ import crypto from "crypto";
 //   }
 // })();
 
+// (async () => {
+//   try {
+//     const password = crypto.randomBytes(15).toString("hex");
+//     const email = `${password}@vipfy.store`;
+//     console.log({ email, password });
+
+//     const headers = {
+//       Host: "my.freshbooks.com",
+//       "User-Agent":
+//         "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:62.0) Gecko/20100101 Firefox/62.0",
+//       Accept: "application/json, text/javascript, */*; q=0.01",
+//       "Accept-Language": "en-US,en;q=0.5",
+//       "Accept-Encoding": "gzip, deflate, br",
+//       Referer: "https://my.freshbooks.com/",
+//       "Content-Type": "application/json; charset=utf-8",
+//       Authorization: "Bearer undefined",
+//       "X-Requested-With": "XMLHttpRequest"
+//     };
+
+//     const data = {
+//       id: "info@vipfy.com",
+//       company_name: null,
+//       email,
+//       password,
+//       country: "United States",
+//       currencyCode: "USD",
+//       access_token: null,
+//       direct_buy: false,
+//       skip_system: false,
+//       skip_business: false,
+//       send_confirmation_notification: true,
+//       capacity: null,
+//       provisioner: "magnum",
+//       referring_url: null,
+//       landing_url: "https://www.vipfy.store/",
+//       referralid: null,
+//       web_promo: null,
+//       visitor_id: null,
+//       optimizely_user_id: null,
+//       optimizely_buckets: null
+//     };
+
+//     const config = {
+//       method: "POST",
+//       baseURL: "https://my.freshbooks.com/service/auth/api/v1",
+//       url: "smux/registrations",
+//       headers,
+//       data
+//     };
+
+//     const createAcc = await axios(config);
+
+//     console.log(createAcc.data.response);
+//     if (
+//       !createAcc.data.response ||
+//       !createAcc.data.response.access_token ||
+//       createAcc.data.response.access_token == null
+//     ) {
+//       throw new Error("Botting failed!");
+//     }
+//   } catch (error) {
+//     console.log(error);
+//   }
+// })();
+
 (async () => {
-  try {
-    const password = crypto.randomBytes(15).toString("hex");
-    const email = `${password}@vipfy.store`;
-    console.log({ email, password });
-
-    const headers = {
-      Host: "my.freshbooks.com",
-      "User-Agent":
-        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:62.0) Gecko/20100101 Firefox/62.0",
-      Accept: "application/json, text/javascript, */*; q=0.01",
-      "Accept-Language": "en-US,en;q=0.5",
-      "Accept-Encoding": "gzip, deflate, br",
-      Referer: "https://my.freshbooks.com/",
-      "Content-Type": "application/json; charset=utf-8",
-      Authorization: "Bearer undefined",
-      "X-Requested-With": "XMLHttpRequest"
-    };
-
-    const data = {
-      id: "info@vipfy.com",
-      company_name: null,
-      email,
-      password,
-      country: "United States",
-      currencyCode: "USD",
-      access_token: null,
-      direct_buy: false,
-      skip_system: false,
-      skip_business: false,
-      send_confirmation_notification: true,
-      capacity: null,
-      provisioner: "magnum",
-      referring_url: null,
-      landing_url: "https://www.vipfy.store/",
-      referralid: null,
-      web_promo: null,
-      visitor_id: null,
-      optimizely_user_id: null,
-      optimizely_buckets: null
-    };
-
-    const config = {
-      method: "POST",
-      baseURL: "https://my.freshbooks.com/service/auth/api/v1",
-      url: "smux/registrations",
-      headers,
-      data
-    };
-
-    const createAcc = await axios(config);
-
-    console.log(createAcc.data.response);
-    if (
-      !createAcc.data.response ||
-      !createAcc.data.response.access_token ||
-      createAcc.data.response.access_token == null
-    ) {
-      throw new Error("Botting failed!");
+  const billingEmails = await models.sequelize.query(
+    `SELECT email, dp.name, hu.*
+  FROM department_all_emails_view dpem
+         LEFT OUTER JOIN department_data dp ON dp.unitid = dpem.emailownerid
+         LEFT OUTER JOIN human_data hu ON hu.unitid = dpem.emailownerid
+  WHERE dpem.departmentid = :company
+    AND 'billing' = ANY(dpem.tags) ORDER BY dpem.priority`,
+    {
+      replacements: { company: 14 },
+      type: models.sequelize.QueryTypes.SELECT
     }
-  } catch (error) {
-    console.log(error);
+  );
+  const mainEmail = billingEmails.pop();
+  const variables = { email: mainEmail.email };
+
+  if (mainEmail.name) {
+    // eslint-disable-next-line
+    variables.name = mainEmail.name;
+  } else {
+    variables.name = formatHumanName(mainEmail);
   }
+
+  if (billingEmails.length > 0) {
+    variables.cc = billingEmails.map(bEmail => {
+      let name;
+
+      if (bEmail.name) {
+        // eslint-disable-next-line
+        name = bEmail.name;
+      } else {
+        name = formatHumanName(mainEmail);
+      }
+      return { name, email: bEmail.email };
+    });
+  }
+
+  console.log(variables);
 })();
