@@ -12,10 +12,12 @@ import {
   createSubscription,
   addSubscriptionItem,
   cancelSubscription,
-  removeSubscriptionItem,
+  abortSubscription,
+  cancelPurchase,
   reactivateSubscription
 } from "../../services/stripe";
 import { PartnerError, NormalError } from "../../errors";
+import { debug } from "winston";
 
 export default {
   checkDomain: async (parent, { domain }) => {
@@ -48,6 +50,7 @@ export default {
           user: { unitid, company }
         } = decode(token);
         let subscription = null;
+        let stripeplan = null;
 
         try {
           const p1 = models.Domain.findOne({
@@ -161,9 +164,33 @@ export default {
             }
           }
 
-          const renewaldate = moment(Date.now())
-            .add(1, "year")
-            .subtract(1, "day");
+          if (payingoptions.stripe.subscription) {
+            subscription = await addSubscriptionItem(
+              payingoptions.stripe.subscription,
+              findPrice.stripedata.id
+            );
+
+            stripeplan = subscription.id;
+          } else {
+            subscription = await createSubscription(payingoptions.stripe.id, [
+              { plan: findPrice.stripedata.id }
+            ]);
+
+            stripeplan = subscription.items.data[0].id;
+
+            await models.DepartmentData.update(
+              {
+                payingoptions: {
+                  ...payingoptions,
+                  stripe: {
+                    ...payingoptions.stripe,
+                    subscription: subscription.id
+                  }
+                }
+              },
+              { where: { unitid: company }, transaction: ta }
+            );
+          }
 
           const boughtPlan = await models.BoughtPlan.create(
             {
@@ -174,10 +201,15 @@ export default {
               totalprice,
               description: `Registration of ${domainData.domain}`,
               additionalfeatures,
-              totalfeatures
+              totalfeatures,
+              stripeplan
             },
             { transaction: ta }
           );
+
+          const renewaldate = moment(Date.now())
+            .add(1, "year")
+            .subtract(1, "day");
 
           const domain = await models.Domain.create(
             {
@@ -191,27 +223,6 @@ export default {
             },
             { transaction: ta }
           );
-
-          if (payingoptions.stripe.subscription) {
-            subscription = await addSubscriptionItem(
-              payingoptions.stripe.subscription,
-              findPrice.stripedata.id
-            );
-
-            await models.Department.update({
-              payingoptions: {
-                ...payingoptions,
-                stripe: {
-                  ...payingoptions.stripe,
-                  subscription: subscription.subscription
-                }
-              }
-            });
-          } else {
-            subscription = await createSubscription(payingoptions.stripe.id, [
-              { plan: findPrice.stripedata.id }
-            ]);
-          }
 
           const p4 = createLog(
             ip,
@@ -249,8 +260,13 @@ export default {
             changed: ["domains"]
           });
 
-          if (subscription && subscription.id) {
-            await removeSubscriptionItem(subscription.id);
+          if (subscription && stripeplan) {
+            const kind = stripeplan.split("_");
+            if (kind[0] == "sub") {
+              await abortSubscription(stripeplan);
+            } else {
+              await cancelPurchase(stripeplan, subscription.id);
+            }
           }
 
           throw new PartnerError({

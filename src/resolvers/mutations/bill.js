@@ -246,6 +246,7 @@ export default {
       } = decode(token);
 
       let subscription = null;
+      let stripeplan = null;
 
       try {
         await models.sequelize.transaction(async ta => {
@@ -363,20 +364,23 @@ export default {
               department.payingoptions.stripe.subscription,
               plan.stripedata.id
             );
-
-            await models.Department.update({
-              payingoptions: {
-                ...department.payingoptions,
-                stripe: {
-                  ...department.payingoptions.stripe,
-                  subscription: subscription.subscription
-                }
-              }
-            });
           } else {
             subscription = await createSubscription(
               department.payingoptions.stripe.id,
               stripePlans
+            );
+
+            await models.DepartmentData.update(
+              {
+                payingoptions: {
+                  ...department.payingoptions,
+                  stripe: {
+                    ...department.payingoptions.stripe,
+                    subscription: subscription.id
+                  }
+                }
+              },
+              { where: { unitid: company }, transaction: ta }
             );
           }
 
@@ -402,7 +406,7 @@ export default {
           //   vatPercentage = department.legalinformation.vatPercentage;
           // }
 
-          let stripeplan = subscription.id;
+          stripeplan = subscription.id;
 
           if (subscription.object == "subscription") {
             stripeplan = subscription.items.data[0].id;
@@ -454,8 +458,13 @@ export default {
           changed: []
         });
 
-        if (subscription && subscription.id) {
-          await removeSubscriptionItem(subscription.id);
+        if (subscription && stripeplan) {
+          const kind = stripeplan.split("_");
+          if (kind[0] == "sub") {
+            await abortSubscription(stripeplan);
+          } else {
+            await cancelPurchase(stripeplan, subscription.id);
+          }
         }
 
         logger.error(err);
@@ -566,18 +575,13 @@ export default {
   ),
 
   updatePlan: requiresRights(["edit-boughtplan"]).createResolver(
-    async (
-      parent,
-      { planid, features, price, planinputs },
-      { ip, models, token }
-    ) =>
+    async (parent, { planid, features, price }, { ip, models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(token);
-          console.log(planid, features, price, planinputs);
-          throw new Error("DEBUG");
+
           const oldBoughtPlan = await models.BoughtPlan.findOne(
             { where: { id: planid, payer: company } },
             { raw: true, transaction: ta }
@@ -607,7 +611,13 @@ export default {
           if (price != calculatedPrice) {
             logger.error(
               `calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`,
-              { planid, features, price, planinputs, unitid }
+              {
+                planid,
+                features,
+                price,
+                planinputs: oldBoughtPlan.planinputs,
+                unitid
+              }
             );
             throw new Error(
               `Calculated Price of ${calculatedPrice} does not match requested price of ${price} for plan ${planid}`
@@ -653,7 +663,7 @@ export default {
               totalprice: calculatedPrice,
               additionalfeatures: features,
               totalfeatures: mergedFeatures,
-              planinputs,
+              planinputs: oldBoughtPlan.planinputs,
               stripeplan: oldBoughtPlan.stripeplan
             },
             { transaction: ta }

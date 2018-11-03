@@ -69,9 +69,6 @@ export const createCustomer = async ({ customer, address, source }) => {
     const res = await stripe.customers.create({
       description: customer.name,
       email: customer.email,
-      invoicing: {
-        email_to: ["email"]
-      },
       metadata: {
         ip: customer.ip
       },
@@ -164,7 +161,6 @@ export const createSubscription = async (customer, items) => {
     // const inTenMinutes = moment()
     //   .add(10, "minutes")
     //   .unix();
-
     const res = await stripe.subscriptions.create({
       customer,
       items,
@@ -267,6 +263,7 @@ export const addSubscriptionItem = async (subscription, plan) => {
  *
  * @exports
  * @param {string} item The subscription item
+ * @param {string} subscriptionId
  *
  * @returns {object}
  */
@@ -277,6 +274,22 @@ export const removeSubscriptionItem = async (item, subscriptionId) => {
 
     if (lastItem.items.data.length < 2) {
       res = await cancelSubscription(subscriptionId);
+    } else {
+      res = await stripe.subscriptionItems.del(item);
+    }
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+export const cancelPurchase = async (item, subscriptionId) => {
+  try {
+    const lastItem = await fetchSubscription(subscriptionId);
+    let res;
+
+    if (lastItem.items.data.length < 2) {
+      res = await abortSubscription(subscriptionId);
     } else {
       res = await stripe.subscriptionItems.del(item);
     }
