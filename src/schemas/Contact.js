@@ -61,6 +61,11 @@ export const types = `
     tags: [String]
   }
 
+  input EmailUpdateInput {
+    description: String
+    priority: Int
+  }
+
   input PhoneInput {
     department: Boolean
     number: String
@@ -92,6 +97,9 @@ export const mutations = `
   searchAddressByCompanyName(input: String!): JSON!
   searchAddress(input: String!, region: String!): JSON!
 
-  createEmail(emailData: EmailInput!, tags: [String], forCompany: Boolean): Email!
+  createEmail(emailData: EmailInput! forCompany: Boolean): Email!
+  updateEmail(email: String!, emailData: EmailUpdateInput!): Response!
   deleteEmail(email: String!, forCompany: Boolean): Response!
+
+  updateTags(model: String!, tags: [String]!): Response!
 `;

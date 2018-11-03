@@ -882,7 +882,7 @@ export default {
   setBoughtPlanAlias: requiresRights(["edit-boughtplan"]).createResolver(
     async (parent, { alias, boughtplanid }, { models }) => {
       try {
-        const bill = await models.BoughtPlan.update(
+        await models.BoughtPlan.update(
           { alias },
           { where: { id: boughtplanid } }
         );
@@ -894,6 +894,59 @@ export default {
     }
   ),
 
+  addBillingEmail: requiresRights(["edit-billing"]).createResolver(
+    async (parent, { email }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const oldEmail = await models.DepartmentEmail.findOne({
+            where: { email, departmentid: company },
+            raw: true
+          });
+
+          if (!oldEmail) {
+            throw new Error("This email doesn't belong to this company");
+          }
+
+          let tags;
+          if (oldEmail.tags) {
+            tags = oldEmail.tags;
+            tags.push("billing");
+          } else {
+            tags = ["billing"];
+          }
+
+          await models.Email.update(
+            { tags },
+            { where: { email }, transaction: ta, returning: true }
+          );
+
+          const p1 = createLog(ip, "addBillingEmail", { oldEmail }, unitid, ta);
+
+          const p2 = models.Email.findOne({ where: { email } });
+
+          const promises = await Promise.all([p1, p2]);
+
+          return promises[1];
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  /**
+   * Removes the tag billing from an email
+   *
+   * @param {string} email
+   *
+   * @returns {object}
+   */
   removeBillingEmail: requiresRights(["edit-billing"]).createResolver(
     async (parent, { email }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
@@ -902,22 +955,17 @@ export default {
         } = decode(token);
 
         try {
-          const p1 = models.DepartmentEmail.findAll({
-            where: { tags: ["billing"], departmentid: company },
+          const billingEmails = await models.DepartmentEmail.findAll({
+            where: {
+              tags: { [models.sequelize.Op.contains]: ["billing"] },
+              departmentid: company
+            },
             raw: true
           });
-
-          const p2 = models.Department.findOne({
-            where: { unitid: company },
-            raw: true
-          });
-
-          const [billingEmails, department] = await Promise.all([p1, p2]);
 
           if (billingEmails.length < 2) {
             throw new Error("You need at least one billing Email");
           }
-
           const oldEmail = billingEmails.find(bill => bill.email == email);
 
           if (!oldEmail) {
@@ -937,22 +985,7 @@ export default {
             }
           );
 
-          const stripeEmails = billingEmails.filter(
-            bill => bill.email != email
-          );
-
-          const res = await updateBillingEmails(
-            department.payingoptions.stripe.id,
-            stripeEmails
-          );
-
-          const p3 = createLog(
-            ip,
-            "createEmail",
-            { removedEmail, res },
-            unitid,
-            ta
-          );
+          const p3 = createLog(ip, "createEmail", { removedEmail }, unitid, ta);
 
           const p4 = createNotification(
             {

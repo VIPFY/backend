@@ -173,42 +173,85 @@ export default {
    * @returns {object} newEmail The newly generated Email.
    */
   createEmail: requiresRights(["create-email"]).createResolver(
-    async (parent, { emailData, forCompany, tags }, { models, ip, token }) => {
-      try {
-        const {
-          user: { company, unitid }
-        } = decode(token);
+    async (parent, { emailData, forCompany }, { models, ip, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company, unitid }
+          } = decode(token);
 
-        // Necessary for correct logs
-        let id;
+          // Necessary for correct logs
+          let id;
 
-        if (forCompany) {
-          id = company;
-        } else {
-          id = unitid;
+          if (forCompany) {
+            id = company;
+          } else {
+            id = unitid;
+          }
+
+          const emailExists = await models.Email.findOne({
+            where: { email: emailData.email },
+            raw: true
+          });
+
+          if (emailExists) {
+            throw new Error("Email already exists!");
+          }
+
+          const newEmail = await models.Email.create(
+            { ...emailData, unitid: id },
+            { transaction: ta }
+          );
+
+          await createLog(ip, "createEmail", { newEmail }, unitid, ta);
+
+          return newEmail;
+        } catch (err) {
+          throw new Error(err.message);
         }
-
-        const emailExists = await models.Email.findOne({
-          where: { email: emailData.email }
-        });
-
-        if (emailExists) {
-          throw new Error("Email already exists!");
-        }
-
-        const newEmail = await models.Email.create({
-          ...emailData,
-          unitid: id,
-          tags
-        });
-        await createLog(ip, "createEmail", { newEmail }, unitid, "");
-
-        return newEmail;
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
+      })
   ),
+
+  updateEmail: requiresRights(["edit-email"]).createResolver(
+    async (parent, { email, emailData }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const oldEmail = await models.DepartmentEmail.findOne({
+            where: { email, departmentid: company },
+            raw: true
+          });
+
+          if (!oldEmail) {
+            throw new Error("This email doesn't belong to this company");
+          }
+
+          const updatedEmail = await models.Email.update(
+            { ...emailData },
+            { where: { email }, transaction: ta, returning: true }
+          );
+
+          await createLog(
+            ip,
+            "createEmail",
+            { oldEmail, updatedEmail },
+            unitid,
+            ta
+          );
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   /**
    * Deletes an existing Email
    * @param {string} email
@@ -248,7 +291,7 @@ export default {
           );
         }
 
-        await models.Email.destroy({ where: { email: id } });
+        await models.Email.destroy({ where: { email, unitid: id } });
         await createLog(ip, "deleteEmail", { belongsToUser }, unitid, "");
 
         return { ok: true };

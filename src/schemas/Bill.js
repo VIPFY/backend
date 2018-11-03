@@ -169,15 +169,19 @@ export const queries = `
 export const mutations = `
   setBoughtPlanAlias(boughtplanid: ID!, alias: String): Response!
   addPaymentData(data: JSON, address: AddressInput, email: String): Response!
+  changeDefaultMethod(card: String!): Response!
+
   # The buying process
   buyPlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
   updatePlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
   cancelPlan(planid: Int!): BoughtPlan!
   reactivatePlan(planid: Int!): BoughtPlan!
+
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!
   addBillPos(bill: BillInput!, billid: Int): Response!
   downloadBill(billid: Int!): String!
-  changeDefaultMethod(card: String!): Response!
+  
   removeBillingEmail(email: String!): Response!
+  addBillingEmail(email: String!): Email!
 `;

@@ -98,29 +98,6 @@ export const createCustomer = async ({ customer, address, source }) => {
 };
 
 /**
- * Updates the email addresses the invoices should be send to
- *
- * @exports
- * @param {string} customerId The customers id at Stripe
- * @param {string[]} emails An array of emails
- *
- * @returns {object}
- */
-export const updateBillingEmails = async (customerId, emails) => {
-  try {
-    const res = await stripe.customers.update(customerId, {
-      invoicing: {
-        email_to: emails
-      }
-    });
-
-    return res;
-  } catch (error) {
-    throw new Error(error);
-  }
-};
-
-/**
  * List the cards from a stripe customer
  * @exports
  * @param id: string
