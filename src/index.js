@@ -49,7 +49,8 @@ const {
   SECRET,
   SECRET_TWO,
   TOKEN_DEVELOPMENT,
-  USE_VOYAGER
+  USE_VOYAGER,
+  APOLLO_ENGINE_KEY
 } = process.env;
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
@@ -142,7 +143,10 @@ app.use(
         ip
       },
       debug: ENVIRONMENT == "development",
-      validationRules: [depthLimit(10)]
+      validationRules: [depthLimit(10)],
+      engine: {
+        apiKey: APOLLO_ENGINE_KEY
+      }
     };
   })
 );
