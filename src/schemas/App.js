@@ -95,7 +95,7 @@ export const queries = `
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
 
   # Returns a specific app by id
-  fetchAppById(id: Int!): AppDetails
+  fetchAppById(id: ID!): AppDetails
 
   # Returns all Apps a department is allowed to distribute Licences for
   fetchUnitApps(departmentid: Int!): [AppBoughtPlanResponse]!
