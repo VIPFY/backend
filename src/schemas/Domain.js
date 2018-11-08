@@ -68,7 +68,7 @@ export const queries = `
 export const mutations = `
   checkDomain(domain: String!): Boolean!
   registerDomain(domainData: DD24!): Domain!
-  updateDomain(domainData: DD24!, id: Int!): Response!
+  updateDomain(domainData: DD24!, id: ID!): Response!
   registerExternalDomain(domainData: DD24!): Domain!
-  deleteExternalDomain(id: Int!): Response!
+  deleteExternalDomain(id: ID!): Response!
 `;

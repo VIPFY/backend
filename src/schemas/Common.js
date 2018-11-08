@@ -27,7 +27,7 @@ enum ORDER {
   scalar JSON
 
 type Notification {
-  id: Int!
+  id: ID!
   receiver: PublicUser!
   sendtime: String!
   readtime: String!
@@ -44,7 +44,7 @@ type Newsletter {
 }
 
 type Log {
-  id: Int!
+  id: ID!
   time: String!
   eventtype: String!
   eventdata: JSON!
@@ -91,7 +91,7 @@ export const mutations = `
   # Checks whether an email already exists in our database
   checkEmail(email: String): Response!
   checkName(name: String): Response!
-  readNotification(id: Int!): Boolean!
+  readNotification(id: ID!): Boolean!
   readAllNotifications: Boolean!
 
   checkVat(vat: String!, cc: String!): String!

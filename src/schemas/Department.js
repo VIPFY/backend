@@ -54,7 +54,7 @@ export const types = `
 
   input CompanyInput {
     name: String
-    user: Int
+    user: ID
     statisticdata: JSON
     legalinformation: LegalInput
   }
@@ -97,7 +97,7 @@ export const queries = `
   fetchDepartmentsData: [DepartmentDataResponse]!
 
   # Returns the amount of units in a Department
-  fetchCompanySize: Int!
+  fetchCompanySize: ID!
   fetchEmployees: [DepartmentEmployee]!
 
   # Returns the address data fetched in sign-up process
@@ -110,14 +110,14 @@ export const mutations = `
   updateCompanyPic(file: File!): String!
   updateStatisticData(data: StatisticInput!): Response!
 
-  addSubDepartment(departmentid: Int! ,name: String!): Response!
-  editDepartmentName(departmentid: Int!, name: String!): Response!
-  deleteSubDepartment(departmentid: Int!): Response!
+  addSubDepartment(departmentid: ID! ,name: String!): Response!
+  editDepartmentName(departmentid: ID!, name: String!): Response!
+  deleteSubDepartment(departmentid: ID!): Response!
 
-  addEmployee(unitid: Int!, departmentid: Int!): Response!
-  addCreateEmployee(email: String!, password: String!, name: HumanName!, departmentid: Int!): Response!
-  removeEmployee(unitid: Int!, departmentid: Int!): Response!
-  fireEmployee(unitid: Int!): Response!
+  addEmployee(unitid: ID!, departmentid: ID!): Response!
+  addCreateEmployee(email: String!, password: String!, name: HumanName!, departmentid: ID!): Response!
+  removeEmployee(unitid: ID!, departmentid: ID!): Response!
+  fireEmployee(unitid: ID!): Response!
 
   # Saves data we fetched in the Business Advisor
   saveProposalData(data: ProposalInput!): Response!

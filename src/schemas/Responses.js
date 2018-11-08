@@ -9,7 +9,7 @@ export const types = `
     type ReviewResponse {
       ok: Boolean!
       balance: Int
-      id: Int
+      id: ID
     }
 
   # Contains the amount of the respective Unit
@@ -47,25 +47,25 @@ export const types = `
   }
 
   type DepartmentDataResponse {
-    id: Int
-    children: [Int]
+    id: ID
+    children: [ID]
     children_data: JSON
     department: Department
     employees: [PublicUser]
     level: Int
-    parent: Int
+    parent: ID
   }
 
   type DepartmentResponse {
-    id: Int
-    childids: [Int]
+    id: ID
+    childids: [ID]
     department: Department
     employees: [emp]
     level: Int
   }
 
   type emp {
-    employeeid: Int
+    employeeid: ID
     firstname: String
     lastname: String
     profilepicture: String
@@ -93,7 +93,7 @@ export const types = `
     appname: String!
     appicon: String
     applogo: String
-    appid: Int!
+    appid: ID!
     licencesused: Int!
     licencestotal: Int!
     endtime: String

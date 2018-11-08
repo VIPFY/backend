@@ -1,6 +1,6 @@
 export const types = `
   type Bill {
-    id: Int!
+    id: ID!
     billtime: String!
     pdflink: String!
     invoicelink: String!
@@ -13,7 +13,7 @@ export const types = `
   }
 
   type BillPosition {
-    id: Int!
+    id: ID!
     positiontext: String
     price: Float
     currency: String!
@@ -26,17 +26,17 @@ export const types = `
     positiontext: String
     price: Float
     currency: String
-    billid: Int
+    billid: ID
     billname: String
-    planid: Int
-    vendor: Int
+    planid: ID
+    vendor: ID
     paytime: String
     stornotime: String
   }
 
 # Payment plans for the Apps
   type Plan {
-    id: Int!
+    id: ID!
     name: String!
     teaserdescription: String
     features: JSON
@@ -69,13 +69,13 @@ export const types = `
     cancelperiod: Interval
     optional: Boolean
     gototime: String
-    appid: Int
-    gotoplan: Int
+    appid: ID
+    gotoplan: ID
   }
 
   # The plans a unit bought
   type BoughtPlan {
-    id: Int!
+    id: ID!
     buytime: String
     alias: String
     endtime: String
@@ -90,7 +90,7 @@ export const types = `
   }
 
   type PlansRunning {
-    id: Int!
+    id: ID!
     name: String
     teaserdescription: String
     features: JSON
@@ -104,7 +104,7 @@ export const types = `
   }
 
   type Promo {
-    id: Int!
+    id: ID!
     name: String
     startdate: String
     enddate: String
@@ -116,7 +116,7 @@ export const types = `
   }
 
   type PromosRunning {
-    id: Int!
+    id: ID!
     name: String
     startdate: String
     enddate: String
@@ -129,13 +129,13 @@ export const types = `
 
   input OptionalPlanData {
     amount: Int!
-    planid: Int!
+    planid: ID!
   }
 
   type Card {
     id: String!
     brand: String!
-    exp_month: Int!
+    exp_month: INT!
     exp_year: Int!
     last4: String!
     name: String!
@@ -157,9 +157,9 @@ export const types = `
 
 export const queries = `
   boughtPlans: [BoughtPlan]!
-  fetchPlans(appid: Int!): [Plan]!
+  fetchPlans(appid: ID!): [Plan]!
   fetchPlanInputs(planid: ID!): JSON!
-  createLoginLink(boughtplanid: Int!): ProductResponse!
+  createLoginLink(boughtplanid: ID!): ProductResponse!
 
   fetchBills: [Bill]!
   fetchPaymentData: [Card]!
@@ -174,13 +174,13 @@ export const mutations = `
   # The buying process
   buyPlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
   updatePlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
-  cancelPlan(planid: Int!): BoughtPlan!
-  reactivatePlan(planid: Int!): BoughtPlan!
+  cancelPlan(planid: ID!): BoughtPlan!
+  reactivatePlan(planid: ID!): BoughtPlan!
 
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!
-  addBillPos(bill: BillInput!, billid: Int): Response!
-  downloadBill(billid: Int!): String!
+  addBillPos(bill: BillInput!, billid: ID): Response!
+  downloadBill(billid: ID!): String!
   
   removeBillingEmail(email: String!): Response!
   addBillingEmail(email: String!): Email!
