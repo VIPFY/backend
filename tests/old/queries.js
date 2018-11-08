@@ -111,7 +111,7 @@ export const allApps = `
 `;
 
 export const fetchAppById = `
-  query FetchAppById($id: Int!){
+  query FetchAppById($id: ID!){
     fetchAppById(id: $id) {
       id
       name
