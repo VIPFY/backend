@@ -137,7 +137,8 @@ const gqlserver = new ApolloServer({
   }),
   debug: ENVIRONMENT == "development",
   validationRules: [depthLimit(10)],
-  introspection: true
+  introspection: true,
+  tracing: true
 });
 gqlserver.applyMiddleware({ app, path: "/graphql" });
 
