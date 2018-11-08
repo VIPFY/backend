@@ -135,7 +135,7 @@ export const types = `
   type Card {
     id: String!
     brand: String!
-    exp_month: INT!
+    exp_month: Int!
     exp_year: Int!
     last4: String!
     name: String!
