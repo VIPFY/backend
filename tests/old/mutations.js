@@ -59,7 +59,7 @@ export const forgotPassword = `
 `;
 
 export const writeReview = `
-  mutation WriteReview($appid: Int!, $stars: Int!, $text: String) {
+  mutation WriteReview($appid: ID!, $stars: Int!, $text: String) {
     writeReview(appid: $appid, stars: $stars, text: $text) {
       ok
     }
@@ -67,7 +67,7 @@ export const writeReview = `
 `;
 
 export const rateReview = `
-  mutation RateReview($reviewid: Int!, $balance: Int!) {
+  mutation RateReview($reviewid: ID!, $balance: Int!) {
     rateReview(reviewid: $reviewid, balance: $balance) {
       ok
       balance

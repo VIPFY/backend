@@ -35,13 +35,13 @@ export const queries = `
   allReviews: [Review]!
 
   # Finds all Reviews belonging to an app
-  fetchReviews(appid: Int!): [Review!]
+  fetchReviews(appid: ID!): [Review!]
 `;
 
 export const mutations = `
 # Create a review for an app
-  writeReview(appid: Int!, stars: Int!, text: String): Review!
+  writeReview(appid: ID!, stars: Int!, text: String): Review!
 
 # Rate a review
-  rateReview(reviewid: Int!, balance: Int!): ReviewResponse!
+  rateReview(reviewid: ID!, balance: Int!): ReviewResponse!
 `;
