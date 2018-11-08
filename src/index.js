@@ -13,8 +13,7 @@ import http from "http";
 import jwt from "jsonwebtoken";
 
 // To create the GraphQl functions
-import { graphiqlExpress, graphqlExpress } from "apollo-server-express";
-import { makeExecutableSchema } from "graphql-tools";
+import { ApolloServer, makeExecutableSchema } from "apollo-server-express";
 import { execute, subscribe } from "graphql";
 import { SubscriptionServer } from "subscriptions-transport-ws";
 import depthLimit from "graphql-depth-limit";
@@ -49,8 +48,7 @@ const {
   SECRET,
   SECRET_TWO,
   TOKEN_DEVELOPMENT,
-  USE_VOYAGER,
-  APOLLO_ENGINE_KEY
+  USE_VOYAGER
 } = process.env;
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
@@ -124,46 +122,27 @@ const corsOptions = {
 app.use(authMiddleware);
 app.use(cors(corsOptions));
 app.use(loggingMiddleWare);
-app.use(
-  "/graphql",
-  bodyParser.json(),
-  fileMiddleware,
-  graphqlExpress(({ headers, ip }) => {
-    const token = headers["x-token"];
+app.use("/graphql", fileMiddleware);
 
-    return {
-      schema,
-      formatError,
-      context: {
-        models,
-        token: TOKEN_SET ? TOKEN_DEVELOPMENT : token,
-        logger,
-        SECRET,
-        SECRET_TWO,
-        ip
-      },
-      debug: ENVIRONMENT == "development",
-      validationRules: [depthLimit(10)],
-      engine: {
-        apiKey: APOLLO_ENGINE_KEY
-      }
-    };
-  })
-);
+const gqlserver = new ApolloServer({
+  schema,
+  formatError,
+  context: ({ req, res }) => ({
+    models,
+    token: TOKEN_SET ? TOKEN_DEVELOPMENT : req.headers["x-token"],
+    logger,
+    SECRET,
+    SECRET_TWO,
+    ip: req.ip
+  }),
+  debug: ENVIRONMENT == "development",
+  validationRules: [depthLimit(10)],
+  introspection: true
+});
+gqlserver.applyMiddleware({ app, path: "/graphql" });
 
 if (USE_VOYAGER) {
   app.use("/voyager", voyagerMiddleware({ endpointUrl: "/graphql" }));
-}
-
-// Enable Graphiql Interface
-if (ENVIRONMENT != "production") {
-  app.use(
-    "/graphiql",
-    graphiqlExpress({
-      endpointURL: "/graphql",
-      subscriptionsEndpoint: `ws${secure}://localhost:${PORT}/subscriptions`
-    })
-  );
 }
 
 // The home route is currently empty
