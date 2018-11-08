@@ -104,7 +104,7 @@ export const queries = `
   fetchLicences(licenceid: Int): [Licence]!
 
   # Returns all Licences of a current user that are not department licences
-  fetchUsersOwnLicences(unitid: Int!): [Licence]
+  fetchUsersOwnLicences(unitid: ID!): [Licence]
 
   fetchUnitAppsSimpleStats(departmentid: Int!): [SimpleStats]
 
