@@ -123,6 +123,13 @@ app.use(cors(corsOptions));
 app.use(loggingMiddleWare);
 app.use("/graphql", fileMiddleware);
 
+let engine = undefined;
+if (ENVIRONMENT == "production") {
+  engine = {
+    privateVariables: ["pw", "password"] // TODO
+  };
+}
+
 const gqlserver = new ApolloServer({
   schema,
   formatError,
