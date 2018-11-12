@@ -594,21 +594,22 @@ export default {
   /**
    * Adds an external Account of an App to the Users personal Account
    *
-   * @param {username} string Username at the external App
-   * @param {password} string Password at the external App
-   * @param {appid} number Id of the external App
+   * @param {string} username Username at the external App
+   * @param {string} password Password at the external App
+   * @param {string} subdomain Subdomain the App runs under
+   * @param {number} appid Id of the external App
    *
    * @returns {object}
    */
   addExternalAccount: requiresAuth.createResolver(
-    (parent, { username, password, appid }, { models, token, ip }) =>
+    (parent, args, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid, company }
         } = decode(token);
         try {
           const { id: planid } = await models.Plan.findOne({
-            where: { appid, options: { external: true } },
+            where: { appid: args.appid, options: { external: true } },
             attributes: ["id"],
             raw: true
           });
@@ -642,7 +643,7 @@ export default {
               disabled: false,
               boughtplanid: boughtPlan.id,
               agreed: true,
-              key: { username, password, appid, external: true }
+              key: { ...args, external: true }
             },
             { transaction: ta }
           );
@@ -650,7 +651,7 @@ export default {
           const p1 = await createLog(
             ip,
             "addExternalAccount",
-            { licence: licence.id, appid, boughtPlan },
+            { licence: licence.id, appid: args.appid, boughtPlan },
             unitid,
             ta
           );
@@ -660,7 +661,7 @@ export default {
               receiver: unitid,
               message: `Added external Account`,
               icon: "user-circle",
-              link: `marketplace/${appid}`,
+              link: `marketplace/${args.appid}`,
               changed: ["ownLicences"]
             },
             ta
@@ -675,7 +676,7 @@ export default {
               receiver: unitid,
               message: "Adding of external Account failed",
               icon: "bug",
-              link: `marketplace/${appid}`,
+              link: `marketplace/${args.appid}`,
               changed: []
             },
             ta

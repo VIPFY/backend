@@ -41,8 +41,9 @@ export const authMiddleware = async (req, res, next) => {
           SECRET,
           SECRET_TWO
         );
-
+        console.log(newTokens);
         if (newTokens.token && newTokens.refreshToken) {
+          console.log("CHECK WORKED");
           res.set("Access-Control-Expose-Headers", "x-token, x-refresh-token");
           res.set("x-token", newTokens.token);
           res.set("x-refresh-token", newTokens.refreshToken);

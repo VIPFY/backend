@@ -201,37 +201,37 @@ if (ENVIRONMENT != "testing") {
       {
         execute,
         subscribe,
-        schema,
-        onConnect: async ({ token, refreshToken }) => {
-          if (token && token != "null") {
-            try {
-              jwt.verify(token, SECRET);
+        schema
+        // onConnect: async ({ token, refreshToken }) => {
+        //   if (token && token != "null") {
+        //     try {
+        //       jwt.verify(token, SECRET);
 
-              return { models, token, refreshToken };
-            } catch (err) {
-              if (err.name == "TokenExpiredError") {
-                const [newToken, newRefreshToken] = await refreshTokens(
-                  refreshToken,
-                  models,
-                  SECRET,
-                  SECRET_TWO
-                );
+        //       return { models, token, refreshToken };
+        //     } catch (err) {
+        //       if (err.name == "TokenExpiredError") {
+        //         const [newToken, newRefreshToken] = await refreshTokens(
+        //           refreshToken,
+        //           models,
+        //           SECRET,
+        //           SECRET_TWO
+        //         );
 
-                return {
-                  models,
-                  token: newToken,
-                  refreshToken: newRefreshToken
-                };
-              } else {
-                throw new AuthError({
-                  message: err.message,
-                  internalData: { error: "Subscription Error" }
-                });
-              }
-            }
-          }
-          return {};
-        }
+        //         return {
+        //           models,
+        //           token: newToken,
+        //           refreshToken: newRefreshToken
+        //         };
+        //       } else {
+        //         throw new AuthError({
+        //           message: err.message,
+        //           internalData: { error: "Subscription Error" }
+        //         });
+        //       }
+        //     }
+        //   }
+        //   return {};
+        // }
       },
       {
         server,
