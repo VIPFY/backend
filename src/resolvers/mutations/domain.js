@@ -138,8 +138,12 @@ export default {
             ...contact
           };
 
+          // if (!hasAccount) {
+
+          // }
+
           const domainContact = await createContact(contact);
-          console.log(domainContact);
+          console.log(createContact);
           throw new Error("DEBUG");
           partnerLogs.domain = register;
 
