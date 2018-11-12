@@ -1,6 +1,6 @@
 export const types = `
   type App {
-    id: Int!
+    id: ID!
     name: String!
     icon: String
     loginurl: String
@@ -21,7 +21,7 @@ export const types = `
   }
 
   type AppDetails {
-    id: Int!
+    id: ID!
     name: String
     developername: String!
     icon: String
@@ -64,12 +64,12 @@ export const types = `
     features: JSON
     options: JSON
     disabled: Boolean
-    developer: Int
-    supportunit: Int
+    developer: ID
+    supportunit: ID
   }
 
   type Licence {
-    id: Int!
+    id: ID!
     options: JSON
     starttime: String!
     endtime: String
@@ -97,40 +97,40 @@ export const queries = `
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
 
   # Returns a specific app by id
-  fetchAppById(id: Int!): AppDetails
+  fetchAppById(id: ID!): AppDetails
 
   # Returns all Apps a department is allowed to distribute Licences for
-  fetchUnitApps(departmentid: Int!): [AppBoughtPlanResponse]!
+  fetchUnitApps(departmentid: ID!): [AppBoughtPlanResponse]!
 
   # Returns all Licences of the current user, optionally limited to a single licence id
-  fetchLicences(licenceid: Int): [Licence]!
+  fetchLicences(licenceid: ID): [Licence]!
 
   # Returns all Licences of a current user that are not department licences
-  fetchUsersOwnLicences(unitid: Int!): [Licence]
+  fetchUsersOwnLicences(unitid: ID!): [Licence]
 
-  fetchUnitAppsSimpleStats(departmentid: Int!): [SimpleStats]
+  fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
 
   fetchSupportToken:String
 `;
 
 export const mutations = `
   # Admin: delete App from database
-  deleteApp(id: Int!): Response!
+  deleteApp(id: ID!): Response!
 
   # Admin: toogle App between disabled and enabled
-  toggleAppStatus(id: Int!): Response!
+  toggleAppStatus(id: ID!): Response!
 
   # Add the boughtplan as departmentapp and give each empoyee a licence
-  distributeLicenceToDepartment(departmentid: Int!, boughtplanid: Int!, licencetype: String!): DistributeResponse!
+  distributeLicenceToDepartment(departmentid: ID!, boughtplanid: ID!, licencetype: String!): DistributeResponse!
 
   # Revoke licence from everyone in department
-  revokeLicencesFromDepartment(departmentid: Int!, boughtplanid: Int!): Response!
+  revokeLicencesFromDepartment(departmentid: ID!, boughtplanid: ID!): Response!
 
   # Give a user a licence from the licence pool of department
-  distributeLicence(boughtplanid: Int!, unitid: Int!, departmentid: Int!): DistributeResponse!
+  distributeLicence(boughtplanid: ID!, unitid: ID!, departmentid: ID!): DistributeResponse!
 
   # Free the licence
-  revokeLicence(licenceid: Int!): Response!
+  revokeLicence(licenceid: ID!): Response!
 
   # Agree to all terms and conditions of a licence
   agreeToLicence(licenceid: ID!): Response!
@@ -138,7 +138,7 @@ export const mutations = `
   trackMinutesSpent(licenceid: ID!, minutes: Int!): Response!
 
   # Adds the data of an external App
-  addExternalAccount(username: String!, password: String!, subdomain: String, appid: Int!): Response!
+  addExternalAccount(username: String!, password: String!, subdomain: String, appid: ID!): Response!
 
-  removeExternalAccount(licenceid: Int!): Response!
+  removeExternalAccount(licenceid: ID!): Response!
   `;

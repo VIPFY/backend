@@ -1,7 +1,7 @@
 export const types = `
 # The messages an User receives from Apps and other Users. This is a View
   type Message {
-    id: Int!
+    id: ID!
     sendtime: Date!
     readtime: Date
     senderpicture: String

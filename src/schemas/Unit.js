@@ -1,12 +1,12 @@
 export const types = `
   type Unit {
-    id: Int!
+    id: ID!
     profilepicture: String
     createdate: String!
   }
 
   type User {
-    id: Int!
+    id: ID!
     firstname: String
     middlename: String
     lastname: String
