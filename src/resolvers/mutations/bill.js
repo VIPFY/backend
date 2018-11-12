@@ -546,9 +546,9 @@ export default {
             }
           );
 
-          const p5 = models.Licence.destroy(
-            { where: { id: cancelledBoughtPlan.id } },
-            { transaction: ta }
+          const p5 = models.Licence.update(
+            { endtime: cancelledBoughtPlan.endtime },
+            { where: { id: cancelledBoughtPlan.id }, transaction: ta }
           );
 
           const p6 = createLog(

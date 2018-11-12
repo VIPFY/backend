@@ -1,8 +1,8 @@
 /*
-* This is the main component which has the server. It imports all models,
-* resolvers, creates the schema with them, uses middleware for the app and
-* establishes the connection to the database before starting the server
-*/
+ * This is the main component which has the server. It imports all models,
+ * resolvers, creates the schema with them, uses middleware for the app and
+ * establishes the connection to the database before starting the server
+ */
 
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -46,7 +46,6 @@ const {
   SSL_KEY,
   SSL_CERT,
   SECRET,
-  SECRET_TWO,
   TOKEN_DEVELOPMENT,
   USE_VOYAGER
 } = process.env;
@@ -54,7 +53,7 @@ const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
 let server;
 
-if (!SECRET || !SECRET_TWO) {
+if (!SECRET) {
   throw new Error("No secret set!");
 }
 
@@ -134,12 +133,11 @@ if (ENVIRONMENT == "production") {
 const gqlserver = new ApolloServer({
   schema,
   formatError,
-  context: ({ req, res }) => ({
+  context: ({ req }) => ({
     models,
     token: TOKEN_SET ? TOKEN_DEVELOPMENT : req.headers["x-token"],
     logger,
     SECRET,
-    SECRET_TWO,
     ip: req.ip
   }),
   debug: ENVIRONMENT == "development",
@@ -193,32 +191,17 @@ if (ENVIRONMENT != "testing") {
         execute,
         subscribe,
         schema,
-        onConnect: async ({ token, refreshToken }) => {
+        onConnect: async ({ token }) => {
           if (token && token != "null") {
             try {
               jwt.verify(token, SECRET);
 
-              return { models, token, refreshToken };
+              return { models, token };
             } catch (err) {
-              if (err.name == "TokenExpiredError") {
-                const [newToken, newRefreshToken] = await refreshTokens(
-                  refreshToken,
-                  models,
-                  SECRET,
-                  SECRET_TWO
-                );
-
-                return {
-                  models,
-                  token: newToken,
-                  refreshToken: newRefreshToken
-                };
-              } else {
-                throw new AuthError({
-                  message: err.message,
-                  internalData: { error: "Subscription Error" }
-                });
-              }
+              throw new AuthError({
+                message: err.message,
+                internalData: { error: "Subscription Error" }
+              });
             }
           }
           return {};

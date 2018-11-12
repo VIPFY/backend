@@ -21,7 +21,6 @@ export const signUp = `
     signUp(email: $email, newsletter: $newsletter) {
       ok
       token
-      refreshToken
     }
   }
 `;
@@ -31,7 +30,6 @@ export const signUpConfirm = `
     signUpConfirm(email: $email, password: $password) {
       ok
       token
-      refreshToken
     }
   }
 `;
@@ -44,7 +42,6 @@ export const signIn = `
         id
       }
       token
-      refreshToken
     }
   }
 `;

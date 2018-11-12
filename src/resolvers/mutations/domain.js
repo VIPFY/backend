@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
-import dd24Api from "../../services/dd24";
+import rrpApi from "../../services/dd24";
 
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -18,23 +18,37 @@ import {
 } from "../../services/stripe";
 import { PartnerError, NormalError } from "../../errors";
 import { debug } from "winston";
+import Axios from "axios";
 
 export default {
   checkDomain: async (parent, { domain }) => {
     try {
-      const { code, availability } = await dd24Api("CheckDomain", { domain });
+      // const { code, description } = await rrpApi("CheckDomain", {
+      //   command: "CheckDomain",
+      //   domain
+      // });
+      const { RRP_USERNAME, RRP_PASSWORD } = process.env;
 
-      if (code < 200 && code > 300) {
-        throw new Error("Something went wrong");
-      }
-
-      if (availability != 1) {
-        return false;
-      }
+      const res = await Axios({
+        method: "GET",
+        url: "https://api-ote.rrpproxy.net/api/call",
+        data: {
+          s_login: RRP_USERNAME,
+          s_pw: RRP_PASSWORD,
+          // s_opmode: "OTE",
+          command: "CheckDomain",
+          domain
+        }
+      });
+      console.log(res);
+      // if (code != 210) {
+      //   throw new Error("Something went wrong");
+      // }
 
       return true;
     } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+      console.log(err);
+      //     throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
   /**
@@ -103,7 +117,7 @@ export default {
               ...domainData
             };
 
-            register = await dd24Api("AddDomain", mergedData);
+            register = await rrpApi("AddDomain", mergedData);
 
             if (register.code == "200") {
               domainData.accountid = hasAccount.accountid;
@@ -153,7 +167,7 @@ export default {
 
             newOptions.organization = organization.name;
 
-            register = await dd24Api("AddDomain", newOptions);
+            register = await rrpApi("AddDomain", newOptions);
             partnerLogs = newOptions;
             partnerLogs.domain = register;
 
@@ -466,7 +480,7 @@ export default {
 
             domainData.rr = rr;
             delete domainData.dns;
-            const updatedDNS = await dd24Api("UpdateDomain", domainData);
+            const updatedDNS = await rrpApi("UpdateDomain", domainData);
 
             if (updatedDNS && updatedDNS.code == 200) {
               const updatedDomain = await models.Domain.update(
@@ -598,7 +612,7 @@ export default {
               message = `Renewal of ${domainData.domain} was successful`;
             }
           }
-          const updateDomain = await dd24Api("UpdateDomain", domainData);
+          const updateDomain = await rrpApi("UpdateDomain", domainData);
 
           if (updateDomain.code == 200) {
             const p2 = models.Domain.update(

@@ -135,8 +135,7 @@ export const dummyMessageResponseSuccess = {
 
 export const dummyRegisterResponse = {
   ok: true,
-  token: expect.any(String),
-  refreshToken: expect.any(String)
+  token: expect.any(String)
 };
 
 export const dummySignInResponse = {
@@ -144,8 +143,7 @@ export const dummySignInResponse = {
   user: {
     id: expect.any(Number)
   },
-  token: expect.any(String),
-  refreshToken: expect.any(String)
+  token: expect.any(String)
 };
 
 export const dummyForgotPwResponse = {

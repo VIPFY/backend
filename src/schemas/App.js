@@ -6,6 +6,7 @@ export const types = `
     loginurl: String
     description: String
     teaserdescription: String
+    needssubdomain: Boolean
     website: String
     disabled: Boolean!
     logo: String
@@ -25,6 +26,7 @@ export const types = `
     developername: String!
     icon: String
     loginurl: String
+    needssubdomain: Boolean
     logo: String
     description: String
     teaserdescription: String
@@ -136,7 +138,7 @@ export const mutations = `
   trackMinutesSpent(licenceid: ID!, minutes: Int!): Response!
 
   # Adds the data of an external App
-  addExternalAccount(username: String!, password: String!, appid: ID!): Response!
+  addExternalAccount(username: String!, password: String!, loginurl: String, appid: ID!): Response!
 
   removeExternalAccount(licenceid: ID!): Response!
   `;

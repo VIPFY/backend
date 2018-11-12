@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import axios from "axios";
 import { decode } from "jsonwebtoken";
 import {
-  createTokens,
+  createToken,
   checkAuthentification,
   getNewPasswordData
 } from "../../helpers/auth";
@@ -178,14 +178,9 @@ export default {
 
         user.company = company.id;
 
-        const refreshSecret = pwData.passwordhash + SECRET_TWO;
-        const [token, refreshToken] = await createTokens(
-          user,
-          SECRET,
-          refreshSecret
-        );
+        const token = await createToken(user, SECRET);
 
-        return { ok: true, token, refreshToken };
+        return { ok: true, token };
       } catch (err) {
         console.log(err);
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -266,18 +261,9 @@ export default {
 
         await Promise.all([p3, p4, p5]);
 
-        const refreshSecret = pwData.passwordhash + SECRET_TWO;
-        const [token, refreshToken] = await createTokens(
-          user,
-          SECRET,
-          refreshSecret
-        );
+        const token = await createToken(user, SECRET);
 
-        return {
-          ok: true,
-          token,
-          refreshToken
-        };
+        return { ok: true, token };
       } catch (err) {
         throw new AuthError({
           message: "Couldn't activate user!",
@@ -336,13 +322,9 @@ export default {
       const user = await parentAdminCheck(basicUser);
       // User doesn't have the property unitid, so we have to pass emailExists for
       // the token creation
-      const [token, refreshToken] = await createTokens(
-        emailExists,
-        SECRET,
-        refreshTokenSecret
-      );
+      const token = await createToken(emailExists, SECRET);
 
-      return { ok: true, user, token, refreshToken };
+      return { ok: true, user, token };
     } catch (err) {
       throw new AuthError({ message: err.message, internalData: { err } });
     }
@@ -401,16 +383,11 @@ export default {
             ta
           );
 
-          const refreshTokenSecret = pwData.passwordhash + SECRET_TWO;
           const user = await parentAdminCheck(basicUser);
           findOldPassword.company = user.company;
-          const [newToken, refreshToken] = await createTokens(
-            findOldPassword,
-            SECRET,
-            refreshTokenSecret
-          );
+          const newToken = await createToken(findOldPassword, SECRET);
 
-          return { ok: true, user, token: newToken, refreshToken };
+          return { ok: true, user, token: newToken };
         } catch (err) {
           throw new NormalError({
             message: err.message,

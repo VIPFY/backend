@@ -23,14 +23,12 @@ export const types = `
     type RegisterResponse {
       ok: Boolean!
       token: String
-      refreshToken: String
     }
 
   # The user receives tokens upon a successful login
     type LoginResponse {
       ok: Boolean!
       token: String
-      refreshToken: String
       user: User!
     }
 
