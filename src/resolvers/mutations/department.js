@@ -3,7 +3,7 @@ import { decode } from "jsonwebtoken";
 import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { deleteFile, uploadFile } from "../../services/gcloud";
-import { createTokens, getNewPasswordData } from "../../helpers/auth";
+import { getNewPasswordData } from "../../helpers/auth";
 import { NormalError } from "../../errors";
 import {
   createLog,
