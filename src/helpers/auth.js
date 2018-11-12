@@ -8,67 +8,19 @@ import {
 } from "./companyMembership";
 import { computePasswordScore } from "./functions";
 
-export const createTokens = async (user, SECRET, SECRET_TWO) => {
+export const createToken = async (user, SECRET) => {
   try {
-    const createToken = await jwt.sign(
+    const newToken = await jwt.sign(
       { user: pick(user, ["unitid", "company"]) },
       SECRET,
       {
-        expiresIn: "12h"
+        expiresIn: "1w"
       }
     );
 
-    const createRefreshToken = await jwt.sign(
-      { user: pick(user, ["unitid", "company"]) },
-      SECRET_TWO,
-      {
-        expiresIn: "7d"
-      }
-    );
-
-    return [createToken, createRefreshToken];
+    return newToken;
   } catch (err) {
     throw new Error(err.message);
-  }
-};
-
-export const refreshTokens = async (
-  refreshToken,
-  models,
-  SECRET,
-  SECRET_TWO
-) => {
-  try {
-    const {
-      user: { unitid }
-    } = await jwt.decode(refreshToken);
-
-    if (!unitid) {
-      throw new Error("Token has no valid User!");
-    }
-
-    const user = await models.Login.findOne({
-      where: { unitid },
-      raw: true
-    });
-
-    if (!user) {
-      throw new Error("User not found!");
-    }
-
-    const refreshSecret = user.passwordhash + SECRET_TWO;
-    await jwt.verify(refreshToken, refreshSecret);
-
-    const [newToken, newRefreshToken] = await createTokens(
-      user,
-      SECRET,
-      refreshSecret
-    );
-
-    return [newToken, newRefreshToken];
-  } catch (err) {
-    console.log(err);
-    throw new AuthError(err);
   }
 };
 

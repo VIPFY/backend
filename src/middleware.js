@@ -1,8 +1,8 @@
 /*
-* Several Middleware for the app. authMiddleware validates tokens received from the
-* client and destroys them otherwise, fileMiddleware makes it possible to use
-* files to our backend and loggingMiddleWare logs incoming requests and their results.
-*/
+ * Several Middleware for the app. authMiddleware validates tokens received from the
+ * client and destroys them otherwise, fileMiddleware makes it possible to use
+ * files to our backend and loggingMiddleWare logs incoming requests and their results.
+ */
 
 import jwt from "jsonwebtoken";
 import formidable from "formidable";
@@ -32,27 +32,8 @@ export const authMiddleware = async (req, res, next) => {
       await checkAuthentification(models, unitid, company);
     } catch (err) {
       logger.info(err);
-      if (err.name == "TokenExpiredError") {
-        // If the token has expired, we use the refreshToken to assign new ones
-        const refreshToken = req.headers["x-refresh-token"];
-        const newTokens = await refreshTokens(
-          refreshToken,
-          models,
-          SECRET,
-          SECRET_TWO
-        );
-        console.log(newTokens);
-        if (newTokens.token && newTokens.refreshToken) {
-          console.log("CHECK WORKED");
-          res.set("Access-Control-Expose-Headers", "x-token, x-refresh-token");
-          res.set("x-token", newTokens.token);
-          res.set("x-refresh-token", newTokens.refreshToken);
-        }
-      } else {
-        logger.info(err, { token });
-        req.headers["x-token"] = undefined;
-        req.headers["x-refresh-token"] = undefined;
-      }
+      logger.info(err);
+      req.headers["x-token"] = undefined;
     }
   }
   next();
@@ -161,7 +142,7 @@ export const loggingMiddleWare = (req, res, next) => {
         parsedBody.data.variables = variables;
 
         if (parsedBody.data[Object.keys(parsedBody.data)[0]]) {
-          const { token: bodyToken, refreshToken } = parsedBody.data[
+          const { token: bodyToken } = parsedBody.data[
             Object.keys(parsedBody.data)[0]
           ];
 
@@ -170,15 +151,8 @@ export const loggingMiddleWare = (req, res, next) => {
               bodyToken,
               SECRET_THREE
             );
-            const encRefreshToken = await Utility.generateHmac(
-              refreshToken,
-              SECRET_THREE
-            );
 
             parsedBody.data[Object.keys(parsedBody.data)[0]].token = encToken;
-            parsedBody.data[
-              Object.keys(parsedBody.data)[0]
-            ].refreshToken = encRefreshToken;
           }
         }
 
