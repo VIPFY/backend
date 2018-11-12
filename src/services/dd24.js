@@ -1,36 +1,65 @@
-import soap from "soap";
-import { merge } from "lodash";
+import Axios from "axios";
 
-const { RRP_USERNAME, RRP_PASSWORD } = process.env;
-// const apiWSDL = "https://api-ote-2.domaindiscount24.com:4424/?wsdl";
-const apiWSDL = "https://api-ote.rrpproxy.net:8082/soap";
-const auth = {
-  params: {
-    s_login: RRP_USERNAME,
-    s_pw: RRP_PASSWORD,
-    s_opmode: "OTE"
+const { RRP_USERNAME, RRP_PASSWORD, ENVIRONMENT } = process.env;
+let url = "https://api.rrpproxy.net/api/call";
+const data = {
+  s_login: RRP_USERNAME,
+  s_pw: RRP_PASSWORD
+};
+
+if (ENVIRONMENT == "development") {
+  url = "https://api-ote.rrpproxy.net/api/call";
+  data.s_opmode = "OTE";
+}
+
+const config = {
+  method: "GET",
+  url
+};
+
+export const checkDomain = async domain => {
+  try {
+    data.domain = domain;
+    data.command = "CheckDomain";
+    config.params = data;
+
+    const res = await Axios(config);
+
+    return res.data;
+  } catch (err) {
+    throw new Error(err);
   }
 };
 
-export default async (command, params) => {
+export const registerDomain = async (domain, contact) => {
   try {
-    // Copy bad inside good, otherwise => End of days!
-    const args = merge(auth, { params });
-    // Eliminate copying mistakes
-    const result = await soap.createClientAsync(apiWSDL).then(client =>
-      client[command](args)
-        .then(res => {
-          console.log(res);
-          return res[0][`${command}Result`];
-        })
-        .catch(err => {
-          console.log(err);
-          throw new Error(err);
-        })
-    );
+    data.command = "AddDomain";
+    data.domain = domain;
+    data.period = 1;
+    data.ownercontact0 = contact;
+    data.admincontact0 = contact;
+    data.techcontact0 = "P-DKA10922";
+    data.billingcontact0 = "P-DKA10922";
 
-    return result;
+    config.method = "POST";
+    config.data = data;
+    const res = await Axios(config);
+
+    return res.data;
   } catch (err) {
-    return err;
+    throw new Error(err);
+  }
+};
+
+export const createContact = async contact => {
+  try {
+    data.command = "AddContact";
+    config.method = "GET";
+    config.params = { ...data, ...contact };
+    const res = await Axios(config);
+
+    return res.data;
+  } catch (err) {
+    throw new Error(err);
   }
 };

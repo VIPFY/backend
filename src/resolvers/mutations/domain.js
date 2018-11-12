@@ -1,6 +1,10 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
-import rrpApi from "../../services/dd24";
+import {
+  checkDomain,
+  registerDomain,
+  createContact
+} from "../../services/dd24";
 
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -17,38 +21,19 @@ import {
   reactivateSubscription
 } from "../../services/stripe";
 import { PartnerError, NormalError } from "../../errors";
-import { debug } from "winston";
-import Axios from "axios";
 
 export default {
   checkDomain: async (parent, { domain }) => {
     try {
-      // const { code, description } = await rrpApi("CheckDomain", {
-      //   command: "CheckDomain",
-      //   domain
-      // });
-      const { RRP_USERNAME, RRP_PASSWORD } = process.env;
-
-      const res = await Axios({
-        method: "GET",
-        url: "https://api-ote.rrpproxy.net/api/call",
-        data: {
-          s_login: RRP_USERNAME,
-          s_pw: RRP_PASSWORD,
-          // s_opmode: "OTE",
-          command: "CheckDomain",
-          domain
-        }
-      });
+      const res = await checkDomain(domain);
       console.log(res);
-      // if (code != 210) {
-      //   throw new Error("Something went wrong");
-      // }
+      if (res.code != 210) {
+        throw new Error(res.data);
+      }
 
       return true;
     } catch (err) {
-      console.log(err);
-      //     throw new NormalError({ message: err.message, internalData: { err } });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
   /**
@@ -100,82 +85,68 @@ export default {
             throw new Error("Missing payment information!");
           }
 
-          let register;
           let totalprice = findPrice.price;
           const additionalfeatures = {};
           const totalfeatures = {
             domain: domainData.domain,
             renewalmode: "AUTORENEW"
           };
-          let partnerLogs = {};
-          domainData.renewalmode = "AUTORENEW";
 
-          if (hasAccount) {
-            const mergedData = {
-              cid: hasAccount.accountid,
-              period: 1,
-              ...domainData
-            };
-
-            register = await rrpApi("AddDomain", mergedData);
-
-            if (register.code == "200") {
-              domainData.accountid = hasAccount.accountid;
-            } else {
-              throw new Error(register.description);
-            }
-          } else {
-            const accountData = await models.sequelize.query(
-              `SELECT ad.address, ad.country, pd.number as phone FROM unit_data hd
+          const accountData = await models.sequelize.query(
+            `SELECT ad.address, ad.country, pd.number as phone FROM unit_data hd
               INNER JOIN address_data ad ON ad.unitid = hd.id INNER JOIN phone_data pd
               ON pd.unitid = hd.id WHERE hd.id = :company AND
               ('domain' = ANY(ad.tags) OR 'main' = ANY(ad.tags))`,
-              {
-                replacements: { company },
-                type: models.sequelize.QueryTypes.SELECT
-              }
+            {
+              replacements: { company },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+
+          if (accountData.length == 0) {
+            throw new Error("Address or Telefonnumber missing.");
+          }
+
+          const accountDataCorrect = recursiveAddressCheck(accountData);
+
+          if (!accountDataCorrect) {
+            throw new Error(
+              "Please make sure you have a valid address and retry then."
             );
+          }
 
-            if (accountData.length == 0) {
-              throw new Error("Address or Telefonnumber missing.");
-            }
+          const {
+            address: { street, zip, city },
+            country,
+            phone
+          } = accountDataCorrect;
 
-            const accountDataCorrect = recursiveAddressCheck(accountData);
+          const contact = {
+            firstname: "Domain",
+            lastname: "Admin",
+            street0: street,
+            zip,
+            city,
+            country,
+            phone,
+            email: "domains@vipfy.com"
+          };
 
-            if (!accountDataCorrect) {
-              throw new Error(
-                "Please make sure you have a valid address and retry then."
-              );
-            }
+          const partnerLogs = {
+            ...domainData,
+            unitid: company,
+            ...contact
+          };
 
-            const { address, ...account } = accountDataCorrect;
-            const { street, zip, city } = address;
+          const domainContact = await createContact(contact);
+          console.log(domainContact);
+          throw new Error("DEBUG");
+          partnerLogs.domain = register;
 
-            const newOptions = {
-              ...domainData,
-              ...account,
-              title: "Mr",
-              firstname: "Domain",
-              lastname: "Administrator",
-              email: "domains@vipfy.com",
-              period: 1,
-              street,
-              zip,
-              city,
-              unitid: company
-            };
-
-            newOptions.organization = organization.name;
-
-            register = await rrpApi("AddDomain", newOptions);
-            partnerLogs = newOptions;
-            partnerLogs.domain = register;
-
-            if (register.code == "200") {
-              domainData.accountid = register.cid;
-            } else {
-              throw new Error(register.description);
-            }
+          if (register.code == "200") {
+            domainData.accountid = register.cid;
+          } else {
+            throw new Error(register.description);
           }
 
           if (payingoptions.stripe.subscription) {
