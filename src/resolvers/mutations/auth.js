@@ -25,8 +25,8 @@ import logger from "../../loggers";
 export default {
   signUp: async (
     parent,
-    { email, name, companyData },
-    { models, SECRET, ip }
+    { email, name, companyData, promocode },
+    { models, SECRET, SECRET_TWO, ip }
   ) =>
     models.sequelize.transaction(async ta => {
       try {
@@ -62,6 +62,28 @@ export default {
 
         const [newUser, emailDbo] = await Promise.all([p1, p2]);
         const user = newUser.get();
+
+        await sendEmail({
+          templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
+          fromName: "VIPFY",
+          personalizations: [
+            {
+              to: [
+                {
+                  email,
+                  name: `${name.firstname} ${
+                    name.middlename ? `${name.middlename} ` : ""
+                  }${name.lastname}`
+                }
+              ],
+              dynamic_template_data: {
+                name: "",
+                password,
+                email
+              }
+            }
+          ]
+        });
 
         let { legalinformation, name: companyName } = companyData;
 
@@ -131,79 +153,38 @@ export default {
           {
             unitid: company.id,
             name: companyName,
-            legalinformation
+            legalinformation,
+            promocode
           },
           { transaction: ta }
         );
 
         const p5 = models.ParentUnit.create(
-          {
-            parentunit: company.id,
-            childunit: unit.id
-          },
+          { parentunit: company.id, childunit: unit.id },
           { transaction: ta }
         );
 
-        const p6 = models.BoughtPlan.create(
-          {
-            planid: 125,
-            payer: company,
-            usedby: company,
-            buyer: unit.id,
-            totalprice: 0,
-            disabled: false,
-            additionalfeatures: {},
-            totalfeatures: {},
-            planinputs: {}
-          },
-          { transaction: ta }
-        );
+        let [rights, department, parentUnit] = await Promise.all([p3, p4, p5]);
+        rights = rights.get();
+        department = department.get();
+        parentUnit = parentUnit.get();
 
-        const [rights, department, parentUnit, vipfyPlan] = await Promise.all([
-          p3,
-          p4,
-          p5,
-          p6
-        ]);
         // resetCompanyMembershipCache(company.id, unit.id);
 
-        await sendEmail({
-          templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
-          fromName: "VIPFY",
-          personalizations: [
-            {
-              to: [
-                {
-                  email,
-                  name: `${name.firstname} ${
-                    name.middlename ? `${name.middlename} ` : ""
-                  }${name.lastname}`
-                }
-              ],
-              dynamic_template_data: {
-                name: "",
-                password,
-                email
-              }
-            }
-          ]
-        });
-
-        // await createLog(
-        //   ip,
-        //   "signUp",
-        //   {
-        //     human: user,
-        //     email: emailDbo,
-        //     rights,
-        //     department,
-        //     parentUnit,
-        //     company,
-        //     vipfyPlan
-        //   },
-        //   unit.id,
-        //   ta
-        // );
+        await createLog(
+          ip,
+          "signUp",
+          {
+            human: user,
+            email: emailDbo,
+            rights,
+            department,
+            parentUnit,
+            company
+          },
+          unit.id,
+          ta
+        );
 
         user.company = company.id;
 
@@ -219,7 +200,7 @@ export default {
   signUpConfirm: async (
     parent,
     { email, password },
-    { models, SECRET, ip }
+    { models, SECRET, SECRET_TWO, ip }
   ) => {
     if (password.length > MAX_PASSWORD_LENGTH) {
       throw new Error("Password too long");
@@ -302,7 +283,11 @@ export default {
     });
   },
 
-  signIn: async (parent, { email, password }, { models, SECRET, ip }) => {
+  signIn: async (
+    parent,
+    { email, password },
+    { models, SECRET, SECRET_TWO, ip }
+  ) => {
     try {
       if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
@@ -329,6 +314,8 @@ export default {
         { where: { unitid: emailExists.unitid } }
       );
 
+      const refreshTokenSecret = emailExists.passwordhash + SECRET_TWO;
+
       const p1 = models.User.findOne({
         where: { id: emailExists.unitid }
       });
@@ -354,7 +341,11 @@ export default {
   },
 
   changePassword: requiresAuth.createResolver(
-    async (parent, { pw, newPw, confirmPw }, { models, token, SECRET, ip }) =>
+    async (
+      parent,
+      { pw, newPw, confirmPw },
+      { models, token, SECRET, SECRET_TWO, ip }
+    ) =>
       models.sequelize.transaction(async ta => {
         try {
           if (newPw != confirmPw) throw new Error("New passwords don't match!");

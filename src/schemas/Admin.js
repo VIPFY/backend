@@ -1,7 +1,7 @@
 export const queries = `
-  adminFetchLicence(licenceid: ID!): Licence!
-  adminFetchLicences(id: ID!, limit: Int, offset: Int): [Licence]!
-  adminFetchBoughtPlans(company: ID!, user: ID!): [BoughtPlan]!
+  adminFetchLicence(licenceid: Int!): Licence!
+  adminFetchLicences(id: Int!, limit: Int, offset: Int): [Licence]!
+  adminFetchBoughtPlans(company: Int!, user: Int!): [BoughtPlan]!
 
   # Returns all Users for messages
   allUsers(limit: Int, offset: Int): [User]!
@@ -9,21 +9,21 @@ export const queries = `
   admin: User
 
   adminFetchAllApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
-  adminFetchAppById(id: ID!): AppDetails!
-  adminFetchPlans(appid: ID!): [Plan]!
-  adminFetchPlan(planid: ID!): Plan!
+  adminFetchAppById(id: Int!): AppDetails!
+  adminFetchPlans(appid: Int!): [Plan]!
+  adminFetchPlan(planid: Int!): Plan!
   # Returns an user. Should only be usable by an admin
-  fetchUser(id: ID!): User!
-  fetchRecentLogs(user: ID!): [Log]!
+  fetchUser(id: Int!): User!
+  fetchRecentLogs(user: Int!): [Log]!
   allDepartments: [Department]!
   adminFetchUserAddresses: [Address]!
-  adminFetchEmployees(unitid: ID!, limit: Int, offset: Int): [DepartmentEmployee]!
-  adminFetchCompany(id: ID!): Department!
+  adminFetchEmployees(unitid: Int!, limit: Int, offset: Int): [DepartmentEmployee]!
+  adminFetchCompany(id: Int!): Department!
   allCompanies(limit: Int, offset: Int): [Department]!
   freeUsers: [User]!
   listStripeInvoices: JSON
   adminFetchListLength: ListCountResponse!
-  adminFetchDepartments(company: ID!, limit: Int, offset: Int): [DepartmentDataResponse]!
+  adminFetchDepartments(company: Int!, limit: Int, offset: Int): [DepartmentDataResponse]!
 
   # fetch perfomance statistics for this specific server
   fetchServerStats: JsonResponse!
@@ -37,7 +37,7 @@ export const mutations = `
   adminUpdateAddress(addressData: AddressInput!, id: Int!): Response!
   adminDeleteAddress(id: Int!): Response!
 
-  adminCreatePlan(plan: PlanInput!, appId: ID!): Response!
+  adminCreatePlan(plan: PlanInput!, appId: Int!): Response!
   adminUpdatePlan(id: Int!, plan: PlanInput!): Response!
   adminEndPlan(id: Int!, enddate: String!): Response!
 

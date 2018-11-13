@@ -87,12 +87,10 @@ export const types = `
     country: String
     subIndustry: String
     companyStage: String
-    promocode: String
   }
 `;
 
 export const queries = `
-  fetchVipfyPlan: BoughtPlan
   # Returns the users company
   fetchCompany: Department!
   fetchDepartments: [DepartmentResponse]!

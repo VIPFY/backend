@@ -73,7 +73,7 @@ export const mutations = `
   updateProfilePic(file: File!): String!
 
   # Only an email is required for the signup
-  signUp(email: String!, name: NameInput!, companyData: CompanyInput!): RegisterResponse!
+  signUp(email: String!, name: NameInput!, companyData: CompanyInput! promocode: String): RegisterResponse!
 
   # The user will be passed back a JSON Web token for authentication
   signIn(email: String!, password: String!): LoginResponse!

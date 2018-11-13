@@ -206,17 +206,3 @@ export const checkVat = async (cc, vatNumber) => {
     throw new Error("Invalid Vatnumber!");
   }
 };
-
-export const selectCredit = code => {
-  try {
-    switch (code) {
-      case "websummit18":
-        return 150;
-
-      default:
-        return 0;
-    }
-  } catch (err) {
-    throw new Error(err);
-  }
-};
