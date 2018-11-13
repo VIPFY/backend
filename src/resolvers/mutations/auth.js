@@ -20,6 +20,7 @@ import { sendEmail } from "../../helpers/email";
 import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import { sleep } from "@vipfy-private/service-base";
+import logger from "../../loggers";
 
 export default {
   signUp: async (
@@ -102,37 +103,46 @@ export default {
         let company = await models.Unit.create({}, { transaction: ta });
         company = company.get();
 
-        let zendeskdata = await axios({
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization:
-              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
-          },
-          data: JSON.stringify({
-            organization: { name: `Company-${company.id}`, notes: companyName }
-          }),
-          url: "https://vipfy.zendesk.com/api/v2/organizations.json"
-        });
+        try {
+          const zendeskdata = await axios({
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization:
+                "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+            },
+            data: JSON.stringify({
+              organization: {
+                name: `Company-${company.id}`,
+                notes: companyName
+              }
+            }),
+            url: "https://vipfy.zendesk.com/api/v2/organizations.json"
+          });
 
-        await axios({
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization:
-              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
-          },
-          data: JSON.stringify({
-            user: {
-              name: `${name.firstname} ${name.lastname}`,
-              email, //TODO Mehrere Email-Adressen
-              verified: true,
-              organization_id: zendeskdata.data.organization.id,
-              external_id: `User-${user.id}`
-            }
-          }),
-          url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
-        });
+          sleep(300);
+
+          await axios({
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization:
+                "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+            },
+            data: JSON.stringify({
+              user: {
+                name: `${name.firstname} ${name.lastname}`,
+                email, //TODO Mehrere Email-Adressen
+                verified: true,
+                organization_id: zendeskdata.data.organization.id,
+                external_id: `User-${user.id}`
+              }
+            }),
+            url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
+          });
+        } catch (e) {
+          logger.error(e);
+        }
 
         const p3 = models.Right.create(
           { holder: unit.id, forunit: company.id, type: "admin" },
@@ -182,7 +192,7 @@ export default {
 
         return { ok: true, token };
       } catch (err) {
-        console.log(err);
+        logger.info(err);
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }),
