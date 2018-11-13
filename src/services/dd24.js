@@ -1,4 +1,5 @@
 import Axios from "axios";
+import ini from "ini";
 
 const { RRP_USERNAME, RRP_PASSWORD, ENVIRONMENT } = process.env;
 let url = "https://api.rrpproxy.net/api/call";
@@ -57,8 +58,9 @@ export const createContact = async contact => {
     config.method = "GET";
     config.params = { ...data, ...contact };
     const res = await Axios(config);
+    const parsedRes = ini.parse(res.data);
 
-    return res.data;
+    return parsedRes;
   } catch (err) {
     throw new Error(err);
   }

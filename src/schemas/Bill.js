@@ -103,6 +103,14 @@ export const types = `
     appid: App!
   }
 
+  type Credit {
+    id: ID!
+    amount: Int!
+    created: Date!
+    spentfor: JSON
+    currency: String!
+  }
+
   type Promo {
     id: ID!
     name: String
@@ -164,6 +172,7 @@ export const queries = `
   fetchBills: [Bill]!
   fetchPaymentData: [Card]!
   fetchBillingEmails: [Email]!
+  fetchCredits: Credit
 `;
 
 export const mutations = `

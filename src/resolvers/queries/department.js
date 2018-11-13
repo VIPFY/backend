@@ -163,5 +163,32 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  fetchVipfyPlan: requiresAuth.createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const vipfyPlans = await models.Plan.findAll({
+          where: { appid: 66 },
+          attributes: ["id"],
+          raw: true
+        });
+
+        const planIds = vipfyPlans.map(plan => plan.id);
+
+        const vipfyPlan = await models.BoughtPlan.findOne({
+          where: { payer: company, planid: { [models.Op.in]: planIds } },
+          raw: true
+        });
+
+        return vipfyPlan;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };

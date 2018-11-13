@@ -1,19 +1,16 @@
-import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
-import { requiresAuth, requiresRights } from "../../helpers/permissions";
+import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { deleteFile, uploadFile } from "../../services/gcloud";
 import { getNewPasswordData } from "../../helpers/auth";
 import { NormalError } from "../../errors";
 import {
   createLog,
-  createNotification,
   formatHumanName,
-  computePasswordScore
+  selectCredit
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
-import { RFC_2822 } from "moment";
 
 // import { sendRegistrationEmail } from "../../services/mailjet";
 
@@ -40,9 +37,18 @@ export default {
             transaction: ta
           });
 
+          const { promocode, ...statistics } = data;
+
+          if (promocode) {
+            const amount = selectCredit(promocode);
+
+            await models.Credit.create({ amount }, { transaction: ta });
+          }
+
           const newData = await models.DepartmentData.update(
             {
-              statisticdata: { ...currentData.statisticdata, ...data }
+              promocode,
+              statisticdata: { ...currentData.statisticdata, ...statistics }
             },
             { where: { unitid }, transaction: ta, returning: true }
           );
