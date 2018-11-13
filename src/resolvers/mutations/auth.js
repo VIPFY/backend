@@ -150,7 +150,11 @@ export default {
             payer: company,
             usedby: company,
             buyer: unit.id,
-            totalprice: 0
+            totalprice: 0,
+            disabled: false,
+            additionalfeatures: {},
+            totalfeatures: {},
+            planinputs: {}
           },
           { transaction: ta }
         );
