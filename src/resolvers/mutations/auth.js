@@ -211,7 +211,7 @@ export default {
 
         return { ok: true, token };
       } catch (err) {
-        console.log(err);
+        logger.info(err);
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }),
