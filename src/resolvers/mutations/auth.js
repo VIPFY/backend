@@ -189,21 +189,21 @@ export default {
           ]
         });
 
-        await createLog(
-          ip,
-          "signUp",
-          {
-            human: user,
-            email: emailDbo,
-            rights,
-            department,
-            parentUnit,
-            company,
-            vipfyPlan
-          },
-          unit.id,
-          ta
-        );
+        // await createLog(
+        //   ip,
+        //   "signUp",
+        //   {
+        //     human: user,
+        //     email: emailDbo,
+        //     rights,
+        //     department,
+        //     parentUnit,
+        //     company,
+        //     vipfyPlan
+        //   },
+        //   unit.id,
+        //   ta
+        // );
 
         user.company = company.id;
 
