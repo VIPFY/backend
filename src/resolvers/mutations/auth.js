@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import axios from "axios";
+import moment from "moment";
 import { decode } from "jsonwebtoken";
 import { sleep } from "@vipfy-private/service-base";
 import {
@@ -28,7 +29,7 @@ const ZENDESK_TOKEN =
 export default {
   signUp: async (
     parent,
-    { email, name, companyData, promocode },
+    { email, name, companyData },
     { models, SECRET, ip }
   ) =>
     models.sequelize.transaction(async ta => {
@@ -47,13 +48,13 @@ export default {
         const pwData = await getNewPasswordData(password);
 
         // Replace special characters in names to avoid frontend errors
-        const filteredName = {};
-        Object.keys(name).forEach(item => {
-          filteredName[item] = name[item].replace(
-            /['"[\]{}()*+?.,\\^$|#\s]/g,
-            "\\$&"
-          );
-        });
+        const filteredName = name;
+        // Object.keys(name).forEach(item => {
+        //   filteredName[item] = name[item].replace(
+        //     /['"[\]{}()*+?.,\\^$|#\s]/g,
+        //     "\\$&"
+        //   );
+        // });
 
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
@@ -133,8 +134,7 @@ export default {
           {
             unitid: company.id,
             name: companyName,
-            legalinformation,
-            promocode
+            legalinformation
           },
           { transaction: ta }
         );
@@ -144,14 +144,20 @@ export default {
           { transaction: ta }
         );
 
+        const endtime = new Date(
+          moment()
+            .add(1, "months")
+            .unix()
+        );
         const p6 = models.BoughtPlan.create(
           {
-            planid: 125,
+            planid: 126,
             payer: company.id,
             usedby: company.id,
             buyer: unit.id,
             totalprice: 0,
-            disabled: false
+            disabled: false,
+            endtime
           },
           { transaction: ta }
         );
