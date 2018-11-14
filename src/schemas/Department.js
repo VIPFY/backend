@@ -73,6 +73,7 @@ export const types = `
     international_phone_number: String
     website: String
     address_components: [JSON]
+    promocode: String
   }
 
   input LegalInput {
@@ -87,7 +88,6 @@ export const types = `
     country: String
     subIndustry: String
     companyStage: String
-    promocode: String
   }
 `;
 

@@ -21,6 +21,9 @@ import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import { sleep } from "@vipfy-private/service-base";
 
+const ZENDESK_TOKEN =
+  "Basic bnZAdmlwZnkuc3RvcmUvdG9rZW46bndGc3lDVWFpMUg2SWNKOXBpbFk3UGRtOHk0bXVhamZlYzFrbzBHeQ==";
+
 export default {
   signUp: async (
     parent,
@@ -42,10 +45,19 @@ export default {
         const password = await randomPassword(3, 2);
         const pwData = await getNewPasswordData(password);
 
+        // Replace special characters in names to avoid frontend errors
+        const filteredName = {};
+        Object.keys(name).forEach(item => {
+          filteredName[item] = name[item].replace(
+            /['"[\]{}()*+?.,\\^$|#\s]/g,
+            "\\$&"
+          );
+        });
+
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
-            ...name,
+            ...filteredName,
             unitid: unit.id,
             firstlogin: false,
             needspasswordchange: true,
@@ -61,7 +73,6 @@ export default {
 
         const [newUser, emailDbo] = await Promise.all([p1, p2]);
         const user = newUser.get();
-
         let { legalinformation, name: companyName } = companyData;
 
         if (!legalinformation.noVatRequired) {
@@ -84,8 +95,7 @@ export default {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization:
-              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+            Authorization: ZENDESK_TOKEN
           },
           data: JSON.stringify({
             organization: { name: `Company-${company.id}`, notes: companyName }
@@ -99,16 +109,15 @@ export default {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization:
-              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+            Authorization: ZENDESK_TOKEN
           },
           data: JSON.stringify({
             user: {
-              name: `${name.firstname} ${name.lastname}`,
+              name: formatHumanName(filteredName),
               email, //TODO Mehrere Email-Adressen
               verified: true,
               organization_id: zendeskdata.data.organization.id,
-              external_id: `User-${user.id}`
+              external_id: `User-${unit.id}`
             }
           }),
           url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
@@ -139,10 +148,11 @@ export default {
         const p6 = models.BoughtPlan.create(
           {
             planid: 125,
-            payer: company,
-            usedby: company,
+            payer: company.id,
+            usedby: company.id,
             buyer: unit.id,
-            totalprice: 0
+            totalprice: 0,
+            disabled: false
           },
           { transaction: ta }
         );
@@ -163,9 +173,7 @@ export default {
               to: [
                 {
                   email,
-                  name: `${name.firstname} ${
-                    name.middlename ? `${name.middlename} ` : ""
-                  }${name.lastname}`
+                  name: formatHumanName(filteredName)
                 }
               ],
               dynamic_template_data: {
@@ -240,25 +248,23 @@ export default {
           { where: { email }, raw: true, transaction: ta }
         );
 
-        let supportUserArray = await axios({
+        const supportUserArray = await axios({
           method: "GET",
           url: `https://vipfy.zendesk.com/api/v2/users/show_many.json?external_ids=User-${
             user.unitid
           }`,
           headers: {
-            Authorization:
-              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+            Authorization: ZENDESK_TOKEN
           }
         });
 
         logger.info("supportUserArray", supportUserArray);
 
-        let zendeskdata = await axios({
+        await axios({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization:
-              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+            Authorization: ZENDESK_TOKEN
           },
           data: JSON.stringify({
             password: "newpassword"

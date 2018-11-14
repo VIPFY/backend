@@ -186,6 +186,8 @@ export const mutations = `
   cancelPlan(planid: ID!): BoughtPlan!
   reactivatePlan(planid: ID!): BoughtPlan!
 
+  buyVipfyPlan(planid: ID!): Response!
+
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!
   addBillPos(bill: BillInput!, billid: ID): Response!

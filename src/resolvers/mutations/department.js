@@ -37,18 +37,9 @@ export default {
             transaction: ta
           });
 
-          const { promocode, ...statistics } = data;
-
-          if (promocode) {
-            const amount = selectCredit(promocode);
-
-            await models.Credit.create({ amount }, { transaction: ta });
-          }
-
           const newData = await models.DepartmentData.update(
             {
-              promocode,
-              statisticdata: { ...currentData.statisticdata, ...statistics }
+              statisticdata: { ...currentData.statisticdata, ...data }
             },
             { where: { unitid }, transaction: ta, returning: true }
           );
@@ -581,7 +572,7 @@ export default {
           user: { company }
         } = decode(token);
 
-        const { website } = data;
+        const { website, promocode } = data;
         const promises = [];
         const addressData = { unitid: company, tags: ["main", "billing"] };
         const address = {};
@@ -660,6 +651,22 @@ export default {
           );
 
           promises.push(p3);
+        }
+
+        if (promocode) {
+          const p4 = models.DepartmentData.update(
+            { promocode },
+            { where: { unitid: company }, transaction: ta }
+          );
+
+          const amount = selectCredit(promocode);
+
+          const p5 = models.Credit.create(
+            { amount, unitid: company },
+            { transaction: ta }
+          );
+
+          promises.push(p4, p5);
         }
 
         await Promise.all(promises);

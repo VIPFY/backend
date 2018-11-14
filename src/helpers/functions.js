@@ -209,7 +209,7 @@ export const checkVat = async (cc, vatNumber) => {
 
 export const selectCredit = code => {
   try {
-    switch (code) {
+    switch (code.trim()) {
       case "websummit18":
         return 150;
 
