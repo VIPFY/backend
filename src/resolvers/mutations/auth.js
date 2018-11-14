@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import axios from "axios";
 import { decode } from "jsonwebtoken";
+import { sleep } from "@vipfy-private/service-base";
 import {
   createToken,
   checkAuthentification,
@@ -19,7 +20,7 @@ import { MAX_PASSWORD_LENGTH } from "../../constants";
 import { sendEmail } from "../../helpers/email";
 import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
-import { sleep } from "@vipfy-private/service-base";
+import logger from "../../loggers";
 
 const ZENDESK_TOKEN =
   "Basic bnZAdmlwZnkuc3RvcmUvdG9rZW46bndGc3lDVWFpMUg2SWNKOXBpbFk3UGRtOHk0bXVhamZlYzFrbzBHeQ==";
@@ -27,7 +28,7 @@ const ZENDESK_TOKEN =
 export default {
   signUp: async (
     parent,
-    { email, name, companyData },
+    { email, name, companyData, promocode },
     { models, SECRET, ip }
   ) =>
     models.sequelize.transaction(async ta => {
@@ -91,7 +92,7 @@ export default {
         let company = await models.Unit.create({}, { transaction: ta });
         company = company.get();
 
-        let zendeskdata = await axios({
+        const zendeskdata = await axios({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -114,7 +115,7 @@ export default {
           data: JSON.stringify({
             user: {
               name: formatHumanName(filteredName),
-              email, //TODO Mehrere Email-Adressen
+              email, // TODO Mehrere Email-Adressen
               verified: true,
               organization_id: zendeskdata.data.organization.id,
               external_id: `User-${unit.id}`
@@ -132,16 +133,14 @@ export default {
           {
             unitid: company.id,
             name: companyName,
-            legalinformation
+            legalinformation,
+            promocode
           },
           { transaction: ta }
         );
 
         const p5 = models.ParentUnit.create(
-          {
-            parentunit: company.id,
-            childunit: unit.id
-          },
+          { parentunit: company.id, childunit: unit.id },
           { transaction: ta }
         );
 
@@ -194,8 +193,8 @@ export default {
             rights,
             department,
             parentUnit,
-            company,
-            vipfyPlan
+            vipfyPlan,
+            company
           },
           unit.id,
           ta
@@ -207,7 +206,7 @@ export default {
 
         return { ok: true, token };
       } catch (err) {
-        console.log(err);
+        logger.info(err);
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }),

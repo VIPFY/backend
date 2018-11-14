@@ -1,16 +1,19 @@
+import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
-import { requiresRights, requiresAuth } from "../../helpers/permissions";
+import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { deleteFile, uploadFile } from "../../services/gcloud";
 import { getNewPasswordData } from "../../helpers/auth";
 import { NormalError } from "../../errors";
 import {
   createLog,
+  createNotification,
   formatHumanName,
-  selectCredit
+  computePasswordScore
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
+import { RFC_2822 } from "moment";
 
 // import { sendRegistrationEmail } from "../../services/mailjet";
 

@@ -92,7 +92,6 @@ export const types = `
 `;
 
 export const queries = `
-  fetchVipfyPlan: BoughtPlan
   # Returns the users company
   fetchCompany: Department!
   fetchDepartments: [DepartmentResponse]!

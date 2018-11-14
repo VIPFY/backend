@@ -139,24 +139,11 @@ export default {
           };
 
           // if (!hasAccount) {
-          //hasAccount.contactid
-          // } else
 
-          //           code = 200
-          // description = Command completed successfully
-          // queuetime = 0
-          // runtime = 0.181
-          // property[auth][0] = lOvc.nK%9V
-          // property[contact][0] = P-DAA256
-          // property[created date][0] = 2018-11-12 15:42:07
-          // property[roid][0] = 30003256_CONTACT-KEYSYS
-          // property[validated][0] = 1
-          // property[verified][0] = 0
+          // }
 
           const domainContact = await createContact(contact);
-
-          const contactid = domainContact.RESPONSE["property[contact][0]"];
-          console.log(contactid);
+          console.log(createContact);
           throw new Error("DEBUG");
           partnerLogs.domain = register;
 
