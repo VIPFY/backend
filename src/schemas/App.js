@@ -141,4 +141,7 @@ export const mutations = `
   addExternalAccount(username: String!, password: String!, loginurl: String, appid: ID!): Response!
 
   removeExternalAccount(licenceid: ID!): Response!
+
+  # Register a vote for the next app to implement
+  voteForApp(app: String!): Response!
   `;

@@ -738,5 +738,17 @@ export default {
         );
         throw new NormalError({ message: err.message, internalData: { err } });
       }
-    })
+    }),
+
+  voteForApp: async (parent, { app }, { models, token }) => {
+    const {
+      user: { unitid }
+    } = decode(token);
+    try {
+      await models.AppVote.create({ unitid, app });
+      return { ok: true };
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };
