@@ -9,7 +9,8 @@ import {
   createLog,
   createNotification,
   formatHumanName,
-  computePasswordScore
+  computePasswordScore,
+  selectCredit
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
@@ -694,6 +695,64 @@ export default {
 
             await Promise.all([p1, p2]);
           }
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  applyPromocode: requiresAuth.createResolver(
+    async (parent, { promocode }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const { credits, currency, creditsexpire } = await selectCredit(
+            promocode,
+            company
+          );
+
+          const p1 = models.Credit.create(
+            {
+              amount: credits,
+              currency,
+              unitid: company,
+              expires: creditsexpire
+            },
+            { transaction: ta }
+          );
+
+          const p2 = models.DepartmentData.update(
+            { promocode },
+            { where: { unitid: company }, returning: true, transaction: ta }
+          );
+
+          const [newCredits, updatedDepartment] = await Promise.all([p1, p2]);
+
+          const p3 = createNotification({
+            receiver: unitid,
+            message: `Congrats, you received ${credits} credits`,
+            icon: "money-bill-wave",
+            link: "profile",
+            changed: ["promocode"]
+          });
+
+          const p4 = createLog(
+            ip,
+            "applyPromocode",
+            { promocode, newCredits, updatedDepartment },
+            unitid,
+            ta
+          );
+
+          await Promise.all([p3, p4]);
 
           return { ok: true };
         } catch (err) {

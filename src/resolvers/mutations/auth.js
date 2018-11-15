@@ -1,6 +1,8 @@
 import bcrypt from "bcrypt";
 import axios from "axios";
+import moment from "moment";
 import { decode } from "jsonwebtoken";
+import { sleep } from "@vipfy-private/service-base";
 import {
   createToken,
   checkAuthentification,
@@ -19,13 +21,16 @@ import { MAX_PASSWORD_LENGTH } from "../../constants";
 import { sendEmail } from "../../helpers/email";
 import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
-import { sleep } from "@vipfy-private/service-base";
+import logger from "../../loggers";
+
+const ZENDESK_TOKEN =
+  "Basic bnZAdmlwZnkuc3RvcmUvdG9rZW46bndGc3lDVWFpMUg2SWNKOXBpbFk3UGRtOHk0bXVhamZlYzFrbzBHeQ==";
 
 export default {
   signUp: async (
     parent,
-    { email, name, companyData, promocode },
-    { models, SECRET, SECRET_TWO, ip }
+    { email, name, companyData },
+    { models, SECRET, ip }
   ) =>
     models.sequelize.transaction(async ta => {
       try {
@@ -42,10 +47,19 @@ export default {
         const password = await randomPassword(3, 2);
         const pwData = await getNewPasswordData(password);
 
+        // Replace special characters in names to avoid frontend errors
+        const filteredName = name;
+        // Object.keys(name).forEach(item => {
+        //   filteredName[item] = name[item].replace(
+        //     /['"[\]{}()*+?.,\\^$|#\s]/g,
+        //     "\\$&"
+        //   );
+        // });
+
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
-            ...name,
+            ...filteredName,
             unitid: unit.id,
             firstlogin: false,
             needspasswordchange: true,
@@ -61,29 +75,6 @@ export default {
 
         const [newUser, emailDbo] = await Promise.all([p1, p2]);
         const user = newUser.get();
-
-        await sendEmail({
-          templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
-          fromName: "VIPFY",
-          personalizations: [
-            {
-              to: [
-                {
-                  email,
-                  name: `${name.firstname} ${
-                    name.middlename ? `${name.middlename} ` : ""
-                  }${name.lastname}`
-                }
-              ],
-              dynamic_template_data: {
-                name: "",
-                password,
-                email
-              }
-            }
-          ]
-        });
-
         let { legalinformation, name: companyName } = companyData;
 
         if (!legalinformation.noVatRequired) {
@@ -102,12 +93,11 @@ export default {
         let company = await models.Unit.create({}, { transaction: ta });
         company = company.get();
 
-        let zendeskdata = await axios({
+        const zendeskdata = await axios({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization:
-              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+            Authorization: ZENDESK_TOKEN
           },
           data: JSON.stringify({
             organization: { name: `Company-${company.id}`, notes: companyName }
@@ -115,20 +105,21 @@ export default {
           url: "https://vipfy.zendesk.com/api/v2/organizations.json"
         });
 
+        sleep(300);
+
         await axios({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization:
-              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+            Authorization: ZENDESK_TOKEN
           },
           data: JSON.stringify({
             user: {
-              name: `${name.firstname} ${name.lastname}`,
-              email, //TODO Mehrere Email-Adressen
+              name: formatHumanName(filteredName),
+              email, // TODO Mehrere Email-Adressen
               verified: true,
               organization_id: zendeskdata.data.organization.id,
-              external_id: `User-${user.id}`
+              external_id: `User-${unit.id}`
             }
           }),
           url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
@@ -143,8 +134,7 @@ export default {
           {
             unitid: company.id,
             name: companyName,
-            legalinformation,
-            promocode
+            legalinformation
           },
           { transaction: ta }
         );
@@ -154,12 +144,50 @@ export default {
           { transaction: ta }
         );
 
-        let [rights, department, parentUnit] = await Promise.all([p3, p4, p5]);
-        rights = rights.get();
-        department = department.get();
-        parentUnit = parentUnit.get();
+        const endtime = moment()
+          .add(1, "months")
+          .toDate();
+        console.log(endtime);
+        const p6 = models.BoughtPlan.create(
+          {
+            planid: 126,
+            payer: company.id,
+            usedby: company.id,
+            buyer: unit.id,
+            totalprice: 0,
+            disabled: false,
+            endtime
+          },
+          { transaction: ta }
+        );
 
+        const [rights, department, parentUnit, vipfyPlan] = await Promise.all([
+          p3,
+          p4,
+          p5,
+          p6
+        ]);
         // resetCompanyMembershipCache(company.id, unit.id);
+
+        await sendEmail({
+          templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
+          fromName: "VIPFY",
+          personalizations: [
+            {
+              to: [
+                {
+                  email,
+                  name: formatHumanName(filteredName)
+                }
+              ],
+              dynamic_template_data: {
+                name: "",
+                password,
+                email
+              }
+            }
+          ]
+        });
 
         await createLog(
           ip,
@@ -170,6 +198,7 @@ export default {
             rights,
             department,
             parentUnit,
+            vipfyPlan,
             company
           },
           unit.id,
@@ -182,7 +211,7 @@ export default {
 
         return { ok: true, token };
       } catch (err) {
-        console.log(err);
+        logger.info(err);
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }),
@@ -190,7 +219,7 @@ export default {
   signUpConfirm: async (
     parent,
     { email, password },
-    { models, SECRET, SECRET_TWO, ip }
+    { models, SECRET, ip }
   ) => {
     if (password.length > MAX_PASSWORD_LENGTH) {
       throw new Error("Password too long");
@@ -223,25 +252,23 @@ export default {
           { where: { email }, raw: true, transaction: ta }
         );
 
-        let supportUserArray = await axios({
+        const supportUserArray = await axios({
           method: "GET",
           url: `https://vipfy.zendesk.com/api/v2/users/show_many.json?external_ids=User-${
             user.unitid
           }`,
           headers: {
-            Authorization:
-              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+            Authorization: ZENDESK_TOKEN
           }
         });
 
         logger.info("supportUserArray", supportUserArray);
 
-        let zendeskdata = await axios({
+        await axios({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization:
-              "Basic bnZAdmlwZnkuc3RvcmU6WHhMUk1UMkZUTGhkTGdURmt1c0M="
+            Authorization: ZENDESK_TOKEN
           },
           data: JSON.stringify({
             password: "newpassword"
@@ -273,11 +300,7 @@ export default {
     });
   },
 
-  signIn: async (
-    parent,
-    { email, password },
-    { models, SECRET, SECRET_TWO, ip }
-  ) => {
+  signIn: async (parent, { email, password }, { models, SECRET, ip }) => {
     try {
       if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
@@ -304,8 +327,6 @@ export default {
         { where: { unitid: emailExists.unitid } }
       );
 
-      const refreshTokenSecret = emailExists.passwordhash + SECRET_TWO;
-
       const p1 = models.User.findOne({
         where: { id: emailExists.unitid }
       });
@@ -331,11 +352,7 @@ export default {
   },
 
   changePassword: requiresAuth.createResolver(
-    async (
-      parent,
-      { pw, newPw, confirmPw },
-      { models, token, SECRET, SECRET_TWO, ip }
-    ) =>
+    async (parent, { pw, newPw, confirmPw }, { models, token, SECRET, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           if (newPw != confirmPw) throw new Error("New passwords don't match!");

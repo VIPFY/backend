@@ -26,6 +26,7 @@ export const types = `
     apps: JSON
     domains: [Domain]
     createdate: String!
+    promocode: String
   }
 
   type DepartmentData {
@@ -73,6 +74,7 @@ export const types = `
     international_phone_number: String
     website: String
     address_components: [JSON]
+    promocode: String
   }
 
   input LegalInput {
@@ -104,6 +106,7 @@ export const queries = `
   fetchAddressProposal(placeid: String!): JSON!
 
   fetchUserSecurityOverview: [UserSecurityOverview]!
+  fetchVipfyPlan: BoughtPlan
 `;
 
 export const mutations = `
@@ -127,4 +130,6 @@ export const mutations = `
 
   # force the given users to change their password on next login
   forcePasswordChange(userids: [ID]!): Response!
+
+  applyPromocode(promocode: String!): Response!
 `;

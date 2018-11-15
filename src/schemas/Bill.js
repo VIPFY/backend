@@ -115,6 +115,25 @@ export const types = `
     sponsor: Unit!
   }
 
+  type Credit {
+    id: ID!   
+    amount: Int!   
+    created: Date!   
+    spentfor: JSON   
+    currency: String!  
+    expires: String
+  }
+
+  type Promocode {
+    id: ID!
+    credits: Float!
+    created: Date!
+    expires: Date
+    currency: String!
+    code: String!
+    creditsexpire: Date
+  }
+
   type PromosRunning {
     id: ID!
     name: String
@@ -164,6 +183,7 @@ export const queries = `
   fetchBills: [Bill]!
   fetchPaymentData: [Card]!
   fetchBillingEmails: [Email]!
+  fetchCredits: Credit
 `;
 
 export const mutations = `
@@ -176,6 +196,8 @@ export const mutations = `
   updatePlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
   cancelPlan(planid: ID!): BoughtPlan!
   reactivatePlan(planid: ID!): BoughtPlan!
+
+  buyVipfyPlan(planid: ID!): Response!
 
   # This function will be used by a cronjob which runs once a month
   createMonthlyBill: Response!

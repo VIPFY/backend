@@ -163,5 +163,51 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  fetchVipfyPlan: requiresAuth.createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { company, unitid }
+        } = decode(token);
+
+        const vipfyPlans = await models.Plan.findAll({
+          where: { appid: 66 },
+          attributes: ["id"],
+          raw: true
+        });
+
+        const planIds = vipfyPlans.map(plan => plan.id);
+
+        let vipfyPlan = await models.BoughtPlan.findOne({
+          where: {
+            payer: company,
+            endtime: {
+              [models.Op.or]: {
+                [models.Op.gt]: models.sequelize.fn("NOW"),
+                [models.Op.eq]: null
+              }
+            },
+            planid: { [models.Op.in]: planIds }
+          }
+        });
+
+        if (!vipfyPlan) {
+          vipfyPlan = await models.BoughtPlan.create({
+            planid: 125,
+            payer: company,
+            usedby: company,
+            buyer: unitid,
+            totalprice: 0,
+            disabled: false
+          });
+        }
+
+        return vipfyPlan;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };

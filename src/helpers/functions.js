@@ -206,3 +206,34 @@ export const checkVat = async (cc, vatNumber) => {
     throw new Error("Invalid Vatnumber!");
   }
 };
+
+export const selectCredit = async (code, unitid) => {
+  try {
+    const p1 = models.Department.findOne({
+      where: { unitid, promocode: code },
+      raw: true
+    });
+
+    const p2 = models.Promocode.findOne(
+      {
+        where: {
+          code,
+          expires: { [models.Op.gt]: models.sequelize.fn("NOW") }
+        }
+      },
+      { raw: true }
+    );
+
+    const [checkCode, credits] = await Promise.all([p1, p2]);
+
+    if (!credits) {
+      throw new Error("Invalid Promocode!");
+    } else if (checkCode) {
+      throw new Error("You already used this code");
+    } else {
+      return credits;
+    }
+  } catch (err) {
+    throw new Error(err);
+  }
+};
