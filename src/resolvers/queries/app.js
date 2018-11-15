@@ -25,7 +25,8 @@ export default {
             "cheapestprice",
             "avgstars",
             "cheapestpromo",
-            "needssubdomain"
+            "needssubdomain",
+            "options"
           ],
           where: { disabled: false, deprecated: false, hidden: false },
           order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
