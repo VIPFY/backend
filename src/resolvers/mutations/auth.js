@@ -144,11 +144,10 @@ export default {
           { transaction: ta }
         );
 
-        const endtime = new Date(
-          moment()
-            .add(1, "months")
-            .unix()
-        );
+        const endtime = moment()
+          .add(1, "months")
+          .toDate();
+        console.log(endtime);
         const p6 = models.BoughtPlan.create(
           {
             planid: 126,
