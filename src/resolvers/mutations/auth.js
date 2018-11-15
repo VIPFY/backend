@@ -82,11 +82,13 @@ export default {
           const vatNumber = vatId.substr(2).trim();
           const cc = vatId.substr(0, 2).toUpperCase();
 
+          const checkedData = await checkVat(cc, vatNumber);
           if (cc != "DE") {
-            const checkedName = await checkVat(cc, vatNumber);
             const res = await axios.get("https://euvat.ga/rates.json");
-            companyName = checkedName;
+            companyName = checkedData.name;
             legalinformation.vatPercentage = res.data.rates[cc].standard_rate;
+          } else if (checkedData.valid && checkedData.name != "---") {
+            companyName = checkedData.name;
           }
         }
 
@@ -363,7 +365,7 @@ export default {
             pw.length > MAX_PASSWORD_LENGTH ||
             newPw.length > MAX_PASSWORD_LENGTH
           ) {
-            throw new Error("password too long");
+            throw new Error("Password too long");
           }
 
           const {

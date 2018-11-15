@@ -620,9 +620,10 @@ export default {
               return true;
             });
           });
-
           address.street = street.join(", ");
           addressData.address = address;
+          addressData.verified = true;
+
           const p1 = models.Address.create(addressData, { transaction: ta });
 
           promises.push(p1);

@@ -196,11 +196,11 @@ export const checkVat = async (cc, vatNumber) => {
         })
     );
 
-    if (res.valid == false) {
+    if (res.valid == false && cc != "DE") {
       console.log(res);
       throw new Error(res);
     } else {
-      return res.name;
+      return res;
     }
   } catch (error) {
     throw new Error("Invalid Vatnumber!");
