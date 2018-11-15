@@ -237,3 +237,30 @@ export const selectCredit = async (code, unitid) => {
     throw new Error(err);
   }
 };
+
+export const findVipfyPlan = async company => {
+  try {
+    const vipfyPlans = await models.Plan.findAll({
+      where: { appid: 66 },
+      attributes: ["id"],
+      raw: true
+    });
+
+    const planIds = vipfyPlans.map(plan => plan.id);
+
+    return await models.BoughtPlan.findOne({
+      where: {
+        payer: company,
+        endtime: {
+          [models.Op.or]: {
+            [models.Op.gt]: models.sequelize.fn("NOW"),
+            [models.Op.eq]: null
+          }
+        },
+        planid: { [models.Op.in]: planIds }
+      }
+    });
+  } catch (error) {
+    throw new Error(error);
+  }
+};

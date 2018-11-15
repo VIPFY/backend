@@ -139,6 +139,7 @@ export const mutations = `
 
   # Adds the data of an external App
   addExternalAccount(username: String!, password: String!, loginurl: String, appid: ID!): Response!
+  addExternalAccountToEmployee(userid: ID!, username: String!, password: String!, loginurl: String, appid: ID!): Response!
 
   removeExternalAccount(licenceid: ID!): Response!
 
