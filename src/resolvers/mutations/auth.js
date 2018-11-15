@@ -147,7 +147,7 @@ export default {
         const endtime = moment()
           .add(1, "months")
           .toDate();
-        console.log(endtime);
+
         const p6 = models.BoughtPlan.create(
           {
             planid: 126,
