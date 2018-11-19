@@ -184,6 +184,8 @@ export const queries = `
   fetchPaymentData: [Card]!
   fetchBillingEmails: [Email]!
   fetchCredits: Credit
+
+  fetchAllLicencesFromCompany(appid: ID!): [BoughtPlan]!
 `;
 
 export const mutations = `

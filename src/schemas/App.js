@@ -18,6 +18,7 @@ export const types = `
     color: String!
     deprecated: Boolean!
     hidden: Boolean!
+    hasboughtplan: Boolean
   }
 
   type AppDetails {
@@ -96,6 +97,8 @@ export const queries = `
   # Returns all apps in Vipfy
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
 
+  fetchAllAppsEnhanced: [App]!
+
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
 
@@ -110,7 +113,7 @@ export const queries = `
 
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
 
-  fetchSupportToken:String
+  fetchSupportToken: String
 `;
 
 export const mutations = `
@@ -139,8 +142,10 @@ export const mutations = `
 
   # Adds the data of an external App
   addExternalAccount(username: String!, password: String!, loginurl: String, appid: ID!): Response!
+  addExternalAccountToEmployee(userid: ID!, username: String!, password: String!, loginurl: String, appid: ID!): Response!
 
   removeExternalAccount(licenceid: ID!): Response!
+  removeExternalAccountFromEmployee(userid: ID!, licenceid: ID!): Response!
 
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!
