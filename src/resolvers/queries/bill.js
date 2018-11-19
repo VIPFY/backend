@@ -175,5 +175,35 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
+
+  fetchAllLicencesFromCompany: requiresRights([
+    "view-licences",
+    "view-apps",
+    "view-boughtplans"
+  ]).createResolver(async (parent, { appid }, { models, token }) => {
+    try {
+      const {
+        user: { company }
+      } = decode(token);
+
+      const data = models.sequelize.query(
+        `SELECT boughtplan_data.*, JSONB_AGG(to_jsonb(ld) - 'key' - 'options') as licences
+            FROM boughtplan_data
+            INNER JOIN licence_data ld ON (ld.boughtplanid = boughtplan_data.id)
+            INNER JOIN plan_data pd on boughtplan_data.planid = pd.id
+          WHERE payer = :company AND appid = :appid
+          GROUP BY boughtplan_data.id;
+      `,
+        {
+          replacements: { company, appid },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
+
+      return data;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  })
 };

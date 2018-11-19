@@ -4,7 +4,6 @@ import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-import uuid from "uuid";
 import logger from "../../loggers";
 
 export default {
@@ -38,6 +37,33 @@ export default {
       }
     }
   ),
+
+  fetchAllAppsEnhanced: requiresRights([
+    "view-apps",
+    "view-licences"
+  ]).createResolver(async (parent, args, { models, token }) => {
+    try {
+      const {
+        user: { company }
+      } = decode(token);
+
+      const data = models.sequelize.query(
+        `SELECT app_data.*, bool_or(14 in (SELECT payer FROM boughtplan_data WHERE planid = d2.id)) as hasboughtplan
+        FROM app_data
+               inner join plan_data d2 on app_data.id = d2.appid
+        GROUP BY app_data.id
+        `,
+        {
+          replacements: { company },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
+
+      return data;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }),
 
   fetchAppById: requiresRights(["view-apps"]).createResolver(
     async (parent, { id }, { models }) => {
