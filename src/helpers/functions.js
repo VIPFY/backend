@@ -181,7 +181,7 @@ export const checkPlanValidity = async plan => {
  * @param {string} cc The two-digit country code
  * @param {string} vatNumber The vat number
  *
- * @returns {boolean}
+ * @returns {object}
  */
 export const checkVat = async (cc, vatNumber) => {
   try {
@@ -263,4 +263,52 @@ export const findVipfyPlan = async company => {
   } catch (error) {
     throw new Error(error);
   }
+};
+
+export const parseAddress = addressComponents => {
+  const address = {};
+  const street = [];
+  const addressData = {};
+
+  addressComponents.forEach(comp => {
+    comp.types.every(type => {
+      switch (type) {
+        case "country":
+          addressData.country = comp.short_name;
+          break;
+
+        case "postal_code":
+          address.zip = comp.long_name;
+          break;
+
+        case "locality":
+          address.city = comp.long_name;
+          break;
+
+        case "floor":
+          street.push(comp.long_name);
+          break;
+
+        case "street_number":
+          street.push(comp.long_name);
+          break;
+
+        case "route":
+          street.push(comp.long_name);
+          break;
+
+        case "administrative_area_level_1":
+          address.state = comp.short_name;
+          break;
+
+        default:
+          return true;
+      }
+      return true;
+    });
+  });
+  address.street = street.join(", ");
+  addressData.address = address;
+
+  return addressData;
 };

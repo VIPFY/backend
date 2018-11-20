@@ -111,9 +111,9 @@ export default {
         return { ok: true };
       }
 
-      const companyName = await checkVat(cc, vatNumber);
+      const checkedData = await checkVat(cc, vatNumber);
 
-      return companyName;
+      return checkedData.name;
     } catch (err) {
       throw new Error("Invalid Vatnumber!");
     }
