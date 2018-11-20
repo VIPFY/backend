@@ -1,5 +1,6 @@
 import axios from "axios";
 import crypto from "crypto";
+import soap from "soap";
 import models from "@vipfy-private/sequelize-setup";
 import { formatHumanName } from "./functions";
 // import weeblyApi from "../services/weebly";
@@ -187,42 +188,25 @@ import { formatHumanName } from "./functions";
 //   }
 // })();
 
-(async () => {
-  const billingEmails = await models.sequelize.query(
-    `SELECT email, dp.name, hu.*
-  FROM department_all_emails_view dpem
-         LEFT OUTER JOIN department_data dp ON dp.unitid = dpem.emailownerid
-         LEFT OUTER JOIN human_data hu ON hu.unitid = dpem.emailownerid
-  WHERE dpem.departmentid = :company
-    AND 'billing' = ANY(dpem.tags) ORDER BY dpem.priority`,
-    {
-      replacements: { company: 14 },
-      type: models.sequelize.QueryTypes.SELECT
+(async (cc, vatNumber) => {
+  try {
+    const apiWSDL =
+      "http://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl";
+    const res = await soap.createClientAsync(apiWSDL).then(client =>
+      client
+        .checkVatAsync({ countryCode: cc, vatNumber })
+        .then(result => result[0])
+        .catch(err => {
+          throw new Error(err);
+        })
+    );
+
+    if (res.valid == false) {
+      throw new Error(res);
+    } else {
+      return res;
     }
-  );
-  const mainEmail = billingEmails.pop();
-  const variables = { email: mainEmail.email };
-
-  if (mainEmail.name) {
-    // eslint-disable-next-line
-    variables.name = mainEmail.name;
-  } else {
-    variables.name = formatHumanName(mainEmail);
+  } catch (error) {
+    throw new Error("Invalid Vatnumber!");
   }
-
-  if (billingEmails.length > 0) {
-    variables.cc = billingEmails.map(bEmail => {
-      let name;
-
-      if (bEmail.name) {
-        // eslint-disable-next-line
-        name = bEmail.name;
-      } else {
-        name = formatHumanName(mainEmail);
-      }
-      return { name, email: bEmail.email };
-    });
-  }
-
-  console.log(variables);
-})();
+})("LU", "20944528");

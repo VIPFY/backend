@@ -14,14 +14,17 @@ import {
   createLog,
   computePasswordScore,
   formatHumanName,
-  checkVat
+  checkVat,
+  parseAddress
 } from "../../helpers/functions";
+import { googleMapsClient } from "../../services/gcloud";
 import { AuthError, NormalError } from "../../errors";
 import { MAX_PASSWORD_LENGTH } from "../../constants";
 import { sendEmail } from "../../helpers/email";
 import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import logger from "../../loggers";
+import { debug } from "util";
 
 const ZENDESK_TOKEN =
   "Basic bnZAdmlwZnkuc3RvcmUvdG9rZW46bndGc3lDVWFpMUg2SWNKOXBpbFk3UGRtOHk0bXVhamZlYzFrbzBHeQ==";
@@ -55,7 +58,6 @@ export default {
         //     "\\$&"
         //   );
         // });
-
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
@@ -76,22 +78,78 @@ export default {
         const [newUser, emailDbo] = await Promise.all([p1, p2]);
         const user = newUser.get();
         let { legalinformation, name: companyName } = companyData;
+        let company = await models.Unit.create({}, { transaction: ta });
+        company = company.get();
+
+        if (companyData.placeid) {
+          const { json } = await googleMapsClient
+            .place({
+              placeid: companyData.placeid,
+              fields: [
+                "formatted_address",
+                "international_phone_number",
+                "website",
+                "address_component"
+              ]
+            })
+            .asPromise();
+          const addressData = parseAddress(json.result.address_components);
+
+          await models.Address.create(
+            {
+              ...addressData,
+              unitid: company.id,
+              tags: ["main"]
+            },
+            { transaction: ta }
+          );
+        }
 
         if (!legalinformation.noVatRequired) {
           const { vatId } = legalinformation;
           const vatNumber = vatId.substr(2).trim();
           const cc = vatId.substr(0, 2).toUpperCase();
 
-          if (cc != "DE") {
-            const checkedName = await checkVat(cc, vatNumber);
+          const checkedData = await checkVat(cc, vatNumber);
+
+          if (checkedData.valid && checkedData.name != "---") {
+            companyName = checkedData.name;
+
             const res = await axios.get("https://euvat.ga/rates.json");
-            companyName = checkedName;
             legalinformation.vatPercentage = res.data.rates[cc].standard_rate;
+
+            if (checkedData.address != "---") {
+              const findPlace = await googleMapsClient
+                .placesQueryAutoComplete({
+                  input: checkedData.address
+                })
+                .asPromise();
+
+              const { json } = await googleMapsClient
+                .place({
+                  placeid: findPlace.json.predictions[0].place_id,
+                  fields: [
+                    "formatted_address",
+                    "international_phone_number",
+                    "website",
+                    "address_component"
+                  ]
+                })
+                .asPromise();
+              const addressData = parseAddress(json.result.address_components);
+
+              await models.Address.create(
+                {
+                  ...addressData,
+                  verified: true,
+                  unitid: company.id,
+                  tags: ["main"]
+                },
+                { transaction: ta }
+              );
+            }
           }
         }
-
-        let company = await models.Unit.create({}, { transaction: ta });
-        company = company.get();
 
         const zendeskdata = await axios({
           method: "POST",
@@ -363,7 +421,7 @@ export default {
             pw.length > MAX_PASSWORD_LENGTH ||
             newPw.length > MAX_PASSWORD_LENGTH
           ) {
-            throw new Error("password too long");
+            throw new Error("Password too long");
           }
 
           const {

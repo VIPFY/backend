@@ -106,14 +106,9 @@ export default {
 
       const vatNumber = vat.substr(2).trim();
 
-      // No check for German Vatnumbers needed
-      if (cc.toUpperCase() == "DE") {
-        return { ok: true };
-      }
+      const checkedData = await checkVat(cc, vatNumber);
 
-      const companyName = await checkVat(cc, vatNumber);
-
-      return companyName;
+      return checkedData.name;
     } catch (err) {
       throw new Error("Invalid Vatnumber!");
     }

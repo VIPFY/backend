@@ -39,7 +39,7 @@ export default {
 
           const { zip, street, city, ...normalData } = addressData;
           const address = { street, zip, city };
-          // Remove main
+
           const newAddress = await models.Address.create(
             { ...normalData, address, unitid },
             { transaction: ta }

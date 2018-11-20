@@ -58,6 +58,7 @@ export const types = `
     user: ID
     statisticdata: JSON
     legalinformation: LegalInput
+    placeid: String
   }
 
   input HumanName {
