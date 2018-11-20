@@ -115,10 +115,8 @@ export default {
           if (checkedData.valid && checkedData.name != "---") {
             companyName = checkedData.name;
 
-            if (cc != "DE") {
-              const res = await axios.get("https://euvat.ga/rates.json");
-              legalinformation.vatPercentage = res.data.rates[cc].standard_rate;
-            }
+            const res = await axios.get("https://euvat.ga/rates.json");
+            legalinformation.vatPercentage = res.data.rates[cc].standard_rate;
 
             if (checkedData.address != "---") {
               const findPlace = await googleMapsClient
