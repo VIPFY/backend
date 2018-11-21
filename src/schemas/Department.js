@@ -134,4 +134,5 @@ export const mutations = `
 
   applyPromocode(promocode: String!): Response!
   banEmployee(userid: ID!): Response!
+  unbanEmployee(userid: ID!): Response!
 `;
