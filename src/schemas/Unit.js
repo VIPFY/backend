@@ -26,6 +26,7 @@ export const types = `
     needspasswordchange: Boolean!
     firstlogin: Boolean!
     isadmin: Boolean!
+    companyban: Boolean
   }
 
   input NameInput {
@@ -59,6 +60,7 @@ export const types = `
     language: String
     profilepicture: String
     isadmin: Boolean!
+    companyban: Boolean
   }
 `;
 

@@ -531,6 +531,65 @@ export default {
       })
   ),
 
+  banEmployee: async (parent, { userid }, { models, token, ip }) =>
+    models.sequelize.transaction(async ta => {
+      const {
+        user: { unitid, company }
+      } = decode(token);
+      try {
+        const findCompany = await models.DepartmentEmployee.findOne({
+          where: { id: company, employee: userid },
+          raw: true
+        });
+
+        const findAdmin = models.User.findOne(
+          { where: { id: unitid } },
+          { raw: true }
+        );
+
+        const [inCompany, admin] = await Promise.all([findCompany, findAdmin]);
+
+        if (!inCompany) {
+          throw new Error("This user doesn't belong to this company!");
+        }
+
+        const bannedUser = await models.Human.update(
+          { companyban: true },
+          { where: { id: userid }, returning: true, transaction: ta }
+        );
+        console.log(bannedUser);
+        const p1 = createNotification({
+          receiver: unitid,
+          message: `You banned from the company`,
+          icon: "user-slash",
+          link: "team",
+          changed: ["human"]
+        });
+
+        const p2 = createLog(
+          ip,
+          "banEmployee",
+          { bannedUser, admin },
+          unitid,
+          ta
+        );
+
+        await Promise.all([p1, p2]);
+
+        return { ok: true };
+      } catch (err) {
+        await createNotification({
+          receiver: unitid,
+          message: `You couldn't ban the user. Please retry`,
+          icon: "bug",
+          link: "team",
+          changed: [""]
+        });
+
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }),
+
   updateCompanyPic: requiresRights(["edit-departments"]).createResolver(
     async (parent, { file }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {

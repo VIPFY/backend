@@ -133,4 +133,5 @@ export const mutations = `
   forcePasswordChange(userids: [ID]!): Response!
 
   applyPromocode(promocode: String!): Response!
+  banEmployee(userid: ID!): Response!
 `;
