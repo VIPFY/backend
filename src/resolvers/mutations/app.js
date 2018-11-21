@@ -5,10 +5,15 @@ import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import {
   createLog,
   createNotification,
-  findVipfyPlan
+  checkPaymentData,
+  checkPlanValidity
 } from "../../helpers/functions";
+import {
+  addSubscriptionItem,
+  abortSubscription,
+  cancelPurchase
+} from "../../services/stripe";
 import logger from "../../loggers";
-import { promises } from "fs";
 
 /* eslint-disable no-return-await */
 
@@ -596,6 +601,132 @@ export default {
       }
     }
   ),
+
+  /**
+   * Adds an BoughtPlan to handle external Accounts
+   *
+   * @param {string} alias A name to display the plan to the User
+   * @param {number} appid Id of the external App
+   * @param {float} price The price of the Plan
+   *
+   * @returns {object}
+   */
+  addExternalBoughtPlan: requiresAuth.createResolver(
+    (parent, { alias, appid, price }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        let subscription = null;
+        let stripeplan = null;
+
+        try {
+          const plan = await models.Plan.findOne({
+            where: { appid, options: { external: true } },
+            raw: true
+          });
+
+          if (!plan) {
+            throw new Error(
+              "This App is not integrated to handle external Accounts yet."
+            );
+          }
+
+          await checkPlanValidity(plan);
+
+          subscription = await checkPaymentData(
+            company,
+            plan.stripedata.id,
+            ta
+          );
+
+          const department = await models.Department.findOne({
+            where: { unitid },
+            raw: true
+          });
+
+          if (!subscription) {
+            subscription = await addSubscriptionItem(
+              department.payingoptions.stripe.subscription,
+              plan.stripedata.id
+            );
+
+            stripeplan = subscription.id;
+          } else {
+            stripeplan = subscription.items.data[0].id;
+          }
+
+          const boughtPlan = await models.BoughtPlan.create(
+            {
+              planid: plan.id,
+              alias,
+              disabled: false,
+              buyer: unitid,
+              payer: company,
+              usedby: company,
+              totalprice: 0,
+              key: {
+                external: true,
+                externaltotalprice: price
+              },
+              stripeplan
+            },
+            { transaction: ta }
+          );
+
+          const p3 = await createLog(
+            ip,
+            "addExternalAccount",
+            { appid, boughtPlan },
+            unitid,
+            ta
+          );
+
+          const p4 = await createNotification(
+            {
+              receiver: unitid,
+              message: `Integrated external Account`,
+              icon: "user-plus",
+              link: `marketplace/${appid}`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          await Promise.all([p3, p4]);
+
+          return { ok: true };
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Integration of external Account failed",
+              icon: "bug",
+              link: `marketplace/${appid}`,
+              changed: []
+            },
+            ta
+          );
+
+          if (subscription && stripeplan) {
+            const kind = stripeplan.split("_");
+            if (kind[0] == "sub") {
+              await abortSubscription(stripeplan);
+            } else {
+              await cancelPurchase(stripeplan, subscription.id);
+            }
+          }
+
+          logger.error(err);
+
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
   /**
    * Adds an external Account of an App to the Users personal Account
    *
@@ -606,7 +737,7 @@ export default {
    *
    * @returns {object}
    */
-  addExternalAccount: requiresAuth.createResolver(
+  addExternalLicence: requiresAuth.createResolver(
     (parent, args, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
@@ -618,13 +749,6 @@ export default {
             attributes: ["id"],
             raw: true
           });
-
-          let vipfyPlan = await findVipfyPlan(company);
-
-          if (!vipfyPlan) {
-            throw new Error("You need a Vipfyplan to add external Accounts.");
-          }
-          vipfyPlan = vipfyPlan.get();
 
           if (!planid) {
             throw new Error(
@@ -742,13 +866,6 @@ export default {
           raw: true
         });
 
-        let vipfyPlan = await findVipfyPlan(company);
-
-        if (!vipfyPlan) {
-          throw new Error("You need a Vipfyplan to add external Accounts.");
-        }
-        vipfyPlan = vipfyPlan.get();
-
         if (!planid) {
           throw new Error(
             "This App is not integrated to handle external Accounts yet."
@@ -842,7 +959,7 @@ export default {
     })
   ),
 
-  removeExternalAccount: requiresRights(["delete-licences"]).createResolver(
+  removeExternalLicence: requiresRights(["delete-licences"]).createResolver(
     async (parent, { licenceid }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
         const {

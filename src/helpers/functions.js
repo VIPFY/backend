@@ -2,6 +2,7 @@ import moment from "moment";
 import soap from "soap";
 import models from "@vipfy-private/sequelize-setup";
 import zxcvbn from "zxcvbn";
+import { createSubscription } from "../services/stripe";
 import { NormalError } from "../errors";
 import { pubsub, NEW_NOTIFICATION } from "../constants";
 
@@ -238,33 +239,6 @@ export const selectCredit = async (code, unitid) => {
   }
 };
 
-export const findVipfyPlan = async company => {
-  try {
-    const vipfyPlans = await models.Plan.findAll({
-      where: { appid: 66 },
-      attributes: ["id"],
-      raw: true
-    });
-
-    const planIds = vipfyPlans.map(plan => plan.id);
-
-    return await models.BoughtPlan.findOne({
-      where: {
-        payer: company,
-        endtime: {
-          [models.Op.or]: {
-            [models.Op.gt]: models.sequelize.fn("NOW"),
-            [models.Op.eq]: null
-          }
-        },
-        planid: { [models.Op.in]: planIds }
-      }
-    });
-  } catch (error) {
-    throw new Error(error);
-  }
-};
-
 export const parseAddress = addressComponents => {
   const address = {};
   const street = [];
@@ -311,4 +285,46 @@ export const parseAddress = addressComponents => {
   addressData.address = address;
 
   return addressData;
+};
+
+export const checkPaymentData = async (unitid, plan, ta) => {
+  try {
+    const { payingoptions } = await models.Department.findOne({
+      where: { unitid },
+      raw: true
+    });
+
+    if (
+      !payingoptions ||
+      !payingoptions.stripe ||
+      !payingoptions.stripe.cards ||
+      payingoptions.stripe.cards.length < 1
+    ) {
+      throw new Error("Missing payment information!");
+    }
+
+    if (!payingoptions.stripe.subscription) {
+      const subscription = await createSubscription(payingoptions.stripe.id, [
+        { plan }
+      ]);
+
+      await models.DepartmentData.update(
+        {
+          payingoptions: {
+            ...payingoptions,
+            stripe: {
+              ...payingoptions.stripe,
+              subscription: subscription.id
+            }
+          }
+        },
+        { where: { unitid }, transaction: ta }
+      );
+      return subscription;
+    }
+
+    return null;
+  } catch (error) {
+    throw new Error(error);
+  }
 };
