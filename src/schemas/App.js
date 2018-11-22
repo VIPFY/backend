@@ -142,7 +142,7 @@ export const mutations = `
   trackMinutesSpent(licenceid: ID!, minutes: Int!): Response!
 
   # Adds the data of an external App
-  addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): Response!
+  addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): BoughtPlan!
   addExternalLicence(username: String!, password: String!, subdomain: String, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID): Response!
 
   # Register a vote for the next app to implement
