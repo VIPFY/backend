@@ -634,7 +634,7 @@ export default {
           }
 
           await checkPlanValidity(plan);
-          throw new Error("DEBUG");
+
           subscription = await checkPaymentData(
             company,
             plan.stripedata.id,
