@@ -177,7 +177,7 @@ export default {
     }
   ),
 
-  fetchAllLicencesFromCompany: requiresRights([
+  fetchAllBoughtplansFromCompany: requiresRights([
     "view-licences",
     "view-apps",
     "view-boughtplans"
@@ -188,12 +188,15 @@ export default {
       } = decode(token);
 
       const data = models.sequelize.query(
-        `SELECT boughtplan_data.*, JSONB_AGG(to_jsonb(ld) - 'key' - 'options') as licences
-            FROM boughtplan_data
-            INNER JOIN licence_data ld ON (ld.boughtplanid = boughtplan_data.id)
-            INNER JOIN plan_data pd on boughtplan_data.planid = pd.id
-          WHERE payer = :company AND appid = :appid
-          GROUP BY boughtplan_data.id;
+        `SELECT boughtplan_data.*,
+                COALESCE(JSONB_AGG(to_jsonb(ld) - 'key' - 'options') FILTER (WHERE ld.id IS NOT NULL), '[]') as licences
+        FROM boughtplan_data
+                JOIN plan_data pd on boughtplan_data.planid = pd.id
+                LEFT OUTER JOIN licence_data ld ON (ld.boughtplanid = boughtplan_data.id)
+        
+        WHERE payer = :company
+          AND appid = :appid
+        GROUP BY boughtplan_data.id
       `,
         {
           replacements: { company, appid },
