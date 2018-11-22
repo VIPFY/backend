@@ -792,7 +792,7 @@ export default {
           await checkPlanValidity(plan);
           let externaltotalprice = args.price;
 
-          if (oldBoughtPlan.key.externaltotalprice) {
+          if (oldBoughtPlan.key && oldBoughtPlan.key.externaltotalprice) {
             externaltotalprice += oldBoughtPlan.key.externaltotalprice;
           }
 
