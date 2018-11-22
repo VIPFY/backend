@@ -185,7 +185,7 @@ export const queries = `
   fetchBillingEmails: [Email]!
   fetchCredits: Credit
 
-  fetchAllLicencesFromCompany(appid: ID!): [BoughtPlan]!
+  fetchAllBoughtplansFromCompany(appid: ID!): [BoughtPlan]!
 `;
 
 export const mutations = `
