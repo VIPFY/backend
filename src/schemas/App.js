@@ -78,7 +78,7 @@ export const types = `
     disabled: Boolean
     key: JSON
     boughtplanid: BoughtPlan!
-    unitid: Unit
+    unitid: User
   }
 
   type SimpleStats {

@@ -8,7 +8,6 @@ import {
   findVipfyPlan
 } from "../../helpers/functions";
 import logger from "../../loggers";
-import { promises } from "fs";
 
 /* eslint-disable no-return-await */
 
