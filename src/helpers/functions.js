@@ -242,7 +242,7 @@ export const selectCredit = async (code, unitid) => {
 };
 
 /**
- * Takes an object and parses it into the from we need for the database
+ * Takes an object and parses it into the form we need for the database
  * @exports
  * @param {object} addressComponents Unparsed components from Google
  *
