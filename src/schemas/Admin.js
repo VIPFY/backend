@@ -9,7 +9,7 @@ export const queries = `
   admin: User
 
   adminFetchAllApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
-  adminFetchAppById(id: Int!): AppDetails!
+  adminFetchAppById(id: ID!): AppDetails!
   adminFetchPlans(appid: Int!): [Plan]!
   adminFetchPlan(planid: Int!): Plan!
   # Returns an user. Should only be usable by an admin
