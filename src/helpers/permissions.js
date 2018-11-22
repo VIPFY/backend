@@ -24,14 +24,14 @@ const createResolver = resolver => {
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(
   async (parent, args, { token, models }) => {
+    if (!token || token == "null") {
+      throw new Error("No valid token received!");
+    }
+
     try {
       const {
         user: { company }
       } = decode(token);
-
-      if (!token || token == "null") {
-        throw new Error();
-      }
 
       const vipfyPlans = await models.Plan.findAll({
         where: { appid: 66 },
