@@ -398,7 +398,7 @@ export default {
           const notification = createNotification(
             {
               receiver: unitid,
-              message: "Buying plan successful",
+              message: `Successfull bought ${plan.name}`,
               icon: "shopping-cart",
               link: "team",
               changed: ["foreignLicences", "invoices"]
