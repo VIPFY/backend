@@ -1,9 +1,11 @@
 import { decode, sign } from "jsonwebtoken";
+import uuid from "uuid";
 // import { getLoginData } from "@vipfy-private/weebly";
 import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
+
 import logger from "../../loggers";
 
 export default {
@@ -343,18 +345,14 @@ export default {
         } = decode(token);
 
         const puserdata = models.User.findOne({
-          where: {
-            id: unitid
-          },
+          where: { id: unitid },
           raw: true
         });
 
         //TODO Mehrere EmailAdressen
 
         const puseremail = models.Email.findOne({
-          where: {
-            unitid: unitid
-          },
+          where: { unitid },
           raw: true
         });
 

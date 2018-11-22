@@ -528,6 +528,138 @@ export default {
       })
   ),
 
+  banEmployee: async (parent, { userid }, { models, token, ip }) =>
+    models.sequelize.transaction(async ta => {
+      const {
+        user: { unitid, company }
+      } = decode(token);
+      try {
+        const p1 = await models.DepartmentEmployee.findOne({
+          where: { id: company, employee: userid },
+          raw: true
+        });
+
+        const p2 = models.User.findOne(
+          { where: { id: unitid } },
+          { raw: true }
+        );
+
+        const p3 = models.Human.findOne({
+          where: { unitid: userid },
+          raw: true
+        });
+
+        const [inCompany, admin, user] = await Promise.all([p1, p2, p3]);
+
+        if (!inCompany) {
+          throw new Error("This user doesn't belong to this company!");
+        }
+
+        const bannedUser = await models.Human.update(
+          { companyban: true },
+          { where: { unitid: userid }, returning: true, transaction: ta }
+        );
+
+        const p4 = createNotification({
+          receiver: unitid,
+          message: `You banned ${user.firstname} ${
+            user.lastname
+          } from the company`,
+          icon: "user-slash",
+          link: "team",
+          changed: ["human"]
+        });
+
+        const p5 = createLog(
+          ip,
+          "banEmployee",
+          { bannedUser, admin },
+          unitid,
+          ta
+        );
+
+        await Promise.all([p4, p5]);
+
+        return { ok: true };
+      } catch (err) {
+        await createNotification({
+          receiver: unitid,
+          message: `You couldn't ban the user. Please retry`,
+          icon: "bug",
+          link: "team",
+          changed: [""]
+        });
+
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }),
+
+  unbanEmployee: async (parent, { userid }, { models, token, ip }) =>
+    models.sequelize.transaction(async ta => {
+      const {
+        user: { unitid, company }
+      } = decode(token);
+      try {
+        const p1 = await models.DepartmentEmployee.findOne({
+          where: { id: company, employee: userid },
+          raw: true
+        });
+
+        const p2 = models.User.findOne(
+          { where: { id: unitid } },
+          { raw: true }
+        );
+
+        const p3 = models.Human.findOne({
+          where: { unitid: userid },
+          raw: true
+        });
+
+        const [inCompany, admin, user] = await Promise.all([p1, p2, p3]);
+
+        if (!inCompany) {
+          throw new Error("This user doesn't belong to this company!");
+        }
+
+        const unbannedUser = await models.Human.update(
+          { companyban: false },
+          { where: { unitid: userid }, returning: true, transaction: ta }
+        );
+
+        const p4 = createNotification({
+          receiver: unitid,
+          message: `You unbanned ${user.firstname} ${
+            user.lastname
+          } from the company`,
+          icon: "user-check",
+          link: "team",
+          changed: ["human"]
+        });
+
+        const p5 = createLog(
+          ip,
+          "banEmployee",
+          { unbannedUser, admin },
+          unitid,
+          ta
+        );
+
+        await Promise.all([p4, p5]);
+
+        return { ok: true };
+      } catch (err) {
+        await createNotification({
+          receiver: unitid,
+          message: `You couldn't unban the user. Please retry`,
+          icon: "bug",
+          link: "team",
+          changed: [""]
+        });
+
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }),
+
   updateCompanyPic: requiresRights(["edit-departments"]).createResolver(
     async (parent, { file }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
