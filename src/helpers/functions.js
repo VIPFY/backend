@@ -11,7 +11,9 @@ import { pubsub, NEW_NOTIFICATION } from "../constants";
 export const getDate = () => new Date().toUTCString();
 
 /**
- * Add the property company to the user object and set it to the companyid of the user
+ * Add the property company to the user object and set it to the
+ * companyid of the user
+ * @exports
  *
  * @param {*} user
  */
@@ -239,6 +241,13 @@ export const selectCredit = async (code, unitid) => {
   }
 };
 
+/**
+ * Takes an object and parses it into the from we need for the database
+ * @exports
+ * @param {object} addressComponents Unparsed components from Google
+ *
+ * @returns {object} addressData
+ */
 export const parseAddress = addressComponents => {
   const address = {};
   const street = [];
@@ -287,6 +296,13 @@ export const parseAddress = addressComponents => {
   return addressData;
 };
 
+/**
+ * Checks whether an User has a Stripe Subscription and creates it if he doesn't
+ * @extends
+ * @param {ID} unitid
+ * @param {object} plan
+ * @param {object} ta
+ */
 export const checkPaymentData = async (unitid, plan, ta) => {
   try {
     const { payingoptions } = await models.Department.findOne({
@@ -326,5 +342,36 @@ export const checkPaymentData = async (unitid, plan, ta) => {
     return null;
   } catch (error) {
     throw new Error(error);
+  }
+};
+
+/**
+ * Checks whether an Employee is in a company
+ * @extends
+ * @param {ID} company
+ * @param {ID} unitid
+ * @param {ID} employee
+ */
+export const companyCheck = async (company, unitid, employee) => {
+  try {
+    const findCompany = models.DepartmentEmployee.findOne({
+      where: { id: company, employee },
+      raw: true
+    });
+
+    const findAdmin = models.User.findOne(
+      { where: { id: unitid } },
+      { raw: true }
+    );
+
+    const [inCompany, admin] = await Promise.all([findCompany, findAdmin]);
+
+    if (!inCompany) {
+      throw new Error("This user doesn't belong to this company!");
+    }
+
+    return admin;
+  } catch (err) {
+    throw new Error({ message: err.message });
   }
 };
