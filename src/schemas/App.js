@@ -129,11 +129,12 @@ export const mutations = `
   # Revoke licence from everyone in department
   revokeLicencesFromDepartment(departmentid: ID!, boughtplanid: ID!): Response!
 
-  # Give a user a licence from the licence pool of department
+  # Give an user a licence from the licence pool of department
   distributeLicence(boughtplanid: ID!, unitid: ID!, departmentid: ID!): DistributeResponse!
 
   # Free the licence
   revokeLicence(licenceid: ID!): Response!
+  suspendLicence(licenceid: ID!, fromuser: ID): Response!
 
   # Agree to all terms and conditions of a licence
   agreeToLicence(licenceid: ID!): Response!
@@ -141,11 +142,8 @@ export const mutations = `
   trackMinutesSpent(licenceid: ID!, minutes: Int!): Response!
 
   # Adds the data of an external App
-  addExternalAccount(username: String!, password: String!, loginurl: String, appid: ID!): Response!
-  addExternalAccountToEmployee(userid: ID!, username: String!, password: String!, loginurl: String, appid: ID!): Response!
-
-  removeExternalAccount(licenceid: ID!): Response!
-  removeExternalAccountFromEmployee(userid: ID!, licenceid: ID!): Response!
+  addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): Response!
+  addExternalLicence(username: String!, password: String!, subdomain: String, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID): Response!
 
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!

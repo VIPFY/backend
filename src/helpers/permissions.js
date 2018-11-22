@@ -1,8 +1,8 @@
 /*
-* This file contains a Higher Order Component which can be used to create
-* Authentication logic. The base function lets you stack several permissions,
-* they just have to wrapped around the component which shall be protected.
-*/
+ * This file contains a Higher Order Component which can be used to create
+ * Authentication logic. The base function lets you stack several permissions,
+ * they just have to wrapped around the component which shall be protected.
+ */
 
 import { decode } from "jsonwebtoken";
 import { checkRights } from "@vipfy-private/messaging";
@@ -22,10 +22,47 @@ const createResolver = resolver => {
 };
 
 // Check whether the user is authenticated
-export const requiresAuth = createResolver(async (parent, args, { token }) => {
-  if (!token || token == "null") throw new AuthError();
+export const requiresAuth = createResolver(
+  async (parent, args, { token, models }) => {
+    if (!token || token == "null") {
+      throw new Error("No valid token received!");
+    }
+
+    try {
+      const {
+        user: { company }
+      } = decode(token);
+
+      const vipfyPlans = await models.Plan.findAll({
+        where: { appid: 66 },
+        attributes: ["id"],
+        raw: true
+      });
+
+      const planIds = vipfyPlans.map(plan => plan.id);
+
+      const vipfyPlan = await models.BoughtPlan.findOne({
+        where: {
+          payer: company,
+          endtime: {
+            [models.Op.or]: {
+              [models.Op.gt]: models.sequelize.fn("NOW"),
+              [models.Op.eq]: null
+            }
+          },
+          planid: { [models.Op.in]: planIds }
+        }
+      });
+
+      if (!vipfyPlan) {
+        throw new Error("You have no active Vipfy Plan!");
+      }
+    } catch (error) {
+      throw new AuthError(error.message);
+    }
+  }
   // all other cases handled by auth middleware
-});
+);
 
 export const requiresDepartmentCheck = requiresAuth.createResolver(
   async (parent, args, { models, token }) => {

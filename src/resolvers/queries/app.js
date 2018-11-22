@@ -51,7 +51,7 @@ export default {
 
       const data = models.sequelize.query(
         `SELECT app_data.*,
-            bool_or(14 in (SELECT payer FROM boughtplan_data WHERE planid = d2.id)) as hasboughtplan
+            bool_or(:company in (SELECT payer FROM boughtplan_data WHERE planid = d2.id)) as hasboughtplan
           FROM app_data
                inner join plan_data d2 on app_data.id = d2.appid
           GROUP BY app_data.id

@@ -4,3 +4,4 @@ server.log
 dist/
 src/logs/
 coverage/
+package-lock.json

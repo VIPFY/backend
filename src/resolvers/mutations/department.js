@@ -9,13 +9,10 @@ import {
   createLog,
   createNotification,
   formatHumanName,
-  computePasswordScore,
-  selectCredit,
-  parseAddress
+  selectCredit
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
-import { RFC_2822 } from "moment";
 
 // import { sendRegistrationEmail } from "../../services/mailjet";
 

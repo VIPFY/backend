@@ -405,7 +405,7 @@ export default {
 
       return { ok: true, user, token };
     } catch (err) {
-      throw new AuthError({ message: err.message, internalData: { err } });
+      throw new Error({ message: err.message, internalData: { err } });
     }
   },
 

@@ -1,15 +1,16 @@
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
+import { sleep } from "@vipfy-private/service-base";
 import { requiresRights } from "../../helpers/permissions";
 import {
   createLog,
   createNotification,
-  checkPlanValidity
+  checkPlanValidity,
+  checkPaymentData
 } from "../../helpers/functions";
 import { calculatePlanPrice } from "../../helpers/apps";
 
 // import createInvoice from "../../helpers/createInvoice";
-import { invoiceLink } from "../../services/gcloud";
 import {
   createCustomer,
   listCards,
@@ -19,11 +20,11 @@ import {
   updateSubscriptionItem,
   removeSubscriptionItem,
   changeDefaultCard,
-  updateBillingEmails
+  abortSubscription,
+  cancelPurchase
 } from "../../services/stripe";
 import { BillingError, NormalError } from "../../errors";
 import logger from "../../loggers";
-import { sleep } from "@vipfy-private/service-base";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
@@ -257,27 +258,28 @@ export default {
             planinputs
           });
 
-          const department = await models.Department.findOne({
-            where: { unitid: company },
-            raw: true,
-            transaction: ta
-          });
-
-          if (
-            !department.payingoptions ||
-            !department.payingoptions.stripe ||
-            !department.payingoptions.stripe.cards ||
-            department.payingoptions.stripe.cards.length < 1
-          ) {
-            throw new Error("Missing payment information!");
-          }
-
           const plan = await models.Plan.findOne({
             where: { id: planid },
             raw: true
           });
 
+          if (!plan) {
+            throw new Error("Couldn't find the Plan!");
+          }
+
           await checkPlanValidity(plan);
+
+          subscription = await checkPaymentData(
+            company,
+            plan.stripedata.id,
+            ta
+          );
+
+          const department = await models.Department.findOne({
+            where: { unitid: company },
+            raw: true,
+            transaction: ta
+          });
 
           const calculatedPrice = calculatePlanPrice(
             plan.price,
@@ -311,10 +313,6 @@ export default {
             features,
             internaldescription: plan.internaldescription
           });
-
-          const stripePlans = [];
-
-          stripePlans.push({ plan: plan.stripedata.id });
 
           const partnerLogs = {};
 
@@ -359,29 +357,15 @@ export default {
           partnerLogs.licences = newLicences;
           logger.debug(`created ${mergedFeatures.users} licences`);
 
-          if (department.payingoptions.stripe.subscription) {
+          if (!subscription) {
             subscription = await addSubscriptionItem(
               department.payingoptions.stripe.subscription,
               plan.stripedata.id
             );
-          } else {
-            subscription = await createSubscription(
-              department.payingoptions.stripe.id,
-              stripePlans
-            );
 
-            await models.DepartmentData.update(
-              {
-                payingoptions: {
-                  ...department.payingoptions,
-                  stripe: {
-                    ...department.payingoptions.stripe,
-                    subscription: subscription.id
-                  }
-                }
-              },
-              { where: { unitid: company }, transaction: ta }
-            );
+            stripeplan = subscription.id;
+          } else {
+            stripeplan = subscription.items.data[0].id;
           }
 
           await sleep(500);
@@ -406,12 +390,6 @@ export default {
           //   vatPercentage = department.legalinformation.vatPercentage;
           // }
 
-          stripeplan = subscription.id;
-
-          if (subscription.object == "subscription") {
-            stripeplan = subscription.items.data[0].id;
-          }
-
           await models.BoughtPlan.update(
             { stripeplan },
             { where: { id: boughtPlan.id }, transaction: ta }
@@ -420,7 +398,7 @@ export default {
           const notification = createNotification(
             {
               receiver: unitid,
-              message: "Buying plan successful",
+              message: `Successfull bought ${plan.name}`,
               icon: "shopping-cart",
               link: "team",
               changed: ["foreignLicences", "invoices"]

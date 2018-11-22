@@ -5,8 +5,15 @@ import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import {
   createLog,
   createNotification,
-  findVipfyPlan
+  // checkPaymentData,
+  checkPlanValidity,
+  companyCheck
 } from "../../helpers/functions";
+// import {
+//   addSubscriptionItem,
+//   abortSubscription,
+//   cancelPurchase
+// } from "../../services/stripe";
 import logger from "../../loggers";
 
 /* eslint-disable no-return-await */
@@ -433,7 +440,7 @@ export default {
         } = decode(token);
 
         try {
-          const p1 = await models.Licence.findById(id, { raw: true });
+          const p1 = await models.Licence.findOne({ where: { id }, raw: true });
           const p2 = await models.Licence.update(
             { unitid: null },
             {
@@ -449,11 +456,15 @@ export default {
             throw new Error("This Licence wasn't taken!");
           }
 
-          const boughtPlan = await models.BoughtPlan.findById(p1.boughtplanid, {
-            include: [models.Plan],
-            raw: true,
-            transaction: ta
-          });
+          const boughtPlan = await models.BoughtPlan.findOne(
+            { where: { id: oldLicence.boughtplanid } },
+            {
+              include: [models.Plan],
+              raw: true,
+              transaction: ta
+            }
+          );
+
           await Services.removeUser(
             models,
             boughtPlan["plan_datum.appid"],
@@ -465,7 +476,7 @@ export default {
           const log = createLog(
             ip,
             "revokeLicence",
-            { oldLicence, revokedLicence: revokedLicence[1] },
+            { oldLicence },
             unitid,
             ta
           );
@@ -595,79 +606,234 @@ export default {
       }
     }
   ),
+
   /**
-   * Adds an external Account of an App to the Users personal Account
+   * Adds an BoughtPlan to handle external accounts
    *
-   * @param {string} username Username at the external App
-   * @param {string} password Password at the external App
-   * @param {string} subdomain Subdomain the App runs under
-   * @param {number} appid Id of the external App
+   * @param {string} alias A name to display the plan to the user
+   * @param {number} appid Id of the external app
+   * @param {float} price The price of the plan
+   * @param {string} loginurl The url to log the user into
    *
    * @returns {object}
    */
-  addExternalAccount: requiresAuth.createResolver(
-    (parent, args, { models, token, ip }) =>
+  addExternalBoughtPlan: requiresAuth.createResolver(
+    (parent, { alias, appid, price, loginurl }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid, company }
         } = decode(token);
+
+        // let subscription = null;
+        // eslint-disable-next-line
+        let stripeplan = null;
+
         try {
-          const { id: planid } = await models.Plan.findOne({
-            where: { appid: args.appid, options: { external: true } },
-            attributes: ["id"],
+          const plan = await models.Plan.findOne({
+            where: { appid, options: { external: true } },
             raw: true
           });
 
-          let vipfyPlan = await findVipfyPlan(company);
-
-          if (!vipfyPlan) {
-            throw new Error("You need a Vipfyplan to add external Accounts.");
-          }
-          vipfyPlan = vipfyPlan.get();
-
-          if (!planid) {
+          if (!plan) {
             throw new Error(
               "This App is not integrated to handle external Accounts yet."
             );
           }
+
+          await checkPlanValidity(plan);
+
+          // subscription = await checkPaymentData(
+          //   company,
+          //   plan.stripedata.id,
+          //   ta
+          // );
+
+          // const department = await models.Department.findOne({
+          //   where: { unitid },
+          //   raw: true
+          // });
+
+          // if (!subscription) {
+          //   subscription = await addSubscriptionItem(
+          //     department.payingoptions.stripe.subscription,
+          //     plan.stripedata.id
+          //   );
+
+          //   stripeplan = subscription.id;
+          // } else {
+          //   stripeplan = subscription.items.data[0].id;
+          // }
 
           const boughtPlan = await models.BoughtPlan.create(
             {
-              planid,
+              planid: plan.id,
+              alias,
               disabled: false,
               buyer: unitid,
               payer: company,
-              usedby: company
-            },
-            { transaction: ta }
-          );
-
-          if (!boughtPlan) {
-            throw new Error(
-              "This App is not integrated to handle external Accounts yet."
-            );
-          }
-
-          const licence = await models.Licence.create(
-            {
-              unitid,
-              disabled: false,
-              boughtplanid: boughtPlan.id,
-              agreed: true,
-              key: { ...args, external: true }
+              usedby: company,
+              totalprice: 0,
+              key: {
+                external: true,
+                externaltotalprice: price,
+                loginurl
+              },
+              stripeplan
             },
             { transaction: ta }
           );
 
           const p3 = await createLog(
             ip,
-            "addExternalAccount",
-            { licence: licence.id, appid: args.appid, boughtPlan },
+            "addExternalBoughtPlan",
+            { appid, boughtPlan },
             unitid,
             ta
           );
 
           const p4 = await createNotification(
+            {
+              receiver: unitid,
+              message: `Integrated external Account`,
+              icon: "user-plus",
+              link: `marketplace/${appid}`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          await Promise.all([p3, p4]);
+
+          return { ok: true };
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Integration of external Account failed",
+              icon: "bug",
+              link: `marketplace/${appid}`,
+              changed: []
+            },
+            ta
+          );
+
+          // if (subscription && stripeplan) {
+          //   const kind = stripeplan.split("_");
+          //   if (kind[0] == "sub") {
+          //     await abortSubscription(stripeplan);
+          //   } else {
+          //     await cancelPurchase(stripeplan, subscription.id);
+          //   }
+          // }
+
+          logger.error(err);
+
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+  /**
+   * Adds an external account of an app to the users personal Account
+   *
+   * @param {string} username Username at the external app
+   * @param {string} password Password at the external app
+   * @param {string} subdomain Subdomain the app runs under
+   * @param {string} loginurl The url to log the user into
+   * @param {float} price Optional price of the external account
+   * @param {ID} appid Id of the external app
+   * @param {ID} boughtplanid Id of the bought plan the licence should belong to
+   * @param {ID} touser If the licence should belong to another user
+   *
+   * @returns {object}
+   */
+  addExternalLicence: requiresAuth.createResolver(
+    (parent, args, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        try {
+          let admin = null;
+
+          if (args.touser) {
+            admin = await companyCheck(company, unitid, args.touser);
+          }
+
+          const oldBoughtPlan = await models.BoughtPlan.findOne({
+            where: { id: args.boughtplanid },
+            endtime: {
+              [models.Op.or]: {
+                [models.Op.gt]: models.sequelize.fn("NOW"),
+                [models.Op.eq]: null
+              }
+            },
+            raw: true
+          });
+
+          if (!oldBoughtPlan) {
+            throw new Error("Couldn't find a valid Plan!");
+          }
+
+          const plan = await models.Plan.findOne({
+            where: { id: oldBoughtPlan.planid, options: { external: true } },
+            raw: true
+          });
+
+          if (!plan) {
+            throw new Error(
+              "This App is not integrated to handle external Accounts yet."
+            );
+          }
+
+          await checkPlanValidity(plan);
+          let externaltotalprice = args.price;
+
+          if (oldBoughtPlan.key.externaltotalprice) {
+            externaltotalprice += oldBoughtPlan.key.externaltotalprice;
+          }
+
+          await models.BoughtPlan.update(
+            {
+              key: {
+                ...oldBoughtPlan.key,
+                externaltotalprice
+              }
+            },
+            {
+              where: { id: args.boughtplanid },
+              transaction: ta,
+              returning: true
+            }
+          );
+
+          const licence = await models.Licence.create(
+            {
+              unitid: args.touser || unitid,
+              disabled: false,
+              boughtplanid: args.boughtplanid,
+              agreed: true,
+              key: { ...args, external: true }
+            },
+            { transaction: ta }
+          );
+
+          const p1 = createLog(
+            ip,
+            "addExternalLicence",
+            {
+              licence: licence.id,
+              oldBoughtPlan,
+              ...args
+            },
+            unitid,
+            ta
+          );
+
+          const p2 = createNotification(
             {
               receiver: unitid,
               message: `Integrated external Account`,
@@ -678,7 +844,26 @@ export default {
             ta
           );
 
-          await Promise.all([p3, p4]);
+          const promises = [p1, p2];
+
+          if (args.toUser) {
+            const p3 = createNotification(
+              {
+                receiver: args.touser,
+                message: `${admin.firstname} ${
+                  admin.lastname
+                } integrated an external Account for you.`,
+                icon: "user-plus",
+                link: `marketplace/${args.appid}`,
+                changed: ["ownLicences"]
+              },
+              ta
+            );
+
+            promises.push(p3);
+          }
+
+          await Promise.all(promises);
 
           return { ok: true };
         } catch (err) {
@@ -701,252 +886,53 @@ export default {
   ),
 
   /**
-   * Adds an external Account of an App to the Users personal Account
+   * Removes a licence from an user
    *
-   * @param {ID} userid Id of the user which should receive the account
-   * @param {string} username Username at the external App
-   * @param {string} password Password at the external App
-   * @param {string} subdomain Subdomain the App runs under
-   * @param {number} appid Id of the external App
-   *
+   * @param {ID} licenceid The id of the licence
+   * @param {ID} fromuser Optional parameter if the licence belongs to an employee
    * @returns {object}
    */
-  addExternalAccountToEmployee: requiresRights([
-    "distribute-licences"
-  ]).createResolver((parent, args, { models, token, ip }) =>
-    models.sequelize.transaction(async ta => {
-      const {
-        user: { unitid, company }
-      } = decode(token);
-      try {
-        const findCompany = await models.DepartmentEmployee.findOne({
-          where: { id: company, employee: args.userid },
-          raw: true
-        });
-
-        const findAdmin = models.User.findOne(
-          { where: { id: unitid } },
-          { raw: true }
-        );
-
-        const [inCompany, admin] = await Promise.all([findCompany, findAdmin]);
-
-        if (!inCompany) {
-          throw new Error("This user doesn't belong to this company!");
-        }
-
-        const { id: planid } = await models.Plan.findOne({
-          where: { appid: args.appid, options: { external: true } },
-          attributes: ["id"],
-          raw: true
-        });
-
-        let vipfyPlan = await findVipfyPlan(company);
-
-        if (!vipfyPlan) {
-          throw new Error("You need a Vipfyplan to add external Accounts.");
-        }
-        vipfyPlan = vipfyPlan.get();
-
-        if (!planid) {
-          throw new Error(
-            "This App is not integrated to handle external Accounts yet."
-          );
-        }
-
-        const boughtPlan = await models.BoughtPlan.create(
-          {
-            planid,
-            disabled: false,
-            buyer: unitid,
-            payer: company,
-            usedby: company
-          },
-          { transaction: ta }
-        );
-
-        if (!boughtPlan) {
-          throw new Error(
-            "This App is not integrated to handle external Accounts yet."
-          );
-        }
-
-        const licence = await models.Licence.create(
-          {
-            unitid: args.userid,
-            disabled: false,
-            boughtplanid: boughtPlan.id,
-            agreed: true,
-            key: { ...args, external: true }
-          },
-          { transaction: ta }
-        );
-
-        const p3 = await createLog(
-          ip,
-          "addExternalAccountForEmployee",
-          {
-            licence,
-            appid: args.appid,
-            userid: args.userid,
-            boughtPlan
-          },
-          unitid,
-          ta
-        );
-
-        const p4 = await createNotification(
-          {
-            receiver: args.userid,
-            message: `${admin.firstname} ${
-              admin.lastname
-            } integrated an external Account for you.`,
-            icon: "user-plus",
-            link: `marketplace/${args.appid}`,
-            changed: ["ownLicences"]
-          },
-          ta
-        );
-
-        const p5 = await createNotification(
-          {
-            receiver: unitid,
-            message: `Integrated external Account`,
-            icon: "user-plus",
-            link: `marketplace/${args.appid}`,
-            changed: ["ownLicences"]
-          },
-          ta
-        );
-
-        await Promise.all([p3, p4, p5]);
-
-        return { ok: true };
-      } catch (err) {
-        await createNotification(
-          {
-            receiver: unitid,
-            message: "Integration of external Account failed",
-            icon: "bug",
-            link: `marketplace/${args.appid}`,
-            changed: []
-          },
-          ta
-        );
-        throw new NormalError({
-          message: err.message,
-          internalData: { err }
-        });
-      }
-    })
-  ),
-
-  removeExternalAccount: requiresRights(["delete-licences"]).createResolver(
-    async (parent, { licenceid }, { models, ip, token }) =>
-      models.sequelize.transaction(async ta => {
-        const {
-          user: { unitid }
-        } = decode(token);
-        try {
-          const deleted = await models.Licence.destroy({
-            where: { id: licenceid, unitid, key: { external: true } },
-            transaction: ta
-          });
-
-          if (deleted == 0) {
-            throw new Error("Licence not found!");
-          }
-
-          const p1 = await createLog(
-            ip,
-            "addExternalAccount",
-            { licence: licenceid },
-            unitid,
-            ta
-          );
-
-          const p2 = await createNotification(
-            {
-              receiver: unitid,
-              message: `Removed external Account`,
-              icon: "user-minus",
-              link: `teams`,
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          await Promise.all([p1, p2]);
-
-          return { ok: true };
-        } catch (err) {
-          await createNotification(
-            {
-              receiver: unitid,
-              message: "Deletion of external Account failed",
-              icon: "bug",
-              link: `teams`,
-              changed: []
-            },
-            ta
-          );
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
-  removeExternalAccountFromEmployee: requiresRights([
-    "delete-licences"
-  ]).createResolver(
-    async (parent, { licenceid, userid }, { models, ip, token }) =>
+  suspendLicence: requiresRights(["delete-licences"]).createResolver(
+    async (parent, { licenceid: id, fromuser }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid, company }
         } = decode(token);
+
+        let admin = null;
+
         try {
-          const findCompany = await models.DepartmentEmployee.findOne({
-            where: { id: company, employee: userid },
+          if (fromuser) {
+            admin = await companyCheck(company, unitid, fromuser);
+          }
+
+          const licence = await models.Licence.findOne({
+            where: {
+              id,
+              unitid: fromuser || unitid,
+              key: { external: true }
+            },
             raw: true
           });
 
-          const findAdmin = models.User.findOne(
-            { where: { id: unitid } },
-            { raw: true }
+          const suspended = await models.Licence.update(
+            { unitid: null },
+            {
+              where: { id, unitid, key: { external: true } },
+              transaction: ta
+            }
           );
 
-          const [inCompany, admin] = await Promise.all([
-            findCompany,
-            findAdmin
-          ]);
-
-          if (!inCompany) {
-            throw new Error("This user doesn't belong to this company!");
-          }
-
-          const deleted = await models.Licence.destroy({
-            where: { id: licenceid, unitid: userid, key: { external: true } },
-            transaction: ta
-          });
-
-          if (deleted == 0) {
+          if (suspended == 0) {
             throw new Error("Licence not found!");
           }
 
-          const p1 = await createLog(
-            ip,
-            "addExternalAccount",
-            { licence: licenceid },
-            unitid,
-            ta
-          );
+          const p1 = createLog(ip, "suspendLicence", { licence }, unitid, ta);
 
-          const p2 = await createNotification(
+          const p2 = createNotification(
             {
               receiver: unitid,
-              message: `Removed external Account`,
+              message: `Suspended external Account`,
               icon: "user-minus",
               link: `teams`,
               changed: ["ownLicences"]
@@ -954,20 +940,26 @@ export default {
             ta
           );
 
-          const p3 = await createNotification(
-            {
-              receiver: userid,
-              message: `${admin.firstname} ${
-                admin.lastname
-              } has removed your external Account`,
-              icon: "user-minus",
-              link: `teams`,
-              changed: ["ownLicences"]
-            },
-            ta
-          );
+          const promises = [p1, p2];
 
-          await Promise.all([p1, p2, p3]);
+          if (fromuser) {
+            const p3 = createNotification(
+              {
+                receiver: fromuser,
+                message: `${admin.firstname} ${
+                  admin.lastname
+                } removed an external Account from you.`,
+                icon: "user-plus",
+                link: "teams",
+                changed: ["ownLicences"]
+              },
+              ta
+            );
+
+            promises.push(p3);
+          }
+
+          await Promise.all(promises);
 
           return { ok: true };
         } catch (err) {

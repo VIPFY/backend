@@ -38,6 +38,7 @@ export const types = `
     description: String
     priority: Int
     tags: [String]
+    verified: Boolean
   }
 
   input AddressInput {

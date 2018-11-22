@@ -2,7 +2,6 @@ import { decode } from "jsonwebtoken";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { googleMapsClient } from "../../services/gcloud";
-import { findVipfyPlan } from "../../helpers/functions";
 
 export default {
   fetchCompany: requiresAuth.createResolver(
@@ -173,7 +172,26 @@ export default {
           user: { company, unitid }
         } = decode(token);
 
-        let vipfyPlan = await findVipfyPlan(company);
+        const vipfyPlans = await models.Plan.findAll({
+          where: { appid: 66 },
+          attributes: ["id"],
+          raw: true
+        });
+
+        const planIds = vipfyPlans.map(plan => plan.id);
+
+        let vipfyPlan = await models.BoughtPlan.findOne({
+          where: {
+            payer: company,
+            endtime: {
+              [models.Op.or]: {
+                [models.Op.gt]: models.sequelize.fn("NOW"),
+                [models.Op.eq]: null
+              }
+            },
+            planid: { [models.Op.in]: planIds }
+          }
+        });
 
         if (!vipfyPlan) {
           vipfyPlan = await models.BoughtPlan.create({
