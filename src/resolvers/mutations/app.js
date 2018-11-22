@@ -704,7 +704,7 @@ export default {
 
           await Promise.all([p3, p4]);
 
-          return { ok: true };
+          return boughtPlan;
         } catch (err) {
           await createNotification(
             {
