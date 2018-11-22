@@ -143,7 +143,7 @@ export const mutations = `
 
   # Adds the data of an external App
   addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): BoughtPlan!
-  addExternalLicence(username: String!, password: String!, subdomain: String, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID): Response!
+  addExternalLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID): Response!
 
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!
