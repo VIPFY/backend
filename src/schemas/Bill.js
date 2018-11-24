@@ -185,7 +185,7 @@ export const queries = `
   fetchBillingEmails: [Email]!
   fetchCredits: Credit
 
-  fetchAllBoughtplansFromCompany(appid: ID!): [BoughtPlan]!
+  fetchAllBoughtPlansFromCompany(appid: ID!, external: Boolean): [BoughtPlan]!
 `;
 
 export const mutations = `

@@ -177,15 +177,20 @@ export default {
     }
   ),
 
-  fetchAllBoughtplansFromCompany: requiresRights([
+  fetchAllBoughtPlansFromCompany: requiresRights([
     "view-licences",
     "view-apps",
     "view-boughtplans"
-  ]).createResolver(async (parent, { appid }, { models, token }) => {
+  ]).createResolver(async (parent, { appid, external }, { models, token }) => {
     try {
       const {
         user: { company }
       } = decode(token);
+
+      let externalFilter = "";
+      if (external) {
+        externalFilter = "AND boughtplan_data.key ->> 'external' = 'true'";
+      }
 
       const data = models.sequelize.query(
         `SELECT boughtplan_data.*,
@@ -193,9 +198,9 @@ export default {
         FROM boughtplan_data
                 JOIN plan_data pd on boughtplan_data.planid = pd.id
                 LEFT OUTER JOIN licence_data ld ON (ld.boughtplanid = boughtplan_data.id)
-        
         WHERE payer = :company
           AND appid = :appid
+          ${externalFilter}
         GROUP BY boughtplan_data.id
       `,
         {
