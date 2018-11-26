@@ -440,8 +440,25 @@ export default {
         } = decode(token);
 
         try {
-          const p1 = await models.Licence.findOne({ where: { id }, raw: true });
-          const p2 = await models.Licence.update(
+          const licence = await models.Licence.findOne({
+            where: { id },
+            raw: true
+          });
+
+          if (licence.unitid == null) {
+            throw new Error("This Licence wasn't taken!");
+          }
+
+          const boughtPlan = await models.BoughtPlan.findOne(
+            { where: { id: licence.boughtplanid } },
+            {
+              include: [models.Plan],
+              raw: true,
+              transaction: ta
+            }
+          );
+
+          await models.Licence.update(
             { unitid: null },
             {
               where: { id, unitid: { [models.Op.not]: null } },
@@ -450,36 +467,15 @@ export default {
             }
           );
 
-          const [oldLicence, revokedLicence] = await Promise.all([p1, p2]);
-
-          if (revokedLicence[0] == 0) {
-            throw new Error("This Licence wasn't taken!");
-          }
-
-          const boughtPlan = await models.BoughtPlan.findOne(
-            { where: { id: oldLicence.boughtplanid } },
-            {
-              include: [models.Plan],
-              raw: true,
-              transaction: ta
-            }
-          );
-
           await Services.removeUser(
             models,
             boughtPlan["plan_datum.appid"],
-            p1.boughtplanid,
+            licence.boughtplanid,
             id,
             ta
           );
 
-          const log = createLog(
-            ip,
-            "revokeLicence",
-            { oldLicence },
-            unitid,
-            ta
-          );
+          const log = createLog(ip, "revokedLicence", { licence }, unitid, ta);
 
           const notiGiver = createNotification(
             {
