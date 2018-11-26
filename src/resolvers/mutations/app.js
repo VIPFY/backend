@@ -1,5 +1,6 @@
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
+import moment from "moment";
 import { NormalError } from "../../errors";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import {
@@ -15,6 +16,7 @@ import {
 //   cancelPurchase
 // } from "../../services/stripe";
 import logger from "../../loggers";
+import { escape } from "querystring";
 
 /* eslint-disable no-return-await */
 
@@ -480,7 +482,7 @@ export default {
           const notiGiver = createNotification(
             {
               receiver: unitid,
-              message: `App revoked from ${oldLicence.unitid}`,
+              message: `App revoked from ${licence.unitid}`,
               icon: "th",
               link: "teams",
               changed: ["foreignLicences"]
@@ -490,7 +492,7 @@ export default {
 
           const notiReceiver = createNotification(
             {
-              receiver: oldLicence.unitid,
+              receiver: licence.unitid,
               message: `User ${unitid} has revoked an App from you`,
               icon: "th",
               link: "teams",
@@ -889,35 +891,33 @@ export default {
    * @returns {object}
    */
   suspendLicence: requiresRights(["delete-licences"]).createResolver(
-    async (parent, { licenceid: id, fromuser }, { models, ip, token }) =>
+    async (parent, { licenceid: id, fromuser, clear }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid, company }
         } = decode(token);
 
         let admin = null;
+        const config = { unitid: null };
 
         try {
           if (fromuser) {
             admin = await companyCheck(company, unitid, fromuser);
           }
 
+          if (clear) {
+            config.key = null;
+          }
+
           const licence = await models.Licence.findOne({
-            where: {
-              id,
-              unitid: fromuser || unitid,
-              key: { external: true }
-            },
+            where: { id, unitid: fromuser || unitid },
             raw: true
           });
 
-          const suspended = await models.Licence.update(
-            { unitid: null },
-            {
-              where: { id, unitid, key: { external: true } },
-              transaction: ta
-            }
-          );
+          const suspended = await models.Licence.update(config, {
+            where: { id, unitid: licence.unitid },
+            transaction: ta
+          });
 
           if (suspended == 0) {
             throw new Error("Licence not found!");
@@ -928,7 +928,7 @@ export default {
           const p2 = createNotification(
             {
               receiver: unitid,
-              message: `Suspended external Account`,
+              message: `Suspended Licence`,
               icon: "user-minus",
               link: `teams`,
               changed: ["ownLicences"]
@@ -944,7 +944,7 @@ export default {
                 receiver: fromuser,
                 message: `${admin.firstname} ${
                   admin.lastname
-                } removed an external Account from you.`,
+                } removed a Licence from you.`,
                 icon: "user-plus",
                 link: "teams",
                 changed: ["ownLicences"]
@@ -962,13 +962,216 @@ export default {
           await createNotification(
             {
               receiver: unitid,
-              message: "Deletion of external Account failed",
+              message: "Suspension of Licence failed",
               icon: "bug",
               link: `teams`,
               changed: []
             },
             ta
           );
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  clearLicence: requiresRights(["delete-licences"]).createResolver(
+    async (parent, { licenceid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        try {
+          const licence = await models.Licence.findOne({
+            where: { id: licenceid, unitid: null },
+            raw: true
+          });
+
+          if (!licence) {
+            throw new Error("This Licence still belongs to an user!");
+          }
+
+          const suspended = await models.Licence.update(
+            { key: null },
+            {
+              where: { id: licence.id },
+              transaction: ta
+            }
+          );
+
+          if (suspended == 0) {
+            throw new Error("Licence not found!");
+          }
+
+          const p1 = createLog(ip, "clearLicence", { licence }, unitid, ta);
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: `Logindata of Licence ${licence.id} cleared`,
+              icon: "trash",
+              link: `teams`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  deleteLicenceAt: requiresRights(["delete-licences"]).createResolver(
+    async (parent, { licenceid, time }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const parsedTime = moment(time).valueOf();
+          const config = { endtime: parsedTime };
+
+          const licence = await models.sequelize.query(
+            `
+        SELECT ld.*, pd.cancelperiod
+        FROM licence_data ld
+            LEFT OUTER JOIN boughtplan_data bd on ld.boughtplanid = bd.id
+            INNER JOIN plan_data pd on bd.planid = pd.id
+        WHERE ld.id = :licenceid
+          AND (bd.endtime IS NULL OR bd.endtime > NOW())
+          AND bd.payer = :company`,
+            {
+              replacements: { licenceid, company },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+
+          if (licence.length < 1) {
+            throw new Error(
+              "BoughtPlan doesn't exist or isn't active anymore!"
+            );
+          }
+
+          const period = Object.keys(licence[0].cancelperiod)[0];
+
+          const estimatedEndtime = moment()
+            .add(licence[0].cancelperiod[period], period)
+            .valueOf();
+
+          if (parsedTime <= estimatedEndtime) {
+            config.endtime = estimatedEndtime;
+          }
+
+          const updatedLicence = await models.Licence.update(config, {
+            where: { id: licence[0].id },
+            transaction: ta
+          });
+
+          if (updatedLicence[0] == 0) {
+            throw new Error("Couldn't update Licence");
+          }
+          const p1 = createLog(ip, "deleteLicenceAt", { licence }, unitid, ta);
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: `Set endtime of Licence ${licence[0].id}`,
+              icon: "business-time",
+              link: `teams`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
+
+          return moment(config.endtime).toDate();
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  deleteBoughtPlanAt: requiresRights(["delete-licences"]).createResolver(
+    async (parent, { boughtplanid, time }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const parsedTime = moment(time).valueOf();
+          const config = { endtime: parsedTime };
+
+          const boughtPlan = await models.sequelize.query(
+            `
+        SELECT bp.*, pd.cancelperiod
+        FROM boughtplan_data bd
+            INNER JOIN plan_data pd on bd.planid = pd.id
+        WHERE bp.id = :boughtplanid
+          AND (bd.endtime IS NULL OR bd.endtime > NOW())
+          AND bd.payer = :company`,
+            {
+              replacements: { boughtplanid, company },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+
+          if (boughtPlan.length < 1) {
+            throw new Error(
+              "BoughtPlan doesn't exist or isn't active anymore!"
+            );
+          }
+
+          const period = Object.keys(licence[0].cancelperiod)[0];
+
+          const estimatedEndtime = moment()
+            .add(licence[0].cancelperiod[period], period)
+            .valueOf();
+
+          if (parsedTime <= estimatedEndtime) {
+            config.endtime = estimatedEndtime;
+          }
+
+          const updatedLicence = await models.Licence.update(config, {
+            where: { id: licence[0].id },
+            transaction: ta
+          });
+
+          if (updatedLicence[0] == 0) {
+            throw new Error("Couldn't update Licence");
+          }
+          const p1 = createLog(ip, "deleteLicenceAt", { licence }, unitid, ta);
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: `Set endtime of Licence ${licence[0].id}`,
+              icon: "business-time",
+              link: `teams`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
+
+          return moment(config.endtime).toDate();
+        } catch (err) {
           throw new NormalError({
             message: err.message,
             internalData: { err }
