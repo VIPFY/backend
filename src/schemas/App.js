@@ -131,9 +131,15 @@ export const mutations = `
   # Give an user a licence from the licence pool of department
   distributeLicence(boughtplanid: ID!, unitid: ID!, departmentid: ID!): DistributeResponse!
 
-  # Free the licence
   revokeLicence(licenceid: ID!): Response!
-  suspendLicence(licenceid: ID!, fromuser: ID): Response!
+  # Remove the user from a licence and optionally delete the key
+  suspendLicence(licenceid: ID!, fromuser: ID, clear: Boolean): Response!
+  # Delete the key from a licence
+  clearLicence(licenceid: ID!): Response!
+  # Deletes a licence on a set date, if it is after the normal cancel period
+  deleteLicenceAt(licenceid: ID!, time: Date!): Date!
+  # Deletes a boughtPlan on a set date, if it is after the normal cancel period
+  deleteBoughtPlanAt(boughtplanid: ID!, time: Date!): Date!
 
   # Agree to all terms and conditions of a licence
   agreeToLicence(licenceid: ID!): Response!
