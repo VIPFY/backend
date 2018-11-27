@@ -70,9 +70,9 @@ export const queries = `
 `;
 
 export const mutations = `
-  createUser(user: UserInput!, file: File): Response!
+  createUser(user: UserInput!, file: Upload): Response!
   updateUser(user: UserInput!): Response!
-  updateProfilePic(file: File!): String!
+  updateProfilePic(file: Upload!): String!
 
   # Only an email is required for the signup
   signUp(email: String!, name: NameInput!, companyData: CompanyInput! promocode: String): RegisterResponse!

@@ -4,7 +4,6 @@
  * establishes the connection to the database before starting the server
  */
 
-import bodyParser from "body-parser";
 import cors from "cors";
 import express from "express";
 import fs from "fs";
@@ -23,12 +22,7 @@ import * as Services from "@vipfy-private/services";
 import { express as voyagerMiddleware } from "graphql-voyager/middleware";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
-import {
-  authMiddleware,
-  fileMiddleware,
-  loggingMiddleWare
-} from "./middleware";
-import { refreshTokens } from "./helpers/auth";
+import { authMiddleware, loggingMiddleWare } from "./middleware";
 import logger from "./loggers";
 import { formatError, AuthError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
@@ -121,7 +115,6 @@ const corsOptions = {
 app.use(authMiddleware);
 app.use(cors(corsOptions));
 app.use(loggingMiddleWare);
-app.use("/graphql", fileMiddleware);
 
 let engine = undefined;
 if (ENVIRONMENT == "production") {
@@ -156,8 +149,6 @@ app.get("/", (req, res) =>
   res.send(`Go to http${secure}://localhost:${PORT}/graphiql for the Interface`)
 );
 
-// The bodyParser is needed here (again), so that the post can receive the content.
-app.use(bodyParser.json());
 app.post("/download", async (req, res) => {
   try {
     const token = req.headers["x-token"];
@@ -181,9 +172,6 @@ if (ENVIRONMENT != "testing") {
   server.listen(PORT, () => {
     if (process.env.LOGGING) {
       console.log(`Server running on port ${PORT}`);
-      console.log(
-        `Go to http${secure}://localhost:${PORT}/graphiql for the Interface`
-      );
     }
 
     new SubscriptionServer(

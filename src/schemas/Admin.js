@@ -30,8 +30,8 @@ export const queries = `
 `;
 
 export const mutations = `
-  createApp(app: AppInput!, file: File, file2: File, files: [File]): Response!
-  updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, file: File): Response!
+  createApp(app: AppInput!, logo: Upload!, icon: Upload!, pics: [Upload!]!): Response!
+  updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, pic: Upload): Response!
   adminCreateLicence(licenceData: JSON!): Response!
   adminUpdateLicence(unitid: Int!, boughtplanid: Int! licenceData: JSON!): Response!
   adminUpdateAddress(addressData: AddressInput!, id: Int!): Response!
@@ -43,8 +43,8 @@ export const mutations = `
 
   adminCreateEmail(email: String!, unitid: Int!): Response!
   adminDeleteEmail(email: String!,unitid: Int!): Response!
-  adminCreateCompany(company: CompanyInput!, file: File): Response!
-  adminUpdateUser(user: UserInput, file: File, unitid: Int!): Response!
+  adminCreateCompany(company: CompanyInput!, profilepic: Upload): Response!
+  adminUpdateUser(user: UserInput, profilepic: Upload, unitid: Int!): Response!
   adminCreateAddress(addressData: AddressInput!, unitid: Int!): Response!
 
   # Deletes an unit, checks if unit is an user or a company

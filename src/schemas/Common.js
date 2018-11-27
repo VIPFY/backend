@@ -55,10 +55,9 @@ type Log {
 
 # Necessary to upload pictures
 input File {
-  name: String!
-  type: String!
-  size: Int!
-  path: String!
+  filename: String!
+  mimetype: String!
+  encoding: String!
 }
 
 # Interval

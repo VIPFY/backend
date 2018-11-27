@@ -157,7 +157,7 @@ export default {
   ),
 
   createApp: requiresVipfyAdmin.createResolver(
-    async (parent, { app, file, file2, files }, { models }) => {
+    async (parent, { app, logo, icon, pics }, { models }) => {
       try {
         const nameExists = await models.App.findOne({
           where: { name: app.name },
@@ -175,24 +175,16 @@ export default {
           throw new Error("Developer and Supportunit can't be the same one!");
         }
 
-        if (file) {
-          const logo = await uploadFile(file, appPicFolder);
-          app.logo = logo;
-        }
+        const appLogo = await uploadFile(logo, appPicFolder);
+        app.logo = appLogo;
 
-        if (file2) {
-          const icon = await uploadFile(file2, "icons");
-          app.icon = icon;
-        }
+        const appIcon = await uploadFile(icon, "icons");
+        app.icon = appIcon;
 
-        if (files) {
-          // eslint-disable-next-line
-          const imagesToUpload = files.map(async fi =>
-            uploadFile(fi, app.name)
-          );
-          const images = await Promise.all(imagesToUpload);
-          app.images = images;
-        }
+        // eslint-disable-next-line
+        const imagesToUpload = pics.map(async pic => uploadFile(pic, app.name));
+        const images = await Promise.all(imagesToUpload);
+        app.images = images;
 
         await models.App.create({ ...app });
         return { ok: true };
@@ -205,15 +197,15 @@ export default {
   updateApp: requiresVipfyAdmin.createResolver(
     async (
       parent,
-      { supportid, developerid, appid, app = {}, file },
+      { supportid, developerid, appid, app = {}, pic },
       { models }
     ) =>
       models.sequelize.transaction(async ta => {
         const tags = ["support"];
 
         try {
-          if (file) {
-            const logo = await uploadFile(file, appPicFolder);
+          if (pic) {
+            const logo = await uploadFile(pic, appPicFolder);
             app.logo = logo;
           }
 
@@ -446,12 +438,12 @@ export default {
   ),
 
   adminUpdateUser: requiresVipfyAdmin.createResolver(
-    async (parent, { unitid, user = {}, file }, { models }) => {
+    async (parent, { unitid, user = {}, profilepic }, { models }) => {
       const { password, verified, email, oldemail, banned } = user;
 
       try {
-        if (file) {
-          const profilepicture = await uploadFile(file, userPicFolder);
+        if (profilepic) {
+          const profilepicture = await uploadFile(profilepic, userPicFolder);
           await models.Unit.update(
             { profilepicture },
             { where: { id: unitid } }
@@ -460,6 +452,7 @@ export default {
           if (password.length > MAX_PASSWORD_LENGTH) {
             throw new Error("Password too long");
           }
+
           const pwData = await getNewPasswordData(password);
           await models.Human.update({ ...pwData }, { where: { unitid } });
         } else if (verified != null && email) {
@@ -584,14 +577,14 @@ export default {
   ),
 
   adminCreateCompany: requiresVipfyAdmin.createResolver(
-    async (parent, { company, file }, { models }) =>
+    async (parent, { company, profilepic }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
           let unit;
           const { user, ...data } = company;
 
-          if (file) {
-            const profilepicture = await uploadFile(file, userPicFolder);
+          if (profilepic) {
+            const profilepicture = await uploadFile(profilepic, userPicFolder);
             unit = await models.Unit.create(
               { profilepicture },
               { transaction: ta }

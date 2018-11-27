@@ -56,20 +56,26 @@ const storage = new Storage({
 const imageStore = "vipfy-imagestore-01";
 const messageStore = "vipfy-messageattachments";
 
-export const uploadFile = async ({ path, name }, folder) => {
-  const profilepicture = formatFilename(name);
+export const uploadFile = async ({ stream, filename }, folder) => {
+  const profilepicture = formatFilename(filename);
   const destination = `${folder}/${profilepicture}`;
 
   try {
-    await storage
-      .bucket(imageStore)
-      .upload(path, { destination, public: true });
-    fs.unlinkSync(path);
+    const promise = (resolve, reject) =>
+      stream
+        .pipe(
+          storage
+            .bucket(imageStore)
+            .file(destination)
+            .createWriteStream({ public: true })
+        )
+        .on("error", err => reject(err))
+        .on("finish", () => resolve("Download complete"));
+
+    await new Promise(promise);
 
     return profilepicture;
   } catch (err) {
-    fs.unlinkSync(path);
-
     throw new Error(err.message);
   }
 };
