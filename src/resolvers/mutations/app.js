@@ -1077,7 +1077,8 @@ export default {
             where: { id: licence[0].id },
             transaction: ta
           });
-
+          // 1543311333813 1545903334341
+          // 1543311347004 1545903347123
           if (updatedLicence[0] == 0) {
             throw new Error("Couldn't update Licence");
           }
@@ -1086,7 +1087,9 @@ export default {
           const p2 = createNotification(
             {
               receiver: unitid,
-              message: `Set endtime of Licence ${licence[0].id}`,
+              message: `Set endtime of Licence ${licence[0].id} to ${moment(
+                config.endtime
+              ).toDate()}`,
               icon: "business-time",
               link: `teams`,
               changed: ["ownLicences"]
@@ -1119,12 +1122,12 @@ export default {
 
           const boughtPlan = await models.sequelize.query(
             `
-        SELECT bp.*, pd.cancelperiod
-        FROM boughtplan_data bd
-            INNER JOIN plan_data pd on bd.planid = pd.id
-        WHERE bp.id = :boughtplanid
-          AND (bd.endtime IS NULL OR bd.endtime > NOW())
-          AND bd.payer = :company`,
+            SELECT bd.*, pd.cancelperiod
+            FROM boughtplan_data bd
+                INNER JOIN plan_data pd on bd.planid = pd.id
+            WHERE bd.id = :boughtplanid
+              AND (bd.endtime IS NULL OR bd.endtime > NOW())
+              AND bd.payer = :company`,
             {
               replacements: { boughtplanid, company },
               type: models.sequelize.QueryTypes.SELECT
@@ -1137,30 +1140,37 @@ export default {
             );
           }
 
-          const period = Object.keys(licence[0].cancelperiod)[0];
-
+          const period = Object.keys(boughtPlan[0].cancelperiod)[0];
           const estimatedEndtime = moment()
-            .add(licence[0].cancelperiod[period], period)
+            .add(boughtPlan[0].cancelperiod[period], period)
             .valueOf();
 
           if (parsedTime <= estimatedEndtime) {
             config.endtime = estimatedEndtime;
           }
 
-          const updatedLicence = await models.Licence.update(config, {
-            where: { id: licence[0].id },
+          const updatedBoughtPlan = await models.BoughtPlan.update(config, {
+            where: { id: boughtPlan[0].id },
             transaction: ta
           });
 
-          if (updatedLicence[0] == 0) {
-            throw new Error("Couldn't update Licence");
+          if (updatedBoughtPlan[0] == 0) {
+            throw new Error("Couldn't update Plan");
           }
-          const p1 = createLog(ip, "deleteLicenceAt", { licence }, unitid, ta);
+          const p1 = createLog(
+            ip,
+            "deleteBoughtPlanAt",
+            { boughtPlan },
+            unitid,
+            ta
+          );
 
           const p2 = createNotification(
             {
               receiver: unitid,
-              message: `Set endtime of Licence ${licence[0].id}`,
+              message: `Set endtime of Plan ${boughtPlan[0].id} to ${moment(
+                config.endtime
+              ).toDate()}`,
               icon: "business-time",
               link: `teams`,
               changed: ["ownLicences"]
