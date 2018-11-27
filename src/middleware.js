@@ -39,51 +39,6 @@ export const authMiddleware = async (req, res, next) => {
   next();
 };
 
-export const fileMiddleware = (req, res, next) => {
-  const uploadDir = "src/files";
-
-  if (!req.is("multipart/form-data")) {
-    return next();
-  }
-
-  if (uploadDir) mkdirp.sync(uploadDir);
-  const form = formidable.IncomingForm({ uploadDir });
-
-  form.multiples = true;
-  form.parse(req, (error, { operations }, files) => {
-    if (error) {
-      console.log(error);
-    }
-
-    const document = JSON.parse(operations);
-    if (Object.keys(files).length) {
-      if (files.file) {
-        const {
-          file: { type, path: thePath, size, name }
-        } = files;
-        document.variables.file = { type, path: thePath, size, name };
-      }
-
-      if (files.file2) {
-        const {
-          file2: { type, path: thePath, size, name }
-        } = files;
-        document.variables.file2 = { type, path: thePath, size, name };
-      }
-
-      if (files.files) {
-        document.variables.files = Object.values(files.files).map(fi => {
-          const { type, path: thePath, size, name } = fi;
-          return { type, path: thePath, size, name };
-        });
-      }
-    }
-
-    req.body = document;
-    next();
-  });
-};
-
 export const loggingMiddleWare = (req, res, next) => {
   const oldWrite = res.write;
   const oldEnd = res.end;

@@ -1,3 +1,4 @@
+import { gql } from "apollo-server-express";
 import * as App from "./App";
 import * as Admin from "./Admin";
 import * as Bill from "./Bill";
@@ -41,7 +42,9 @@ schemas.forEach(schema => {
   subscriptions.push(schema.subscriptions);
 });
 
-export default `
+export default gql`
+  scalar Upload
+  
   ${types.join("\n")}
 
   type Query {
