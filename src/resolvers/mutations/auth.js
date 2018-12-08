@@ -32,12 +32,12 @@ const ZENDESK_TOKEN =
 export default {
   signUp: async (
     parent,
-    { email, name, privacy, tOS },
+    { email, companyname: name, privacy, termsOfService },
     { models, SECRET, ip }
   ) =>
     models.sequelize.transaction(async ta => {
       try {
-        if (!privacy || !tOS) {
+        if (!privacy || !termsOfService) {
           throw new Error(
             "You have to confirm to our privacy agreement and our Terms of Service!"
           );
