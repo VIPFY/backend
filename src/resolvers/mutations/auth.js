@@ -32,11 +32,16 @@ const ZENDESK_TOKEN =
 export default {
   signUp: async (
     parent,
-    { email, name, companyData },
+    { email, name, privacy, tOS },
     { models, SECRET, ip }
   ) =>
     models.sequelize.transaction(async ta => {
       try {
+        if (!privacy || !tOS) {
+          throw new Error(
+            "You have to confirm to our privacy agreement and our Terms of Service!"
+          );
+        }
         // Check whether the email is already in use
         const emailInUse = await models.Email.findOne({
           where: { email },
@@ -51,7 +56,7 @@ export default {
         const pwData = await getNewPasswordData(password);
 
         // Replace special characters in names to avoid frontend errors
-        const filteredName = name;
+        // const filteredName = name;
         // Object.keys(name).forEach(item => {
         //   filteredName[item] = name[item].replace(
         //     /['"[\]{}()*+?.,\\^$|#\s]/g,
@@ -61,7 +66,6 @@ export default {
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
-            ...filteredName,
             unitid: unit.id,
             firstlogin: false,
             needspasswordchange: true,
@@ -69,87 +73,17 @@ export default {
           },
           { transaction: ta }
         );
-        // delete verified: true
+
         const p2 = models.Email.create(
-          { email, unitid: unit.id, verified: true, tags: ["billing"] },
+          { email, unitid: unit.id, tags: ["billing"] },
           { transaction: ta }
         );
 
         const [newUser, emailDbo] = await Promise.all([p1, p2]);
         const user = newUser.get();
-        let { legalinformation, name: companyName } = companyData;
+
         let company = await models.Unit.create({}, { transaction: ta });
         company = company.get();
-
-        if (companyData.placeid) {
-          const { json } = await googleMapsClient
-            .place({
-              placeid: companyData.placeid,
-              fields: [
-                "formatted_address",
-                "international_phone_number",
-                "website",
-                "address_component"
-              ]
-            })
-            .asPromise();
-          const addressData = parseAddress(json.result.address_components);
-
-          await models.Address.create(
-            {
-              ...addressData,
-              unitid: company.id,
-              tags: ["main"]
-            },
-            { transaction: ta }
-          );
-        }
-
-        if (!legalinformation.noVatRequired) {
-          const { vatId } = legalinformation;
-          const vatNumber = vatId.substr(2).trim();
-          const cc = vatId.substr(0, 2).toUpperCase();
-
-          const checkedData = await checkVat(cc, vatNumber);
-
-          if (checkedData.valid && checkedData.name != "---") {
-            companyName = checkedData.name;
-
-            const res = await axios.get("https://euvat.ga/rates.json");
-            legalinformation.vatPercentage = res.data.rates[cc].standard_rate;
-
-            if (checkedData.address != "---") {
-              const findPlace = await googleMapsClient
-                .placesQueryAutoComplete({
-                  input: checkedData.address
-                })
-                .asPromise();
-
-              const { json } = await googleMapsClient
-                .place({
-                  placeid: findPlace.json.predictions[0].place_id,
-                  fields: [
-                    "formatted_address",
-                    "international_phone_number",
-                    "website",
-                    "address_component"
-                  ]
-                })
-                .asPromise();
-              const addressData = parseAddress(json.result.address_components);
-
-              await models.Address.create(
-                {
-                  ...addressData,
-                  verified: true,
-                  unitid: company.id,
-                  tags: ["main"]
-                },
-                { transaction: ta }
-              );
-            }
-          }
-        }
 
         const zendeskdata = await axios({
           method: "POST",
@@ -158,7 +92,7 @@ export default {
             Authorization: ZENDESK_TOKEN
           },
           data: JSON.stringify({
-            organization: { name: `Company-${company.id}`, notes: companyName }
+            organization: { name: `Company-${company.id}`, notes: name }
           }),
           url: "https://vipfy.zendesk.com/api/v2/organizations.json"
         });
@@ -173,7 +107,7 @@ export default {
           },
           data: JSON.stringify({
             user: {
-              name: formatHumanName(filteredName),
+              name: "User",
               email, // TODO Mehrere Email-Adressen
               verified: true,
               organization_id: zendeskdata.data.organization.id,
@@ -191,8 +125,11 @@ export default {
         const p4 = models.DepartmentData.create(
           {
             unitid: company.id,
-            name: companyName,
-            legalinformation
+            name,
+            legalinformation: {
+              privacy: new Date(),
+              termsOfService: new Date()
+            }
           },
           { transaction: ta }
         );
@@ -225,7 +162,6 @@ export default {
           p5,
           p6
         ]);
-        // resetCompanyMembershipCache(company.id, unit.id);
 
         await sendEmail({
           templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
@@ -235,7 +171,7 @@ export default {
               to: [
                 {
                   email,
-                  name: formatHumanName(filteredName)
+                  name: "User"
                 }
               ],
               dynamic_template_data: {
