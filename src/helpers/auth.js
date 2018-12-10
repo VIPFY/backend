@@ -8,13 +8,13 @@ import {
 } from "./companyMembership";
 import { computePasswordScore } from "./functions";
 
-export const createToken = async (user, SECRET) => {
+export const createToken = async (user, SECRET, expiresIn = "1w") => {
   try {
     const newToken = await jwt.sign(
       { user: pick(user, ["unitid", "company"]) },
       SECRET,
       {
-        expiresIn: "1w"
+        expiresIn
       }
     );
 

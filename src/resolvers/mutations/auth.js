@@ -311,7 +311,11 @@ export default {
       const valid = await bcrypt.compare(password, emailExists.passwordhash);
       if (!valid) throw new Error(message);
 
-      checkAuthentification(models, emailExists.unitid, emailExists.company);
+      await checkAuthentification(
+        models,
+        emailExists.unitid,
+        emailExists.company
+      );
 
       // update password length and strength.
       // This is temporary to fill values we didn't catch before implementing these metrics
@@ -554,5 +558,49 @@ export default {
           });
         }
       })
-  )
+  ),
+
+  redeemSetupToken: async (parent, { setuptoken }, { models, ip, SECRET }) => {
+    try {
+      const setupTokenEntry = await models.SetupToken.findOne({
+        where: {
+          key: setuptoken,
+          validuntil: { [models.Op.gt]: models.sequelize.fn("NOW") }
+        }
+      });
+      if (!setupTokenEntry) {
+        throw new Error("token invalid");
+      }
+
+      const emailExists = await models.Login.findOne({
+        where: { unitid: setupTokenEntry.unitid },
+        raw: true
+      });
+
+      if (!emailExists) throw new Error("user not found");
+
+      await checkAuthentification(
+        models,
+        emailExists.unitid,
+        emailExists.company
+      );
+
+      await createLog(
+        ip,
+        "redeemSetupToken",
+        { user: emailExists, setuptoken },
+        emailExists.unitid,
+        null
+      );
+
+      const token = await createToken(emailExists, SECRET, "1d");
+
+      return { ok: true, token };
+    } catch (err) {
+      throw new NormalError({
+        message: err.message,
+        internalData: { err }
+      });
+    }
+  }
 };

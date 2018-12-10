@@ -91,4 +91,7 @@ export const mutations = `
 
   # Send the user a new link for sign up
   forgotPassword(email: String!): ForgotPwResponse!
+
+  # take a token from a setup file and return a one-day JWT
+  redeemSetupToken(setuptoken: String!): LoginResponse!
 `;
