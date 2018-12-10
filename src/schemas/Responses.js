@@ -29,7 +29,6 @@ export const types = `
     type LoginResponse {
       ok: Boolean!
       token: String
-      user: User!
     }
 
   # The user gets the email where the new auth is send back
