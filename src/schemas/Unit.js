@@ -27,6 +27,7 @@ export const types = `
     firstlogin: Boolean!
     isadmin: Boolean!
     companyban: Boolean
+    country: String
   }
 
   input NameInput {
@@ -76,6 +77,9 @@ export const mutations = `
 
   # Only an email is required for the signup
   signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!): RegisterResponse!
+
+  #Setup Finished
+  setupFinished(country: String, vatoption: Int, vatnumber: String, placeId: String, ownAdress: String, username: String): Response!
 
   # The user will be passed back a JSON Web token for authentication
   signIn(email: String!, password: String!): LoginResponse!

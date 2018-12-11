@@ -27,6 +27,7 @@ export const types = `
     domains: [Domain]
     createdate: String!
     promocode: String
+    setupfinished: Boolean
   }
 
   type DepartmentData {

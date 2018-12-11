@@ -210,6 +210,332 @@ export default {
       }
     }),
 
+  setupFinished: async (
+    parent,
+    { country, vatoption, vatnumber, placeId, ownAdress, username },
+    { models, SECRET, ip, token }
+  ) =>
+    models.sequelize.transaction(async ta => {
+      console.log(
+        "PROPS",
+        country,
+        vatoption,
+        vatnumber,
+        placeId,
+        ownAdress,
+        username
+      );
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        let p1;
+        if (username) {
+          p1 = models.Human.update(
+            {
+              firstname: username.split(" ")[0],
+              lastname: username
+                .split(" ")
+                .splice(0, 1)
+                .join(" "),
+              firstlogin: false,
+              statisticdata: {
+                username
+              }
+            },
+            { where: { unitid }, transaction: ta, raw: true }
+          );
+        } else {
+          p1 = models.Human.update(
+            {
+              firstlogin: false
+            },
+            { where: { unitid }, transaction: ta, raw: true }
+          );
+        }
+
+        if (placeId && placeId !== "OWN") {
+          const { json } = await googleMapsClient
+            .place({
+              placeid: placeId,
+              fields: [
+                "formatted_address",
+                "international_phone_number",
+                "website",
+                "address_component"
+              ]
+            })
+            .asPromise();
+          const addressData = parseAddress(json.result.address_components);
+
+          await models.Address.create(
+            {
+              ...addressData,
+              unitid: company,
+              tags: ["main"]
+            },
+            { transaction: ta }
+          );
+        }
+
+        const p2 = models.DepartmentData.update(
+          {
+            setupfinished: true,
+            statisticdata: {
+              placeId,
+              ownAdress,
+              vatoption,
+              vatnumber,
+              country
+            }
+          },
+          { where: { unitid: company }, transaction: ta }
+        );
+        await Promise.all([p1, p2]);
+        /*
+
+
+
+
+
+        // Check whether the email is already in use
+        const emailInUse = await models.Email.findOne({
+          where: { email },
+          raw: true
+        });
+
+        if (emailInUse) {
+          throw new Error("Email already in use!");
+        }
+        // generate a new random password
+        const password = await randomPassword(3, 2);
+        const pwData = await getNewPasswordData(password);
+
+        // Replace special characters in names to avoid frontend errors
+        const filteredName = name;
+        // Object.keys(name).forEach(item => {
+        //   filteredName[item] = name[item].replace(
+        //     /['"[\]{}()*+?.,\\^$|#\s]/g,
+        //     "\\$&"
+        //   );
+        // });
+        const unit = await models.Unit.create({}, { transaction: ta });
+        const p1 = models.Human.create(
+          {
+            ...filteredName,
+            unitid: unit.id,
+            firstlogin: false,
+            needspasswordchange: true,
+            ...pwData
+          },
+          { transaction: ta }
+        );
+        // delete verified: true
+        const p2 = models.Email.create(
+          { email, unitid: unit.id, verified: true, tags: ["billing"] },
+          { transaction: ta }
+        );
+
+        const [newUser, emailDbo] = await Promise.all([p1, p2]);
+        const user = newUser.get();
+        let { legalinformation, name: companyName } = companyData;
+        let company = await models.Unit.create({}, { transaction: ta });
+        company = company.get();
+
+        if (companyData.placeid) {
+          const { json } = await googleMapsClient
+            .place({
+              placeid: companyData.placeid,
+              fields: [
+                "formatted_address",
+                "international_phone_number",
+                "website",
+                "address_component"
+              ]
+            })
+            .asPromise();
+          const addressData = parseAddress(json.result.address_components);
+
+          await models.Address.create(
+            {
+              ...addressData,
+              unitid: company.id,
+              tags: ["main"]
+            },
+            { transaction: ta }
+          );
+        }
+
+        if (!legalinformation.noVatRequired) {
+          const { vatId } = legalinformation;
+          const vatNumber = vatId.substr(2).trim();
+          const cc = vatId.substr(0, 2).toUpperCase();
+
+          const checkedData = await checkVat(cc, vatNumber);
+
+          if (checkedData.valid && checkedData.name != "---") {
+            companyName = checkedData.name;
+
+            const res = await axios.get("https://euvat.ga/rates.json");
+            legalinformation.vatPercentage = res.data.rates[cc].standard_rate;
+
+            if (checkedData.address != "---") {
+              const findPlace = await googleMapsClient
+                .placesQueryAutoComplete({
+                  input: checkedData.address
+                })
+                .asPromise();
+
+              const { json } = await googleMapsClient
+                .place({
+                  placeid: findPlace.json.predictions[0].place_id,
+                  fields: [
+                    "formatted_address",
+                    "international_phone_number",
+                    "website",
+                    "address_component"
+                  ]
+                })
+                .asPromise();
+              const addressData = parseAddress(json.result.address_components);
+
+              await models.Address.create(
+                {
+                  ...addressData,
+                  verified: true,
+                  unitid: company.id,
+                  tags: ["main"]
+                },
+                { transaction: ta }
+              );
+            }
+          }
+        }
+
+        const zendeskdata = await axios({
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: ZENDESK_TOKEN
+          },
+          data: JSON.stringify({
+            organization: { name: `Company-${company.id}`, notes: companyName }
+          }),
+          url: "https://vipfy.zendesk.com/api/v2/organizations.json"
+        });
+
+        sleep(300);
+
+        await axios({
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: ZENDESK_TOKEN
+          },
+          data: JSON.stringify({
+            user: {
+              name: formatHumanName(filteredName),
+              email, // TODO Mehrere Email-Adressen
+              verified: true,
+              organization_id: zendeskdata.data.organization.id,
+              external_id: `User-${unit.id}`
+            }
+          }),
+          url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
+        });
+
+        const p3 = models.Right.create(
+          { holder: unit.id, forunit: company.id, type: "admin" },
+          { transaction: ta }
+        );
+
+        const p4 = models.DepartmentData.create(
+          {
+            unitid: company.id,
+            name: companyName,
+            legalinformation
+          },
+          { transaction: ta }
+        );
+
+        const p5 = models.ParentUnit.create(
+          { parentunit: company.id, childunit: unit.id },
+          { transaction: ta }
+        );
+
+        const endtime = moment()
+          .add(1, "months")
+          .toDate();
+
+        const p6 = models.BoughtPlan.create(
+          {
+            planid: 126,
+            payer: company.id,
+            usedby: company.id,
+            buyer: unit.id,
+            totalprice: 0,
+            disabled: false,
+            endtime
+          },
+          { transaction: ta }
+        );
+
+        const [rights, department, parentUnit, vipfyPlan] = await Promise.all([
+          p3,
+          p4,
+          p5,
+          p6
+        ]);
+        // resetCompanyMembershipCache(company.id, unit.id);
+
+        await sendEmail({
+          templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
+          fromName: "VIPFY",
+          personalizations: [
+            {
+              to: [
+                {
+                  email,
+                  name: formatHumanName(filteredName)
+                }
+              ],
+              dynamic_template_data: {
+                name: "",
+                password,
+                email
+              }
+            }
+          ]
+        });
+
+        await createLog(
+          ip,
+          "signUp",
+          {
+            human: user,
+            email: emailDbo,
+            rights,
+            department,
+            parentUnit,
+            vipfyPlan,
+            company
+          },
+          unit.id,
+          ta
+        );
+
+        user.company = company.id;
+
+        const token = await createToken(user, SECRET);
+*/
+        return { ok: true };
+      } catch (err) {
+        logger.info(err);
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }),
+
   signUpConfirm: async (
     parent,
     { email, password },
