@@ -23,6 +23,11 @@ export const types = `
     type RegisterResponse {
       ok: Boolean!
       token: String
+      downloads: DownloadLink
+    }
+
+    type DownloadLink {
+      win64: String
     }
 
   # The user receives tokens upon a successful login

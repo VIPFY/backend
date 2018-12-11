@@ -157,12 +157,25 @@ export default {
           { transaction: ta }
         );
 
-        const [rights, department, parentUnit, vipfyPlan] = await Promise.all([
-          p3,
-          p4,
-          p5,
-          p6
-        ]);
+        const p7 = models.Token.create(
+          {
+            email,
+            token: createToken(),
+            expiresat: moment()
+              .add(1, "hour")
+              .toISOString(),
+            type: "setuplogin"
+          },
+          { transaction: ta }
+        );
+
+        const [
+          rights,
+          department,
+          parentUnit,
+          vipfyPlan,
+          setuptoken
+        ] = await Promise.all([p3, p4, p5, p6, p7]);
 
         await sendEmail({
           templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
@@ -204,7 +217,13 @@ export default {
 
         const token = await createToken(user, SECRET);
 
-        return { ok: true, token };
+        return {
+          ok: true,
+          token,
+          downloads: {
+            win64: `https://downloads.vipfy.store/latest/win32/x64/VIPFY-${setuptoken}.exe`
+          }
+        };
       } catch (err) {
         logger.info(err);
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -645,10 +664,11 @@ export default {
 
   redeemSetupToken: async (parent, { setuptoken }, { models, ip, SECRET }) => {
     try {
-      const setupTokenEntry = await models.SetupToken.findOne({
+      const setupTokenEntry = await models.Token.findOne({
         where: {
-          key: setuptoken,
-          validuntil: { [models.Op.gt]: models.sequelize.fn("NOW") }
+          token: setuptoken,
+          expiresat: { [models.Op.gt]: models.sequelize.fn("NOW") },
+          usedat: null
         }
       });
       if (!setupTokenEntry) {
@@ -677,6 +697,17 @@ export default {
       );
 
       const token = await createToken(emailExists, SECRET, "1d");
+
+      await models.Token.update(
+        {
+          usedat: models.sequelize.fn("NOW")
+        },
+        {
+          where: {
+            id: setupTokenEntry.id
+          }
+        }
+      );
 
       return { ok: true, token };
     } catch (err) {
