@@ -325,10 +325,7 @@ export default {
         { where: { unitid: emailExists.unitid } }
       );
 
-      const p1 = models.User.findOne({
-        where: { id: emailExists.unitid }
-      });
-      const p2 = createLog(
+      await createLog(
         ip,
         "signIn",
         { user: emailExists, email },
@@ -336,14 +333,11 @@ export default {
         null
       );
 
-      const [basicUser] = await Promise.all([p1, p2]);
-
-      const user = await parentAdminCheck(basicUser);
       // User doesn't have the property unitid, so we have to pass emailExists for
       // the token creation
       const token = await createToken(emailExists, SECRET);
 
-      return { ok: true, user, token };
+      return { ok: true, token };
     } catch (err) {
       throw new Error({ message: err.message, internalData: { err } });
     }
@@ -398,11 +392,12 @@ export default {
             ta
           );
 
+          // todo: simpler way to get company, since we don't return user anymore
           const user = await parentAdminCheck(basicUser);
           findOldPassword.company = user.company;
           const newToken = await createToken(findOldPassword, SECRET);
 
-          return { ok: true, user, token: newToken };
+          return { ok: true, token: newToken };
         } catch (err) {
           throw new NormalError({
             message: err.message,
