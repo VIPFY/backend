@@ -257,7 +257,7 @@ export default {
   ),
 
   distributeLicence: requiresRights(["create-licences"]).createResolver(
-    (parent, { boughtplanid, unitid, departmentid }, { models, token, ip }) =>
+    (parent, { licenceid, unitid, departmentid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid: giver }
@@ -267,11 +267,11 @@ export default {
           const p1 = models.Licence.findOne({
             where: {
               unitid: null,
-              boughtplanid,
+              id: licenceid,
               endtime: {
                 [models.Op.or]: {
                   [models.Op.eq]: null,
-                  [models.Op.lt]: Date.now()
+                  [models.Op.gt]: Date.now()
                 }
               }
             },
@@ -328,12 +328,12 @@ export default {
               unitid
             },
             {
-              where: { boughtplanid, unitid: null, id: openLicence.id },
+              where: { id: licenceid },
               transaction: ta
             }
           );
 
-          const p4 = models.BoughtPlan.findById(boughtplanid, {
+          const p4 = models.BoughtPlan.findById(openLicence.boughtplanid, {
             include: [models.Plan],
             raw: true,
             transaction: ta
@@ -365,8 +365,8 @@ export default {
           await Services.addUser(
             models,
             boughtPlan["plan_datum.appid"],
-            boughtplanid,
-            openLicence.id,
+            openLicence.boughtplanid,
+            licenceid,
             inputUser,
             ta
           );
@@ -376,7 +376,6 @@ export default {
             "distributeLicence",
             {
               departmentid,
-              boughtplanid,
               openLicence,
               hasRight,
               updatedLicence

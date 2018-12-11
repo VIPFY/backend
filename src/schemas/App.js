@@ -129,7 +129,7 @@ export const mutations = `
   revokeLicencesFromDepartment(departmentid: ID!, boughtplanid: ID!): Response!
 
   # Give an user a licence from the licence pool of department
-  distributeLicence(boughtplanid: ID!, unitid: ID!, departmentid: ID!): DistributeResponse!
+  distributeLicence(licenceid: ID!, unitid: ID!, departmentid: ID!): DistributeResponse!
 
   revokeLicence(licenceid: ID!): Response!
   # Remove the user from a licence and optionally delete the key
