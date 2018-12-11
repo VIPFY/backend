@@ -53,6 +53,17 @@ type Log {
   sudoer: User!
 }
 
+type Token {
+  id: ID!
+  email: Email!
+  token: String!
+  createdat: Date!
+  usedat: Date
+  expiresat: Date
+  data: JSON
+  type: String!
+}
+
 # Necessary to upload pictures
 input File {
   filename: String!
@@ -80,7 +91,7 @@ input Options {
 `;
 
 export const queries = `
-fetchNotifications: [Notification]!
+  fetchNotifications: [Notification]!
 `;
 
 export const mutations = `

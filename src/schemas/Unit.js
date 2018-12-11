@@ -68,6 +68,8 @@ export const types = `
 export const queries = `
   # Returns the logged-in user. Used for Authentication
   me: User
+
+  checkAuthToken(token: String!): Boolean!
 `;
 
 export const mutations = `
@@ -85,7 +87,7 @@ export const mutations = `
   signIn(email: String!, password: String!): LoginResponse!
 
   # After confirming the email, an user has to set a password
-  signUpConfirm(email: String!, password: String!): RegisterResponse!
+  signUpConfirm(email: String!, password: String!, confirmPassword: String!, token: String!): Boolean!
 
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!

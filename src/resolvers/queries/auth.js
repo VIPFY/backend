@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { parentAdminCheck } from "../../helpers/functions";
+import { parentAdminCheck, checkToken } from "../../helpers/functions";
 import { requiresAuth } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
 
@@ -25,5 +25,19 @@ export default {
         });
       }
     } else throw new AuthError();
-  })
+  }),
+
+  checkAuthToken: async (parent, { token }) => {
+    try {
+      const valid = await checkToken(token);
+
+      if (valid) {
+        return true;
+      } else {
+        throw new Error("Invalid Token");
+      }
+    } catch (err) {
+      throw new NormalError({ message: err.message });
+    }
+  }
 };
