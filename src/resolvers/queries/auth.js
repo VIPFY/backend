@@ -29,7 +29,7 @@ export default {
 
   checkAuthToken: async (parent, { token }) => {
     try {
-      const valid = await checkToken(token);
+      const valid = await checkToken(token, "signUp");
 
       if (valid) {
         return true;

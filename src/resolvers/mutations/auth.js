@@ -8,6 +8,7 @@ import {
   checkAuthentification,
   getNewPasswordData
 } from "../../helpers/auth";
+import { createToken as createSetupToken } from "../../helpers/token";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
   parentAdminCheck,
@@ -157,14 +158,29 @@ export default {
           { transaction: ta }
         );
 
+        const setupToken = await createSetupToken();
+        const verifyToken = await createSetupToken();
+
         const p7 = models.Token.create(
           {
             email,
-            token: createToken(),
+            token: setupToken,
             expiresat: moment()
               .add(1, "hour")
               .toISOString(),
             type: "setuplogin"
+          },
+          { transaction: ta }
+        );
+
+        const p8 = models.Token.create(
+          {
+            email,
+            token: verifyToken,
+            expiresat: moment()
+              .add(1, "week")
+              .toISOString(),
+            type: "signUp"
           },
           { transaction: ta }
         );
@@ -174,24 +190,28 @@ export default {
           department,
           parentUnit,
           vipfyPlan,
-          setuptoken
-        ] = await Promise.all([p3, p4, p5, p6, p7]);
+          setuptoken,
+          verifytoken
+        ] = await Promise.all([p3, p4, p5, p6, p7, p8]);
+
+        const downloadLink = `https://download.vipfy.store/latest/win32/x64/VIPFY-${setupToken}.exe`;
+        const verifyLink = `https://vipfy.store/verify-email/${encodeURIComponent(
+          email
+        )}/${verifyToken}`;
 
         await sendEmail({
-          templateId: "d-c9632d3eaac94c9d82ca6b77f11ab5dc",
+          templateId: "d-f05a3b4cf6f047e184e921b230ffb7ad",
           fromName: "VIPFY",
           personalizations: [
             {
               to: [
                 {
-                  email,
-                  name: "User"
+                  email
                 }
               ],
               dynamic_template_data: {
-                name: "",
-                password,
-                email
+                verifyLink,
+                downloadLink
               }
             }
           ]
@@ -221,7 +241,7 @@ export default {
           ok: true,
           token,
           downloads: {
-            win64: `https://downloads.vipfy.store/latest/win32/x64/VIPFY-${setuptoken}.exe`
+            win64: downloadLink
           }
         };
       } catch (err) {

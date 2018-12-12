@@ -3,6 +3,7 @@ import crypto from "crypto";
 import soap from "soap";
 import models from "@vipfy-private/sequelize-setup";
 import { formatHumanName } from "./functions";
+import { createToken } from "./token";
 // import weeblyApi from "../services/weebly";
 //
 // async function testWeebly() {
@@ -188,25 +189,29 @@ import { formatHumanName } from "./functions";
 //   }
 // })();
 
-(async (cc, vatNumber) => {
-  try {
-    const apiWSDL =
-      "http://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl";
-    const res = await soap.createClientAsync(apiWSDL).then(client =>
-      client
-        .checkVatAsync({ countryCode: cc, vatNumber })
-        .then(result => result[0])
-        .catch(err => {
-          throw new Error(err);
-        })
-    );
+// (async (cc, vatNumber) => {
+//   try {
+//     const apiWSDL =
+//       "http://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl";
+//     const res = await soap.createClientAsync(apiWSDL).then(client =>
+//       client
+//         .checkVatAsync({ countryCode: cc, vatNumber })
+//         .then(result => result[0])
+//         .catch(err => {
+//           throw new Error(err);
+//         })
+//     );
 
-    if (res.valid == false) {
-      throw new Error(res);
-    } else {
-      return res;
-    }
-  } catch (error) {
-    throw new Error("Invalid Vatnumber!");
-  }
-})("LU", "20944528");
+//     if (res.valid == false) {
+//       throw new Error(res);
+//     } else {
+//       return res;
+//     }
+//   } catch (error) {
+//     throw new Error("Invalid Vatnumber!");
+//   }
+// })("LU", "20944528");
+
+createToken()
+  .then(item => console.log(item))
+  .catch(err => console.log(err));

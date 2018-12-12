@@ -1,4 +1,4 @@
-import * as secureRandom from "secure-random-uniform";
+import secureRandom from "secure-random-uniform";
 
 const alphabet =
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
