@@ -5,6 +5,12 @@ export const types = `
       ok: Boolean!
     }
 
+    type TokenResponse {
+      ok: Boolean!
+      used: Boolean
+      expired: Boolean
+    }
+
   # Contains the changed rating
     type ReviewResponse {
       ok: Boolean!

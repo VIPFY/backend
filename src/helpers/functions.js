@@ -375,34 +375,3 @@ export const companyCheck = async (company, unitid, employee) => {
     throw new Error({ message: err.message });
   }
 };
-
-/**
- * Checks whether a token is valid
- * @exports
- *
- * @param {string} token
- * @param {string} type The kind of token which shall be checked
- * @returns {boolean}
- */
-export const checkToken = async (token, type) => {
-  try {
-    const validToken = await models.Token.findOne({
-      where: {
-        token,
-        type,
-        expiresat: {
-          [models.Op.gt]: models.sequelize.fn("NOW")
-        }
-      },
-      raw: true
-    });
-
-    if (validToken) {
-      return true;
-    } else {
-      throw new Error("Token not found!");
-    }
-  } catch (error) {
-    throw new Error(error);
-  }
-};

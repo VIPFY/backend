@@ -1,7 +1,8 @@
 import { decode } from "jsonwebtoken";
-import { parentAdminCheck, checkToken } from "../../helpers/functions";
+import { parentAdminCheck } from "../../helpers/functions";
 import { requiresAuth } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
+import moment from "moment";
 
 export default {
   me: requiresAuth.createResolver(async (parent, args, { models, token }) => {
@@ -27,14 +28,31 @@ export default {
     } else throw new AuthError();
   }),
 
-  checkAuthToken: async (parent, { token }) => {
+  checkAuthToken: async (parent, { email, token }, { models }) => {
     try {
-      const valid = await checkToken(token, "signUp");
+      const validToken = await models.Token.findOne({
+        where: {
+          token,
+          type: "signUp",
+          email
+        },
+        raw: true
+      });
 
-      if (valid) {
-        return true;
-      } else {
+      if (!validToken) {
         throw new Error("Invalid Token");
+      } else if (validToken.usedat) {
+        return {
+          ok: false,
+          used: true
+        };
+      } else if (moment(validToken.expiresat).isBefore(moment())) {
+        return {
+          ok: false,
+          expired: true
+        };
+      } else {
+        return { ok: true };
       }
     } catch (err) {
       throw new NormalError({ message: err.message });
