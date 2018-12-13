@@ -13,11 +13,16 @@ export default {
         } = decode(token);
 
         const me = await models.User.findById(unitid);
-        const user = await parentAdminCheck(me);
+        let user = await parentAdminCheck(me);
+
+        //user.country = "DE";
 
         return user;
       } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
+        throw new NormalError({
+          message: `Me-Query-ERROR ${err.message}`,
+          internalData: { err }
+        });
       }
     } else throw new AuthError();
   })

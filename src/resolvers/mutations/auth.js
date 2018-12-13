@@ -25,6 +25,7 @@ import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import logger from "../../loggers";
 import { debug } from "util";
+import { parseName } from "humanparser";
 
 const ZENDESK_TOKEN =
   "Basic bnZAdmlwZnkuc3RvcmUvdG9rZW46bndGc3lDVWFpMUg2SWNKOXBpbFk3UGRtOHk0bXVhamZlYzFrbzBHeQ==";
@@ -204,6 +205,98 @@ export default {
         const token = await createToken(user, SECRET);
 
         return { ok: true, token };
+      } catch (err) {
+        logger.info(err);
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }),
+
+  setupFinished: async (
+    parent,
+    { country, vatoption, vatnumber, placeId, ownAdress, username },
+    { models, SECRET, ip, token }
+  ) =>
+    models.sequelize.transaction(async ta => {
+      console.log(
+        "PROPS",
+        country,
+        vatoption,
+        vatnumber,
+        placeId,
+        ownAdress,
+        username
+      );
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        let p1;
+        if (username) {
+          const name = parseName(username);
+          p1 = models.Human.update(
+            {
+              title: name.salutation || "",
+              firstname: name.firstName || "",
+              middlename: name.middleName || "",
+              lastname: name.lastName || "",
+              suffix: name.suffix || "",
+              firstlogin: false,
+              statisticdata: {
+                username
+              }
+            },
+            { where: { unitid }, transaction: ta, raw: true }
+          );
+        } else {
+          p1 = models.Human.update(
+            {
+              firstlogin: false
+            },
+            { where: { unitid }, transaction: ta, raw: true }
+          );
+        }
+
+        if (placeId && placeId !== "OWN") {
+          const { json } = await googleMapsClient
+            .place({
+              placeid: placeId,
+              fields: [
+                "formatted_address",
+                "international_phone_number",
+                "website",
+                "address_component"
+              ]
+            })
+            .asPromise();
+          const addressData = parseAddress(json.result.address_components);
+
+          await models.Address.create(
+            {
+              ...addressData,
+              unitid: company,
+              tags: ["main"]
+            },
+            { transaction: ta }
+          );
+        }
+
+        const p2 = models.DepartmentData.update(
+          {
+            setupfinished: true,
+            statisticdata: {
+              placeId,
+              ownAdress,
+              vatoption,
+              vatnumber,
+              country
+            }
+          },
+          { where: { unitid: company }, transaction: ta }
+        );
+        await Promise.all([p1, p2]);
+
+        return { ok: true };
       } catch (err) {
         logger.info(err);
         throw new NormalError({ message: err.message, internalData: { err } });
