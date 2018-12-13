@@ -15,7 +15,7 @@ export default {
         const me = await models.User.findById(unitid);
         let user = await parentAdminCheck(me);
 
-        user.country = "DE";
+        //user.country = "DE";
 
         return user;
       } catch (err) {
