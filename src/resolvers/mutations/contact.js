@@ -9,6 +9,7 @@ import {
 } from "../../helpers/newsletter";
 import logger from "../../loggers";
 import { googleMapsClient } from "../../services/gcloud";
+import { sendEmail } from "../../helpers/email";
 
 /* eslint-disable prefer-const */
 
@@ -505,6 +506,46 @@ export default {
         .asPromise();
 
       return res.json;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
+
+  contact: async (parent, args) => {
+    try {
+      const { email } = args;
+      let replyId = "d-8f7a72b8b3b4409ebd02e12dbe6f9599";
+
+      if (args.type == "enterprise") {
+        replyId = "d-730fe9fdc93242928cbbf19e7c306884";
+      }
+
+      const reply = sendEmail({
+        templateId: replyId,
+        fromName: "VIPFY",
+        personalizations: [
+          {
+            to: [{ email }],
+            cc: [{ email: "enterprise@vipfy.store" }],
+            dynamic_template_data: { name: args.name }
+          }
+        ]
+      });
+
+      const toVipfy = sendEmail({
+        templateId: "d-4e7d8b8200974154bc910adb56b750f7",
+        fromName: "VIPFY",
+        personalizations: [
+          {
+            to: [{ email }],
+            dynamic_template_data: args
+          }
+        ]
+      });
+
+      await Promise.all([reply, toVipfy]);
+
+      return true;
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
