@@ -14,6 +14,7 @@ module.exports = {
         SSL_KEY: "/etc/letsencrypt/live/dev.vipfy.com/privkey.pem",
         SSL_CERT: "/etc/letsencrypt/live/dev.vipfy.com/cert.pem",
         GCLOUD_TRACE_NEW_CONTEXT: 1,
+        USE_SSH: 1,
         USE_VOYAGER: 1
       },
       env_production: {
@@ -21,6 +22,7 @@ module.exports = {
         ENVIRONMENT: "production",
         SSL_KEY: "/etc/letsencrypt/live/vipfy.com/privkey.pem",
         SSL_CERT: "/etc/letsencrypt/live/vipfy.com/cert.pem",
+        USE_SSH: 1,
         GCLOUD_TRACE_NEW_CONTEXT: 1
       },
       env_conf: {
@@ -29,13 +31,12 @@ module.exports = {
         SSL_KEY: "/etc/letsencrypt/live/conferences.vipfy.store/privkey.pem",
         SSL_CERT: "/etc/letsencrypt/live/conferences.vipfy.store/cert.pem",
         GCLOUD_TRACE_NEW_CONTEXT: 1,
+        USE_SSH: 1,
         USE_VOYAGER: 1
       },
       env_aws: {
         NODE_ENV: "production",
         ENVIRONMENT: "production",
-        GCLOUD_TRACE_NEW_CONTEXT: 1,
-        USE_SSH: 0,
         PROXY_LEVELS: 1
       }
     }
@@ -57,6 +58,7 @@ module.exports = {
         ENVIRONMENT: "production",
         SSL_KEY: "/etc/letsencrypt/live/vipfy.com/privkey.pem",
         SSL_CERT: "/etc/letsencrypt/live/vipfy.com/cert.pem",
+        USE_SSH: 1,
         GCLOUD_TRACE_NEW_CONTEXT: 1
       },
       "post-deploy":
@@ -74,6 +76,7 @@ module.exports = {
         SSL_KEY: "/etc/letsencrypt/live/dev.vipfy.com/privkey.pem",
         SSL_CERT: "/etc/letsencrypt/live/dev.vipfy.com/cert.pem",
         GCLOUD_TRACE_NEW_CONTEXT: 1,
+        USE_SSH: 1,
         USE_VOYAGER: 1
       },
       "post-deploy":
@@ -91,6 +94,7 @@ module.exports = {
         SSL_KEY: "/etc/letsencrypt/live/conferences.vipfy.store/privkey.pem",
         SSL_CERT: "/etc/letsencrypt/live/conferences.vipfy.store/cert.pem",
         GCLOUD_TRACE_NEW_CONTEXT: 1,
+        USE_SSH: 1,
         USE_VOYAGER: 1
       },
       "post-deploy":
@@ -105,8 +109,6 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         ENVIRONMENT: "production",
-        GCLOUD_TRACE_NEW_CONTEXT: 1,
-        USE_SSH: 0,
         PROXY_LEVELS: 1
       },
       "post-deploy":
