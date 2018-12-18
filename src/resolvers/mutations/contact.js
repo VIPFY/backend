@@ -513,11 +513,12 @@ export default {
 
   contact: async (parent, args) => {
     try {
-      const { email } = args;
       let replyId = "d-8f7a72b8b3b4409ebd02e12dbe6f9599";
 
       if (args.type == "enterprise") {
         replyId = "d-730fe9fdc93242928cbbf19e7c306884";
+      } else if (args.type == "partners") {
+        replyId = "d-6111bb578b044a4e87575dff53d95085";
       }
 
       const reply = sendEmail({
@@ -525,8 +526,8 @@ export default {
         fromName: "VIPFY",
         personalizations: [
           {
-            to: [{ email }],
-            cc: [{ email: "enterprise@vipfy.store" }],
+            to: [{ email: args.email }],
+            cc: [{ email: "contact@vipfy.store" }],
             dynamic_template_data: { name: args.name }
           }
         ]
@@ -537,7 +538,7 @@ export default {
         fromName: "VIPFY",
         personalizations: [
           {
-            to: [{ email }],
+            to: [{ email: "contact@vipfy.store" }],
             dynamic_template_data: args
           }
         ]
