@@ -10,6 +10,10 @@ module.exports = {
       max_memory_restart: "1024M",
       env: {
         NODE_ENV: "production",
+        ENVIRONMENT: "production"
+      },
+      env_dev: {
+        NODE_ENV: "production",
         ENVIRONMENT: "production",
         SSL_KEY: "/etc/letsencrypt/live/dev.vipfy.com/privkey.pem",
         SSL_CERT: "/etc/letsencrypt/live/dev.vipfy.com/cert.pem",
@@ -80,7 +84,7 @@ module.exports = {
         USE_VOYAGER: 1
       },
       "post-deploy":
-        "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js"
+        "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env dev"
     },
     conf: {
       user: "node",
