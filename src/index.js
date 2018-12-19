@@ -109,7 +109,8 @@ const corsOptions = {
           "https://vipfy.store",
           "https://www.vipfy.store",
           "https://dev.vipfy.store",
-          "http://localhost:3000"
+          "http://localhost:3000",
+          "https://aws.vipfy.store"
         ]
       : "http://localhost:3000",
   credentials: true // <-- REQUIRED backend setting
