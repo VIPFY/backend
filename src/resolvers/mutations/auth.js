@@ -477,7 +477,7 @@ export default {
 
       return { ok: true, token };
     } catch (err) {
-      throw new Error({ message: err.message, internalData: { err } });
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
 
