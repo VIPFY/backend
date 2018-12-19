@@ -18,7 +18,10 @@ const options = {
     handleExceptions: true,
     json: true,
     colorize: false,
-    format: winston.format.combine(winston.format.timestamp(), winston.format.json())
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.json()
+    )
   },
   console: {
     level: "debug",
@@ -34,9 +37,9 @@ const logger = winston.createLogger({
   exitOnError: false
 });
 
-if (process.env.ENVIRONMENT == "development") {
+if (process.env.WINSTON == "generic") {
   logger.add(new winston.transports.Console(options.console));
-} else if (process.env.ENVIRONMENT == "production") {
+} else if (process.env.WINSTON == "gcp") {
   logger.add(new LoggingWinston());
 }
 

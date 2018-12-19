@@ -19,7 +19,8 @@ module.exports = {
         SSL_CERT: "/etc/letsencrypt/live/dev.vipfy.com/cert.pem",
         GCLOUD_TRACE_NEW_CONTEXT: 1,
         USE_SSH: 1,
-        USE_VOYAGER: 1
+        USE_VOYAGER: 1,
+        WINSTON: "gcp"
       },
       env_production: {
         NODE_ENV: "production",
@@ -27,7 +28,8 @@ module.exports = {
         SSL_KEY: "/etc/letsencrypt/live/vipfy.com/privkey.pem",
         SSL_CERT: "/etc/letsencrypt/live/vipfy.com/cert.pem",
         USE_SSH: 1,
-        GCLOUD_TRACE_NEW_CONTEXT: 1
+        GCLOUD_TRACE_NEW_CONTEXT: 1,
+        WINSTON: "gcp"
       },
       env_conf: {
         NODE_ENV: "production",
@@ -36,12 +38,14 @@ module.exports = {
         SSL_CERT: "/etc/letsencrypt/live/conferences.vipfy.store/cert.pem",
         GCLOUD_TRACE_NEW_CONTEXT: 1,
         USE_SSH: 1,
-        USE_VOYAGER: 1
+        USE_VOYAGER: 1,
+        WINSTON: "gcp"
       },
       env_aws: {
         NODE_ENV: "production",
         ENVIRONMENT: "production",
-        PROXY_LEVELS: 1
+        PROXY_LEVELS: 1,
+        WINSTON: "generic"
       }
     }
   ],
@@ -63,7 +67,8 @@ module.exports = {
         SSL_KEY: "/etc/letsencrypt/live/vipfy.com/privkey.pem",
         SSL_CERT: "/etc/letsencrypt/live/vipfy.com/cert.pem",
         USE_SSH: 1,
-        GCLOUD_TRACE_NEW_CONTEXT: 1
+        GCLOUD_TRACE_NEW_CONTEXT: 1,
+        WINSTON: "gcp"
       },
       "post-deploy":
         "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env production"
@@ -81,7 +86,8 @@ module.exports = {
         SSL_CERT: "/etc/letsencrypt/live/dev.vipfy.com/cert.pem",
         GCLOUD_TRACE_NEW_CONTEXT: 1,
         USE_SSH: 1,
-        USE_VOYAGER: 1
+        USE_VOYAGER: 1,
+        WINSTON: "gcp"
       },
       "post-deploy":
         "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env dev"
@@ -99,7 +105,8 @@ module.exports = {
         SSL_CERT: "/etc/letsencrypt/live/conferences.vipfy.store/cert.pem",
         GCLOUD_TRACE_NEW_CONTEXT: 1,
         USE_SSH: 1,
-        USE_VOYAGER: 1
+        USE_VOYAGER: 1,
+        WINSTON: "gcp"
       },
       "post-deploy":
         "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env conf"
@@ -113,7 +120,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         ENVIRONMENT: "production",
-        PROXY_LEVELS: 1
+        PROXY_LEVELS: 1,
+        WINSTON: "generic"
       },
       "post-deploy":
         "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && pm2 startOrRestart ecosystem.config.js --env aws"
