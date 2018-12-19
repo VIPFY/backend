@@ -9,6 +9,7 @@ import domainQueries from "./queries/domain";
 import departmentQueries from "./queries/department";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
+import tutorialQueries from "./queries/tutorial";
 
 import adminMutations from "./mutations/admin";
 import authMutations from "./mutations/auth";
@@ -38,7 +39,8 @@ const Query = Object.assign(
   departmentQueries,
   domainQueries,
   messageQueries,
-  reviewQueries
+  reviewQueries,
+  tutorialQueries
 );
 
 const Mutation = Object.assign(
