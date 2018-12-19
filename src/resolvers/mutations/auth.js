@@ -477,6 +477,7 @@ export default {
 
       return { ok: true, token };
     } catch (err) {
+      logger.log(err);
       throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
