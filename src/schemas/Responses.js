@@ -5,6 +5,12 @@ export const types = `
       ok: Boolean!
     }
 
+    type TokenResponse {
+      ok: Boolean!
+      used: Boolean
+      expired: Boolean
+    }
+
   # Contains the changed rating
     type ReviewResponse {
       ok: Boolean!
@@ -23,6 +29,11 @@ export const types = `
     type RegisterResponse {
       ok: Boolean!
       token: String
+      downloads: DownloadLink
+    }
+
+    type DownloadLink {
+      win64: String
     }
 
   # The user receives tokens upon a successful login

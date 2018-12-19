@@ -88,6 +88,7 @@
     "read-utf8": "^1.2.8",
     "redis": "^2.8.0",
     "same-time": "^2.3.3",
+    "secure-random-uniform": "^3.1.0",
     "sequelize": "^4.38.0",
     "sib-api-v3-sdk": "^7.0.2",
     "soap": "^0.24.0",

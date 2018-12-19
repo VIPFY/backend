@@ -68,6 +68,9 @@ export const types = `
 export const queries = `
   # Returns the logged-in user. Used for Authentication
   me: User
+
+  #The token the user receives after registration to set his password
+  checkAuthToken(token: String!, email: String!): TokenResponse!
 `;
 
 export const mutations = `
@@ -85,7 +88,7 @@ export const mutations = `
   signIn(email: String!, password: String!): LoginResponse!
 
   # After confirming the email, an user has to set a password
-  signUpConfirm(email: String!, password: String!): RegisterResponse!
+  signUpConfirm(email: String!, password: String!, passwordConfirm: String!, token: String!): String!
 
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!
@@ -98,4 +101,6 @@ export const mutations = `
 
   # take a token from a setup file and return a one-day JWT
   redeemSetupToken(setuptoken: String!): LoginResponse!
+
+  resendToken(email: String!): Boolean!
 `;
