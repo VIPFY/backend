@@ -1,5 +1,4 @@
 import { decode } from "jsonwebtoken";
-import geoip from "geoip-country";
 import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
@@ -463,32 +462,6 @@ export default {
     try {
       const result = await newsletterConfirmSignup(models, email, token);
       return { ok: result };
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
-    }
-  },
-
-  searchAddressByCompanyName: async (parent, { input }, { ip }) => {
-    try {
-      const config = { input };
-      const geo = geoip.lookup(ip);
-
-      if (geo && geo.range) {
-        config.location = {
-          latitude: geo.range[0],
-          longitude: geo.range[1]
-        };
-      }
-
-      if (geo && geo.country) {
-        config.language = geo.country;
-      }
-
-      const res = await googleMapsClient
-        .placesQueryAutoComplete(config)
-        .asPromise();
-
-      return res.json.predictions;
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
