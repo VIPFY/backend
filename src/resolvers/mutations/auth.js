@@ -166,9 +166,10 @@ export default {
             email,
             token: setupToken,
             expiresat: moment()
-              .add(1, "hour")
+              .add(4, "hour")
               .toISOString(),
-            type: "setuplogin"
+            type: "setuplogin",
+            data: { unitid: unit.id }
           },
           { transaction: ta }
         );
@@ -700,6 +701,7 @@ export default {
         where: {
           token: setuptoken,
           expiresat: { [models.Op.gt]: models.sequelize.fn("NOW") },
+          type: "setuplogin",
           usedat: null
         }
       });
@@ -708,7 +710,7 @@ export default {
       }
 
       const emailExists = await models.Login.findOne({
-        where: { unitid: setupTokenEntry.unitid },
+        where: { unitid: setupTokenEntry.data.unitid },
         raw: true
       });
 
@@ -772,9 +774,10 @@ export default {
             email,
             token: setupToken,
             expiresat: moment()
-              .add(1, "hour")
+              .add(4, "hour")
               .toISOString(),
-            type: "setuplogin"
+            type: "setuplogin",
+            data: { unitid: userEmail.unitid }
           },
           { transaction: ta }
         );
