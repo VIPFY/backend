@@ -41,10 +41,14 @@ const {
   SSL_CERT,
   SECRET,
   TOKEN_DEVELOPMENT,
-  USE_VOYAGER
+  USE_VOYAGER,
+  USE_SSH,
+  PROXY_LEVELS
 } = process.env;
+
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
+const trustProxy = PROXY_LEVELS === undefined ? false : PROXY_LEVELS;
 let server;
 
 if (!SECRET) {
@@ -52,7 +56,7 @@ if (!SECRET) {
 }
 
 // We don't need certificates and https for development
-if (ENVIRONMENT == "production") {
+if (USE_SSH) {
   const httpsOptions = {
     key: fs.readFileSync(
       SSL_KEY || "/etc/letsencrypt/live/vipfy.com/privkey.pem"
@@ -67,8 +71,7 @@ if (ENVIRONMENT == "production") {
   server = http.createServer(app);
 }
 
-// in production we run behind an nginx proxy
-app.enable("trust proxy");
+app.set("trust proxy", trustProxy);
 
 // TODO: we really want rate limiting with different limits per endpoint
 // but we have to build that ourselves, no such packet exists for graphql
@@ -106,7 +109,8 @@ const corsOptions = {
           "https://vipfy.store",
           "https://www.vipfy.store",
           "https://dev.vipfy.store",
-          "http://localhost:3000"
+          "http://localhost:3000",
+          "https://aws.vipfy.store"
         ]
       : "http://localhost:3000",
   credentials: true // <-- REQUIRED backend setting
