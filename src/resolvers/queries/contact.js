@@ -1,5 +1,7 @@
 import { decode } from "jsonwebtoken";
-import { requiresRights } from "../../helpers/permissions";
+import geoip from "geoip-country";
+import { googleMapsClient } from "../../services/gcloud";
+import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
 export default {
@@ -74,6 +76,43 @@ export default {
         });
 
         return phones;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  searchAddressByCompanyName: requiresAuth.createResolver(
+    async (parent, args, { models, token, ip }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const { name } = await models.Department.findOne({
+          where: { unitid: company },
+          raw: true
+        });
+        console.log("IP: ", ip);
+        const config = { input: name };
+        const geo = geoip.lookup(ip);
+        console.log("GEO: ", geo);
+        if (geo && geo.range) {
+          config.location = {
+            latitude: geo.range[0],
+            longitude: geo.range[1]
+          };
+        }
+
+        if (geo && geo.country) {
+          config.language = geo.country;
+        }
+
+        const res = await googleMapsClient
+          .placesQueryAutoComplete(config)
+          .asPromise();
+
+        return res.json.predictions;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
