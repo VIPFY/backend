@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
-import geoip from "geoip-country";
-import { googleMapsClient } from "../../services/gcloud";
+import iplocate from "node-iplocate";
+import axios from "axios";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
@@ -94,25 +94,23 @@ export default {
           raw: true
         });
         console.log("IP: ", ip);
-        const config = { input: name };
-        const geo = geoip.lookup(ip);
+
+        const geo = await iplocate("192.76.145.3");
+
         console.log("GEO: ", geo);
-        if (geo && geo.range) {
-          config.location = {
-            latitude: geo.range[0],
-            longitude: geo.range[1]
-          };
-        }
+        // const url = `http://places.api.here.com/places/v1/discover/search?app_id=${
+        //   process.env.HERE_ID
+        // }&app_code=${process.env.HERE_CODE}&at=${geo.latitude},${
+        //   geo.longitude
+        // }&q=${"INM"}`;
 
-        if (geo && geo.country) {
-          config.language = geo.country;
-        }
+        const url = `https://api.yelp.com/v3/businesses/search?term=Scheer&latitude=${
+          geo.latitude
+        }&longitude=${geo.longitude}`;
 
-        const res = await googleMapsClient
-          .placesQueryAutoComplete(config)
-          .asPromise();
-
-        return res.json.predictions;
+        const res = await axios.get(url);
+        console.log(res);
+        return res.businesses;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
