@@ -93,24 +93,19 @@ export default {
           where: { unitid: company },
           raw: true
         });
-        console.log("IP: ", ip);
 
-        const geo = await iplocate("192.76.145.3");
+        const parsedName = name.replace(" ", "+");
+        const geo = await iplocate(ip);
 
-        console.log("GEO: ", geo);
-        // const url = `http://places.api.here.com/places/v1/discover/search?app_id=${
-        //   process.env.HERE_ID
-        // }&app_code=${process.env.HERE_CODE}&at=${geo.latitude},${
-        //   geo.longitude
-        // }&q=${"INM"}`;
-
-        const url = `https://api.yelp.com/v3/businesses/search?term=Scheer&latitude=${
-          geo.latitude
-        }&longitude=${geo.longitude}`;
+        const url = `http://places.api.here.com/places/v1/autosuggest?app_id=${
+          process.env.HERE_ID
+        }&app_code=${process.env.HERE_CODE}&at=${geo.latitude},${
+          geo.longitude
+        };u=100&q=${parsedName}&result_types=place`;
 
         const res = await axios.get(url);
-        console.log(res);
-        return res.businesses;
+
+        return res.data.results;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
