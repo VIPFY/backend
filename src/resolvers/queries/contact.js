@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import geoip from "geoip-country";
+import iplocate from "node-iplocate";
 import { googleMapsClient } from "../../services/gcloud";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
@@ -89,30 +89,32 @@ export default {
           user: { company }
         } = decode(token);
 
-        const { name } = await models.Department.findOne({
+        const { name: input } = await models.Department.findOne({
           where: { unitid: company },
           raw: true
         });
-        console.log("IP: ", ip);
-        const config = { input: name };
-        const geo = geoip.lookup(ip);
-        console.log("GEO: ", geo);
-        if (geo && geo.range) {
-          config.location = {
-            latitude: geo.range[0],
-            longitude: geo.range[1]
+
+        const geo = await iplocate(ip);
+
+        if (geo && geo.latitude) {
+          const config = {
+            query: input,
+            region: geo.country_code,
+            location: {
+              latitude: geo.latitude,
+              longitude: geo.longitude
+            },
+            radius: 1000
           };
+          const res = await googleMapsClient.places(config).asPromise();
+
+          return res;
+        } else {
+          const res = await googleMapsClient
+            .placesQueryAutoComplete({ input })
+            .asPromise();
+          return res.json.predictions;
         }
-
-        if (geo && geo.country) {
-          config.language = geo.country;
-        }
-
-        const res = await googleMapsClient
-          .placesQueryAutoComplete(config)
-          .asPromise();
-
-        return res.json.predictions;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
