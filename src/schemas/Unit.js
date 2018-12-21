@@ -28,6 +28,7 @@ export const types = `
     isadmin: Boolean!
     companyban: Boolean
     country: String
+    tutorialprogress: JSON
   }
 
   input NameInput {

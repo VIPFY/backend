@@ -1,7 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { requiresRights, requiresAuth } from "../../helpers/permissions";
-import { NormalError } from "../../errors";
-import { googleMapsClient } from "../../services/gcloud";
+import { requiresAuth } from "../../helpers/permissions";
 
 export default {
   tutorialSteps: requiresAuth.createResolver(
@@ -15,7 +13,7 @@ export default {
           `SELECT
             tutorial_data.* 
           
-          FROM tutorial_data`,
+          FROM tutorial_data order by id`,
           {
             //replacements: { unitid },
             type: models.sequelize.QueryTypes.SELECT

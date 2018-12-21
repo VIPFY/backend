@@ -23,6 +23,7 @@ import domainMutations from "./mutations/domain";
 import messageMutations from "./mutations/message";
 import reviewMutations from "./mutations/review";
 import userMutations from "./mutations/unit";
+import tutorialMutations from "./mutations/tutorial";
 
 import Subscription from "./subscriptions";
 
@@ -55,7 +56,8 @@ const Mutation = Object.assign(
   commonMutations,
   billMutations,
   contactMutations,
-  demoMutations
+  demoMutations,
+  tutorialMutations
 );
 
 const unit = { unitid: "Unit" };

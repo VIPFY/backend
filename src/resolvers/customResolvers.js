@@ -67,7 +67,7 @@ const specialKeys = {
 
 const postprocessors = {
   Department: async (value, fields, models) => {
-    logger.debug("postprocessing department", { value, fields, models });
+    //logger.debug("postprocessing department", { value, fields, models });
     if (fields.includes("domains")) {
       value.domains = await models.sequelize.query(
         `SELECT ld.id, ld.key->'domain' as domainname FROM licence_data ld INNER JOIN
@@ -83,7 +83,7 @@ const postprocessors = {
     return value;
   },
   Email: async (value, fields) => {
-    logger.debug("postprocessing Email", { value, fields });
+    //logger.debug("postprocessing Email", { value, fields });
     if (fields.includes("verifyuntil") && !value.verified) {
       const verifyuntil = moment(value.createdat).subtract(
         EMAIL_VERIFICATION_TIME

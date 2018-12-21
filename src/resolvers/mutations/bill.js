@@ -263,17 +263,21 @@ export default {
             raw: true
           });
 
+          console.log("PLAN", plan);
+
           if (!plan) {
             throw new Error("Couldn't find the Plan!");
           }
 
           await checkPlanValidity(plan);
 
-          subscription = await checkPaymentData(
+          /*subscription = await checkPaymentData(
             company,
             plan.stripedata.id,
             ta
-          );
+          );*/
+
+          //console.log("subscription", subscription);
 
           const department = await models.Department.findOne({
             where: { unitid: company },
@@ -281,11 +285,15 @@ export default {
             transaction: ta
           });
 
+          console.log("department", department);
+
           const calculatedPrice = calculatePlanPrice(
             plan.price,
             plan.features,
             JSON.parse(JSON.stringify(features)) // hacky deep copy
           );
+
+          console.log("calculatedPrice", calculatedPrice);
 
           logger.debug(
             `calulated price: ${calculatedPrice}, supplied price: ${price}`
@@ -332,13 +340,17 @@ export default {
               transaction: ta
             }
           );
+
+          console.log("BOUGHTPLAN");
           const boughtPlan = createBoughtPlan.get();
 
           logger.debug("createdBoughtPlan", { boughtPlan });
 
           const createLicences = [];
 
-          for (let i = 0; i < mergedFeatures.users; i++) {
+          const numLicences = mergedFeatures.users || 1;
+
+          for (let i = 0; i < numLicences; i++) {
             createLicences.push(
               models.Licence.create(
                 {
@@ -357,7 +369,7 @@ export default {
           partnerLogs.licences = newLicences;
           logger.debug(`created ${mergedFeatures.users} licences`);
 
-          if (!subscription) {
+          /*if (!subscription) {
             subscription = await addSubscriptionItem(
               department.payingoptions.stripe.subscription,
               plan.stripedata.id
@@ -366,9 +378,11 @@ export default {
             stripeplan = subscription.id;
           } else {
             stripeplan = subscription.items.data[0].id;
-          }
+          }*/
 
           await sleep(500);
+
+          console.log("CREATEACCOUNT START");
 
           const { dns } = await Services.createAccount(
             models,
@@ -390,10 +404,10 @@ export default {
           //   vatPercentage = department.legalinformation.vatPercentage;
           // }
 
-          await models.BoughtPlan.update(
+          /*await models.BoughtPlan.update(
             { stripeplan },
             { where: { id: boughtPlan.id }, transaction: ta }
-          );
+          );*/
 
           const notification = createNotification(
             {
@@ -436,14 +450,14 @@ export default {
           changed: []
         });
 
-        if (subscription && stripeplan) {
+        /*if (subscription && stripeplan) {
           const kind = stripeplan.split("_");
           if (kind[0] == "sub") {
             await abortSubscription(stripeplan);
           } else {
             await cancelPurchase(stripeplan, subscription.id);
           }
-        }
+        }*/
 
         logger.error(err);
 
