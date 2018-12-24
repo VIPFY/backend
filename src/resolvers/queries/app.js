@@ -101,6 +101,7 @@ export default {
           query += " AND licence_data.id = :licenceid";
           replacements.licenceid = licenceid;
         }
+
         const licences = await models.sequelize
           .query(query, { replacements })
           .spread(res => res);

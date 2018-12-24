@@ -28,6 +28,7 @@ export const types = `
     isadmin: Boolean!
     companyban: Boolean
     country: String
+    config: JSON
   }
 
   input NameInput {
@@ -77,6 +78,7 @@ export const mutations = `
   createUser(user: UserInput!, file: Upload): Response!
   updateUser(user: UserInput!): Response!
   updateProfilePic(file: Upload!): String!
+  saveAppLayout(layout: [String]!): Boolean!
 
   # Only an email is required for the signup
   signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!): RegisterResponse!

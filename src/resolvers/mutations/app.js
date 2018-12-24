@@ -409,7 +409,15 @@ export default {
             ta
           );
 
-          await Promise.all([log, notiGiver, notiReceiver]);
+          const { layout } = user.config;
+          layout.push(licenceid);
+
+          const updateLayout = models.Human.update(
+            { config: { ...user.config, layout } },
+            { where: { unitid } }
+          );
+
+          await Promise.all([log, notiGiver, notiReceiver, updateLayout]);
 
           return { ok: true };
         } catch (err) {
@@ -450,16 +458,29 @@ export default {
             throw new Error("This Licence wasn't taken!");
           }
 
-          const boughtPlan = await models.BoughtPlan.findOne(
+          const p1 = models.User.findOne({
+            where: { id: licence.unitid },
+            raw: true
+          });
+
+          const p2 = models.BoughtPlan.findOne(
             { where: { id: licence.boughtplanid } },
             {
               include: [models.Plan],
-              raw: true,
-              transaction: ta
+              raw: true
             }
           );
 
-          await models.Licence.update(
+          const [{ config }, boughtPlan] = await Promise.all([p1, p2]);
+
+          const newLayout = config.layout.filter(item => item != licence.id);
+
+          const p3 = models.Human.update(
+            { config: { ...config, layout: newLayout } },
+            { where: { unitid: licence.unitid } }
+          );
+
+          const p4 = models.Licence.update(
             { unitid: null },
             {
               where: { id, unitid: { [models.Op.not]: null } },
@@ -468,6 +489,7 @@ export default {
             }
           );
 
+          await Promise.all([p3, p4]);
           await Services.removeUser(
             models,
             boughtPlan["plan_datum.appid"],
@@ -758,6 +780,11 @@ export default {
 
           if (args.touser) {
             admin = await companyCheck(company, unitid, args.touser);
+          } else {
+            admin = await models.User.findOne({
+              where: { id: unitid },
+              raw: true
+            });
           }
 
           const oldBoughtPlan = await models.BoughtPlan.findOne({
@@ -860,6 +887,15 @@ export default {
             promises.push(p3);
           }
 
+          const { layout } = admin.config;
+          layout.push(licence.id);
+
+          const p4 = models.Human.update(
+            { config: { ...admin.config, layout } },
+            { where: { unitid } }
+          );
+          promises.push(p4);
+
           await Promise.all(promises);
 
           return { ok: true };
@@ -902,6 +938,11 @@ export default {
         try {
           if (fromuser) {
             admin = await companyCheck(company, unitid, fromuser);
+          } else {
+            admin = await models.User.findOne({
+              where: { id: fromuser },
+              raw: true
+            });
           }
 
           if (clear) {
@@ -935,10 +976,17 @@ export default {
             ta
           );
 
-          const promises = [p1, p2];
+          const newLayout = config.layout.filter(item => item != licence.id);
+
+          const p3 = models.Human.update(
+            { config: { ...admin.config, layout: newLayout } },
+            { where: { unitid: admin.id } }
+          );
+
+          const promises = [p1, p2, p3];
 
           if (fromuser) {
-            const p3 = createNotification(
+            const p4 = createNotification(
               {
                 receiver: fromuser,
                 message: `${admin.firstname} ${
@@ -951,7 +999,7 @@ export default {
               ta
             );
 
-            promises.push(p3);
+            promises.push(p4);
           }
 
           await Promise.all(promises);
@@ -1068,8 +1116,24 @@ export default {
             .add(licence[0].cancelperiod[period], period)
             .valueOf();
 
-          if (parsedTime <= estimatedEndtime) {
-            config.endtime = estimatedEndtime;
+          if (!licence[0].key || (licence[0].key && !licence[0].key.external)) {
+            if (parsedTime <= estimatedEndtime) {
+              config.endtime = estimatedEndtime;
+            }
+          } else if (licence[0].key && licence[0].key.external) {
+            const user = await models.Human.findOne({
+              where: { unitid: licence[0].unitid },
+              raw: true
+            });
+
+            const newLayout = user.config.layout.filter(
+              item => item != licenceid
+            );
+
+            await models.Human.update(
+              { config: { ...user.config, layout: newLayout } },
+              { where: { unitid: user.unitid }, transaction: ta }
+            );
           }
 
           const updatedLicence = await models.Licence.update(config, {

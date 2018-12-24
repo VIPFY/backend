@@ -73,7 +73,7 @@ export const types = `
     id: ID!
     options: JSON
     starttime: String!
-    endtime: String
+    endtime: Date
     agreed: Boolean
     disabled: Boolean
     key: JSON
