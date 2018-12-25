@@ -106,7 +106,7 @@ export default {
   ),
 
   saveAppLayout: requiresAuth.createResolver(
-    async (parent, { layout }, { models, token }) => {
+    async (parent, args, { models, token }) => {
       try {
         const {
           user: { unitid }
@@ -118,7 +118,7 @@ export default {
         });
 
         await models.Human.update(
-          { config: { ...config, layout } },
+          { config: { ...config, ...args } },
           { where: { unitid } }
         );
 

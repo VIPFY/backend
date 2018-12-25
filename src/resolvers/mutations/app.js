@@ -409,11 +409,27 @@ export default {
             ta
           );
 
-          const { layout } = user.config;
-          layout.push(licenceid);
+          const { config } = user;
+          if (config.vertical) {
+            config.vertical.push(licenceid);
+          } else {
+            config.vertical = [licenceid];
+          }
+
+          if (config.horizontal) {
+            config.horizontal.push(licenceid);
+          } else {
+            config.horizontal = [licenceid];
+          }
 
           const updateLayout = models.Human.update(
-            { config: { ...user.config, layout } },
+            {
+              config: {
+                ...config,
+                vertical: config.vertical,
+                horizontal: config.horizontal
+              }
+            },
             { where: { unitid } }
           );
 
@@ -473,10 +489,13 @@ export default {
 
           const [{ config }, boughtPlan] = await Promise.all([p1, p2]);
 
-          const newLayout = config.layout.filter(item => item != licence.id);
+          const horizontal = config.horizontal.filter(
+            item => item != licence.id
+          );
+          const vertical = config.vertical.filter(item => item != licence.id);
 
           const p3 = models.Human.update(
-            { config: { ...config, layout: newLayout } },
+            { config: { ...config, horizontal, vertical } },
             { where: { unitid: licence.unitid } }
           );
 
@@ -887,11 +906,27 @@ export default {
             promises.push(p3);
           }
 
-          const { layout } = admin.config;
-          layout.push(licence.id);
+          const { config } = admin;
+          if (config.vertical) {
+            config.vertical.push(licence.id);
+          } else {
+            config.vertical = [licence.id];
+          }
+
+          if (config.horizontal) {
+            config.horizontal.push(licence.id);
+          } else {
+            config.horizontal = [licence.id];
+          }
 
           const p4 = models.Human.update(
-            { config: { ...admin.config, layout } },
+            {
+              config: {
+                ...config,
+                horizontal: config.horizontal,
+                vertical: config.vertical
+              }
+            },
             { where: { unitid } }
           );
           promises.push(p4);
@@ -976,10 +1011,13 @@ export default {
             ta
           );
 
-          const newLayout = config.layout.filter(item => item != licence.id);
+          const horizontal = config.horizontal.filter(
+            item => item != licence.id
+          );
+          const vertical = config.vertical.filter(item => item != licence.id);
 
           const p3 = models.Human.update(
-            { config: { ...admin.config, layout: newLayout } },
+            { config: { ...admin.config, horizontal, vertical } },
             { where: { unitid: admin.id } }
           );
 
@@ -1110,13 +1148,14 @@ export default {
             );
           }
 
-          const period = Object.keys(licence[0].cancelperiod)[0];
-
-          const estimatedEndtime = moment()
-            .add(licence[0].cancelperiod[period], period)
-            .valueOf();
-
           if (!licence[0].key || (licence[0].key && !licence[0].key.external)) {
+            // Only "normal" licences have an end time. External ones end directly.
+            const period = Object.keys(licence[0].cancelperiod)[0];
+
+            const estimatedEndtime = moment()
+              .add(licence[0].cancelperiod[period], period)
+              .valueOf();
+
             if (parsedTime <= estimatedEndtime) {
               config.endtime = estimatedEndtime;
             }
@@ -1126,12 +1165,16 @@ export default {
               raw: true
             });
 
-            const newLayout = user.config.layout.filter(
-              item => item != licenceid
+            const horizontal = user.config.horizontal.filter(
+              item => item != licence[0].id
+            );
+
+            const vertical = user.config.vertical.filter(
+              item => item != licence[0].id
             );
 
             await models.Human.update(
-              { config: { ...user.config, layout: newLayout } },
+              { config: { ...user.config, horizontal, vertical } },
               { where: { unitid: user.unitid }, transaction: ta }
             );
           }
