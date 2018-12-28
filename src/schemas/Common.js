@@ -65,7 +65,7 @@ type Token {
 }
 
 # Necessary to upload pictures
-input File {
+type File {
   filename: String!
   mimetype: String!
   encoding: String!

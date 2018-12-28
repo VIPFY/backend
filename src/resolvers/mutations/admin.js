@@ -1,4 +1,5 @@
 import { split } from "lodash";
+import { decode } from "jsonwebtoken";
 import { flushAll as flushServices } from "@vipfy-private/services";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { createProduct, createPlan, deletePlan } from "../../services/stripe";
@@ -9,8 +10,16 @@ import {
   MAX_PASSWORD_LENGTH
 } from "../../constants";
 import { flushAuthCaches, getNewPasswordData } from "../../helpers/auth";
+import { NormalError } from "../../errors";
+import { createLog } from "../../helpers/functions";
 
 /* eslint-disable default-case */
+
+const processMultipleUploads = async upload => {
+  const pic = await upload;
+  const name = await uploadFile(pic, appPicFolder);
+  return name;
+};
 
 export default {
   adminCreatePlan: requiresVipfyAdmin.createResolver(
@@ -156,42 +165,90 @@ export default {
     }
   ),
 
-  createApp: requiresVipfyAdmin.createResolver(
-    async (parent, { app, logo, icon, pics }, { models }) => {
+  uploadAppImages: requiresVipfyAdmin.createResolver(
+    async (parent, { images, appid }, { models }) => {
       try {
-        const nameExists = await models.App.findOne({
-          where: { name: app.name },
-          raw: true
-        });
+        const names = await Promise.all(images.map(processMultipleUploads));
 
-        if (nameExists) throw new Error("Name is already in Database!");
-
-        const developerExists = await models.Unit.findOne({
-          where: { id: app.developer, deleted: false, banned: false }
-        });
-
-        if (!developerExists) throw new Error("Developer doesn't exist!");
-        if (app.supportunit == app.developer) {
-          throw new Error("Developer and Supportunit can't be the same one!");
-        }
-
-        const appLogo = await uploadFile(logo, appPicFolder);
-        app.logo = appLogo;
-
-        const appIcon = await uploadFile(icon, "icons");
-        app.icon = appIcon;
-
-        // eslint-disable-next-line
-        const imagesToUpload = pics.map(async pic => uploadFile(pic, app.name));
-        const images = await Promise.all(imagesToUpload);
-        app.images = images;
-
-        await models.App.create({ ...app });
-        return { ok: true };
-      } catch ({ message }) {
-        throw new Error(message);
+        await models.App.update({ images: names }, { where: { id: appid } });
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  uploadAppIcon: requiresVipfyAdmin.createResolver(
+    async (parent, { image, appid }, { models }) => {
+      try {
+        const parsedIcon = await image;
+        const icon = await uploadFile(parsedIcon, "icons");
+
+        await models.App.update({ icon }, { where: { id: appid } });
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  createApp: requiresVipfyAdmin.createResolver(
+    async (parent, { app }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const nameExists = await models.App.findOne({
+            where: { name: app.name },
+            raw: true
+          });
+
+          if (nameExists) throw new Error("Name is already in Database!");
+          const parsedLogo = await app.logo;
+
+          const appLogo = await uploadFile(parsedLogo, appPicFolder);
+          app.logo = appLogo;
+
+          const productData = await createProduct(app.name);
+          const { id, active, created, name, type, updated } = productData;
+          const newApp = await models.App.create(
+            {
+              ...app,
+              disabled: false,
+              developer: company,
+              supportunit: company,
+              internaldata: {
+                stripe: { id, active, created, name, type, updated }
+              }
+            },
+            { transaction: ta }
+          );
+
+          const plan = await models.Plan.create(
+            {
+              name: `${app.name} External`,
+              appid: newApp.dataValues.id,
+              teaserdescription: `External Plan for ${app.name}`,
+              startdate: models.sequelize.fn("NOW"),
+              numlicences: 0,
+              price: 0.0,
+              options: { external: true },
+              payperiod: { years: 1 },
+              cancelperiod: { years: 1 },
+              hidden: true
+            },
+            { transaction: ta }
+          );
+
+          await createLog(ip, "updateProfilePic", { newApp, plan }, unitid, ta);
+
+          return newApp.dataValues.id;
+        } catch ({ message }) {
+          throw new Error(message);
+        }
+      })
   ),
 
   updateApp: requiresVipfyAdmin.createResolver(

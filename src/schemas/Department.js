@@ -112,7 +112,7 @@ export const queries = `
 `;
 
 export const mutations = `
-  updateCompanyPic(file: File!): String!
+  updateCompanyPic(file: Upload!): String!
   updateStatisticData(data: StatisticInput!): Response!
 
   addSubDepartment(departmentid: ID! ,name: String!): Response!

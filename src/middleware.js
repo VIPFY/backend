@@ -9,16 +9,11 @@ import formidable from "formidable";
 import mkdirp from "mkdirp";
 import bcrypt from "bcrypt";
 import models from "@vipfy-private/sequelize-setup";
-import {
-  refreshTokens,
-  checkAuthentification,
-  getNewPasswordData
-} from "./helpers/auth";
+import { checkAuthentification, getNewPasswordData } from "./helpers/auth";
 import Utility from "./helpers/createHmac";
 import logger from "./loggers";
-import { AuthError } from "./errors";
 
-const { SECRET, SECRET_TWO, SECRET_THREE } = process.env;
+const { SECRET, SECRET_THREE } = process.env;
 
 /* eslint-disable consistent-return, prefer-destructuring */
 export const authMiddleware = async (req, res, next) => {
