@@ -178,20 +178,6 @@ export default {
     }
   ),
 
-  uploadAppIcon: requiresVipfyAdmin.createResolver(
-    async (parent, { image, appid }, { models }) => {
-      try {
-        const parsedIcon = await image;
-        const icon = await uploadFile(parsedIcon, "icons");
-
-        await models.App.update({ icon }, { where: { id: appid } });
-        return true;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
   createApp: requiresVipfyAdmin.createResolver(
     async (parent, { app }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
@@ -206,16 +192,19 @@ export default {
           });
 
           if (nameExists) throw new Error("Name is already in Database!");
-          const parsedLogo = await app.logo;
 
-          const appLogo = await uploadFile(parsedLogo, appPicFolder);
-          app.logo = appLogo;
+          const [logo, icon] = await Promise.all(
+            app.images.map(processMultipleUploads)
+          );
 
+          delete app.images;
           const productData = await createProduct(app.name);
           const { id, active, created, name, type, updated } = productData;
           const newApp = await models.App.create(
             {
               ...app,
+              logo,
+              icon,
               disabled: false,
               developer: company,
               supportunit: company,

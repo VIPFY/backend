@@ -70,6 +70,7 @@ export const types = `
     supportunit: ID
     icon: Upload
     logo: Upload
+    images: [Upload!]
   }
 
   type Licence {

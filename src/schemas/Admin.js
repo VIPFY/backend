@@ -31,7 +31,6 @@ export const queries = `
 
 export const mutations = `
   createApp(app: AppInput!): Int!
-  uploadAppIcon(image: Upload!, appid: Int!): Boolean!
   uploadAppImages(images: [Upload!]!, appid: Int!): Boolean!
   updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, pic: Upload): Response!
   adminCreateLicence(licenceData: JSON!): Response!
