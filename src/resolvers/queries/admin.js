@@ -165,7 +165,7 @@ export default {
   adminFetchAppById: requiresVipfyAdmin.createResolver(
     async (parent, { id }, { models }) => {
       try {
-        return await models.AppDetails.findById(id);
+        return await models.AppDetails.findOne({ where: { id } });
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

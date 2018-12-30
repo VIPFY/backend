@@ -30,9 +30,10 @@ export const queries = `
 `;
 
 export const mutations = `
-  createApp(app: AppInput!): Int!
-  uploadAppImages(images: [Upload!]!, appid: Int!): Boolean!
-  updateApp(supportid: Int, developerid: Int, appid: Int!, app: AppInput, pic: Upload): Response!
+  createApp(app: AppInput!, options: AppOptions): ID!
+  uploadAppImages(images: [Upload!]!, appid: ID!): Boolean!
+  deleteImage(image: String!, id: ID!, type: String!): Boolean!
+  updateApp(supportid: ID, developerid: ID, appid: ID!, app: AppInput, options: AppOptions): AppDetails!
   adminCreateLicence(licenceData: JSON!): Response!
   adminUpdateLicence(unitid: Int!, boughtplanid: Int! licenceData: JSON!): Response!
   adminUpdateAddress(addressData: AddressInput!, id: Int!): Response!

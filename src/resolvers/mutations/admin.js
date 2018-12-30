@@ -6,6 +6,7 @@ import { createProduct, createPlan, deletePlan } from "../../services/stripe";
 import { uploadFile, deleteFile } from "../../services/gcloud";
 import {
   appPicFolder,
+  appIconFolder,
   userPicFolder,
   MAX_PASSWORD_LENGTH
 } from "../../constants";
@@ -15,9 +16,9 @@ import { createLog } from "../../helpers/functions";
 
 /* eslint-disable default-case */
 
-const processMultipleUploads = async upload => {
+const processMultipleUploads = async (upload, folder) => {
   const pic = await upload;
-  const name = await uploadFile(pic, appPicFolder);
+  const name = await uploadFile(pic, folder);
   return name;
 };
 
@@ -178,8 +179,34 @@ export default {
     }
   ),
 
+  deleteImage: requiresVipfyAdmin.createResolver(
+    async (parent, { id, image, type }, { models }) => {
+      try {
+        if (type == "app") {
+          const { name, images } = await models.App.findOne({
+            where: { id },
+            raw: true,
+            attributes: ["images", "name"]
+          });
+
+          await deleteFile(image, name);
+          const filteredImages = images.filter(pic => pic != image);
+
+          await models.App.update(
+            { images: filteredImages },
+            { where: { id }, returning: true }
+          );
+        }
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   createApp: requiresVipfyAdmin.createResolver(
-    async (parent, { app }, { models, token, ip }) =>
+    async (parent, { app, options }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -197,39 +224,51 @@ export default {
             app.images.map(processMultipleUploads)
           );
 
-          delete app.images;
           const productData = await createProduct(app.name);
           const { id, active, created, name, type, updated } = productData;
+
           const newApp = await models.App.create(
             {
               ...app,
               logo,
               icon,
-              disabled: false,
+              disabled: app.disabled ? app.disabled : false,
+              options,
               developer: company,
               supportunit: company,
               internaldata: {
-                stripe: { id, active, created, name, type, updated }
+                stripe: {
+                  id,
+                  active,
+                  created,
+                  name,
+                  type,
+                  updated
+                }
               }
             },
             { transaction: ta }
           );
 
-          const plan = await models.Plan.create(
-            {
-              name: `${app.name} External`,
-              appid: newApp.dataValues.id,
-              teaserdescription: `External Plan for ${app.name}`,
-              startdate: models.sequelize.fn("NOW"),
-              numlicences: 0,
-              price: 0.0,
-              options: { external: true },
-              payperiod: { years: 1 },
-              cancelperiod: { years: 1 },
-              hidden: true
-            },
-            { transaction: ta }
-          );
+          let plan = null;
+
+          if (app.external) {
+            plan = await models.Plan.create(
+              {
+                name: `${app.name} External`,
+                appid: newApp.dataValues.id,
+                teaserdescription: `External Plan for ${app.name}`,
+                startdate: models.sequelize.fn("NOW"),
+                numlicences: 0,
+                price: 0.0,
+                options: { external: true },
+                payperiod: { years: 1 },
+                cancelperiod: { years: 1 },
+                hidden: true
+              },
+              { transaction: ta }
+            );
+          }
 
           await createLog(ip, "updateProfilePic", { newApp, plan }, unitid, ta);
 
@@ -243,16 +282,65 @@ export default {
   updateApp: requiresVipfyAdmin.createResolver(
     async (
       parent,
-      { supportid, developerid, appid, app = {}, pic },
+      { supportid, developerid, appid, app = {}, options },
       { models }
-    ) =>
-      models.sequelize.transaction(async ta => {
+    ) => {
+      await models.sequelize.transaction(async ta => {
         const tags = ["support"];
 
         try {
-          if (pic) {
-            const logo = await uploadFile(pic, appPicFolder);
-            app.logo = logo;
+          if (app.image) {
+            // eslint-disable-next-line
+            let { name, images } = await models.App.findOne({
+              where: { id: appid },
+              attributes: ["name", "images"],
+              raw: true
+            });
+
+            const image = await app.image.images;
+            const newImage = await uploadFile(image, name);
+            if (images) {
+              images.push(newImage);
+            } else {
+              images = [newImage];
+            }
+
+            return await models.App.update(
+              { images },
+              { where: { id: appid }, transaction: ta, returning: true }
+            );
+          }
+
+          if (app.logo) {
+            const { logo: oldLogo } = await models.App.findOne({
+              where: { id: appid },
+              attributes: ["logo"],
+              raw: true
+            });
+
+            if (oldLogo) {
+              await deleteFile(oldLogo, appPicFolder);
+            }
+
+            const logo = await app.logo.logo;
+            const appLogo = await uploadFile(logo, appPicFolder);
+            app.logo = appLogo;
+          }
+
+          if (app.icon) {
+            const { icon: oldIcon } = await models.App.findOne({
+              where: { id: appid },
+              attributes: ["icon"],
+              raw: true
+            });
+
+            if (oldIcon) {
+              await deleteFile(oldIcon, appIconFolder);
+            }
+
+            const icon = await app.icon.icon;
+            const appIcon = await uploadFile(icon, appIconFolder);
+            app.icon = appIcon;
           }
 
           if (app.developerwebsite) {
@@ -308,16 +396,30 @@ export default {
             }
           }
 
-          await models.App.update(
-            { ...app },
-            { where: { id: appid }, transaction: ta }
-          );
+          if (options) {
+            const { options: oldOptions } = await models.App.findOne({
+              where: { id: appid },
+              raw: true
+            });
 
-          return { ok: true };
+            await models.App.update(
+              { options: { ...oldOptions, ...options } },
+              { where: { id: appid }, transaction: ta, returning: true }
+            );
+          } else {
+            console.log("SHIT!");
+            await models.App.update(
+              { ...app },
+              { where: { id: appid }, transaction: ta, returning: true }
+            );
+          }
         } catch ({ message }) {
           throw new Error(message);
         }
-      })
+      });
+
+      return models.AppDetails.findOne({ where: { id: appid } });
+    }
   ),
 
   deleteApp: requiresVipfyAdmin.createResolver(

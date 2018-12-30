@@ -11,6 +11,7 @@ export const NEW_NOTIFICATION = "NEW_NOTIFICATION";
 // The location for uploaded files to be saved
 export const userPicFolder = "unit_profilepicture";
 export const appPicFolder = "logos";
+export const appIconFolder = "icons";
 
 export const EMAIL_VERIFICATION_TIME = duration(7, "months");
 

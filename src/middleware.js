@@ -1,7 +1,7 @@
 /*
  * Several Middleware for the app. authMiddleware validates tokens received from the
- * client and destroys them otherwise, fileMiddleware makes it possible to use
- * files to our backend and loggingMiddleWare logs incoming requests and their results.
+ * client and destroys them otherwise and loggingMiddleWare logs incoming requests
+ * and their results.
  */
 
 import jwt from "jsonwebtoken";

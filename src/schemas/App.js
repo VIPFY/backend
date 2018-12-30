@@ -68,9 +68,20 @@ export const types = `
     needssubdomain: Boolean
     developer: ID
     supportunit: ID
+    hidden: Boolean
     icon: Upload
     logo: Upload
     images: [Upload!]
+    image: Upload
+  }
+
+  input AppOptions {
+    type: String
+    emailobject: String
+    buttonobject: String
+    passwordobject: String
+    predomain: String
+    afterdomain: String
   }
 
   type Licence {
