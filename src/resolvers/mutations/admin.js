@@ -263,7 +263,7 @@ export default {
                 price: 0.0,
                 options: { external: true },
                 payperiod: { years: 1 },
-                cancelperiod: { years: 1 },
+                cancelperiod: { secs: 1 },
                 hidden: true
               },
               { transaction: ta }
