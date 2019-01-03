@@ -21,15 +21,19 @@ export function calculatePlanPrice(
 
   const featuresDict = {};
   let price = baseprice - 0;
-  featuredescription.forEach(section => {
-    section.features.forEach(feature => {
-      if (!feature.key) return;
-      if (feature.key in featuresDict) {
-        throw new Error(`Key ${feature.key} duplicated in feature description`);
-      }
-      featuresDict[feature.key] = feature;
+  if (featuredescription) {
+    featuredescription.forEach(section => {
+      section.features.forEach(feature => {
+        if (!feature.key) return;
+        if (feature.key in featuresDict) {
+          throw new Error(
+            `Key ${feature.key} duplicated in feature description`
+          );
+        }
+        featuresDict[feature.key] = feature;
+      });
     });
-  });
+  }
 
   // eslint-disable-next-line no-restricted-syntax
   for (const key in boughtfeatures) {
