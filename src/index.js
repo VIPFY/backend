@@ -142,6 +142,7 @@ const gqlserver = new ApolloServer({
   introspection: true,
   tracing: true
 });
+
 gqlserver.applyMiddleware({ app, path: "/graphql" });
 
 if (USE_VOYAGER) {

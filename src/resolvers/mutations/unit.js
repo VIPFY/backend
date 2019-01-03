@@ -11,12 +11,12 @@ export default {
     async (parent, { file }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const parsedFile = await file;
-
-          const profilepicture = await uploadFile(parsedFile, userPicFolder);
           const {
             user: { unitid }
           } = decode(token);
+
+          const parsedFile = await file;
+          const profilepicture = await uploadFile(parsedFile, userPicFolder);
 
           const oldUnit = await models.Unit.findOne({
             where: { id: unitid },

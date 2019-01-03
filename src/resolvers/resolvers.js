@@ -1,3 +1,4 @@
+import { GraphQLUpload } from "graphql-upload";
 import adminQueries from "./queries/admin";
 import authQueries from "./queries/auth";
 import appQueries from "./queries/app";
@@ -119,6 +120,7 @@ export default {
   Right: find({ holder: "Unit", forunit: "Unit" }),
   SimpleStats: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
+  Upload: GraphQLUpload,
   User: find({ company: "Department", emails: "[Email]" }),
   UserSecurityOverview: find({ unitid: "User" }),
   Website: find({})
