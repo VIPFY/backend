@@ -114,7 +114,7 @@ module.exports = {
     aws1: {
       user: "node",
       host: "18.185.19.8",
-      ref: "origin/feature/aws",
+      ref: "origin/release/0.6",
       repo: "git@bitbucket.org:vipfymarketplace/vipfy-backend.git",
       path: "/var/www/vipfy-backend",
       env: {

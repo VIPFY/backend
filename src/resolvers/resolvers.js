@@ -1,3 +1,4 @@
+import { GraphQLUpload } from "graphql-upload";
 import adminQueries from "./queries/admin";
 import authQueries from "./queries/auth";
 import appQueries from "./queries/app";
@@ -9,6 +10,7 @@ import domainQueries from "./queries/domain";
 import departmentQueries from "./queries/department";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
+import tutorialQueries from "./queries/tutorial";
 
 import adminMutations from "./mutations/admin";
 import authMutations from "./mutations/auth";
@@ -22,6 +24,7 @@ import domainMutations from "./mutations/domain";
 import messageMutations from "./mutations/message";
 import reviewMutations from "./mutations/review";
 import userMutations from "./mutations/unit";
+import tutorialMutations from "./mutations/tutorial";
 
 import Subscription from "./subscriptions";
 
@@ -38,7 +41,8 @@ const Query = Object.assign(
   departmentQueries,
   domainQueries,
   messageQueries,
-  reviewQueries
+  reviewQueries,
+  tutorialQueries
 );
 
 const Mutation = Object.assign(
@@ -53,7 +57,8 @@ const Mutation = Object.assign(
   commonMutations,
   billMutations,
   contactMutations,
-  demoMutations
+  demoMutations,
+  tutorialMutations
 );
 
 const unit = { unitid: "Unit" };
@@ -115,6 +120,7 @@ export default {
   Right: find({ holder: "Unit", forunit: "Unit" }),
   SimpleStats: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
+  Upload: GraphQLUpload,
   User: find({ company: "Department", emails: "[Email]" }),
   UserSecurityOverview: find({ unitid: "User" }),
   Website: find({})

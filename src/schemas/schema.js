@@ -11,6 +11,7 @@ import * as Unit from "./Unit";
 import * as Review from "./Review";
 import * as Responses from "./Responses";
 import * as Demo from "./Demo";
+import * as Tutorial from "./Tutorial";
 
 // Create Arrays to store the data from every schema
 const types = [];
@@ -31,7 +32,8 @@ const schemas = [
   Message,
   Review,
   Responses,
-  Unit
+  Unit,
+  Tutorial
 ];
 
 // Push the value into the corresponding Array to export it

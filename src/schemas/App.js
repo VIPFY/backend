@@ -54,6 +54,7 @@ export const types = `
     commission: String
     color: String
     avgstars: Float
+    color: String
     supportphone: String
     supportwebsite: String
     developerwebsite: String
@@ -61,12 +62,26 @@ export const types = `
     teaserdescription: String
     loginurl: String
     website: String
+    external: Boolean
     images: [String]
-    features: JSON
-    options: JSON
     disabled: Boolean
+    needssubdomain: Boolean
     developer: ID
     supportunit: ID
+    hidden: Boolean
+    icon: Upload
+    logo: Upload
+    images: [Upload!]
+    image: Upload
+  }
+
+  input AppOptions {
+    type: String
+    emailobject: String
+    buttonobject: String
+    passwordobject: String
+    predomain: String
+    afterdomain: String
   }
 
   type Licence {

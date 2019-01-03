@@ -29,6 +29,7 @@ export const types = `
     companyban: Boolean
     country: String
     config: JSON
+    tutorialprogress: JSON
   }
 
   input NameInput {
