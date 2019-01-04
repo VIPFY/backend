@@ -128,6 +128,7 @@ export const queries = `
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
 
   fetchSupportToken: String
+  fetchAppIcon(licenceid: ID!): TabResponse!
 `;
 
 export const mutations = `
