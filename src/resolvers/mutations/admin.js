@@ -18,6 +18,18 @@ import { createLog } from "../../helpers/functions";
 
 const processMultipleUploads = async (upload, folder) => {
   const pic = await upload;
+  let newFolder = appPicFolder;
+  if (folder == 1) {
+    newFolder = appIconFolder;
+  }
+
+  const name = await uploadFile(pic, newFolder);
+  return name;
+};
+
+const processMultipleFiles = async (upload, folder) => {
+  const pic = await upload;
+
   const name = await uploadFile(pic, folder);
   return name;
 };
@@ -169,7 +181,14 @@ export default {
   uploadAppImages: requiresVipfyAdmin.createResolver(
     async (parent, { images, appid }, { models }) => {
       try {
-        const names = await Promise.all(images.map(processMultipleUploads));
+        const app = await models.App.findOne({
+          where: { id: appid },
+          raw: true
+        });
+
+        const names = await Promise.all(
+          images.map(image => processMultipleFiles(image, app.name))
+        );
 
         await models.App.update({ images: names }, { where: { id: appid } });
         return true;
@@ -223,9 +242,9 @@ export default {
           const [logo, icon] = await Promise.all(
             app.images.map(processMultipleUploads)
           );
-
           const productData = await createProduct(app.name);
           const { id, active, created, name, type, updated } = productData;
+          delete app.images;
 
           const newApp = await models.App.create(
             {

@@ -48,6 +48,13 @@ export const types = `
      email: String
    }
 
+   type TabResponse {
+     icon: String!
+     appname: String!
+     alias: String
+     licenceid: ID!
+   }
+
   # Response from with a link to login to an app
   type ProductResponse {
     ok: Boolean!

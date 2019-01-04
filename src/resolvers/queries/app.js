@@ -379,5 +379,28 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
+
+  fetchAppIcon: async (parent, { licenceid }, { models }) => {
+    try {
+      const app = await models.sequelize.query(
+        `
+      SELECT DISTINCT ad.icon, ad.name as appname, bd.alias, ld.id as licenceid
+      FROM licence_data ld
+        INNER JOIN boughtplan_data bd on ld.boughtplanid = bd.id
+        INNER JOIN plan_data pd on bd.planid = pd.id
+        INNER JOIN app_data ad on pd.appid = ad.id
+      WHERE ld.id = :licenceid
+      `,
+        {
+          replacements: { licenceid },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
+
+      return app[0];
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };
