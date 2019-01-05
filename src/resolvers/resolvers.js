@@ -76,6 +76,7 @@ export default {
   App: find(developerAndSupport),
   AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   AppDetails: find(developerAndSupport),
+  AppUsage: find({ app: "App" }),
   Bill: find(unit),
   BillPosition: find({ vendor: "Unit", billid: "Bill", planid: "Plan" }),
   BoughtPlan: find({
@@ -84,6 +85,7 @@ export default {
     planid: "Plan",
     payer: "Unit"
   }),
+  BoughtplanUsagePerUser: find({ boughtplan: "BoughtPlan", unit: "User" }),
   Department: find(unit),
   DepartmentData: find(unit),
   DepartmentEmail: find({ departmentid: "Department", emailownerid: "Unit" }),

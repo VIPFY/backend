@@ -402,5 +402,74 @@ export default {
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
-  }
+  },
+
+  fetchBoughtplanUsagePerUser: requiresRights(["view-usage"]).createResolver(
+    async (parent, { starttime, endtime, boughtplanid }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+        const stats = await models.sequelize.query(
+          `
+          SELECT  tt.boughtplanid boughtplan,
+                  tt.unitid unit,
+                  sum(minutesspent) totalminutes,
+                  array_to_json(array_agg(CASE
+                                            WHEN ld.id IS NULL OR ld.unitid != tt.unitid THEN 'unknown date'
+                                            WHEN ld.endtime < now() THEN to_char(ld.endtime, 'YYYY-MM-DD')
+                                            ELSE NULL END)) licenceenddates
+          FROM timetracking_data tt
+                  LEFT OUTER JOIN licence_data ld on tt.licenceid = ld.id
+                  JOIN department_employee_view dev ON tt.unitid = dev.employee
+          WHERE day >= :starttime :: date
+            AND day < :endtime :: date
+            AND ld.boughtplanid = :boughtplanid
+            AND dev.id = :company
+          GROUP BY tt.unitid, tt.boughtplanid
+          ORDER BY tt.boughtplanid, tt.unitid;
+        `,
+          {
+            replacements: { starttime, endtime, boughtplanid, company },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+        return stats;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchTotalAppUsage: requiresRights(["view-usage"]).createResolver(
+    async (parent, args, { models, token }) => {
+      const {
+        user: { company }
+      } = decode(token);
+      try {
+        const stats = await models.sequelize.query(
+          `
+          SELECT appid app, sum(minutesspent) totalminutes
+          FROM timetracking_data tt
+                JOIN boughtplan_data bp on tt.boughtplanid = bp.id
+                JOIN plan_data pd on bp.planid = pd.id
+                JOIN department_employee_view dev ON tt.unitid = dev.employee
+          WHERE day >= date_trunc('month', current_date)
+            AND dev.id = :comany
+          GROUP BY appid
+          ORDER BY appid;
+        `,
+          {
+            replacements: { company },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+        return stats;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  )
 };
