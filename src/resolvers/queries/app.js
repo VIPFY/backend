@@ -456,7 +456,7 @@ export default {
                 JOIN plan_data pd on bp.planid = pd.id
                 JOIN department_employee_view dev ON tt.unitid = dev.employee
           WHERE day >= date_trunc('month', current_date)
-            AND dev.id = :comany
+            AND dev.id = :company
           GROUP BY appid
           ORDER BY appid;
         `,
