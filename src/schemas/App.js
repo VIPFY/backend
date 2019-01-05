@@ -106,6 +106,18 @@ export const types = `
     minutesmin: Float!
     minutesmax: Float!
   }
+
+  type AppUsage {
+    app: App!
+    totalminutes: Int
+  }
+
+  type BoughtplanUsagePerUser {
+    boughtplan: BoughtPlan!
+    unit: PublicUser!
+    totalminutes: Int
+    licenceenddates: [String]
+  }
 `;
 
 export const queries = `
@@ -168,4 +180,10 @@ export const mutations = `
 
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!
+
+  # The total minutes spend per app, this month, combined for all users of the company
+  fetchTotalAppUsage: [AppUsage]!
+
+  # Total time spend in a specific boughtplan at some time, broken down by user
+  fetchBoughtplanUsagePerUser(starttime: Date!, endtime: Date!, boughtplanid: ID!): [BoughtplanUsagePerUser]!
   `;
