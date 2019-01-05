@@ -108,7 +108,7 @@ export default {
           };
           const res = await googleMapsClient.places(config).asPromise();
 
-          return res;
+          return res.json.results.map(e => ({ ...e, description: e.name }));
         } else {
           const res = await googleMapsClient
             .placesQueryAutoComplete({ input })
