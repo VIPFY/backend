@@ -270,7 +270,7 @@ export default {
               endtime: {
                 [models.Op.or]: {
                   [models.Op.eq]: null,
-                  [models.Op.gt]: Date.now()
+                  [models.Op.gt]: models.sequelize.fn("NOW")
                 }
               }
             },
@@ -286,6 +286,7 @@ export default {
           });
 
           const [openLicence, hasRight] = await Promise.all([p1, p2]);
+
           if (!openLicence) {
             return {
               ok: false,
@@ -1010,10 +1011,12 @@ export default {
             ta
           );
 
-          const horizontal = config.horizontal.filter(
+          const horizontal = admin.config.horizontal.filter(
             item => item != licence.id
           );
-          const vertical = config.vertical.filter(item => item != licence.id);
+          const vertical = admin.config.vertical.filter(
+            item => item != licence.id
+          );
 
           const p3 = models.Human.update(
             { config: { ...admin.config, horizontal, vertical } },
