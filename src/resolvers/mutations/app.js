@@ -16,7 +16,6 @@ import {
 //   cancelPurchase
 // } from "../../services/stripe";
 import logger from "../../loggers";
-import { escape } from "querystring";
 
 /* eslint-disable no-return-await */
 
@@ -1308,5 +1307,73 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  updateCredentials: requiresAuth.createResolver(
+    async (parent, args, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+          const { licenceid, ...credentials } = args;
+
+          const [licence] = await models.sequelize.query(
+            `
+            SELECT ld.*, bd.alias
+            FROM licence_data ld
+                  INNER JOIN boughtplan_data bd on ld.boughtplanid = bd.id
+            WHERE bd.payer = :company
+              AND ld.id = :licenceid
+          `,
+            {
+              replacements: { company, licenceid },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+
+          if (!licence) {
+            throw new Error("Licence not found");
+          }
+
+          await models.Licence.update(
+            {
+              key: { ...licence.key, ...credentials }
+            },
+            {
+              where: { id: licenceid },
+              transaction: ta
+            }
+          );
+
+          const p1 = createLog(
+            ip,
+            "updateCredentials",
+            { licenceid },
+            unitid,
+            ta
+          );
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: `Successfully updated credentials of ${licence.alias}`,
+              icon: "key",
+              link: `teams`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };
