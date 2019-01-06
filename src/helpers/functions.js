@@ -359,10 +359,7 @@ export const companyCheck = async (company, unitid, employee) => {
       raw: true
     });
 
-    const findAdmin = models.User.findOne(
-      { where: { id: unitid } },
-      { raw: true }
-    );
+    const findAdmin = models.User.findOne({ where: { id: unitid }, raw: true });
 
     const [inCompany, admin] = await Promise.all([findCompany, findAdmin]);
 
