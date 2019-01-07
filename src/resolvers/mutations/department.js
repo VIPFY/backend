@@ -664,7 +664,8 @@ export default {
     async (parent, { file }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const profilepicture = await uploadFile(file, userPicFolder);
+          const parsedFile = await file;
+          const profilepicture = await uploadFile(parsedFile, userPicFolder);
           const {
             user: { company: id }
           } = decode(token);
