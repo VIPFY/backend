@@ -34,6 +34,7 @@ export const types = `
 
     type DownloadLink {
       win64: String
+      macOS: String
     }
 
   # The user receives tokens upon a successful login

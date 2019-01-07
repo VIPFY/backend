@@ -195,7 +195,9 @@ export default {
           verifytoken
         ] = await Promise.all([p3, p4, p5, p6, p7, p8]);
 
-        const downloadLink = `https://download.vipfy.store/latest/win32/x64/VIPFY-${setupToken}.exe`;
+        const windowsLink = `https://download.vipfy.store/latest/win32/x64/VIPFY-${setupToken}.exe`;
+        const macLink = `https://download.vipfy.store/latest/darwin/x64/VIPFY-${setupToken}.dmg`;
+
         const verifyLink = `https://vipfy.store/verify-email/${encodeURIComponent(
           email
         )}/${verifyToken}`;
@@ -205,14 +207,9 @@ export default {
           fromName: "VIPFY",
           personalizations: [
             {
-              to: [
-                {
-                  email
-                }
-              ],
+              to: [{ email }],
               dynamic_template_data: {
-                verifyLink,
-                downloadLink
+                verifyLink
               }
             }
           ]
@@ -242,7 +239,8 @@ export default {
           ok: true,
           token,
           downloads: {
-            win64: downloadLink
+            win64: windowsLink,
+            macOS: macLink
           }
         };
       } catch (err) {
