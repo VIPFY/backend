@@ -1190,6 +1190,7 @@ export default {
           if (updatedLicence[0] == 0) {
             throw new Error("Couldn't update Licence");
           }
+
           const p1 = createLog(ip, "deleteLicenceAt", { licence }, unitid, ta);
 
           const p2 = createNotification(
@@ -1257,14 +1258,28 @@ export default {
             config.endtime = estimatedEndtime;
           }
 
-          const updatedBoughtPlan = await models.BoughtPlan.update(config, {
+          const p3 = models.BoughtPlan.update(config, {
             where: { id: boughtPlan[0].id },
             transaction: ta
           });
 
+          const p4 = models.Licence.findAll({
+            where: { boughtplanid: boughtPlan[0].id },
+            raw: true
+          });
+
+          const [updatedBoughtPlan, licences] = await Promise.all([p3, p4]);
+
           if (updatedBoughtPlan[0] == 0) {
             throw new Error("Couldn't update Plan");
           }
+
+          const licencesToUpdate = licences.map(async ({ id }) => {
+            await models.Licence.update(config, { where: { id } });
+          });
+
+          await Promise.all(licencesToUpdate);
+
           const p1 = createLog(
             ip,
             "deleteBoughtPlanAt",
