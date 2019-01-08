@@ -3,6 +3,8 @@ import axios from "axios";
 import moment from "moment";
 import { decode } from "jsonwebtoken";
 import { sleep } from "@vipfy-private/service-base";
+import { debug } from "util";
+import { parseName } from "humanparser";
 import {
   createToken,
   checkAuthentification,
@@ -25,8 +27,7 @@ import { sendEmail } from "../../helpers/email";
 import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import logger from "../../loggers";
-import { debug } from "util";
-import { parseName } from "humanparser";
+import { createToken as createRandomToken } from "../../helpers/token";
 
 const ZENDESK_TOKEN =
   "Basic bnZAdmlwZnkuc3RvcmUvdG9rZW46bndGc3lDVWFpMUg2SWNKOXBpbFk3UGRtOHk0bXVhamZlYzFrbzBHeQ==";
@@ -94,7 +95,10 @@ export default {
             Authorization: ZENDESK_TOKEN
           },
           data: JSON.stringify({
-            organization: { name: `Company-${company.id}`, notes: name }
+            organization: {
+              name: `Company-${company.id}-${createRandomToken()}`,
+              notes: name
+            }
           }),
           url: "https://vipfy.zendesk.com/api/v2/organizations.json"
         });
@@ -113,7 +117,7 @@ export default {
               email, // TODO Mehrere Email-Adressen
               verified: true,
               organization_id: zendeskdata.data.organization.id,
-              external_id: `User-${unit.id}`
+              external_id: `User-${unit.id}-${createRandomToken()}`
             }
           }),
           url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
