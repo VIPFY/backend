@@ -419,11 +419,23 @@ export default {
           !signUpToken.usedat &&
           moment(signUpToken.expiresat).isAfter(moment())
         ) {
-          return `https://download.vipfy.store/latest/win32/x64/VIPFY-${
-            signUpToken.token
-          }.exe`;
+          return {
+            download: {
+              win64: `https://download.vipfy.store/latest/win32/x64/VIPFY-${
+                signUpToken.token
+              }.exe`,
+              macOS: `https://download.vipfy.store/latest/darwin/x64/VIPFY-${
+                signUpToken.token
+              }.dmg`
+            }
+          };
         } else if (signUpToken.usedat) {
-          return "https://download.vipfy.store/latest/win32/x64/VIPFY.exe";
+          return {
+            download: {
+              win64: `https://download.vipfy.store/latest/win32/x64/VIPFY.exe`,
+              macOS: `https://download.vipfy.store/latest/darwin/x64/VIPFY.dmg`
+            }
+          };
         } else {
           throw new Error();
         }

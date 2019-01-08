@@ -65,6 +65,10 @@ export const types = `
     isadmin: Boolean!
     companyban: Boolean
   }
+
+  type SignUpConfirmResponse {
+    download: DownloadLink
+  }
 `;
 
 export const queries = `
@@ -91,7 +95,7 @@ export const mutations = `
   signIn(email: String!, password: String!): LoginResponse!
 
   # After confirming the email, an user has to set a password
-  signUpConfirm(email: String!, password: String!, passwordConfirm: String!, token: String!): String!
+  signUpConfirm(email: String!, password: String!, passwordConfirm: String!, token: String!): SignUpConfirmResponse!
 
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!
