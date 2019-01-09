@@ -721,7 +721,7 @@ export default {
             { transaction: ta }
           );
 
-          const p3 = await createLog(
+          await createLog(
             ip,
             "addExternalBoughtPlan",
             { appid, boughtPlan },
@@ -729,32 +729,8 @@ export default {
             ta
           );
 
-          const p4 = await createNotification(
-            {
-              receiver: unitid,
-              message: `Integrated external Account`,
-              icon: "user-plus",
-              link: `marketplace/${appid}`,
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          await Promise.all([p3, p4]);
-
           return boughtPlan;
         } catch (err) {
-          await createNotification(
-            {
-              receiver: unitid,
-              message: "Integration of external Account failed",
-              icon: "bug",
-              link: `marketplace/${appid}`,
-              changed: []
-            },
-            ta
-          );
-
           // if (subscription && stripeplan) {
           //   const kind = stripeplan.split("_");
           //   if (kind[0] == "sub") {
