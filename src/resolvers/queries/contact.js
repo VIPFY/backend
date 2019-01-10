@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import axios from "axios";
 import iplocate from "node-iplocate";
 import { googleMapsClient } from "../../services/gcloud";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
@@ -94,8 +95,12 @@ export default {
           raw: true
         });
 
-        const geo = await iplocate(ip);
-
+        // const geo = await iplocate(ip);
+        const geo = {
+          longitude: 1.34234234,
+          latitude: -24.8988,
+          country_code: "DE"
+        };
         if (geo && geo.latitude) {
           const config = {
             query: input,
@@ -106,9 +111,32 @@ export default {
             },
             radius: 1000
           };
-          const res = await googleMapsClient.places(config).asPromise();
 
-          return res.json.results.map(e => ({ ...e, description: e.name }));
+          const { json } = await googleMapsClient.places(config).asPromise();
+          console.log(json);
+          const results = json.results.map(e => ({
+            ...e,
+            description: `${e.name}, ${e.formatted_address}`
+          }));
+
+          if (results.length < 1) {
+            const hereUrl =
+              "https://places.cit.api.here.com/places/v1/autosuggest";
+
+            const here = await axios.get(hereUrl, {
+              params: {
+                app_id: process.env.HERE_ID,
+                app_code: process.env.HERE_CODE,
+                at: "41.8369,-87.6840",
+                q: input,
+                result_types: "place, chain"
+              }
+            });
+
+            return here.data.results;
+          }
+
+          return results;
         } else {
           const res = await googleMapsClient
             .placesQueryAutoComplete({ input })

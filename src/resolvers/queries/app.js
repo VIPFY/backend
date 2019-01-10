@@ -89,11 +89,13 @@ export default {
           user: { unitid }
         } = decode(token);
 
-        let query = `SELECT licence_data.*, plan_data.appid FROM licence_data JOIN
+        let query = `
+        SELECT licence_data.*, plan_data.appid 
+        FROM licence_data JOIN
            boughtplan_data ON licence_data.boughtplanid = boughtplan_data.id
            JOIN plan_data ON boughtplan_data.planid = plan_data.id
            JOIN app_data ON plan_data.appid = app_data.id
-           WHERE licence_data.unitid = :unitid AND not app_data.disabled`;
+        WHERE licence_data.unitid = :unitid AND not app_data.disabled`;
 
         const replacements = { unitid };
 
