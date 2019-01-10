@@ -883,13 +883,13 @@ export default {
           }
 
           const { config } = admin;
-          if (config.vertical) {
+          if (config && config.vertical) {
             config.vertical.push(licence.id);
           } else {
             config.vertical = [licence.id];
           }
 
-          if (config.horizontal) {
+          if (config && config.horizontal) {
             config.horizontal.push(licence.id);
           } else {
             config.horizontal = [licence.id];
