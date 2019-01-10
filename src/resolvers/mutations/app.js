@@ -881,9 +881,8 @@ export default {
 
             promises.push(p3);
           }
-          console.log(args);
+
           const { config } = admin;
-          throw new Error("DEBUG");
           if (config && config.vertical) {
             config.vertical.push(licence.id);
           } else {
