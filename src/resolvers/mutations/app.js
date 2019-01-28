@@ -411,31 +411,7 @@ export default {
             ta
           );
 
-          const { config } = user;
-          if (config.vertical) {
-            config.vertical.push(licenceid);
-          } else {
-            config.vertical = [licenceid];
-          }
-
-          if (config.horizontal) {
-            config.horizontal.push(licenceid);
-          } else {
-            config.horizontal = [licenceid];
-          }
-
-          const updateLayout = models.Human.update(
-            {
-              config: {
-                ...config,
-                vertical: config.vertical,
-                horizontal: config.horizontal
-              }
-            },
-            { where: { unitid } }
-          );
-
-          await Promise.all([log, notiGiver, notiReceiver, updateLayout]);
+          await Promise.all([log, notiGiver, notiReceiver]);
 
           return { ok: true };
         } catch (err) {
@@ -476,12 +452,7 @@ export default {
             throw new Error("This Licence wasn't taken!");
           }
 
-          const p1 = models.User.findOne({
-            where: { id: licence.unitid },
-            raw: true
-          });
-
-          const p2 = models.BoughtPlan.findOne(
+          const boughtPlan = await models.BoughtPlan.findOne(
             { where: { id: licence.boughtplanid } },
             {
               include: [models.Plan],
@@ -489,19 +460,7 @@ export default {
             }
           );
 
-          const [{ config }, boughtPlan] = await Promise.all([p1, p2]);
-
-          const horizontal = config.horizontal.filter(
-            item => item != licence.id
-          );
-          const vertical = config.vertical.filter(item => item != licence.id);
-
-          const p3 = models.Human.update(
-            { config: { ...config, horizontal, vertical } },
-            { where: { unitid: licence.unitid } }
-          );
-
-          const p4 = models.Licence.update(
+          await models.Licence.update(
             { unitid: null },
             {
               where: { id, unitid: { [models.Op.not]: null } },
@@ -510,7 +469,6 @@ export default {
             }
           );
 
-          await Promise.all([p3, p4]);
           await Services.removeUser(
             models,
             boughtPlan["plan_datum.appid"],
@@ -964,19 +922,7 @@ export default {
             ta
           );
 
-          const horizontal = admin.config.horizontal.filter(
-            item => item != licence.id
-          );
-          const vertical = admin.config.vertical.filter(
-            item => item != licence.id
-          );
-
-          const p3 = models.Human.update(
-            { config: { ...admin.config, horizontal, vertical } },
-            { where: { unitid: admin.id } }
-          );
-
-          const promises = [p1, p2, p3];
+          const promises = [p1, p2];
 
           if (fromuser) {
             const p4 = createNotification(
@@ -1114,32 +1060,13 @@ export default {
             if (parsedTime <= estimatedEndtime) {
               config.endtime = estimatedEndtime;
             }
-          } else if (licence[0].key && licence[0].key.external) {
-            const user = await models.Human.findOne({
-              where: { unitid: licence[0].unitid },
-              raw: true
-            });
-
-            const horizontal = user.config.horizontal.filter(
-              item => item != licence[0].id
-            );
-
-            const vertical = user.config.vertical.filter(
-              item => item != licence[0].id
-            );
-
-            await models.Human.update(
-              { config: { ...user.config, horizontal, vertical } },
-              { where: { unitid: user.unitid }, transaction: ta }
-            );
           }
 
           const updatedLicence = await models.Licence.update(config, {
             where: { id: licence[0].id },
             transaction: ta
           });
-          // 1543311333813 1545903334341
-          // 1543311347004 1545903347123
+
           if (updatedLicence[0] == 0) {
             throw new Error("Couldn't update Licence");
           }

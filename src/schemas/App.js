@@ -97,6 +97,16 @@ export const types = `
     key: JSON
     boughtplanid: BoughtPlan!
     unitid: User
+    layouthorizontal: Int
+    layoutvertical: Int
+  }
+
+  input LicenceInput {
+    id:  ID!
+    disabled: Boolean
+    endtime: Date
+    layouthorizontal: Int
+    layoutvertical: Int
   }
 
   type SimpleStats {

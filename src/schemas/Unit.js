@@ -85,7 +85,7 @@ export const mutations = `
   createUser(user: UserInput!, file: Upload): Response!
   updateUser(user: UserInput!): Response!
   updateProfilePic(file: Upload!): String!
-  saveAppLayout(horizontal: [String], vertical: [String]): Boolean!
+  updateLayout(dragged: LicenceInput!, droppedOn: LicenceInput!, direction: DIRECTION): Boolean!
 
   # Only an email is required for the signup
   signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!): RegisterResponse!
