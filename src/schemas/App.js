@@ -160,6 +160,8 @@ export const queries = `
 `;
 
 export const mutations = `
+  updateLayout(dragged: LicenceInput!, droppedOn: LicenceInput!, direction: DIRECTION): Boolean!
+  setLayout(layouthorizontal: Int, layoutvertical: Int, licenceId: ID!): Licence!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
 

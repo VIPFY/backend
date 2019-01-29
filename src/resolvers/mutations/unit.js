@@ -103,46 +103,5 @@ export default {
           });
         }
       })
-  ),
-
-  updateLayout: requiresAuth.createResolver(
-    async (parent, { dragged, droppedOn, direction }, { models, token }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
-
-          const draggedOptions = {};
-          const droppedOnOptions = {};
-
-          if (direction == "HORIZONTAL") {
-            draggedOptions.layouthorizontal = droppedOn.layouthorizontal;
-            droppedOnOptions.layouthorizontal = dragged.layouthorizontal;
-          } else {
-            draggedOptions.layoutvertical = droppedOn.layoutvertical;
-            droppedOnOptions.layoutvertical = dragged.layoutvertical;
-          }
-
-          const p1 = models.Licence.update(draggedOptions, {
-            where: { id: dragged.id },
-            transaction: ta
-          });
-
-          const p2 = models.Licence.update(droppedOnOptions, {
-            where: { id: droppedOn.id },
-            transaction: ta
-          });
-
-          await Promise.all([p1, p2]);
-
-          return true;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
   )
 };
