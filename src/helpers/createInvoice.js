@@ -1,3 +1,6 @@
+import fs from "fs";
+import pdf from "html-pdf";
+
 import moment from "moment";
 import { uniq } from "lodash";
 import Invoice from "./invoiceGenerator";
@@ -6,25 +9,38 @@ import { uploadInvoice } from "../services/gcloud";
 
 export default async (monthly, models, unitid, billId, billItems) => {
   try {
-    const tags = ["billing"];
+    const tags = { [models.Op.contains]: ["billing"] };
     let single = true;
+
     if (monthly) {
       single = false;
     }
 
     const p1 = models.Address.findOne({
       attributes: ["country", "address"],
-      where: { unitid, tags }
+      where: { unitid, tags },
+      raw: true
     });
+
     const p2 = models.DepartmentEmail.findAll({
       attributes: ["email"],
-      where: { departmentid: 14 }
+      where: { departmentid: unitid, tags },
+      raw: true
     });
-    const p3 = models.Phone.findOne({ attributes: ["number"], where: { unitid, tags } });
-    const p4 = models.Department.findOne({ attributes: ["name"], where: { unitid } });
-    let [address, emails, phone, company] = await Promise.all([p1, p2, p3, p4]);
 
-    emails = emails.map(email => email.get("email"));
+    const p3 = models.Phone.findOne({
+      attributes: ["number"],
+      where: { unitid, tags },
+      raw: true
+    });
+
+    const p4 = models.Department.findOne({
+      attributes: ["name"],
+      where: { unitid },
+      raw: true
+    });
+
+    let [address, emails, phone, company] = await Promise.all([p1, p2, p3, p4]);
 
     if (!address) {
       // This should throw an error later
@@ -36,28 +52,24 @@ export default async (monthly, models, unitid, billId, billItems) => {
         },
         country: "Liberia"
       };
-    } else {
-      address = address.get();
     }
 
     if (!phone) {
       phone = "00000000000000";
-    } else {
-      phone = phone.get().number;
     }
 
     const email = uniq(emails)[0];
-
-    company = company.get().name;
 
     const {
       country,
       address: { zip, city, street }
     } = address;
+
     const date = moment().format("YYYY-MM-DD");
     const dueDate = moment()
       .add(2, "weeks")
       .format("YYYY-MM-DD");
+
     const year = moment().format("YYYY");
     const number = `V${single ? "S" : "M"}-${year}-${billId}-01`;
     const billName = formatFilename(billId);

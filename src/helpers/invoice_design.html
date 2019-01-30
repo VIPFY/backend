@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Vipfy Invoice</title>
+    <style>
+      #body {
+        padding: 0 25px;
+      }
+
+      div.container {
+        max-width: 1150px;
+        margin: 0 auto;
+        font-family: "Open Sans";
+      }
+
+      .header {
+        display: flex;
+        flex-flow: row nowrap;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        margin-top: 20px;
+        font-size: 12px;
+      }
+
+      #logo {
+        width: 50%;
+        height: 10rem;
+        background-image: url("https://vipfy.com/static/media/logo-text.bbad7363.png");
+        background-position: center;
+        background-size: contain;
+        background-repeat: no-repeat;
+      }
+
+      div.container p {
+        margin: 0;
+      }
+
+      .container h1,
+      .container h2 {
+        margin: 0px;
+        color: #c1272d;
+      }
+
+      #buyer {
+        margin-bottom: 20px;
+      }
+
+      hr {
+        border: 1px solid #c1272d;
+        margin: 20px 0;
+      }
+
+      table.bordered {
+        border-collapse: collapse;
+      }
+
+      table.bordered td,
+      table.bordered th,
+      table.bordered {
+        border: 2px solid #c1272d;
+      }
+
+      .full-width {
+        width: 100%;
+      }
+
+      .text-center {
+        text-align: center;
+      }
+
+      .text-right {
+        text-align: right;
+      }
+
+      .text-left {
+        text-align: left;
+      }
+
+      .text-top * {
+        vertical-align: top;
+      }
+
+      .monospaced {
+        font-family: "Monaco", monospace;
+      }
+
+      table.padded th,
+      table.padded td {
+        padding: 5px;
+      }
+
+      table th {
+        font-weight: normal;
+      }
+
+      .mt-s {
+        margin-top: 23px;
+      }
+
+      .mb-s {
+        margin-bottom: 23px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Seller Fields -->
+      <div class="header">
+        <div id="logo"></div>
+
+        <div>
+          <p>
+            Tax Payer's Registration Number:
+            <strong>F05/XX/YYYY</strong>
+          </p>
+          <p>
+            Tax ID: <strong>00000000</strong>
+          </p>
+          <p>
+            Address:
+            <strong
+              >Campus A1 1<br />
+              66123 Saarbrücken,
+              Saarland, Germany</strong
+            >
+          </p>
+          <p>
+            Phone: <strong>+49 681 302 - 64936</strong>
+          </p>
+          <p>
+            Email: <strong>billing@vipfy.store</strong>
+          </p>
+          <p>
+            Website: <strong>www.vipfy.store</strong>
+          </p>
+          <p>
+            Bank: <strong>Deutsche Bank</strong>
+          </p>
+          <p>
+            SWIFT: <strong>XXXXXX</strong>
+          </p>
+          <p>
+            <strong>IBAN: DE51 5907 0000 0012 3018 00</strong>
+          </p>
+        </div>
+      </div>
+      <hr />
+
+      <!-- Invoice data -->
+      <div id="body">
+        <div class="header">
+          <!-- Seller Fields -->
+          <div id="buyer">
+            <p><strong>Buyer:</strong></p>
+            <h2>[object Object]</h2>
+            <p>
+              Tax ID: <strong>00000000</strong>
+            </p>
+            <p>
+              Address:
+              <strong
+                >513, Broad Street<br />
+                27526 Fuquay Varina,
+                US</strong
+              >
+            </p>
+            <p>
+              Phone: <strong>00000000000000</strong>
+            </p>
+            <p>
+              Email: <strong>[object Object]</strong>
+            </p>
+          </div>
+
+          <div style="padding-left: 10px">
+            <p style="color: #fff">.</p>
+            <h2>INVOICE</h2>
+            <table class="mb-s">
+              <tbody>
+                <tr>
+                  <td>Invoice-Number:</td>
+                  <td>VS-2019-422-01</td>
+                </tr>
+                <tr>
+                  <td>Invoice-Date (YYYY-MM-DD):</td>
+                  <td>2019-01-29</td>
+                </tr>
+                <tr>
+                  <td>Due-Date (YYYY-MM-DD):</td>
+                  <td>2019-02-12</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <table class="bordered full-width padded mt-s mb-s monospaced">
+          <thead>
+            <tr>
+              <th style="width: 30px;"><strong>Nr</strong></th>
+              <th><strong>Description</strong><br /></th>
+              <th><strong>Qty</strong><br /></th>
+              <th>
+                <strong
+                  >Total Amount<br />
+                  –USD–
+                </strong>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="text-top">
+
+    <tr>
+      <td class="text-center">1</td>
+      <td class="text-center">Some interesting test</td>
+      <td class="text-center">5 Licences</td>
+      <td class="text-right">19.99</td>
+    </tr>
+    <tr>
+      <td class="text-center">2</td>
+      <td class="text-center">Another interesting test</td>
+      <td class="text-center">10 Licences</td>
+      <td class="text-right">5.99</td>
+    </tr>
+    <tr>
+      <td class="text-center">3</td>
+      <td class="text-center">The most interesting one</td>
+      <td class="text-center">3 Licences</td>
+      <td class="text-right">9.99</td>
+    </tr>            <tr>
+              <td colspan="3" class="text-center">
+                <strong>Invoice Total –USD– </strong>
+              </td>
+
+              <td class="text-right">
+                <strong></strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        Thank you for your business, dear Vipfy Customer!
+      </div>
+    </div>
+  </body>
+</html>

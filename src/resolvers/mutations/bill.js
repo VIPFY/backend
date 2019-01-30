@@ -1,16 +1,16 @@
+import moment from "moment";
+import { uniq } from "lodash";
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
-import { sleep } from "@vipfy-private/service-base";
-import { requiresRights } from "../../helpers/permissions";
+import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import {
   createLog,
   createNotification,
   checkPlanValidity,
-  checkPaymentData
+  checkPaymentData,
+  formatFilename
 } from "../../helpers/functions";
 import { calculatePlanPrice } from "../../helpers/apps";
-
-// import createInvoice from "../../helpers/createInvoice";
 import {
   createCustomer,
   listCards,
@@ -25,7 +25,7 @@ import {
 } from "../../services/stripe";
 import { BillingError, NormalError } from "../../errors";
 import logger from "../../loggers";
-
+import createInvoice from "../../helpers/invoiceGenerator";
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
 export default {
@@ -661,7 +661,6 @@ export default {
             { transaction: ta }
           );
           newBoughtPlan = newBoughtPlan.get();
-          console.log(newBoughtPlan);
 
           const createLicences = [];
 
@@ -806,47 +805,160 @@ export default {
       })
   ),
 
-  /*
   // TODO: Add logging when changed
-  createMonthlyBill: async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { company: unitid }
-      } = decode(token);
-      const bill = await models.Bill.create({ unitid });
-      const billid = bill.get("id");
-      const billItems = await models.BillPosition.findAll({
-        where: { billid }
-      });
-      // const billItems = [
-      //   {
-      //     description: "Some interesting test",
-      //     quantity: 5,
-      //     unitPrice: 19.99
-      //   },
-      //   {
-      //     description: "Another interesting test",
-      //     quantity: 10,
-      //     unitPrice: 5.99
-      //   },
-      //   {
-      //     description: "The most interesting one",
-      //     quantity: 3,
-      //     unitPrice: 9.99
-      //   }
-      // ];
-      console.log(billItems);
-      // const ok = await createInvoice(true, models, unitid, billid, billItems);
-      // if (ok !== true) {
-      //   throw new Error(ok);
-      // }
+  createBill: requiresAuth.createResolver(
+    async (parent, { monthly }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company: unitid }
+          } = decode(token);
 
-      // return { ok };
-      return { ok: true };
-    } catch (err) {
-      throw new BillingError(err);
-    }
-  },
+          const bill = await models.Bill.create(
+            {
+              unitid,
+              stripesubscriptionid: "testbill"
+            },
+            { transaction: ta }
+          );
+
+          const billItems = [
+            {
+              description: "Some interesting test",
+              quantity: 5,
+              unitPrice: 19.99
+            },
+            {
+              description: "Another interesting test",
+              quantity: 10,
+              unitPrice: 5.99
+            },
+            {
+              description: "The most interesting one",
+              quantity: 3,
+              unitPrice: 9.99
+            }
+          ];
+
+          const tags = { [models.Op.contains]: ["billing"] };
+
+          const p1 = models.Address.findOne({
+            attributes: ["country", "address"],
+            where: { unitid, tags },
+            raw: true
+          });
+
+          const p2 = models.DepartmentEmail.findAll({
+            attributes: ["email"],
+            where: { departmentid: unitid, tags },
+            raw: true
+          });
+
+          const p3 = models.Phone.findOne({
+            attributes: ["number"],
+            where: { unitid, tags },
+            raw: true
+          });
+
+          const p4 = models.Department.findOne({
+            attributes: ["name"],
+            where: { unitid },
+            raw: true
+          });
+
+          let [address, emails, phone, company] = await Promise.all([
+            p1,
+            p2,
+            p3,
+            p4
+          ]);
+
+          if (!address) {
+            // This should throw an error later
+            address = {
+              address: {
+                street: "Null Avenue 0",
+                zip: "00000",
+                city: "Null Island"
+              },
+              country: "Liberia"
+            };
+          }
+
+          if (!phone) {
+            phone = "00000000000000";
+          }
+
+          const email = uniq(emails)[0];
+
+          const {
+            country,
+            address: { zip, city, street }
+          } = address;
+
+          const date = moment().format("YYYY-MM-DD");
+          const dueDate = moment()
+            .add(2, "weeks")
+            .format("YYYY-MM-DD");
+
+          const year = moment().format("YYYY");
+          const number = `V${monthly ? "M" : "S"}-${year}-${bill.id}-01`;
+          const billName = formatFilename(bill.id);
+
+          await createInvoice({
+            path: `${__dirname}/../../templates/invoice.html`,
+            pathPdf: `${__dirname}/../../files/${billName}.pdf`,
+            pathHTML: `${__dirname}/../../helpers/invoice_design.html`,
+            data: {
+              currencyBalance: {
+                main: 1
+              },
+              invoice: {
+                number,
+                date,
+                dueDate,
+                explanation:
+                  "Thank you for your business, dear Vipfy Customer!",
+                currency: "USD"
+              },
+              billItems,
+              seller: {
+                company: "Vipfy GmbH",
+                registrationNumber: "F05/XX/YYYY",
+                taxId: "00000000",
+                address: {
+                  street: "Campus",
+                  number: "A1 1",
+                  zip: "66123",
+                  city: "Saarbrücken",
+                  region: "Saarland",
+                  country: "Germany"
+                },
+                phone: "+49 681 302 - 64936",
+                email: "billing@vipfy.store",
+                website: "www.vipfy.store",
+                bank: {
+                  name: "Deutsche Bank",
+                  swift: "XXXXXX",
+                  iban: "DE51 5907 0000 0012 3018 00"
+                }
+              },
+              buyer: {
+                company,
+                taxId: "00000000",
+                address: { street, zip, city, country },
+                phone,
+                email
+              }
+            }
+          });
+
+          return true;
+        } catch (err) {
+          throw new BillingError(err.message);
+        }
+      })
+  ),
   // TODO: Add logging when changed
   addBillPos: requiresAuth.createResolver(
     async (parent, { bill, billid }, { models, token }) =>
@@ -879,7 +991,6 @@ export default {
         }
       })
   ),
-  */
 
   setBoughtPlanAlias: requiresRights(["edit-boughtplan"]).createResolver(
     async (parent, { alias, boughtplanid }, { models }) => {
