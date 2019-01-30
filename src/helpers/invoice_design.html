@@ -1,215 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Vipfy Invoice</title>
-    <style>
-      #body {
-        padding: 0 25px;
-      }
 
-      div.container {
-        max-width: 1150px;
-        margin: 0 auto;
-        font-family: "Open Sans";
-      }
+<head>
+  <meta charset="UTF-8" />
+  <title>VIFPY Invoice</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i&amp;subset=cyrillic,cyrillic-ext,greek,greek-ext,latin-ext,vietnamese"
+    rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      font-family: 'Roboto', sans-serif;
+    }
 
-      .header {
-        display: flex;
-        flex-flow: row nowrap;
-        flex-wrap: nowrap;
-        justify-content: space-between;
-        margin-top: 20px;
-        font-size: 12px;
-      }
+    @page {
+      size: A4;
+      margin: 0;
+    }
 
-      #logo {
-        width: 50%;
-        height: 10rem;
-        background-image: url("https://vipfy.com/static/media/logo-text.bbad7363.png");
-        background-position: center;
-        background-size: contain;
-        background-repeat: no-repeat;
-      }
+    body {
+      width: 210mm;
+      height: 297mm;
+      padding: 20mm 20mm 20mm 25mm;
+    }
 
-      div.container p {
-        margin: 0;
-      }
+    header {
+      display: flex;
+      flex-flow: row;
+      font-size: 8pt;
+      font-weight: bold;
+      color: #253646;
+    }
 
-      .container h1,
-      .container h2 {
-        margin: 0px;
-        color: #c1272d;
-      }
+    .address-customer {
+      display: flex;
+      flex-flow: column;
+      width: 50%
+    }
 
-      #buyer {
-        margin-bottom: 20px;
-      }
+    .address-text {
+      display: flex;
+      flex-flow: column;
+      font-weight: 300;
+    }
 
-      hr {
-        border: 1px solid #c1272d;
-        margin: 20px 0;
-      }
+    .address-text-customer {
+      display: flex;
+      flex-flow: column;
+      font-size: 11pt;
+      font-weight: 300;
+      font-family: "Robot Light";
+      margin-bottom: 35mm;
+    }
 
-      table.bordered {
-        border-collapse: collapse;
-      }
+    .address-line {
+      margin: 25mm 0 8mm 0;
+    }
 
-      table.bordered td,
-      table.bordered th,
-      table.bordered {
-        border: 2px solid #c1272d;
-      }
+    .address-vipfy {
+      width: 50%;
+      height: 80mm;
+      display: flex;
+      flex-flow: column;
+      align-items: end;
+      justify-content: space-between;
+    }
 
-      .full-width {
-        width: 100%;
-      }
+    .address-inline {
+      display: flex;
+      flex-flow: row nowrap;
+      width: 38mm;
+    }
 
-      .text-center {
-        text-align: center;
-      }
+    .address-inline-left {
+      margin-right: 10px;
+      justify-self: start;
+      font-size: 8pt;
+      width: 8.5mm;
+    }
 
-      .text-right {
-        text-align: right;
-      }
+    .address-inline-right {
+      font-weight: 300;
+      width: 25mm;
+    }
 
-      .text-left {
-        text-align: left;
-      }
+    #logo {
+      height: 40px;
+      width: 45px;
+    }
+  </style>
+</head>
 
-      .text-top * {
-        vertical-align: top;
-      }
+<body>
+  <!-- Seller Fields -->
+  <header>
+    <div class="address-customer">
+      <div class="address-line">VIPFY GmbH, Campus A1 1,
+        66123 Saarbrücken, Germany </div>
+      <div class="address-text-customer">
+        <span>Vipfy GmbH </span>
+        <span>513, Broad Street </span>
+        <span>27526 Fuquay Varina</span>
+        <span>US</span>
+      </div>
+    </div>
 
-      .monospaced {
-        font-family: "Monaco", monospace;
-      }
-
-      table.padded th,
-      table.padded td {
-        padding: 5px;
-      }
-
-      table th {
-        font-weight: normal;
-      }
-
-      .mt-s {
-        margin-top: 23px;
-      }
-
-      .mb-s {
-        margin-bottom: 23px;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <!-- Seller Fields -->
-      <div class="header">
-        <div id="logo"></div>
-
-        <div>
-          <p>
-            Tax Payer's Registration Number:
-            <strong>F05/XX/YYYY</strong>
-          </p>
-          <p>
-            Tax ID: <strong>00000000</strong>
-          </p>
-          <p>
-            Address:
-            <strong
-              >Campus A1 1<br />
-              66123 Saarbrücken,
-              Saarland, Germany</strong
-            >
-          </p>
-          <p>
-            Phone: <strong>+49 681 302 - 64936</strong>
-          </p>
-          <p>
-            Email: <strong>billing@vipfy.store</strong>
-          </p>
-          <p>
-            Website: <strong>www.vipfy.store</strong>
-          </p>
-          <p>
-            Bank: <strong>Deutsche Bank</strong>
-          </p>
-          <p>
-            SWIFT: <strong>XXXXXX</strong>
-          </p>
-          <p>
-            <strong>IBAN: DE51 5907 0000 0012 3018 00</strong>
-          </p>
+    <div class="address-vipfy">
+      <div class="address-inline">
+        <img alt="Vipfy Logo" src="../files/Vipfy Logo_Single_Farbig_HG Hell_border_small.png" id="logo">
+        <div class="address-text">
+          <span>VIPFY GmbH </span>
+          <span>Campus A1 1</span>
+          <span>66123 Saarbrücken</span>
+          <span>Germany</span>
         </div>
       </div>
-      <hr />
 
-      <!-- Invoice data -->
-      <div id="body">
-        <div class="header">
-          <!-- Seller Fields -->
-          <div id="buyer">
-            <p><strong>Buyer:</strong></p>
-            <h2>[object Object]</h2>
-            <p>
-              Tax ID: <strong>00000000</strong>
-            </p>
-            <p>
-              Address:
-              <strong
-                >513, Broad Street<br />
-                27526 Fuquay Varina,
-                US</strong
-              >
-            </p>
-            <p>
-              Phone: <strong>00000000000000</strong>
-            </p>
-            <p>
-              Email: <strong>[object Object]</strong>
-            </p>
-          </div>
-
-          <div style="padding-left: 10px">
-            <p style="color: #fff">.</p>
-            <h2>INVOICE</h2>
-            <table class="mb-s">
-              <tbody>
-                <tr>
-                  <td>Invoice-Number:</td>
-                  <td>VS-2019-422-01</td>
-                </tr>
-                <tr>
-                  <td>Invoice-Date (YYYY-MM-DD):</td>
-                  <td>2019-01-29</td>
-                </tr>
-                <tr>
-                  <td>Due-Date (YYYY-MM-DD):</td>
-                  <td>2019-02-12</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+      <div class="address-block">
+        <div class="address-inline">
+          <span class="address-inline-left">Tel</span>
+          <span class="address-inline-right">+49 681 302 - 64936</span>
         </div>
+        <div class="address-inline">
+          <span class="address-inline-left">Mail</span>
+          <span class="address-inline-right">billing@vipfy.store</span>
+        </div>
+        <div class="address-inline">
+          <span class="address-inline-left">Web</span>
+          <span class="address-inline-right">www.vipfy.store</span>
+        </div>
+      </div>
 
-        <table class="bordered full-width padded mt-s mb-s monospaced">
-          <thead>
-            <tr>
-              <th style="width: 30px;"><strong>Nr</strong></th>
-              <th><strong>Description</strong><br /></th>
-              <th><strong>Qty</strong><br /></th>
-              <th>
-                <strong
-                  >Total Amount<br />
-                  –USD–
-                </strong>
-              </th>
-            </tr>
-          </thead>
-          <tbody class="text-top">
+      <div class="address-block">
+        <div class="address-inline">
+          <span class="address-inline-left">Bank</span>
+          <span class="address-inline-right">Deutsche Bank</span>
+        </div>
+        <div class="address-inline">
+          <span class="address-inline-left">SWIFT</span>
+          <span class="address-inline-right">XXXXXX</span>
+        </div>
+        <div class="address-inline">
+          <span class="address-inline-left">IBAN</span>
+          <span class="address-inline-right">DE51 5907 0000 0012 3018 00</span>
+        </div>
+      </div>
+
+      <div class="address-block">
+        <div class="address-inline">
+          <span class="address-inline-left">TIN</span>
+          <span class="address-inline-right">HRB 104968</span>
+        </div>
+        <div class="address-inline">
+          <span class="address-inline-left">Tax ID</span>
+          <span class="address-inline-right">DE320082973</span>
+        </div>
+      </div>
+
+      <div class="address-block">
+        <div class="address-inline">
+          <span class="address-inline-left">Invoice</span>
+          <span class="address-inline-right">VS-2019-496-01</span>
+        </div>
+        <div class="address-inline">
+          <span class="address-inline-left">Date</span>
+          <span class="address-inline-right">2019-01-30</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <table class="bordered full-width padded mt-s mb-s monospaced">
+    <thead>
+      <tr>
+        <th style="width: 30px;"><strong>Nr</strong></th>
+        <th><strong>Description</strong><br /></th>
+        <th><strong>Qty</strong><br /></th>
+        <th>
+          <strong>Total Amount<br />
+            –USD–
+          </strong>
+        </th>
+      </tr>
+    </thead>
+    <tbody class="text-top">
 
     <tr>
       <td class="text-center">1</td>
@@ -228,19 +201,20 @@
       <td class="text-center">The most interesting one</td>
       <td class="text-center">3 Licences</td>
       <td class="text-right">9.99</td>
-    </tr>            <tr>
-              <td colspan="3" class="text-center">
-                <strong>Invoice Total –USD– </strong>
-              </td>
+    </tr>      <tr>
+        <td colspan="3" class="text-center">
+          <strong>Invoice Total –USD– </strong>
+        </td>
 
-              <td class="text-right">
-                <strong></strong>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        Thank you for your business, dear Vipfy Customer!
-      </div>
-    </div>
-  </body>
+        <td class="text-right">
+          <strong></strong>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  Thank you for your business, dear Vipfy Customer!
+  </div>
+  </div>
+</body>
+
 </html>

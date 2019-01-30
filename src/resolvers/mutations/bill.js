@@ -861,7 +861,7 @@ export default {
           });
 
           const p4 = models.Department.findOne({
-            attributes: ["name"],
+            attributes: ["name", "legalinformation"],
             where: { unitid },
             raw: true
           });
@@ -889,7 +889,7 @@ export default {
             phone = "00000000000000";
           }
 
-          const email = uniq(emails)[0];
+          const { email } = uniq(emails)[0];
 
           const {
             country,
@@ -923,9 +923,11 @@ export default {
               },
               billItems,
               seller: {
-                company: "Vipfy GmbH",
-                registrationNumber: "F05/XX/YYYY",
-                taxId: "00000000",
+                logo:
+                  "../files/Vipfy Logo_Single_Farbig_HG Hell_border_small.png",
+                company: "VIPFY GmbH",
+                registrationNumber: "HRB 104968",
+                taxId: "DE320082973",
                 address: {
                   street: "Campus",
                   number: "A1 1",
@@ -944,8 +946,11 @@ export default {
                 }
               },
               buyer: {
-                company,
-                taxId: "00000000",
+                company: company.name,
+                taxId:
+                  company.legalinformation && company.legalinformation.vatId
+                    ? company.legalinformation.vatId
+                    : "",
                 address: { street, zip, city, country },
                 phone,
                 email
