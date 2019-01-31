@@ -824,21 +824,38 @@ export default {
 
           const billItems = [
             {
-              description: "Some interesting test",
-              quantity: 5,
-              unitPrice: 19.99
+              app: "Wunderlist",
+              id: 545643435,
+              unitPrice: 19.99,
+              currency: "$"
             },
             {
-              description: "Another interesting test",
-              quantity: 10,
-              unitPrice: 5.99
+              app: "Pipedrive",
+              id: 5456323435,
+              unitPrice: 5.99,
+              currency: "$"
             },
             {
-              description: "The most interesting one",
-              quantity: 3,
-              unitPrice: 9.99
+              app: "Google",
+              id: 5456497835,
+              unitPrice: 9.99,
+              currency: "$"
+            },
+            {
+              app: "Weebly",
+              id: 5451287835,
+              unitPrice: 7.99,
+              currency: "$"
+            },
+            {
+              app: "Nils",
+              id: 5454287835,
+              unitPrice: 117.99,
+              currency: "$"
             }
           ];
+
+          const total = billItems.reduce((acc, cV) => acc + cV.unitPrice, 0);
 
           const tags = { [models.Op.contains]: ["billing"] };
 
@@ -910,21 +927,19 @@ export default {
             pathPdf: `${__dirname}/../../files/${billName}.pdf`,
             pathHTML: `${__dirname}/../../helpers/invoice_design.html`,
             data: {
-              currencyBalance: {
-                main: 1
-              },
+              total,
+              currency: "$",
               invoice: {
                 number,
                 date,
                 dueDate,
-                explanation:
-                  "Thank you for your business, dear Vipfy Customer!",
+                explanation: `Bitte überweisen Sie den Betrag bis zum ${dueDate} auf das oben genannte Konto. Verwenden Sie
+                  Ihre Rechnungsnummer als Verwendungszweck bei der Überweisung.`,
                 currency: "USD"
               },
               billItems,
               seller: {
-                logo:
-                  "../files/Vipfy Logo_Single_Farbig_HG Hell_border_small.png",
+                logo: "../files/vipfy-signet.png",
                 company: "VIPFY GmbH",
                 registrationNumber: "HRB 104968",
                 taxId: "DE320082973",

@@ -1,207 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>VIFPY Invoice</title>
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i&amp;subset=cyrillic,cyrillic-ext,greek,greek-ext,latin-ext,vietnamese"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" type="text/css" href="../templates/styles.css" />
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/less.js/3.9.0/less.min.js"></script> -->
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <title>VIFPY Invoice</title>
-  <link href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i&amp;subset=cyrillic,cyrillic-ext,greek,greek-ext,latin-ext,vietnamese"
-    rel="stylesheet">
-  <style>
-    * {
-      margin: 0;
-      font-family: 'Roboto', sans-serif;
-    }
+  <body>
+    {{> header}} {{ buyer.taxId }}
+    <table class="content">
+      <tbody class="invoice-body">
+        {{#createRows billItems}}
+        {{
+          app
+        }}
+        {{
+          id
+        }}
+        {{
+          unitPrice
+        }}
+        {{/createRows}}
+        <tr class="total">
+          <td colspan="3">Total</td>
 
-    @page {
-      size: A4;
-      margin: 0;
-    }
+          <td>{{ total }} {{ currency }}</td>
+        </tr>
+      </tbody>
+    </table>
 
-    body {
-      width: 210mm;
-      height: 297mm;
-      padding: 20mm 20mm 20mm 25mm;
-    }
-
-    header {
-      display: flex;
-      flex-flow: row;
-      font-size: 8pt;
-      font-weight: bold;
-      color: #253646;
-    }
-
-    .address-customer {
-      display: flex;
-      flex-flow: column;
-      width: 50%
-    }
-
-    .address-text {
-      display: flex;
-      flex-flow: column;
-      font-weight: 300;
-    }
-
-    .address-text-customer {
-      display: flex;
-      flex-flow: column;
-      font-size: 11pt;
-      font-weight: 300;
-      font-family: "Robot Light";
-      margin-bottom: 35mm;
-    }
-
-    .address-line {
-      margin: 25mm 0 8mm 0;
-    }
-
-    .address-vipfy {
-      width: 50%;
-      height: 80mm;
-      display: flex;
-      flex-flow: column;
-      align-items: end;
-      justify-content: space-between;
-    }
-
-    .address-inline {
-      display: flex;
-      flex-flow: row nowrap;
-      width: 38mm;
-    }
-
-    .address-inline-left {
-      margin-right: 10px;
-      justify-self: start;
-      font-size: 8pt;
-      width: 8.5mm;
-    }
-
-    .address-inline-right {
-      font-weight: 300;
-      width: 25mm;
-    }
-
-    #logo {
-      height: 40px;
-      width: 45px;
-    }
-  </style>
-</head>
-
-<body>
-  <!-- Seller Fields -->
-  <header>
-    <div class="address-customer">
-      <div class="address-line">{{seller.company}}, {{seller.address.street}} {{seller.address.number}},
-        {{seller.address.zip}} {{seller.address.city}}, {{seller.address.country}} </div>
-      <div class="address-text-customer">
-        <span>{{ buyer.company }} </span>
-        <span>{{ buyer.address.street }} {{ buyer.address.number }}</span>
-        <span>{{ buyer.address.zip }} {{ buyer.address.city }}</span>
-        <span>{{ buyer.address.country }}</span>
-      </div>
-    </div>
-
-    <div class="address-vipfy">
-      <div class="address-inline">
-        <img alt="Vipfy Logo" src="{{seller.logo}}" id="logo">
-        <div class="address-text">
-          <span>{{seller.company}} </span>
-          <span>{{ seller.address.street }} {{ seller.address.number }}</span>
-          <span>{{ seller.address.zip }} {{ seller.address.city }}</span>
-          <span>{{ seller.address.country }}</span>
-        </div>
-      </div>
-
-      <div class="address-block">
-        <div class="address-inline">
-          <span class="address-inline-left">Tel</span>
-          <span class="address-inline-right">{{ seller.phone }}</span>
-        </div>
-        <div class="address-inline">
-          <span class="address-inline-left">Mail</span>
-          <span class="address-inline-right">{{ seller.email }}</span>
-        </div>
-        <div class="address-inline">
-          <span class="address-inline-left">Web</span>
-          <span class="address-inline-right">{{ seller.website }}</span>
-        </div>
-      </div>
-
-      <div class="address-block">
-        <div class="address-inline">
-          <span class="address-inline-left">Bank</span>
-          <span class="address-inline-right">{{ seller.bank.name }}</span>
-        </div>
-        <div class="address-inline">
-          <span class="address-inline-left">SWIFT</span>
-          <span class="address-inline-right">{{ seller.bank.swift }}</span>
-        </div>
-        <div class="address-inline">
-          <span class="address-inline-left">IBAN</span>
-          <span class="address-inline-right">{{ seller.bank.iban }}</span>
-        </div>
-      </div>
-
-      <div class="address-block">
-        <div class="address-inline">
-          <span class="address-inline-left">TIN</span>
-          <span class="address-inline-right">{{seller.registrationNumber }}</span>
-        </div>
-        <div class="address-inline">
-          <span class="address-inline-left">Tax ID</span>
-          <span class="address-inline-right">{{ seller.taxId }}</span>
-        </div>
-      </div>
-
-      <div class="address-block">
-        <div class="address-inline">
-          <span class="address-inline-left">Invoice</span>
-          <span class="address-inline-right">{{ invoice.number }}</span>
-        </div>
-        <div class="address-inline">
-          <span class="address-inline-left">Date</span>
-          <span class="address-inline-right">{{ invoice.date }}</span>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <table class="bordered full-width padded mt-s mb-s monospaced">
-    <thead>
-      <tr>
-        <th style="width: 30px;"><strong>Nr</strong></th>
-        <th><strong>Description</strong><br /></th>
-        <th><strong>Qty</strong><br /></th>
-        <th>
-          <strong>Total Amount<br />
-            –{{ invoice.currency }}–
-          </strong>
-        </th>
-      </tr>
-    </thead>
-    <tbody class="text-top">
-      {{#createRows billItems}}
-      {{ description }}
-      {{ quantity }}
-      {{ unitPrice }}
-      {{/createRows}}
-      <tr>
-        <td colspan="3" class="text-center">
-          <strong>Invoice Total –USD– </strong>
-        </td>
-
-        <td class="text-right">
-          <strong>{{ total }}</strong>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-  {{ invoice.explanation }}
-  </div>
-  </div>
-</body>
-
+    {{> footer}}
+  </body>
 </html>
