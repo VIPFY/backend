@@ -76,10 +76,15 @@ export const types = `
   }
 
   input AppOptions {
-    type: String
-    emailobject: String
+    type: String!
+    emailobject: String!
     buttonobject: String
-    passwordobject: String
+    passwordobject: String!
+    button1object: String
+    button2object: String
+    errorobject: String
+    hideobject: String
+    waituntil: String
     predomain: String
     afterdomain: String
   }
