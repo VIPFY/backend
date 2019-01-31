@@ -192,7 +192,9 @@ export default {
         externalFilter = "AND boughtplan_data.key ->> 'external' = 'true'";
       }
 
-      const data = models.sequelize.query(
+      console.log("BOUGHTPLAN", company, appid);
+
+      const data = await models.sequelize.query(
         `SELECT boughtplan_data.*,
                 COALESCE(JSONB_AGG(to_jsonb(ld) - 'key' - 'options') FILTER (WHERE ld.id IS NOT NULL), '[]') as licences
         FROM boughtplan_data
@@ -209,8 +211,10 @@ export default {
         }
       );
 
+      console.log("Data", data);
       return data;
     } catch (err) {
+      console.log("ERROR", err);
       throw new NormalError({ message: err.message, internalData: { err } });
     }
   })
