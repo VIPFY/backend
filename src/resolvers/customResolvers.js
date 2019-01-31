@@ -11,7 +11,10 @@ export const implementDate = {
     return new Date(value); // value from the client
   },
   serialize(value) {
-    return value.getTime(); // value sent to the client
+    console.log("VALUE", value, typeof value);
+    //console.log("VALUE Time", value.getTime());
+    //return value.getTime(); // value sent to the client
+    return new Date(value).getTime();
   },
   parseLiteral(ast) {
     if (ast.kind === Kind.INT) {

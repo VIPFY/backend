@@ -348,26 +348,29 @@ export default {
 
           const createLicences = [];
 
-          const numLicences = mergedFeatures.users || 1;
+          const numLicences = mergedFeatures.users || 0;
 
-          for (let i = 0; i < numLicences; i++) {
-            createLicences.push(
-              models.Licence.create(
-                {
-                  unitid: null,
-                  boughtplanid: boughtPlan.id,
-                  agreed: false,
-                  disabled: false,
-                  key: {}
-                },
-                { transaction: ta }
-              )
-            );
+          console.log("BUY PLAN LICENCES", numLicences, mergedFeatures);
+          if (numLicences > 0) {
+            for (let i = 0; i < numLicences; i++) {
+              createLicences.push(
+                models.Licence.create(
+                  {
+                    unitid: null,
+                    boughtplanid: boughtPlan.id,
+                    agreed: false,
+                    disabled: false,
+                    key: {}
+                  },
+                  { transaction: ta }
+                )
+              );
+            }
+
+            const newLicences = await Promise.all(createLicences);
+            partnerLogs.licences = newLicences;
+            logger.debug(`created ${mergedFeatures.users} licences`);
           }
-
-          const newLicences = await Promise.all(createLicences);
-          partnerLogs.licences = newLicences;
-          logger.debug(`created ${mergedFeatures.users} licences`);
 
           /*if (!subscription) {
             subscription = await addSubscriptionItem(
@@ -380,10 +383,17 @@ export default {
             stripeplan = subscription.items.data[0].id;
           }*/
 
-          await sleep(500);
+          //await sleep(500);
 
-          console.log("CREATEACCOUNT START");
+          console.log(
+            "CREATEACCOUNT START",
+            plan,
+            planinputs,
+            mergedFeatures,
+            boughtPlan.id
+          );
 
+          console.log("CREATE ACCOUNT");
           const { dns } = await Services.createAccount(
             models,
             plan.appid,
