@@ -175,7 +175,7 @@ app.post("/download", async (req, res) => {
 });
 
 if (ENVIRONMENT != "testing") {
-  server.listen(PORT, () => {
+  server.listen(PORT, "0.0.0.0", () => {
     if (process.env.LOGGING) {
       console.log(`Server running on port ${PORT}`);
     }
