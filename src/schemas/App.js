@@ -54,7 +54,6 @@ export const types = `
     commission: String
     color: String
     avgstars: Float
-    color: String
     supportphone: String
     supportwebsite: String
     developerwebsite: String
@@ -63,7 +62,6 @@ export const types = `
     loginurl: String
     website: String
     external: Boolean
-    images: [String]
     disabled: Boolean
     needssubdomain: Boolean
     developer: ID
