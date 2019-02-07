@@ -48,12 +48,24 @@ const {
 
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
+const USE_XRAY =
+  !!process.env.USE_XRAY &&
+  process.env.USE_XRAY != "false" &&
+  process.env.USE_XRAY != "FALSE";
 
 const trustProxy = PROXY_LEVELS === undefined ? false : PROXY_LEVELS;
 let server;
 
 if (!SECRET) {
   throw new Error("No secret set!");
+}
+
+const AWSXRay = USE_XRAY ? require("aws-xray-sdk") : null;
+
+if (USE_XRAY) {
+  AWSXRay.setLogger(logger);
+  app.use(AWSXRay.express.openSegment("backend"));
+  AWSXRay.middleware.enableDynamicNaming("*.vipfy.store");
 }
 
 // We don't need certificates and https for development
@@ -72,7 +84,10 @@ if (USE_SSH) {
   server = http.createServer(app);
 }
 
-app.set("trust proxy", trustProxy);
+app.set(
+  "trust proxy",
+  "loopback, 172.31.0.0/20, 172.31.16.0/20, 172.31.32.0/20, 2a05:d014:e3c:9001::/64, 2a05:d014:e3c:9002::/64, 2a05:d014:e3c:9003::/64"
+);
 
 // TODO: we really want rate limiting with different limits per endpoint
 // but we have to build that ourselves, no such packet exists for graphql
@@ -97,8 +112,12 @@ app.set("trust proxy", trustProxy);
 
 // eslint-disable-next-line
 export const schema = makeExecutableSchema({ typeDefs, resolvers });
-// eslint-disable-next-line
-const seqContext = createContext(models.sequelize);
+
+if (USE_XRAY) {
+  const traceResolvers = require("@lifeomic/graphql-resolvers-xray-tracing");
+  traceResolvers(schema);
+}
+
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
   origin:
@@ -136,7 +155,8 @@ const gqlserver = new ApolloServer({
     token: TOKEN_SET ? TOKEN_DEVELOPMENT : req.headers["x-token"],
     logger,
     SECRET,
-    ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress
+    ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress,
+    segment: req.segment
   }),
   debug: ENVIRONMENT == "development",
   validationRules: [depthLimit(10)],
@@ -174,37 +194,42 @@ app.post("/download", async (req, res) => {
   }
 });
 
+SubscriptionServer.create(
+  {
+    execute,
+    subscribe,
+    schema,
+    onConnect: async ({ token }) => {
+      if (token && token != "null") {
+        try {
+          jwt.verify(token, SECRET);
+
+          return { models, token };
+        } catch (err) {
+          throw new AuthError({
+            message: err.message,
+            internalData: { error: "Subscription Error" }
+          });
+        }
+      }
+      return {};
+    }
+  },
+  {
+    server,
+    path: "/subscriptions"
+  }
+);
+
+if (USE_XRAY) {
+  // Required at the end of your routes / first in error handling routes
+  app.use(AWSXRay.express.closeSegment());
+}
+
 if (ENVIRONMENT != "testing") {
   server.listen(PORT, "0.0.0.0", () => {
     if (process.env.LOGGING) {
       console.log(`Server running on port ${PORT}`);
     }
-
-    new SubscriptionServer(
-      {
-        execute,
-        subscribe,
-        schema,
-        onConnect: async ({ token }) => {
-          if (token && token != "null") {
-            try {
-              jwt.verify(token, SECRET);
-
-              return { models, token };
-            } catch (err) {
-              throw new AuthError({
-                message: err.message,
-                internalData: { error: "Subscription Error" }
-              });
-            }
-          }
-          return {};
-        }
-      },
-      {
-        server,
-        path: "/subscriptions"
-      }
-    );
   });
 }
