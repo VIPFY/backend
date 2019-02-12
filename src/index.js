@@ -64,7 +64,6 @@ const AWSXRay = USE_XRAY ? require("aws-xray-sdk") : null;
 
 if (USE_XRAY) {
   AWSXRay.setLogger(logger);
-  app.use(AWSXRay.express.openSegment("backend"));
   AWSXRay.middleware.enableDynamicNaming("*.vipfy.store");
 }
 
@@ -139,6 +138,10 @@ const corsOptions = {
 app.use(authMiddleware);
 app.use(cors(corsOptions));
 app.use(loggingMiddleWare);
+
+if (USE_XRAY) {
+  app.use(AWSXRay.express.openSegment("backend"));
+}
 
 let engine = undefined;
 if (ENVIRONMENT == "production") {
