@@ -197,6 +197,11 @@ app.post("/download", async (req, res) => {
   }
 });
 
+if (USE_XRAY) {
+  // Required at the end of your routes / first in error handling routes
+  app.use(AWSXRay.express.closeSegment());
+}
+
 SubscriptionServer.create(
   {
     execute,
@@ -223,11 +228,6 @@ SubscriptionServer.create(
     path: "/subscriptions"
   }
 );
-
-if (USE_XRAY) {
-  // Required at the end of your routes / first in error handling routes
-  app.use(AWSXRay.express.closeSegment());
-}
 
 if (ENVIRONMENT != "testing") {
   server.listen(PORT, "0.0.0.0", () => {
