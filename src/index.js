@@ -158,7 +158,7 @@ const gqlserver = new ApolloServer({
     token: TOKEN_SET ? TOKEN_DEVELOPMENT : req.headers["x-token"],
     logger,
     SECRET,
-    ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress,
+    ip: req.ip,
     segment: req.segment
   }),
   debug: ENVIRONMENT == "development",
