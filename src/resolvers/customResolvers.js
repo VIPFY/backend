@@ -127,8 +127,14 @@ export const find = data => {
     searches[search] = async (parent, args, ctx, info) => {
       const { models } = ctx;
       try {
-        let datatype = data[search];
+        const loadMultiple = data[search][0] == "[";
+        const datatype = loadMultiple
+          ? data[search].substring(1, data[search].length - 1)
+          : data[search];
+
+        const key = datatype in specialKeys ? specialKeys[datatype] : "id";
         const value = parent[search];
+        const requiresPostprocessing = datatype in postprocessors;
 
         const fields = info.fieldNodes[0].selectionSet.selections
           .filter(
@@ -139,11 +145,7 @@ export const find = data => {
           )
           .map(selection => selection.name.value);
 
-        if (datatype[0] == "[") {
-          // return array of objects
-          datatype = datatype.substring(1, datatype.length - 1);
-          const key = datatype in specialKeys ? specialKeys[datatype] : "id";
-
+        if (loadMultiple) {
           let result;
 
           // load data if it's not trivial
@@ -154,8 +156,7 @@ export const find = data => {
             result = await dataloader.loadMany(value);
           }
 
-          // postprocess if nessesary
-          if (datatype in postprocessors) {
+          if (requiresPostprocessing) {
             return await Promise.all(
               result.map(v => postprocess(datatype, v, fields, models))
             );
@@ -163,10 +164,9 @@ export const find = data => {
             return result;
           }
         } else {
-          const key = datatype in specialKeys ? specialKeys[datatype] : "id";
-
           let result;
 
+          // load data if it's not trivial
           if (fields == [key]) {
             result = value === null ? null : { [key]: value };
           } else {
@@ -174,8 +174,7 @@ export const find = data => {
             result = await dataloader.load(value);
           }
 
-          // postprocess if nessesary
-          if (datatype in postprocessors) {
+          if (requiresPostprocessing) {
             return await postprocess(datatype, result, fields, models);
           } else {
             return result;
