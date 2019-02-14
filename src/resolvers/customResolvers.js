@@ -12,7 +12,6 @@ export const implementDate = {
     return new Date(value); // value from the client
   },
   serialize(value) {
-    console.log("VALUE", value, typeof value);
     //console.log("VALUE Time", value.getTime());
     //return value.getTime(); // value sent to the client
     return new Date(value).getTime();
@@ -116,7 +115,6 @@ const getDataLoader = (datatype, key, ctx) => {
         where: { [key]: { [ctx.models.Op.in]: keys } },
         raw: true
       });
-      console.log("dataLoader data", data);
       return keys.map(id => data.find(r => r[key] == id) || null);
     });
   }
@@ -131,28 +129,34 @@ export const find = data => {
       try {
         let datatype = data[search];
         const value = parent[search];
-        let key = datatype in specialKeys ? specialKeys[datatype] : "id";
 
-        // prettier-ignore
         const fields = info.fieldNodes[0].selectionSet.selections
-          .map(selection => (
-            selection.name && selection.name.value != "__typename"
-              ? selection.name.value
-              : null
-          ))
-          .filter(s => s != null);
-
-        logger.debug(`running resolver for ${datatype}`, {
-          fields,
-          value,
-          key
-        });
+          .filter(
+            selection =>
+              selection.name &&
+              selection.name.value &&
+              selection.name.value != "__typename"
+          )
+          .map(selection => selection.name.value);
 
         if (datatype[0] == "[") {
           // return array of objects
           datatype = datatype.substring(1, datatype.length - 1);
-          key = datatype in specialKeys ? specialKeys[datatype] : "id";
+          const key = datatype in specialKeys ? specialKeys[datatype] : "id";
           const dataloader = getDataLoader(datatype, key, ctx);
+
+          if (fields == [key]) {
+            return await Promise.all(
+              value.map(v =>
+                postprocess(
+                  datatype,
+                  v === null ? null : { [key]: v },
+                  fields,
+                  models
+                )
+              )
+            );
+          }
 
           return await Promise.all(
             (await dataloader.loadMany(value)).map(v =>
@@ -160,12 +164,15 @@ export const find = data => {
             )
           );
         } else {
+          const key = datatype in specialKeys ? specialKeys[datatype] : "id";
+
           if (fields == [key]) {
-            if (parent[search] === null) {
-              return null;
-            } else {
-              return { [key]: value };
-            }
+            return await postprocess(
+              datatype,
+              value === null ? null : { [key]: value },
+              fields,
+              models
+            );
           }
 
           const dataloader = getDataLoader(datatype, key, ctx);
