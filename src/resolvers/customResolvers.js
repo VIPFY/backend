@@ -143,45 +143,43 @@ export const find = data => {
           // return array of objects
           datatype = datatype.substring(1, datatype.length - 1);
           const key = datatype in specialKeys ? specialKeys[datatype] : "id";
-          const dataloader = getDataLoader(datatype, key, ctx);
 
+          let result;
+
+          // load data if it's not trivial
           if (fields == [key]) {
-            return await Promise.all(
-              value.map(v =>
-                postprocess(
-                  datatype,
-                  v === null ? null : { [key]: v },
-                  fields,
-                  models
-                )
-              )
-            );
+            result = value.map(v => (v === null ? null : { [key]: v }));
+          } else {
+            const dataloader = getDataLoader(datatype, key, ctx);
+            result = await dataloader.loadMany(value);
           }
 
-          return await Promise.all(
-            (await dataloader.loadMany(value)).map(v =>
-              postprocess(datatype, v, fields, models)
-            )
-          );
+          // postprocess if nessesary
+          if (datatype in postprocessors) {
+            return await Promise.all(
+              result.map(v => postprocess(datatype, v, fields, models))
+            );
+          } else {
+            return result;
+          }
         } else {
           const key = datatype in specialKeys ? specialKeys[datatype] : "id";
 
+          let result;
+
           if (fields == [key]) {
-            return await postprocess(
-              datatype,
-              value === null ? null : { [key]: value },
-              fields,
-              models
-            );
+            result = value === null ? null : { [key]: value };
+          } else {
+            const dataloader = getDataLoader(datatype, key, ctx);
+            result = await dataloader.load(value);
           }
 
-          const dataloader = getDataLoader(datatype, key, ctx);
-          return await postprocess(
-            datatype,
-            await dataloader.load(value),
-            fields,
-            models
-          );
+          // postprocess if nessesary
+          if (datatype in postprocessors) {
+            return await postprocess(datatype, result, fields, models);
+          } else {
+            return result;
+          }
         }
       } catch (err) {
         console.error(err);
