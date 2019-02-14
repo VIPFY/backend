@@ -1,4 +1,5 @@
 import moment from "moment";
+import DataLoader from "dataloader";
 import { NormalError } from "../errors";
 import logger from "../loggers";
 import { EMAIL_VERIFICATION_TIME } from "../constants";
@@ -105,10 +106,28 @@ const postprocess = async (datatype, value, fields, models) => {
   }
 };
 
+const getDataLoader = (datatype, key, ctx) => {
+  if (!("dataloaders" in ctx)) {
+    ctx.dataloaders = {};
+  }
+  if (!ctx.dataloaders[datatype]) {
+    ctx.dataloaders[datatype] = new DataLoader(async keys => {
+      const data = await ctx.models[datatype].findAll({
+        where: { [key]: { [ctx.models.Op.in]: keys } },
+        raw: true
+      });
+      console.log("dataLoader data", data);
+      return keys.map(id => data.find(r => r[key] == id) || null);
+    });
+  }
+  return ctx.dataloaders[datatype];
+};
+
 export const find = data => {
   const searches = {};
   Object.keys(data).map(search => {
-    searches[search] = async (parent, args, { models }, info) => {
+    searches[search] = async (parent, args, ctx, info) => {
+      const { models } = ctx;
       try {
         let datatype = data[search];
         const value = parent[search];
@@ -133,11 +152,12 @@ export const find = data => {
           // return array of objects
           datatype = datatype.substring(1, datatype.length - 1);
           key = datatype in specialKeys ? specialKeys[datatype] : "id";
+          const dataloader = getDataLoader(datatype, key, ctx);
+
           return await Promise.all(
-            (await models[datatype].findAll({
-              where: { [key]: { [models.Op.in]: value } },
-              raw: true
-            })).map(v => postprocess(datatype, v, fields, models))
+            (await dataloader.loadMany(value)).map(v =>
+              postprocess(datatype, v, fields, models)
+            )
           );
         } else {
           if (fields == [key]) {
@@ -147,12 +167,11 @@ export const find = data => {
               return { [key]: value };
             }
           }
+
+          const dataloader = getDataLoader(datatype, key, ctx);
           return await postprocess(
             datatype,
-            await models[datatype].findOne({
-              where: { [key]: value },
-              raw: true
-            }),
+            await dataloader.load(value),
             fields,
             models
           );
