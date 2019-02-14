@@ -257,9 +257,8 @@ export default {
   fetchUnitApps: requiresRights(["view-licences"]).createResolver(
     async (parent, { departmentid }, { models }) => {
       try {
-        const userApps = await models.sequelize
-          .query(
-            `SELECT DISTINCT
+        const userApps = await models.sequelize.query(
+          `SELECT DISTINCT
               bp.id || '-' || :departmentid AS id,
               bp.usedby,
               bp.id                         AS boughtplan,
@@ -287,9 +286,11 @@ export default {
                               WHERE endtime IS NULL OR endtime > now()
                               GROUP BY boughtplanid) l ON (l.boughtplanid = bp.id)
             WHERE not a.disabled;`,
-            { replacements: { departmentid } }
-          )
-          .spread(res => res);
+          {
+            replacements: { departmentid },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
 
         return userApps;
       } catch (err) {
@@ -301,9 +302,8 @@ export default {
   fetchUnitAppsSimpleStats: requiresRights(["view-licences"]).createResolver(
     async (parent, { departmentid }, { models }) => {
       try {
-        const userApps = await models.sequelize
-          .query(
-            `SELECT DISTINCT
+        const userApps = await models.sequelize.query(
+          `SELECT DISTINCT
               bp.id || '-' || :departmentid AS id,
               bp.usedby,
               bp.id                         AS boughtplan,
@@ -327,9 +327,11 @@ export default {
                               WHERE date_trunc('month', now()) = date_trunc('month', day)
                               GROUP BY boughtplanid)
                               l ON (l.boughtplanid = bp.id);`,
-            { replacements: { departmentid } }
-          )
-          .spread(res => res);
+          {
+            replacements: { departmentid },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
 
         return userApps;
       } catch (err) {
