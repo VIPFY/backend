@@ -5,42 +5,47 @@ import Handlebars from "handlebars";
 import Puppeteer from "puppeteer";
 
 const ReadFile = Util.promisify(Fs.readFile);
+/* eslint-disable indent */
+Handlebars.registerHelper("createRows", (items, startPos) => {
+  if (items.length == 0) {
+    return "";
+  }
 
-Handlebars.registerHelper("createRows", items => {
-  let out = "";
-
-  items.forEach((item, key) => {
-    key++;
-    out += `
-    <tr class="${key % 5 == 0 ? "page" : ""}">
-      <th rowspan="3">Pos. ${key}</th>
-      <th>${item.app}</th>
+  return items
+    .map(item => {
+      startPos++;
+      return `
+    <tr>
+      <th rowspan="${item.description.length + 1}">Pos. ${startPos}</th>
+      <th>${item.service}</th>
       <th>ID #${item.id}</th>
-      <th rowspan="3">${item.unitPrice} ${item.currency}</th>
+      <th rowspan="${item.description.length + 1}">${
+        item.unitPrice ? item.unitPrice : `-${item.discount}`
+      } ${item.currency}</th>
     </tr>
-    <tr>
-      <td>Team Blue</td>
-      <td>10 Licenses</td>
-    </tr>
-    <tr>
-      <td>Team Yellow</td>
-      <td>12 Licenses</td>
-    </tr>
+    ${item.description
+      .map(
+        desc => `
+        <tr>
+          <td>${desc.name}</td>
+          <td>${desc.data} Licenses</td>
+        </tr>
+      `
+      )
+      .reduce((acc, cV) => acc.concat(cV))}
     <tr><td class="spacer"/></tr>
     `;
-  });
-
-  return out;
+    })
+    .reduce((acc, cV) => acc.concat(cV));
 });
 
 export default async config => {
   try {
     const headerPath = Path.resolve(`${__dirname}/../templates/header.html`);
-    const templatePath = Path.resolve(config.path);
     const footerPath = Path.resolve(`${__dirname}/../templates/footer.html`);
 
     const header = await ReadFile(headerPath, "utf8");
-    const content = await ReadFile(templatePath, "utf8");
+    const content = await ReadFile(config.path, "utf8");
     const footer = await ReadFile(footerPath, "utf8");
 
     // compile and render the template with handlebars
@@ -52,12 +57,12 @@ export default async config => {
     const browser = await Puppeteer.launch();
     const page = await browser.newPage();
 
-    Fs.writeFile(config.pathHTML, html, err => {
+    await Fs.writeFile(config.htmlPath, html, err => {
       if (err) throw err;
       console.log("Page saved!");
     });
 
-    await page.goto(`file://${config.pathHTML}`, {
+    await page.goto(`file://${config.htmlPath}`, {
       waitUntil: "domcontentloaded"
     });
 
@@ -71,6 +76,10 @@ export default async config => {
         left: "25mm"
       }
     });
+
+    Fs.unlinkSync(config.htmlPath);
+
+    return true;
   } catch (error) {
     console.log(error);
     throw new Error("Cannot create invoice HTML template.");

@@ -2,8 +2,7 @@ export const types = `
   type Bill {
     id: ID!
     billtime: String!
-    pdflink: String!
-    invoicelink: String!
+    billname: String!
     paytime: String
     stornotime: String
     unitid: Unit!
@@ -14,12 +13,11 @@ export const types = `
 
   type BillPosition {
     id: ID!
-    positiontext: String
-    price: Float
-    currency: String!
     billid: Bill!
-    planid: Plan!
-    vendor: Unit!
+    positiondata: JSON
+    price: Float!
+    currency: String!
+    boughtplanids: [Int]!
   }
 
   input BillInput {
@@ -202,7 +200,7 @@ export const mutations = `
   buyVipfyPlan(planid: ID!): Response!
 
   # This function will be used by a cronjob which runs once a month
-  createBill(monthly: Boolean): Boolean!
+  createInvoice(monthly: Boolean): Boolean!
   addBillPos(bill: BillInput!, billid: ID): Response!
   downloadBill(billid: ID!): String!
   

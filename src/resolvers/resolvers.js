@@ -78,7 +78,7 @@ export default {
   AppDetails: find(developerAndSupport),
   AppUsage: find({ app: "App" }),
   Bill: find(unit),
-  BillPosition: find({ vendor: "Unit", billid: "Bill", planid: "Plan" }),
+  BillPosition: find({ billid: "Bill" }),
   BoughtPlan: find({
     buyer: "Unit",
     usedby: "Unit",

@@ -12,20 +12,14 @@
   </head>
 
   <body>
-    {{> header}} {{ buyer.taxId }}
+    {{> header}}
     <table class="content">
       <tbody class="invoice-body">
-        {{#createRows billItems}}
-        {{
-          app
-        }}
-        {{
-          id
-        }}
-        {{
-          unitPrice
-        }}
+        {{#createRows billItems.positions 0}}
         {{/createRows}}
+        {{#createRows billItems.credits billItems.positions.length}}
+        {{/createRows}}
+
         <tr class="total">
           <td colspan="3">Total</td>
 

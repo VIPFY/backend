@@ -8,7 +8,8 @@ import {
   createNotification,
   checkPlanValidity,
   checkPaymentData,
-  formatFilename
+  formatFilename,
+  groupBy
 } from "../../helpers/functions";
 import { calculatePlanPrice } from "../../helpers/apps";
 import {
@@ -26,6 +27,8 @@ import {
 import { BillingError, NormalError } from "../../errors";
 import logger from "../../loggers";
 import createInvoice from "../../helpers/invoiceGenerator";
+import { uploadInvoice, getInvoiceLink } from "../../services/aws";
+
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
 export default {
@@ -369,7 +372,7 @@ export default {
           partnerLogs.licences = newLicences;
           logger.debug(`created ${mergedFeatures.users} licences`);
 
-          /*if (!subscription) {
+          /* if (!subscription) {
             subscription = await addSubscriptionItem(
               department.payingoptions.stripe.subscription,
               plan.stripedata.id
@@ -378,7 +381,7 @@ export default {
             stripeplan = subscription.id;
           } else {
             stripeplan = subscription.items.data[0].id;
-          }*/
+          } */
 
           await sleep(500);
 
@@ -404,10 +407,10 @@ export default {
           //   vatPercentage = department.legalinformation.vatPercentage;
           // }
 
-          /*await models.BoughtPlan.update(
+          /* await models.BoughtPlan.update(
             { stripeplan },
             { where: { id: boughtPlan.id }, transaction: ta }
-          );*/
+          ); */
 
           const notification = createNotification(
             {
@@ -450,14 +453,14 @@ export default {
           changed: []
         });
 
-        /*if (subscription && stripeplan) {
+        /* if (subscription && stripeplan) {
           const kind = stripeplan.split("_");
           if (kind[0] == "sub") {
             await abortSubscription(stripeplan);
           } else {
             await cancelPurchase(stripeplan, subscription.id);
           }
-        }*/
+        } */
 
         logger.error(err);
 
@@ -806,7 +809,7 @@ export default {
   ),
 
   // TODO: Add logging when changed
-  createBill: requiresAuth.createResolver(
+  createInvoice: requiresAuth.createResolver(
     async (parent, { monthly }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -814,48 +817,36 @@ export default {
             user: { company: unitid }
           } = decode(token);
 
-          const bill = await models.Bill.create(
+          const billData = await models.sequelize.query(
+            `
+          SELECT bd.id,
+                 bd.buytime,
+                 bd.totalprice as "unitPrice",
+                 bd.totalfeatures,
+                 bd.alias,
+                 ad.name as service,
+                 pd.id as planid,
+                 pd.currency,
+                 json_build_object('name', bd.alias,'data', bd.totalfeatures->>'users') as description
+          FROM boughtplan_data bd
+            INNER JOIN plan_data pd ON bd.planid = pd.id
+            INNER JOIN app_data ad ON pd.appid = ad.id
+          WHERE (bd.endtime IS NULL OR bd.endtime > DATE_TRUNC('month', NOW()))
+            AND bd.disabled = FALSE
+            AND bd.payer = :company
+            AND (pd.options ->> 'external' IS NULL OR pd.options ->> 'external' = 'FALSE')
+          GROUP BY bd.id, ad.name, pd.id;
+        `,
             {
-              unitid,
-              stripesubscriptionid: "testbill"
-            },
-            { transaction: ta }
+              replacements: { company: unitid },
+              type: models.sequelize.QueryTypes.SELECT
+            }
           );
 
-          const billItems = [
-            {
-              app: "Wunderlist",
-              id: 545643435,
-              unitPrice: 19.99,
-              currency: "$"
-            },
-            {
-              app: "Pipedrive",
-              id: 5456323435,
-              unitPrice: 5.99,
-              currency: "$"
-            },
-            {
-              app: "Google",
-              id: 5456497835,
-              unitPrice: 9.99,
-              currency: "$"
-            },
-            {
-              app: "Weebly",
-              id: 5451287835,
-              unitPrice: 7.99,
-              currency: "$"
-            },
-            {
-              app: "Nils",
-              id: 5454287835,
-              unitPrice: 117.99,
-              currency: "$"
-            }
-          ];
-
-          const total = billItems.reduce((acc, cV) => acc + cV.unitPrice, 0);
+          const groupByCurrency = groupBy(
+            billData,
+            billPos => billPos.currency
+          );
 
           const tags = { [models.Op.contains]: ["billing"] };
 
@@ -883,6 +874,7 @@ export default {
             raw: true
           });
 
+          // eslint-disable-next-line
           let [address, emails, phone, company] = await Promise.all([
             p1,
             p2,
@@ -894,16 +886,16 @@ export default {
             // This should throw an error later
             address = {
               address: {
-                street: "Null Avenue 0",
+                street: "Not set yet",
                 zip: "00000",
-                city: "Null Island"
+                city: "Not set"
               },
-              country: "Liberia"
+              country: "Not set"
             };
           }
 
           if (!phone) {
-            phone = "00000000000000";
+            phone = "+00000000000000";
           }
 
           const { email } = uniq(emails)[0];
@@ -919,23 +911,161 @@ export default {
             .format("YYYY-MM-DD");
 
           const year = moment().format("YYYY");
-          const number = `V${monthly ? "M" : "S"}-${year}-${bill.id}-01`;
-          const billName = formatFilename(bill.id);
 
-          await createInvoice({
-            path: `${__dirname}/../../templates/invoice.html`,
-            pathPdf: `${__dirname}/../../files/${billName}.pdf`,
-            pathHTML: `${__dirname}/../../helpers/invoice_design.html`,
-            data: {
-              total,
-              currency: "$",
+          const billObjects = Object.values(groupByCurrency);
+          for await (const pos of billObjects) {
+            const billItems = { positions: [], credits: [] };
+
+            const total = pos
+              .reduce((acc, cV) => acc + parseFloat(cV.unitPrice), 0)
+              .toFixed(2);
+
+            const createBill = await models.Bill.create(
+              {
+                unitid,
+                amount: total,
+                currency: pos[0].currency
+              },
+              { transaction: ta }
+            );
+
+            const bill = createBill.get();
+
+            const groupData = groupBy(pos, billPos => billPos.service);
+            for await (const group of Object.values(groupData)) {
+              const billPos = {
+                service: group[0].service,
+                currency: group[0].currency,
+                description: [],
+                boughtPlanIds: []
+              };
+
+              let unitPrice = 0.0;
+              for (const position of group) {
+                billPos.description.push(position.description);
+                billPos.boughtPlanIds.push(position.id);
+                unitPrice += parseFloat(position.unitPrice);
+              }
+
+              billPos.unitPrice = unitPrice.toFixed(2);
+              billItems.positions.push(billPos);
+              const createBillPos = await models.BillPosition.create(
+                {
+                  billid: bill.id,
+                  price: billPos.unitPrice,
+                  positiondata: billPos.description,
+                  currency: billPos.currency,
+                  boughtPlanIds: billPos.boughtPlanIds
+                },
+                { transaction: ta }
+              );
+
+              const billPosData = createBillPos.get();
+              billPos.id = billPosData.id;
+            }
+
+            let totalCredits = 0;
+
+            for await (const position of billItems.positions) {
+              if (position.unitPrice == 0) {
+                continue;
+              }
+
+              position.discountedPrice = parseFloat(position.unitPrice);
+
+              const credits = await models.sequelize.query(
+                `
+              SELECT cuhv.*, array_agg(DISTINCT bpd.id) as spendablefor
+              FROM creditsuserhas_view cuhv
+                LEFT JOIN creditsspendableforplan_data csfpd ON cuhv.creditid = csfpd.creditid
+                RIGHT JOIN boughtplan_data bpd ON csfpd.planid = bpd.planid
+              WHERE cuhv.unitid = :company
+                AND bpd.payer = :company
+              GROUP BY cuhv.amountremaining, cuhv.currency, cuhv.source, cuhv.unitid, cuhv.id, cuhv.expiresat, cuhv.createdat,
+                       cuhv.creditid;
+              `,
+                {
+                  replacements: { company: unitid },
+                  type: models.sequelize.QueryTypes.SELECT,
+                  transaction: ta
+                }
+              );
+
+              for await (const credit of credits) {
+                if (credit.amountremaining <= 0) {
+                  continue;
+                }
+
+                if (
+                  position.boughtPlanIds.some(bpId =>
+                    credit.spendablefor.includes(bpId)
+                  )
+                ) {
+                  let amount = position.discountedPrice;
+                  if (credit.amountremaining <= amount) {
+                    amount = credit.amountremaining;
+                  }
+
+                  totalCredits += parseFloat(amount);
+
+                  const discountItem = {
+                    ...position,
+                    description: [
+                      { name: Object.keys(credit.source)[0], data: 1 }
+                    ],
+                    discount: amount
+                  };
+
+                  const createCreditPos = await models.BillPosition.create(
+                    {
+                      billid: bill.id,
+                      price: `-${discountItem.discount}`,
+                      positiondata: discountItem.description,
+                      currency: discountItem.currency,
+                      boughtPlanIds: discountItem.boughtPlanIds
+                    },
+                    { transaction: ta }
+                  );
+
+                  const creditPosData = createCreditPos.get();
+                  discountItem.id = creditPosData.id;
+                  delete discountItem.unitPrice;
+                  delete discountItem.discountedPrice;
+
+                  await models.CreditsSpentFor.create(
+                    {
+                      amount,
+                      creditid: credit.creditid,
+                      billpositionid: creditPosData.id,
+                      billid: bill.id
+                    },
+                    { transaction: ta }
+                  );
+
+                  billItems.credits.push(discountItem);
+                }
+              }
+            }
+
+            const totalCheck = billItems.positions
+              .reduce((acc, cV) => acc + parseFloat(cV.unitPrice), 0)
+              .toFixed(2);
+
+            if (totalCheck != total) {
+              throw new Error("Prices don't match!");
+            }
+
+            const number = `V${monthly ? "M" : "S"}-${year}-${bill.id}-01`;
+
+            const data = {
+              total: total - totalCredits,
+              currency: pos[0].currency,
               invoice: {
                 number,
                 date,
                 dueDate,
-                explanation: `Bitte überweisen Sie den Betrag bis zum ${dueDate} auf das oben genannte Konto. Verwenden Sie
-                  Ihre Rechnungsnummer als Verwendungszweck bei der Überweisung.`,
-                currency: "USD"
+                explanation: `Der Betrag wird bis zum ${dueDate} von ihrer Kreditkarte eingezogen.
+              Bitte sorgen Sie für eine ausreichende Deckung der Karte.`
               },
               billItems,
               seller: {
@@ -962,19 +1092,35 @@ export default {
               },
               buyer: {
                 company: company.name,
-                taxId:
-                  company.legalinformation && company.legalinformation.vatId
-                    ? company.legalinformation.vatId
-                    : "",
+                // taxId:
+                //   company.legalinformation && company.legalinformation.vatId
+                //     ? company.legalinformation.vatId
+                //     : "",
                 address: { street, zip, city, country },
                 phone,
                 email
               }
-            }
-          });
+            };
 
+            const pathPdf = `${__dirname}/../../files/${number}.pdf`;
+
+            await createInvoice({
+              data,
+              path: `${__dirname}/../../templates/invoice.html`,
+              pathPdf,
+              htmlPath: `${__dirname}/../../templates/${number}.html`
+            });
+
+            await uploadInvoice(pathPdf, number);
+
+            await models.Bill.update(
+              { billname: number, invoicedata: data },
+              { where: { id: bill.id }, transaction: ta }
+            );
+          }
           return true;
         } catch (err) {
+          console.log(err);
           throw new BillingError(err.message);
         }
       })
@@ -1152,5 +1298,27 @@ export default {
           });
         }
       })
+  ),
+
+  downloadBill: requiresAuth.createResolver(
+    async (parent, { billid }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const { billname } = await models.Bill.findOne({
+          where: { id: billid, unitid: company },
+          raw: true
+        });
+
+        const time = moment();
+
+        const invoiceLink = await getInvoiceLink(billname, time);
+        return invoiceLink;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };
