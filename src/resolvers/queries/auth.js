@@ -14,8 +14,7 @@ export default {
         } = decode(token);
 
         const me = await models.User.findById(unitid);
-        let user = await parentAdminCheck(me);
-        //user.country = "DE";
+        const user = await parentAdminCheck(me);
 
         return user;
       } catch (err) {
