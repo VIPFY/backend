@@ -22,7 +22,7 @@ export const uploadInvoice = async (path, name) => {
     };
 
     await s3.upload(params).promise();
-    // fs.unlinkSync(path);
+    fs.unlinkSync(path);
 
     return true;
   } catch (err) {
