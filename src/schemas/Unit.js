@@ -30,6 +30,7 @@ export const types = `
     country: String
     config: JSON
     tutorialprogress: JSON
+    isonline: Boolean
   }
 
   input NameInput {
@@ -64,6 +65,7 @@ export const types = `
     profilepicture: String
     isadmin: Boolean!
     companyban: Boolean
+    isonline: Boolean
   }
 
   type SignUpConfirmResponse {

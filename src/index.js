@@ -48,11 +48,23 @@ const {
 
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
+const USE_XRAY =
+  !!process.env.USE_XRAY &&
+  process.env.USE_XRAY != "false" &&
+  process.env.USE_XRAY != "FALSE";
+
 const trustProxy = PROXY_LEVELS === undefined ? false : PROXY_LEVELS;
 let server;
 
 if (!SECRET) {
   throw new Error("No secret set!");
+}
+
+const AWSXRay = USE_XRAY ? require("aws-xray-sdk") : null;
+
+if (USE_XRAY) {
+  AWSXRay.setLogger(logger);
+  AWSXRay.middleware.enableDynamicNaming("*.vipfy.store");
 }
 
 // We don't need certificates and https for development
@@ -71,33 +83,40 @@ if (USE_SSH) {
   server = http.createServer(app);
 }
 
-app.set("trust proxy", trustProxy);
+app.set(
+  "trust proxy",
+  "loopback, 172.31.0.0/20, 172.31.16.0/20, 172.31.32.0/20, 2a05:d014:e3c:9001::/64, 2a05:d014:e3c:9002::/64, 2a05:d014:e3c:9003::/64"
+);
 
 // TODO: we really want rate limiting with different limits per endpoint
 // but we have to build that ourselves, no such packet exists for graphql
-const limiter = RateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 100, // limit each IP to 100 requests per windowMs
-  store: new RedisStore({
-    expiry: 60, // set to equivalent of windowMs, but in seconds
-    client: new Redis({
-      port: 5379,
-      host: "a.redis.vipfy.store",
-      password: "FrxPxFCN96Cu6CCtt98WMrsn",
-      db: 0
-    })
-  })
-});
+// const limiter = RateLimit({
+//   windowMs: 60 * 1000, // 1 minute
+//   max: 100, // limit each IP to 100 requests per windowMs
+//   store: new RedisStore({
+//     expiry: 60, // set to equivalent of windowMs, but in seconds
+//     client: new Redis({
+//       port: 5379,
+//       host: "a.redis.vipfy.store",
+//       password: "FrxPxFCN96Cu6CCtt98WMrsn",
+//       db: 0
+//     })
+//   })
+// });
 
-console.log(limiter);
+// console.log(limiter);
 
-// apply rate limit to all requests
-app.use(limiter);
+// // apply rate limit to all requests
+// app.use(limiter);
 
 // eslint-disable-next-line
 export const schema = makeExecutableSchema({ typeDefs, resolvers });
-// eslint-disable-next-line
-const seqContext = createContext(models.sequelize);
+
+if (USE_XRAY) {
+  const traceResolvers = require("@lifeomic/graphql-resolvers-xray-tracing");
+  traceResolvers(schema);
+}
+
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
   origin:
@@ -120,6 +139,10 @@ app.use(authMiddleware);
 app.use(cors(corsOptions));
 app.use(loggingMiddleWare);
 
+if (USE_XRAY) {
+  app.use(AWSXRay.express.openSegment("backend"));
+}
+
 let engine = undefined;
 if (ENVIRONMENT == "production") {
   engine = {
@@ -135,7 +158,8 @@ const gqlserver = new ApolloServer({
     token: TOKEN_SET ? TOKEN_DEVELOPMENT : req.headers["x-token"],
     logger,
     SECRET,
-    ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress
+    ip: req.ip,
+    segment: req.segment
   }),
   debug: ENVIRONMENT == "development",
   validationRules: [depthLimit(10)],
@@ -173,37 +197,42 @@ app.post("/download", async (req, res) => {
   }
 });
 
+if (USE_XRAY) {
+  // Required at the end of your routes / first in error handling routes
+  app.use(AWSXRay.express.closeSegment());
+}
+
+SubscriptionServer.create(
+  {
+    execute,
+    subscribe,
+    schema,
+    onConnect: async ({ token }) => {
+      if (token && token != "null") {
+        try {
+          jwt.verify(token, SECRET);
+
+          return { models, token };
+        } catch (err) {
+          throw new AuthError({
+            message: err.message,
+            internalData: { error: "Subscription Error" }
+          });
+        }
+      }
+      return {};
+    }
+  },
+  {
+    server,
+    path: "/subscriptions"
+  }
+);
+
 if (ENVIRONMENT != "testing") {
-  server.listen(PORT, () => {
+  server.listen(PORT, "0.0.0.0", () => {
     if (process.env.LOGGING) {
       console.log(`Server running on port ${PORT}`);
     }
-
-    new SubscriptionServer(
-      {
-        execute,
-        subscribe,
-        schema,
-        onConnect: async ({ token }) => {
-          if (token && token != "null") {
-            try {
-              jwt.verify(token, SECRET);
-
-              return { models, token };
-            } catch (err) {
-              throw new AuthError({
-                message: err.message,
-                internalData: { error: "Subscription Error" }
-              });
-            }
-          }
-          return {};
-        }
-      },
-      {
-        server,
-        path: "/subscriptions"
-      }
-    );
   });
 }

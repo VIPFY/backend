@@ -1,4 +1,5 @@
 import moment from "moment";
+import DataLoader from "dataloader";
 import { NormalError } from "../errors";
 import logger from "../loggers";
 import { EMAIL_VERIFICATION_TIME } from "../constants";
@@ -11,7 +12,9 @@ export const implementDate = {
     return new Date(value); // value from the client
   },
   serialize(value) {
-    return value.getTime(); // value sent to the client
+    //console.log("VALUE Time", value.getTime());
+    //return value.getTime(); // value sent to the client
+    return new Date(value).getTime();
   },
   parseLiteral(ast) {
     if (ast.kind === Kind.INT) {
@@ -102,57 +105,86 @@ const postprocess = async (datatype, value, fields, models) => {
   }
 };
 
+const getDataLoader = (datatype, key, ctx) => {
+  if (!("dataloaders" in ctx)) {
+    ctx.dataloaders = {};
+  }
+  if (!ctx.dataloaders[datatype]) {
+    ctx.dataloaders[datatype] = new DataLoader(async keys => {
+      const query = `
+        SELECT json_agg(r.*) AS data FROM (
+          SELECT * FROM "${ctx.models[datatype].getTableName()}"
+            WHERE "${key}" IN (:keys)
+        ) r`;
+      const { data } = await ctx.models.sequelize.query(query, {
+        replacements: { keys },
+        type: ctx.models.sequelize.QueryTypes.SELECT,
+        plain: true
+      });
+      return keys.map(id => data.find(r => r[key] == id) || null);
+    });
+  }
+  return ctx.dataloaders[datatype];
+};
+
 export const find = data => {
   const searches = {};
   Object.keys(data).map(search => {
-    searches[search] = async (parent, args, { models }, info) => {
+    searches[search] = async (parent, args, ctx, info) => {
+      const { models } = ctx;
       try {
-        let datatype = data[search];
+        const loadMultiple = data[search][0] == "[";
+        const datatype = loadMultiple
+          ? data[search].substring(1, data[search].length - 1)
+          : data[search];
+
+        const key = datatype in specialKeys ? specialKeys[datatype] : "id";
         const value = parent[search];
-        let key = datatype in specialKeys ? specialKeys[datatype] : "id";
+        const requiresPostprocessing = datatype in postprocessors;
 
-        // prettier-ignore
         const fields = info.fieldNodes[0].selectionSet.selections
-          .map(selection => (
-            selection.name && selection.name.value != "__typename"
-              ? selection.name.value
-              : null
-          ))
-          .filter(s => s != null);
+          .filter(
+            selection =>
+              selection.name &&
+              selection.name.value &&
+              selection.name.value != "__typename"
+          )
+          .map(selection => selection.name.value);
 
-        logger.debug(`running resolver for ${datatype}`, {
-          fields,
-          value,
-          key
-        });
+        if (loadMultiple) {
+          let result;
 
-        if (datatype[0] == "[") {
-          // return array of objects
-          datatype = datatype.substring(1, datatype.length - 1);
-          key = datatype in specialKeys ? specialKeys[datatype] : "id";
-          return await Promise.all(
-            (await models[datatype].findAll({
-              where: { [key]: { [models.Op.in]: value } },
-              raw: true
-            })).map(v => postprocess(datatype, v, fields, models))
-          );
-        } else {
+          // load data if it's not trivial
           if (fields == [key]) {
-            if (parent[search] === null) {
-              return null;
-            } else {
-              return { [key]: value };
-            }
+            result = value.map(v => (v === null ? null : { [key]: v }));
+          } else {
+            const dataloader = getDataLoader(datatype, key, ctx);
+            result = await dataloader.loadMany(value);
           }
-          return await postprocess(
-            datatype,
-            await models[datatype].findOne({
-              where: { [key]: value },
-              raw: true
-            }),
-            fields,
-            models
-          );
+
+          if (requiresPostprocessing) {
+            return await Promise.all(
+              result.map(v => postprocess(datatype, v, fields, models))
+            );
+          } else {
+            return result;
+          }
+        } else {
+          let result;
+
+          // load data if it's not trivial
+          if (fields == [key]) {
+            result = value === null ? null : { [key]: value };
+          } else {
+            const dataloader = getDataLoader(datatype, key, ctx);
+            result = await dataloader.load(value);
+          }
+
+          if (requiresPostprocessing) {
+            return await postprocess(datatype, result, fields, models);
+          } else {
+            return result;
+          }
         }
       } catch (err) {
         console.error(err);
