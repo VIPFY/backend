@@ -111,9 +111,15 @@ const getDataLoader = (datatype, key, ctx) => {
   }
   if (!ctx.dataloaders[datatype]) {
     ctx.dataloaders[datatype] = new DataLoader(async keys => {
-      const data = await ctx.models[datatype].findAll({
-        where: { [key]: { [ctx.models.Op.in]: keys } },
-        raw: true
+      const query = `
+        SELECT json_agg(r.*) AS data FROM (
+          SELECT * FROM "${ctx.models[datatype].getTableName()}"
+            WHERE "${key}" IN (:keys)
+        ) r`;
+      const { data } = await ctx.models.sequelize.query(query, {
+        replacements: { keys },
+        type: ctx.models.sequelize.QueryTypes.SELECT,
+        plain: true
       });
       return keys.map(id => data.find(r => r[key] == id) || null);
     });
