@@ -200,8 +200,8 @@ export const mutations = `
   buyVipfyPlan(planid: ID!): Response!
 
   # This function will be used by a cronjob which runs once a month
-  createInvoice(monthly: Boolean): Boolean!
-  addBillPos(bill: BillInput!, billid: ID): Response!
+  createMonthlyInvoice: Boolean!
+  createInvoice(unitid: ID!): Boolean!
   downloadBill(billid: ID!): String!
   
   removeBillingEmail(email: String!): Response!
