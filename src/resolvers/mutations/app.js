@@ -262,6 +262,8 @@ export default {
           user: { unitid: giver }
         } = decode(token);
 
+        console.log("DistributeLicence");
+
         try {
           const p1 = models.Licence.findOne({
             where: {
@@ -881,31 +883,6 @@ export default {
 
             promises.push(p3);
           }
-
-          const { config } = admin;
-          if (config && config.vertical) {
-            config.vertical.push(licence.id);
-          } else {
-            config.vertical = [licence.id];
-          }
-
-          if (config && config.horizontal) {
-            config.horizontal.push(licence.id);
-          } else {
-            config.horizontal = [licence.id];
-          }
-
-          const p4 = models.Human.update(
-            {
-              config: {
-                ...config,
-                horizontal: config.horizontal,
-                vertical: config.vertical
-              }
-            },
-            { where: { unitid } }
-          );
-          promises.push(p4);
 
           await Promise.all(promises);
 

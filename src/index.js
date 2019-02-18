@@ -48,6 +48,7 @@ const {
 
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
+
 const trustProxy = PROXY_LEVELS === undefined ? false : PROXY_LEVELS;
 let server;
 
@@ -74,26 +75,24 @@ if (USE_SSH) {
 app.set("trust proxy", trustProxy);
 // TODO: we really want rate limiting with different limits per endpoint
 // but we have to build that ourselves, no such packet exists for graphql
-if (!process.env.ENVIRONMENT == "development") {
-  const limiter = RateLimit({
-    windowMs: 60 * 1000, // 1 minute
-    max: 100, // limit each IP to 100 requests per windowMs
-    store: new RedisStore({
-      expiry: 60, // set to equivalent of windowMs, but in seconds
-      client: new Redis({
-        port: 5379,
-        host: "a.redis.vipfy.store",
-        password: "FrxPxFCN96Cu6CCtt98WMrsn",
-        db: 0
-      })
-    })
-  });
+// const limiter = RateLimit({
+//   windowMs: 60 * 1000, // 1 minute
+//   max: 100, // limit each IP to 100 requests per windowMs
+//   store: new RedisStore({
+//     expiry: 60, // set to equivalent of windowMs, but in seconds
+//     client: new Redis({
+//       port: 5379,
+//       host: "a.redis.vipfy.store",
+//       password: "FrxPxFCN96Cu6CCtt98WMrsn",
+//       db: 0
+//     })
+//   })
+// });
 
-  console.log(limiter);
+// console.log(limiter);
 
-  // apply rate limit to all requests
-  app.use(limiter);
-}
+// // apply rate limit to all requests
+// app.use(limiter);
 
 // eslint-disable-next-line
 export const schema = makeExecutableSchema({ typeDefs, resolvers });
@@ -175,7 +174,7 @@ app.post("/download", async (req, res) => {
 });
 
 if (ENVIRONMENT != "testing") {
-  server.listen(PORT, () => {
+  server.listen(PORT, "0.0.0.0", () => {
     if (process.env.LOGGING) {
       console.log(`Server running on port ${PORT}`);
     }

@@ -346,8 +346,7 @@ export const checkPaymentData = async (unitid, plan, ta) => {
 };
 
 /**
- * Checks whether an Employee is in a company
- * @extends
+ * Fetches User `unitid` if `employee` is in `company`, else throw exception
  * @param {ID} company
  * @param {ID} unitid
  * @param {ID} employee
