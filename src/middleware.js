@@ -110,14 +110,14 @@ export const loggingMiddleWare = (req, res, next) => {
       }
 
       const log = {
-        ip: req.headers["x-forwarded-for"] || req.connection.remoteAddress,
+        ip: req.ip,
         eventtype,
         eventdata,
         user
       };
 
       if (parsedBody.data) {
-        logger.log("info", eventtype, log);
+        logger.log("verbose", eventtype, log);
       }
 
       if (user) {

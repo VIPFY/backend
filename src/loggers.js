@@ -13,7 +13,7 @@ if (!fs.existsSync(logDir)) {
 
 const options = {
   file: {
-    level: "info",
+    level: process.env.LOG_LEVEL_FILE || "info",
     filename: `${logDir}/${date}.txt`,
     handleExceptions: true,
     json: true,
@@ -24,7 +24,7 @@ const options = {
     )
   },
   console: {
-    level: "debug",
+    level: process.env.LOG_LEVEL_CONSOLE || "debug",
     handleExceptions: true,
     json: true,
     colorize: true,
@@ -33,9 +33,13 @@ const options = {
 };
 
 const logger = winston.createLogger({
-  transports: [new winston.transports.File(options.file)],
+  transports: [],
   exitOnError: false
 });
+
+if (!process.env.NO_LOG_FILE) {
+  logger.add(new winston.transports.File(options.file));
+}
 
 if (process.env.WINSTON == "generic") {
   logger.add(new winston.transports.Console(options.console));

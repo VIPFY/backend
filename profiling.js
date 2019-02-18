@@ -1,15 +1,13 @@
-// this enables tracing and profiling
-// only applied by pm2 on deploys
 // can't live in index.js because it has to be inserted in front of babel's code
-require("@google-cloud/trace-agent").start({
-  samplingRate: 500,
-  enhancedDatabaseReporting: true,
-  projectId: "vipfy-148316"
-});
 
-require("@google-cloud/profiler").start({
-  serviceContext: {
-    service: "vipfy-backend",
-    version: "1.0.0"
-  }
-});
+/* begin profiling code */
+const l_AWSXRay = require("aws-xray-sdk");
+
+l_AWSXRay.config([
+  l_AWSXRay.plugins.EC2Plugin,
+  l_AWSXRay.plugins.ElasticBeanstalkPlugin
+]);
+l_AWSXRay.capturePromise();
+l_AWSXRay.captureHTTPsGlobal(require("https"));
+l_AWSXRay.captureHTTPsGlobal(require("http"));
+/* end profiling code */
