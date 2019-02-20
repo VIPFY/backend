@@ -1279,7 +1279,6 @@ export default {
     async (parent, { layouts }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
-          console.log(layouts);
           const promises = [];
           layouts.forEach(async ({ id, ...data }) => {
             promises.push(
@@ -1300,5 +1299,33 @@ export default {
           });
         }
       })
+<<<<<<< HEAD
+=======
+  ),
+
+  setLayout: requiresAuth.createResolver(
+    async (p, { layouthorizontal, layoutvertical, licenceId }, { models }) => {
+      try {
+        await models.Licence.update(
+          { layouthorizontal, layoutvertical },
+          {
+            where: { id: licenceId },
+            returning: true
+          }
+        );
+
+        const updatedLicence = await models.Licence.findOne({
+          where: { id: licenceId }
+        });
+
+        return updatedLicence;
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
+>>>>>>> b25ac62e6657244351aa89e232ba3cb6e6427d99
   )
 };

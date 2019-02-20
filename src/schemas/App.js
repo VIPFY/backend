@@ -102,6 +102,7 @@ export const types = `
   }
 
   input LicenceInput {
+<<<<<<< HEAD
     id: ID!
     disabled: Boolean
     endtime: Date
@@ -109,6 +110,11 @@ export const types = `
 
   input LayoutInput {
     id: ID!
+=======
+    id:  ID!
+    disabled: Boolean
+    endtime: Date
+>>>>>>> b25ac62e6657244351aa89e232ba3cb6e6427d99
     layouthorizontal: Int
     layoutvertical: Int
   }
