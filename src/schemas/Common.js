@@ -20,11 +20,6 @@ enum ORDER {
   DESC
 }
 
-enum DIRECTION {
-  HORIZONTAL,
-  VERTICAL
-}
-
 # Custom Scalar Date
   scalar Date
 

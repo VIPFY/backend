@@ -1276,31 +1276,21 @@ export default {
   ),
 
   updateLayout: requiresAuth.createResolver(
-    async (parent, { dragged, droppedOn, direction }, { models }) =>
+    async (parent, { layouts }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const draggedOptions = {};
-          const droppedOnOptions = {};
-
-          if (direction == "HORIZONTAL") {
-            draggedOptions.layouthorizontal = droppedOn.layouthorizontal;
-            droppedOnOptions.layouthorizontal = dragged.layouthorizontal;
-          } else {
-            draggedOptions.layoutvertical = droppedOn.layoutvertical;
-            droppedOnOptions.layoutvertical = dragged.layoutvertical;
-          }
-
-          const p1 = models.Licence.update(draggedOptions, {
-            where: { id: dragged.id },
-            transaction: ta
+          console.log(layouts);
+          const promises = [];
+          layouts.forEach(async ({ id, ...data }) => {
+            promises.push(
+              models.Licence.update(data, {
+                where: { id },
+                transaction: ta
+              })
+            );
           });
 
-          const p2 = models.Licence.update(droppedOnOptions, {
-            where: { id: droppedOn.id },
-            transaction: ta
-          });
-
-          await Promise.all([p1, p2]);
+          await Promise.all(promises);
 
           return true;
         } catch (err) {
@@ -1310,30 +1300,5 @@ export default {
           });
         }
       })
-  ),
-
-  setLayout: requiresAuth.createResolver(
-    async (p, { layouthorizontal, layoutvertical, licenceId }, { models }) => {
-      try {
-        await models.Licence.update(
-          { layouthorizontal, layoutvertical },
-          {
-            where: { id: licenceId },
-            returning: true
-          }
-        );
-
-        const updatedLicence = await models.Licence.findOne({
-          where: { id: licenceId }
-        });
-
-        return updatedLicence;
-      } catch (err) {
-        throw new NormalError({
-          message: err.message,
-          internalData: { err }
-        });
-      }
-    }
   )
 };

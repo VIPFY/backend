@@ -102,9 +102,13 @@ export const types = `
   }
 
   input LicenceInput {
-    id:  ID!
+    id: ID!
     disabled: Boolean
     endtime: Date
+  }
+
+  input LayoutInput {
+    id: ID!
     layouthorizontal: Int
     layoutvertical: Int
   }
@@ -163,8 +167,7 @@ export const queries = `
 `;
 
 export const mutations = `
-  updateLayout(dragged: LicenceInput!, droppedOn: LicenceInput!, direction: DIRECTION): Boolean!
-  setLayout(layouthorizontal: Int, layoutvertical: Int, licenceId: ID!): Licence!
+  updateLayout(layouts: [LayoutInput]!): Boolean!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
 
