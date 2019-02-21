@@ -6,6 +6,7 @@ import renderInvoice from "./invoiceGenerator";
 import { groupBy, createLog } from "./functions";
 import { sendEmail } from "./email";
 import { InvoiceError } from "../errors";
+import logger from "../loggers";
 
 export default async (unitid, throwErr) =>
   // eslint-disable-next-line
@@ -33,7 +34,8 @@ export default async (unitid, throwErr) =>
       `,
         {
           replacements: { company: unitid },
-          type: models.sequelize.QueryTypes.SELECT
+          type: models.sequelize.QueryTypes.SELECT,
+          transaction: ta
         }
       );
 
@@ -44,25 +46,29 @@ export default async (unitid, throwErr) =>
       const p1 = models.Address.findOne({
         attributes: ["country", "address"],
         where: { unitid, tags },
-        raw: true
+        raw: true,
+        transaction: ta
       });
 
       const p2 = models.DepartmentEmail.findAll({
         attributes: ["email"],
         where: { departmentid: unitid, tags },
-        raw: true
+        raw: true,
+        transaction: ta
       });
 
       const p3 = models.Phone.findOne({
         attributes: ["number"],
         where: { unitid, tags },
-        raw: true
+        raw: true,
+        transaction: ta
       });
 
       const p4 = models.Department.findOne({
         attributes: ["name", "legalinformation"],
         where: { unitid },
-        raw: true
+        raw: true,
+        transaction: ta
       });
 
       // eslint-disable-next-line
@@ -304,9 +310,17 @@ export default async (unitid, throwErr) =>
 
         await models.Bill.update(
           { billname: number, invoicedata: data },
-          { where: { id: bill.id }, transaction: ta }
+          { where: { id: bill.id }, transaction: ta, returning: true }
         );
       }
+
+      await createLog(
+        "127.0.0.1",
+        "createMonthlyInvoice",
+        { billObjects },
+        14,
+        null
+      );
 
       return true;
     } catch (err) {
@@ -324,6 +338,7 @@ export default async (unitid, throwErr) =>
       });
 
       if (throwErr) {
+        logger.error(err);
         throw new InvoiceError({ customer: unitid });
       }
     }

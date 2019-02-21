@@ -25,7 +25,7 @@ import {
 import { BillingError, NormalError, InvoiceError } from "../../errors";
 import logger from "../../loggers";
 import { getInvoiceLink } from "../../services/aws";
-import createInvoice from "../../helpers/createInvoice";
+import createMonthlyInvoice from "../../helpers/createInvoice";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
@@ -816,7 +816,7 @@ export default {
       })
   ),
 
-  createMonthlyInvoice: requiresMachineToken.createResolver(
+  createMonthlyInvoices: requiresMachineToken.createResolver(
     async (parent, args, { models }) => {
       try {
         const companies = await models.Department.findAll({
@@ -825,7 +825,7 @@ export default {
         });
 
         const promises = companies.map(company =>
-          createInvoice(company.unitid)
+          createMonthlyInvoice(company.unitid)
         );
 
         Promise.all(promises);
