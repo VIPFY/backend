@@ -461,14 +461,14 @@ export default {
 
       if (!emailExists) throw new Error(message);
 
-      // const valid = await bcrypt.compare(password, emailExists.passwordhash);
-      // if (!valid) throw new Error(message);
+      const valid = await bcrypt.compare(password, emailExists.passwordhash);
+      if (!valid) throw new Error(message);
 
-      // await checkAuthentification(
-      //   models,
-      //   emailExists.unitid,
-      //   emailExists.company
-      // );
+      await checkAuthentification(
+        models,
+        emailExists.unitid,
+        emailExists.company
+      );
 
       // update password length and strength.
       // This is temporary to fill values we didn't catch before implementing these metrics
