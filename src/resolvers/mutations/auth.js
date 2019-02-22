@@ -458,7 +458,7 @@ export default {
         where: { email },
         raw: true
       });
-      console.log("Hallo", email);
+
       if (!emailExists) throw new Error(message);
 
       // const valid = await bcrypt.compare(password, emailExists.passwordhash);

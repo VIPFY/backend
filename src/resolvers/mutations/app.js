@@ -1279,14 +1279,11 @@ export default {
     async (parent, { layouts }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const promises = [];
-          layouts.forEach(async ({ id, ...data }) => {
-            promises.push(
-              models.Licence.update(data, {
-                where: { id },
-                transaction: ta
-              })
-            );
+          const promises = layouts.map(async ({ id, ...data }) => {
+            return await models.Licence.update(data, {
+              where: { id },
+              transaction: ta
+            });
           });
 
           await Promise.all(promises);
