@@ -1276,12 +1276,16 @@ export default {
   ),
 
   updateLayout: requiresAuth.createResolver(
-    async (parent, { layouts }, { models }) =>
+    async (parent, { layouts }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
+          const {
+            user: { unitid }
+          } = decode(token);
+
           const promises = layouts.map(async ({ id, ...data }) => {
             return await models.Licence.update(data, {
-              where: { id },
+              where: { id, unitid },
               transaction: ta
             });
           });
