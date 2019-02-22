@@ -103,29 +103,5 @@ export default {
           });
         }
       })
-  ),
-
-  saveAppLayout: requiresAuth.createResolver(
-    async (parent, args, { models, token }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(token);
-
-        const { config } = await models.Human.findOne({
-          where: { unitid },
-          raw: true
-        });
-
-        await models.Human.update(
-          { config: { ...config, ...args } },
-          { where: { unitid } }
-        );
-
-        return true;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
   )
 };
