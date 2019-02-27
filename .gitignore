@@ -5,6 +5,8 @@ dist/
 src/logs/
 coverage/
 package-lock.json
+.env.dev
+.env.test
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*

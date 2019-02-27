@@ -24,6 +24,12 @@ export const BillingError = createError("BillingError", {
   internalData: { error: "Customer couldn't buy product." }
 });
 
+export const InvoiceError = createError("InvoiceError", {
+  message: "Creation of Invoice failed!",
+  data: { code: 4, id: 4 },
+  internalData: { error: "Invoice couldn't be created." }
+});
+
 export const AuthError = createError("AuthError", {
   message: "You're not authenticated!",
   internalData: { error: "An auth error." }

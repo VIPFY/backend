@@ -1,0 +1,89 @@
+<header>
+  <div class="address-customer">
+    <div class="address-line">
+      {{ seller.company }}, {{ seller.address.street }}
+      {{ seller.address.number }}, {{ seller.address.zip }}
+      {{ seller.address.city }}, {{ seller.address.country }}
+    </div>
+
+    <div class="address-customer-text">
+      <span>{{ buyer.company }} </span> <span>{{ buyer.address.street }}</span>
+      <span>{{ buyer.address.zip }} {{ buyer.address.city }}</span>
+      <span>{{ buyer.address.country }}</span>
+    </div>
+  </div>
+
+  <div class="address-vipfy">
+    <div class="address-block">
+      <div class="address-inline">
+        <img alt="Vipfy Logo" src="{{ seller.logo }}" id="logo" />
+        <div class="address-text">
+          <span>{{ seller.company }} </span>
+          <span>{{ seller.address.street }} {{ seller.address.number }}</span>
+          <span>{{ seller.address.zip }} {{ seller.address.city }}</span>
+          <span>{{ seller.address.country }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="address-block">
+      <div class="address-inline">
+        <span class="address-inline-left">Tel</span>
+        <span class="address-inline-right">{{ seller.phone }}</span>
+      </div>
+
+      <div class="address-inline">
+        <span class="address-inline-left">Mail</span>
+        <span class="address-inline-right">{{ seller.email }}</span>
+      </div>
+
+      <div class="address-inline">
+        <span class="address-inline-left">Web</span>
+        <span class="address-inline-right">{{ seller.website }}</span>
+      </div>
+    </div>
+
+    <div class="address-block">
+      <div class="address-inline">
+        <span class="address-inline-left">Bank</span>
+        <span class="address-inline-right">{{ seller.bank.name }}</span>
+      </div>
+
+      <div class="address-inline">
+        <span class="address-inline-left">SWIFT</span>
+        <span class="address-inline-right">{{ seller.bank.swift }}</span>
+      </div>
+
+      <div class="address-inline">
+        <span class="address-inline-left">IBAN</span>
+        <span class="address-inline-right">{{ seller.bank.iban }}</span>
+      </div>
+    </div>
+
+    <div class="address-block">
+      <div class="address-inline">
+        <span class="address-inline-left">TIN</span>
+        <span class="address-inline-right">{{
+          seller.registrationNumber
+        }}</span>
+      </div>
+
+      <div class="address-inline">
+        <span class="address-inline-left">Tax ID</span>
+        <span class="address-inline-right">{{ seller.taxId }}</span>
+      </div>
+    </div>
+
+    <div class="address-block">
+      <div class="address-inline">
+        <span class="address-inline-left">Invoice</span>
+        <span class="address-inline-right">{{ invoice.number }}</span>
+      </div>
+
+      <div class="address-inline">
+        <span class="address-inline-left">Date</span>
+        <span class="address-inline-right">{{ invoice.date }}</span>
+      </div>
+    </div>
+  </div>
+</header>

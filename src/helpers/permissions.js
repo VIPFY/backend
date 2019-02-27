@@ -169,3 +169,17 @@ export const requiresVipfyAdmin = requiresAuth.createResolver(
     }
   }
 );
+
+export const requiresMachineToken = createResolver(
+  async (parent, args, { token }) => {
+    try {
+      const { cronjob } = decode(token);
+
+      if (!cronjob) {
+        throw new Error("Only possible by cronjob");
+      }
+    } catch (err) {
+      throw new Error(err);
+    }
+  }
+);

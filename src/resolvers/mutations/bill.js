@@ -1,30 +1,31 @@
+import moment from "moment";
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
-import { sleep } from "@vipfy-private/service-base";
-import { requiresRights } from "../../helpers/permissions";
+import {
+  requiresRights,
+  requiresAuth,
+  requiresMachineToken,
+  requiresVipfyAdmin
+} from "../../helpers/permissions";
 import {
   createLog,
   createNotification,
-  checkPlanValidity,
-  checkPaymentData
+  checkPlanValidity
 } from "../../helpers/functions";
 import { calculatePlanPrice } from "../../helpers/apps";
-
-// import createInvoice from "../../helpers/createInvoice";
 import {
   createCustomer,
   listCards,
   addCard,
-  createSubscription,
   addSubscriptionItem,
   updateSubscriptionItem,
   removeSubscriptionItem,
-  changeDefaultCard,
-  abortSubscription,
-  cancelPurchase
+  changeDefaultCard
 } from "../../services/stripe";
-import { BillingError, NormalError } from "../../errors";
+import { BillingError, NormalError, InvoiceError } from "../../errors";
 import logger from "../../loggers";
+import { getInvoiceLink } from "../../services/aws";
+import createMonthlyInvoice from "../../helpers/createInvoice";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
@@ -372,7 +373,7 @@ export default {
             logger.debug(`created ${mergedFeatures.users} licences`);
           }
 
-          /*if (!subscription) {
+          /* if (!subscription) {
             subscription = await addSubscriptionItem(
               department.payingoptions.stripe.subscription,
               plan.stripedata.id
@@ -381,9 +382,9 @@ export default {
             stripeplan = subscription.id;
           } else {
             stripeplan = subscription.items.data[0].id;
-          }*/
+          } */
 
-          //await sleep(500);
+          // await sleep(500);
 
           console.log(
             "CREATEACCOUNT START",
@@ -414,10 +415,10 @@ export default {
           //   vatPercentage = department.legalinformation.vatPercentage;
           // }
 
-          /*await models.BoughtPlan.update(
+          /* await models.BoughtPlan.update(
             { stripeplan },
             { where: { id: boughtPlan.id }, transaction: ta }
-          );*/
+          ); */
 
           const notification = createNotification(
             {
@@ -460,14 +461,14 @@ export default {
           changed: []
         });
 
-        /*if (subscription && stripeplan) {
+        /* if (subscription && stripeplan) {
           const kind = stripeplan.split("_");
           if (kind[0] == "sub") {
             await abortSubscription(stripeplan);
           } else {
             await cancelPurchase(stripeplan, subscription.id);
           }
-        }*/
+        } */
 
         logger.error(err);
 
@@ -671,7 +672,6 @@ export default {
             { transaction: ta }
           );
           newBoughtPlan = newBoughtPlan.get();
-          console.log(newBoughtPlan);
 
           const createLicences = [];
 
@@ -816,80 +816,38 @@ export default {
       })
   ),
 
-  /*
-  // TODO: Add logging when changed
-  createMonthlyBill: async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { company: unitid }
-      } = decode(token);
-      const bill = await models.Bill.create({ unitid });
-      const billid = bill.get("id");
-      const billItems = await models.BillPosition.findAll({
-        where: { billid }
-      });
-      // const billItems = [
-      //   {
-      //     description: "Some interesting test",
-      //     quantity: 5,
-      //     unitPrice: 19.99
-      //   },
-      //   {
-      //     description: "Another interesting test",
-      //     quantity: 10,
-      //     unitPrice: 5.99
-      //   },
-      //   {
-      //     description: "The most interesting one",
-      //     quantity: 3,
-      //     unitPrice: 9.99
-      //   }
-      // ];
-      console.log(billItems);
-      // const ok = await createInvoice(true, models, unitid, billid, billItems);
-      // if (ok !== true) {
-      //   throw new Error(ok);
-      // }
+  createMonthlyInvoices: requiresMachineToken.createResolver(
+    async (parent, args, { models }) => {
+      try {
+        const companies = await models.Department.findAll({
+          where: { iscompany: true, deleted: false },
+          raw: true
+        });
 
-      // return { ok };
-      return { ok: true };
-    } catch (err) {
-      throw new BillingError(err);
+        const promises = companies.map(company =>
+          createMonthlyInvoice(company.unitid)
+        );
+
+        Promise.all(promises);
+
+        return true;
+      } catch (err) {
+        throw new InvoiceError(err);
+      }
     }
-  },
-  // TODO: Add logging when changed
-  addBillPos: requiresAuth.createResolver(
-    async (parent, { bill, billid }, { models, token }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { company }
-          } = decode(token);
-          let id = billid;
-
-          if (!billid) {
-            const invoice = await models.Bill.create(
-              { unitid: company, billtime: null },
-              { raw: true, transaction: ta }
-            );
-            id = invoice.id;
-          }
-
-          await models.BillPosition.create(
-            { ...bill, billid: id, unitid: company },
-            { transaction: ta, raw: true }
-          );
-
-          return { ok: true };
-        } catch (err) {
-          throw new BillingError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
   ),
-  */
+
+  createInvoice: requiresVipfyAdmin.createResolver(
+    async (parent, { unitid }) => {
+      try {
+        await createInvoice(unitid, true);
+
+        return true;
+      } catch (err) {
+        throw new InvoiceError(err);
+      }
+    }
+  ),
 
   setBoughtPlanAlias: requiresRights(["edit-boughtplan"]).createResolver(
     async (parent, { alias, boughtplanid }, { models }) => {
@@ -1031,5 +989,27 @@ export default {
           });
         }
       })
+  ),
+
+  downloadBill: requiresAuth.createResolver(
+    async (parent, { billid }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const { billname } = await models.Bill.findOne({
+          where: { id: billid, unitid: company },
+          raw: true
+        });
+
+        const time = moment();
+
+        const invoiceLink = await getInvoiceLink(billname, time);
+        return invoiceLink;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };

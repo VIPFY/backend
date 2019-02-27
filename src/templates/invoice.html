@@ -1,199 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <title>Vipfy Invoice</title>
-<style>
-  #body {
-    padding: 0 25px;
-  }
+  <head>
+    <meta charset="UTF-8" />
+    <title>VIFPY Invoice</title>
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:100,100i,300,300i,400,400i,500,500i,700,700i,900,900i&amp;subset=cyrillic,cyrillic-ext,greek,greek-ext,latin-ext,vietnamese"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" type="text/css" href="../templates/styles.css" />
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/less.js/3.9.0/less.min.js"></script> -->
+  </head>
 
-  div.container {
-    max-width: 1150px;
-    margin: 0 auto;
-    font-family: "Open Sans";
-  }
-
-  .header {
-    display: -webkit-box;
-    display: -moz-box;
-    display: -ms-flexbox;
-    display: -webkit-flex;
-    display: flex;
-    -webkit-flex-flow: row nowrap;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    margin-top: 20px;
-    font-size: 12px;
-  }
-
-  #logo {
-    width: 50%;
-    height: 10rem;
-    background-image:url('https://vipfy.com/static/media/logo-text.bbad7363.png');
-    background-position: center;
-    background-size: contain;
-    background-repeat: no-repeat;
-  }
-
-  div.container p {
-    margin: 0;
-  }
-
-  .container h1,
-  .container h2 {
-    margin: 0px;
-    color: #c1272d;
-  }
-
-  #buyer {
-    margin-bottom: 20px;
-  }
-
-  hr {
-    border: 1px solid #c1272d;
-    margin: 20px 0;
-  }
-
-  table.bordered {
-    border-collapse: collapse;
-  }
-
-  table.bordered td,
-  table.bordered th,
-  table.bordered {
-    border: 2px solid #c1272d;
-  }
-
-  .full-width {
-    width: 100%;
-  }
-
-  .text-center {
-    text-align: center;
-  }
-
-  .text-right {
-    text-align: right;
-  }
-
-  .text-left {
-    text-align: left;
-  }
-
-  .text-top * {
-    vertical-align: top;
-  }
-
-  .monospaced {
-    font-family: "Monaco", monospace;
-  }
-
-  table.padded th,
-  table.padded td {
-    padding: 5px;
-  }
-
-  table th {
-    font-weight: normal;
-  }
-
-  .mt-s {
-    margin-top: 23px;
-  }
-
-  .mb-s {
-    margin-bottom: 23px;
-  }
-
-</style>
-</head>
   <body>
-    <div class="container">
-      <!-- Seller Fields -->
-      <div class="header">
-        <div id="logo"></div>
+    {{> header}}
+    <table class="content">
+      <tbody class="invoice-body">
+        {{#createRows billItems.positions 0}}
+        {{/createRows}}
+        {{#createRows billItems.credits billItems.positions.length}}
+        {{/createRows}}
 
-        <div>
-          <p>Tax Payer's Registration Number: <strong>{{seller.registrationNumber}}</strong></p>
-          <p>Tax ID: <strong>{{seller.taxId}}</strong></p>
-          <p>Address: <strong>{{seller.address.street}} {{seller.address.number}}<br/>
-                  {{seller.address.zip}} {{seller.address.city}}, {{seller.address.region}}, {{seller.address.country}}</strong></p>
-          <p>Phone: <strong>{{seller.phone}}</strong></p>
-          <p>Email: <strong>{{seller.email}}</strong></p>
-          <p>Website: <strong>{{seller.website}}</strong></p>
-          <p>Bank: <strong>{{seller.bank.name}}</strong></p>
-          <p>SWIFT: <strong>{{seller.bank.swift}}</strong></p>
-          <p><strong>IBAN {{seller.bank.currency}}: {{seller.bank.iban}}</strong></p>
-        </div>
-      </div>
-      <hr>
+        <tr class="total">
+          <td colspan="3">Total</td>
 
-        <!-- Invoice data -->
-      <div id="body">
-        <div class="header">
-           <!-- Seller Fields -->
-          <div id="buyer">
-            <p><strong>Buyer:</strong></p>
-            <h2>{{buyer.company}}</h2>
-            <p>Tax ID: <strong>{{buyer.taxId}}</strong></p>
-            <p>Address: <strong>{{buyer.address.street}}<br/>
-              {{buyer.address.zip}} {{buyer.address.city}}, {{buyer.address.country}}</strong></p>
-              <p>Phone: <strong>{{buyer.phone}}</strong></p>
-              <p>Email: <strong>{{buyer.email}}</strong></p>
-          </div>
+          <td>{{ total }} {{ currency }}</td>
+        </tr>
+      </tbody>
+    </table>
 
-          <div style="padding-left: 10px">
-            <p style="color: #fff">.</p>
-            <h2>INVOICE</h2>
-            <table class="mb-s">
-              <tbody>
-                <tr>
-                  <td>Invoice-Number:</td>
-                  <td>{{invoice.number}}</td>
-                </tr>
-                <tr>
-                  <td>Invoice-Date (YYYY-MM-DD):</td>
-                  <td>{{invoice.date}}</td>
-                </tr>
-                <tr>
-                  <td>Due-Date (YYYY-MM-DD):</td>
-                  <td>{{invoice.dueDate}}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <table class="bordered full-width padded mt-s mb-s monospaced">
-          <thead>
-            <tr>
-              <th style="width: 30px;"><strong>Nr</strong></th>
-              <th><strong>Description</strong><br></th>
-              <th><strong>Qty</strong><br></th>
-              <th>
-                <strong>Total Amount<br>
-                  –{{invoice.currency}}–
-                </strong>
-              </th>
-            </tr>
-          </thead>
-          <tbody class="text-top">
-            {{{description_rows}}}
-            <tr>
-              <td colspan="3" class="text-center">
-                <strong>Invoice Total –USD– </strong>
-              </td>
-
-              <td class="text-right">
-                <strong>{{total}}</strong>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        {{invoice.explanation}}
-      </div>
-    </div>
+    {{> footer}}
   </body>
 </html>

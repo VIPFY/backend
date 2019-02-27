@@ -14,8 +14,6 @@ import {
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
 
-// import { sendRegistrationEmail } from "../../services/mailjet";
-
 export default {
   /**
    * Updates the statistics of a company like industry and sets the vatid.
