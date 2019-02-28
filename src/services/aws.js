@@ -1,6 +1,7 @@
 import AWS from "aws-sdk";
 import fs from "fs";
 import moment from "moment";
+import { formatFilename } from "../helpers/functions";
 
 const s3 = new AWS.S3({ region: "eu-central-1" });
 
@@ -28,6 +29,70 @@ export const uploadInvoice = async (path, name) => {
   } catch (err) {
     throw new Error(err);
   }
+};
+
+export const uploadUserImage = async ({ stream, filename }, folder) => {
+  const ourFilename = formatFilename(filename);
+  const Key = `${folder}/${ourFilename}`;
+  const Bucket = "userimages.vipfy.store";
+
+  try {
+    const Body = stream;
+
+    const params = {
+      Key,
+      Body,
+      Bucket
+    };
+
+    await s3.upload(params).promise();
+
+    return Key;
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+export const uploadAppImage = async (
+  { stream, filename },
+  folder,
+  fileName
+) => {
+  const ourFilename = fileName || formatFilename(filename);
+  const Key = `${folder}/${ourFilename}`;
+  const Bucket = "appimages.vipfy.store";
+
+  try {
+    const Body = stream;
+
+    const params = {
+      Key,
+      Body,
+      Bucket
+    };
+
+    await s3.upload(params).promise();
+
+    return Key;
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+export const deleteUserImage = async (file, folder) => {
+  const params = {
+    Key: file,
+    Bucket: "userimages.vipfy.store"
+  };
+  return s3.deleteObject(params).promise;
+};
+
+export const deleteAppImage = async (file, folder) => {
+  const params = {
+    Key: file,
+    Bucket: "appimages.vipfy.store"
+  };
+  return s3.deleteObject(params).promise;
 };
 
 /**

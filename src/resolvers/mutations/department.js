@@ -2,7 +2,6 @@ import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-import { deleteFile, uploadFile } from "../../services/gcloud";
 import { getNewPasswordData } from "../../helpers/auth";
 import { NormalError } from "../../errors";
 import {
@@ -13,6 +12,7 @@ import {
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
+import { uploadUserImage, deleteUserImage } from "../../services/aws";
 
 export default {
   /**
@@ -497,7 +497,7 @@ export default {
           await Promise.all([p6, p7, p8, p9, p10]);
 
           if (oldUnit.profilepicture) {
-            await deleteFile(oldUnit.profilepicture, userPicFolder);
+            await deleteUserImage(oldUnit.profilepicture, userPicFolder);
           }
 
           await createLog(
@@ -663,7 +663,10 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const parsedFile = await file;
-          const profilepicture = await uploadFile(parsedFile, userPicFolder);
+          const profilepicture = await uploadUserImage(
+            parsedFile,
+            userPicFolder
+          );
           const {
             user: { company: id }
           } = decode(token);

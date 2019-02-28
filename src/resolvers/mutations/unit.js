@@ -1,9 +1,9 @@
 import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-import { uploadFile } from "../../services/gcloud";
 import { userPicFolder } from "../../constants";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
+import { uploadUserImage } from "../../services/aws";
 /* eslint-disable no-unused-vars, prefer-destructuring */
 
 export default {
@@ -16,7 +16,10 @@ export default {
           } = decode(token);
 
           const parsedFile = await file;
-          const profilepicture = await uploadFile(parsedFile, userPicFolder);
+          const profilepicture = await uploadUserImage(
+            parsedFile,
+            userPicFolder
+          );
 
           const oldUnit = await models.Unit.findOne({
             where: { id: unitid },

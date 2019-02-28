@@ -3,34 +3,21 @@ import { decode } from "jsonwebtoken";
 import { flushAll as flushServices } from "@vipfy-private/services";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { createProduct, createPlan, deletePlan } from "../../services/stripe";
-import { uploadFile, deleteFile } from "../../services/gcloud";
-import {
-  appPicFolder,
-  appIconFolder,
-  userPicFolder,
-  MAX_PASSWORD_LENGTH
-} from "../../constants";
+import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
 import { flushAuthCaches, getNewPasswordData } from "../../helpers/auth";
 import { NormalError } from "../../errors";
 import { createLog } from "../../helpers/functions";
-
-/* eslint-disable default-case */
-
-const processMultipleUploads = async (upload, folder) => {
-  const pic = await upload;
-  let newFolder = appPicFolder;
-  if (folder == 1) {
-    newFolder = appIconFolder;
-  }
-
-  const name = await uploadFile(pic, newFolder);
-  return name;
-};
+import {
+  uploadUserImage,
+  uploadAppImage,
+  deleteAppImage,
+  deleteUserImage
+} from "../../services/aws";
 
 const processMultipleFiles = async (upload, folder) => {
   const pic = await upload;
 
-  const name = await uploadFile(pic, folder);
+  const name = await uploadAppImage(pic, folder);
   return name;
 };
 
@@ -72,6 +59,10 @@ export default {
 
             case "months":
               interval = "month";
+              break;
+
+            default:
+              break;
           }
           const priceInCents = Math.ceil(plan.price * 100);
 
@@ -208,7 +199,7 @@ export default {
             attributes: ["images", "name"]
           });
 
-          await deleteFile(image, name);
+          await deleteAppImage(image, name);
           const filteredImages = images.filter(pic => pic != image);
 
           await models.App.update(
@@ -240,7 +231,13 @@ export default {
           if (nameExists) throw new Error("Name is already in Database!");
 
           const [logo, icon] = await Promise.all(
-            app.images.map(processMultipleUploads)
+            app.images.map(async (upload, index) => {
+              const pic = await upload;
+              const filename = index == 0 ? "logo.png" : "icon.png";
+
+              const name = await uploadAppImage(pic, app.name, filename);
+              return name;
+            })
           );
           const productData = await createProduct(app.name);
           const { id, active, created, name, type, updated } = productData;
@@ -309,15 +306,16 @@ export default {
 
         try {
           if (app.image) {
-            // eslint-disable-next-line
+            // eslint-disable-next-line prefer-const
             let { name, images } = await models.App.findOne({
               where: { id: appid },
               attributes: ["name", "images"],
               raw: true
             });
+            const folder = name;
 
             const image = await app.image.images;
-            const newImage = await uploadFile(image, name);
+            const newImage = await uploadAppImage(image, folder);
             if (images) {
               images.push(newImage);
             } else {
@@ -331,34 +329,36 @@ export default {
           }
 
           if (app.logo) {
-            const { logo: oldLogo } = await models.App.findOne({
+            const { name, logo: oldLogo } = await models.App.findOne({
               where: { id: appid },
-              attributes: ["logo"],
+              attributes: ["name", "logo"],
               raw: true
             });
+            const folder = name;
 
             if (oldLogo) {
-              await deleteFile(oldLogo, appPicFolder);
+              await deleteAppImage(oldLogo, folder);
             }
 
             const logo = await app.logo.logo;
-            const appLogo = await uploadFile(logo, appPicFolder);
+            const appLogo = await uploadAppImage(logo, folder, "logo.png");
             app.logo = appLogo;
           }
 
           if (app.icon) {
-            const { icon: oldIcon } = await models.App.findOne({
+            const { name, icon: oldIcon } = await models.App.findOne({
               where: { id: appid },
-              attributes: ["icon"],
+              attributes: ["name", "icon"],
               raw: true
             });
+            const folder = name;
 
             if (oldIcon) {
-              await deleteFile(oldIcon, appIconFolder);
+              await deleteAppImage(oldIcon, folder);
             }
 
             const icon = await app.icon.icon;
-            const appIcon = await uploadFile(icon, appIconFolder);
+            const appIcon = await uploadAppImage(icon, folder, "icon.png");
             app.icon = appIcon;
           }
 
@@ -448,8 +448,9 @@ export default {
         await models.App.destroy({ where: { id } });
 
         if (app.logo) {
-          await deleteFile(app.logo, appPicFolder);
+          await deleteAppImage(app.logo, app.name);
         }
+        // TODO: delete other images too
 
         return { ok: true };
       } catch ({ message }) {
@@ -572,7 +573,7 @@ export default {
       throw new Error("not implemented");
       /*
       if (file) {
-        const profilepicture = await uploadFile(file, userPicFolder);
+        const profilepicture = await uploadUserImage(file, userPicFolder);
         unitData.profilepicture = profilepicture;
       }
 
@@ -610,7 +611,10 @@ export default {
 
       try {
         if (profilepic) {
-          const profilepicture = await uploadFile(profilepic, userPicFolder);
+          const profilepicture = await uploadUserImage(
+            profilepic,
+            userPicFolder
+          );
           await models.Unit.update(
             { profilepicture },
             { where: { id: unitid } }
@@ -713,7 +717,7 @@ export default {
           await Promise.all([p1, p2, p3, p4, p5]);
 
           if (already.profilepicture) {
-            await deleteFile(already.profilepicture, userPicFolder);
+            await deleteUserImage(already.profilepicture, userPicFolder);
           }
 
           return { ok: true };
@@ -751,7 +755,10 @@ export default {
           const { user, ...data } = company;
 
           if (profilepic) {
-            const profilepicture = await uploadFile(profilepic, userPicFolder);
+            const profilepicture = await uploadUserImage(
+              profilepic,
+              userPicFolder
+            );
             unit = await models.Unit.create(
               { profilepicture },
               { transaction: ta }
