@@ -20,7 +20,8 @@ import {
   addSubscriptionItem,
   updateSubscriptionItem,
   removeSubscriptionItem,
-  changeDefaultCard
+  changeDefaultCard,
+  pay
 } from "../../services/stripe";
 import { BillingError, NormalError, InvoiceError } from "../../errors";
 import logger from "../../loggers";
@@ -840,7 +841,7 @@ export default {
   createInvoice: requiresVipfyAdmin.createResolver(
     async (parent, { unitid }) => {
       try {
-        await createInvoice(unitid, true);
+        await createMonthlyInvoice(unitid, true);
 
         return true;
       } catch (err) {
@@ -848,6 +849,71 @@ export default {
       }
     }
   ),
+
+  payInvoices: async (parent, args, { models }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const openInvoices = await models.Bill.findAll({
+          where: {
+            paytime: null,
+            stornotime: null,
+            amount: {
+              [models.Op.or]: {
+                [models.Op.not]: null,
+                [models.Op.gt]: 0
+              }
+            }
+          },
+          order: ["unitid"],
+          transaction: ta,
+          raw: true
+        });
+
+        for await (const invoice of openInvoices) {
+          const company = await models.Department.findOne({
+            where: { unitid: invoice.unitid },
+            attributes: ["unitid", "payingoptions"],
+            transaction: ta,
+            raw: true
+          });
+
+          console.log(company.payingoptions.stripe.cards);
+          let ok = false;
+          // eslint-disable-next-line
+          company.payingoptions.stripe.cards.some(async card => {
+            const data = {
+              amount: invoice.amount,
+              currency: invoice.currency,
+              customer: company.unitid,
+              invoice: invoice.billname,
+              source: card.id
+            };
+
+            try {
+              const res = await pay(data);
+              console.log(res);
+              ok = true;
+              return true;
+            } catch (err) {
+              console.log(`Card ${card.id} not valid`);
+            }
+          });
+
+          if (!ok) {
+            throw new Error("Could not charge customer");
+          }
+
+          await models.Bill.update(
+            { paytime: models.sequelize.fn("NOW") },
+            { where: { id: invoice.id }, transaction: ta }
+          );
+        }
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }),
 
   setBoughtPlanAlias: requiresRights(["edit-boughtplan"]).createResolver(
     async (parent, { alias, boughtplanid }, { models }) => {
@@ -991,7 +1057,7 @@ export default {
       })
   ),
 
-  downloadBill: requiresAuth.createResolver(
+  downloadInvoice: requiresAuth.createResolver(
     async (parent, { billid }, { models, token }) => {
       try {
         const {
@@ -1006,6 +1072,7 @@ export default {
         const time = moment();
 
         const invoiceLink = await getInvoiceLink(billname, time);
+
         return invoiceLink;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });

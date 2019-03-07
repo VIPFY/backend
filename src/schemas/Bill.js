@@ -202,7 +202,8 @@ export const mutations = `
   # This function will be used by a cronjob which runs once a month
   createMonthlyInvoices: Boolean!
   createInvoice(unitid: ID!): Boolean!
-  downloadBill(billid: ID!): String!
+  downloadInvoice(billid: ID!): String!
+  payInvoices: Boolean!
   
   removeBillingEmail(email: String!): Response!
   addBillingEmail(email: String!): Email!

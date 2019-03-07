@@ -231,7 +231,7 @@ export const updateSubscription = async (id, items) => {
     });
 
     return res;
-  } catch (error) {
+  } catch (err) {
     throw new Error(err.message);
   }
 };
@@ -360,6 +360,32 @@ export const fetchCustomer = async id => {
 export const listInvoices = async () => {
   try {
     const res = await stripe.invoiceItems.list();
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * Pays an invoice of a customer with a saved credit card
+ *
+ * @exports
+ * @param {number} amount
+ * @param {string} currency EUR or USD,...
+ * @param {string} customer The id at Stripe
+ * @param {string} source Will be a tokenized credit card
+ * @param {string} invoice The name of the invoice to display on the customers credit card statement
+ */
+export const pay = async ({ amount, currency, customer, source, invoice }) => {
+  try {
+    const res = await stripe.charges.create({
+      amount,
+      currency,
+      customer,
+      source,
+      statement_descriptor: `Vipfy ${invoice}`
+    });
 
     return res;
   } catch (err) {
