@@ -384,12 +384,14 @@ export const pay = async ({ amount, currency, customer, source, invoice }) => {
       currency,
       customer,
       source,
-      statement_descriptor: `Vipfy ${invoice}`
+      description: `Invoice ${invoice}`,
+      // Description has a max length of 22 characters
+      statement_descriptor: `Vipfy ${invoice.substring(0, 15)}`
     });
 
     return res;
   } catch (err) {
-    throw new Error(err.message);
+    throw new Error(err);
   }
 };
 

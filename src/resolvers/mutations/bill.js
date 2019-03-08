@@ -27,6 +27,7 @@ import { BillingError, NormalError, InvoiceError } from "../../errors";
 import logger from "../../loggers";
 import { getInvoiceLink } from "../../services/aws";
 import createMonthlyInvoice from "../../helpers/createInvoice";
+import { sendEmail } from "../../helpers/email";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
@@ -850,7 +851,7 @@ export default {
     }
   ),
 
-  payInvoices: async (parent, args, { models }) =>
+  payInvoices: async (parent, args, { models, ip }) =>
     models.sequelize.transaction(async ta => {
       try {
         const openInvoices = await models.Bill.findAll({
@@ -870,43 +871,118 @@ export default {
         });
 
         for await (const invoice of openInvoices) {
-          const company = await models.Department.findOne({
+          const {
+            name,
+            payingoptions,
+            unitid
+          } = await models.Department.findOne({
             where: { unitid: invoice.unitid },
-            attributes: ["unitid", "payingoptions"],
+            attributes: ["unitid", "payingoptions", "name"],
             transaction: ta,
             raw: true
           });
 
-          console.log(company.payingoptions.stripe.cards);
-          let ok = false;
-          // eslint-disable-next-line
-          company.payingoptions.stripe.cards.some(async card => {
-            const data = {
-              amount: invoice.amount,
-              currency: invoice.currency,
-              customer: company.unitid,
-              invoice: invoice.billname,
-              source: card.id
-            };
+          if (
+            !payingoptions ||
+            (payingoptions && !payingoptions.stripe) ||
+            (payingoptions &&
+              payingoptions.stripe &&
+              !payingoptions.stripe.cards) ||
+            (payingoptions &&
+              payingoptions.stripe &&
+              payingoptions.stripe.cards &&
+              payingoptions.stripe.cards.length < 1)
+          ) {
+            const p1 = createLog(
+              ip,
+              "payInvoices",
+              {
+                error: `Payment for invoice ${invoice.billname} with id ${
+                  invoice.id
+                } failed`
+              },
+              unitid,
+              ta
+            );
 
-            try {
-              const res = await pay(data);
-              console.log(res);
-              ok = true;
-              return true;
-            } catch (err) {
-              console.log(`Card ${card.id} not valid`);
+            const p2 = sendEmail({
+              templateId: "d-f1bc240b260a4491b47ac709b1c7cb01",
+              fromName: "VIPFY Backend",
+              personalizations: [
+                {
+                  to: [{ email: "billingerror@vipfy.store" }],
+                  dynamic_template_data: { company: name, unitid }
+                }
+              ]
+            });
+
+            await Promise.all[(p1, p2)];
+          } else {
+            let ok = false;
+            let stripeData = null;
+            const amount = parseFloat(invoice.amount).toFixed(2) * 100;
+
+            for await (const card of payingoptions.stripe.cards) {
+              const data = {
+                amount,
+                currency: invoice.currency,
+                customer: payingoptions.stripe.id,
+                invoice: invoice.billname,
+                source: card.id
+              };
+
+              try {
+                const res = await pay(data);
+                await createLog(ip, "payInvoices", res, unitid, ta);
+
+                ok = true;
+                stripeData = res;
+
+                break;
+              } catch (err) {
+                await createLog(ip, "payInvoices", err, unitid, ta);
+              }
             }
-          });
 
-          if (!ok) {
-            throw new Error("Could not charge customer");
+            if (ok) {
+              await models.Bill.update(
+                {
+                  paytime: models.sequelize.fn("NOW"),
+                  invoicedata: { ...invoice.invoicedata, stripeData }
+                },
+                { where: { id: invoice.id, unitid }, transaction: ta }
+              );
+            } else {
+              const p1 = createLog(
+                ip,
+                "payInvoices",
+                {
+                  error: `Payment for invoice ${invoice.billname} with id ${
+                    invoice.id
+                  } failed`
+                },
+                unitid,
+                ta
+              );
+
+              const p2 = sendEmail({
+                templateId: "d-de831c9f9f0d4ddfb554318919552c59",
+                fromName: "VIPFY Backend",
+                personalizations: [
+                  {
+                    to: [{ email: "billingerror@vipfy.store" }],
+                    dynamic_template_data: {
+                      company: name,
+                      unitid,
+                      stripeId: payingoptions.stripe.id
+                    }
+                  }
+                ]
+              });
+
+              await Promise.all([p1, p2]);
+            }
           }
-
-          await models.Bill.update(
-            { paytime: models.sequelize.fn("NOW") },
-            { where: { id: invoice.id }, transaction: ta }
-          );
         }
 
         return true;
