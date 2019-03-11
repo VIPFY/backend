@@ -2,7 +2,7 @@ import { decode, sign } from "jsonwebtoken";
 import uuid from "uuid";
 // import { getLoginData } from "@vipfy-private/weebly";
 import * as Services from "@vipfy-private/services";
-import dd24Api from "../../services/dd24";
+import domainAPI from "../../services/rrp";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 
@@ -156,14 +156,14 @@ export default {
                 }
               );
 
-              const accountData = await dd24Api("GetOneTimePassword", {
+              const accountData = await domainAPI("GetOneTimePassword", {
                 cid: domain[0].key.cid
               });
               if (accountData.code == 200) {
                 if (licence.key.cid != accountData.cid) {
                   throw new PartnerError({
                     message: "Accountdata doesn't match!",
-                    internalData: { partner: "DD24" }
+                    internalData: { partner: "RRP" }
                   });
                 }
 
@@ -172,7 +172,7 @@ export default {
               } else {
                 throw new PartnerError({
                   message: accountData.description,
-                  internalData: { partner: "DD24" }
+                  internalData: { partner: "RRP" }
                 });
               }
             }

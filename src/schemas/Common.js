@@ -98,6 +98,8 @@ export const mutations = `
   # Checks whether an email already exists in our database
   checkEmail(email: String): Response!
   checkName(name: String): Response!
+  addEmailTag(email: String!, tag: String!): Boolean!
+  removeEmailTag(email: String!, tag: String!): Boolean!
   readNotification(id: ID!): Boolean!
   readAllNotifications: Boolean!
 

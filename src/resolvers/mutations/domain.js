@@ -1,10 +1,6 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
-import {
-  checkDomain,
-  registerDomain,
-  createContact
-} from "../../services/dd24";
+import { checkDomain, registerDomain, createContact } from "../../services/rrp";
 
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -26,14 +22,19 @@ export default {
   checkDomain: async (parent, { domain }) => {
     try {
       const res = await checkDomain(domain);
-      console.log(res);
-      if (res.code != 210) {
-        throw new Error(res.data);
-      }
 
-      return true;
+      if (res.code == 210) {
+        return true;
+      } else if (res.code == 211) {
+        return false;
+      } else {
+        throw new Error(res.description);
+      }
     } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+      throw new PartnerError({
+        message: err.message,
+        internalData: { err, partner: "RRP" }
+      });
     }
   },
   /**
@@ -48,8 +49,6 @@ export default {
         const {
           user: { unitid, company }
         } = decode(token);
-        let subscription = null;
-        let stripeplan = null;
 
         try {
           const p1 = models.Domain.findOne({
@@ -104,7 +103,7 @@ export default {
           );
 
           if (accountData.length == 0) {
-            throw new Error("Address or Telefonnumber missing.");
+            throw new Error("Address or Telephonenumber missing.");
           }
 
           const accountDataCorrect = recursiveAddressCheck(accountData);
@@ -121,64 +120,49 @@ export default {
             phone
           } = accountDataCorrect;
 
-          const contact = {
-            firstname: "Domain",
-            lastname: "Admin",
-            street0: street,
-            zip,
-            city,
-            country,
-            phone,
-            email: "domains@vipfy.com"
-          };
-
           const partnerLogs = {
             ...domainData,
-            unitid: company,
-            ...contact
+            unitid: company
           };
 
-          // if (!hasAccount) {
+          if (!hasAccount) {
+            const { email } = await models.Email.findOne({
+              where: { unitid },
+              raw: true
+            });
 
-          // }
+            if (!email) {
+              throw new Error("Valid Email needed!");
+            }
 
-          const domainContact = await createContact(contact);
-          console.log(createContact);
-          throw new Error("DEBUG");
-          partnerLogs.domain = register;
+            const contact = {
+              firstname: "Domain",
+              lastname: "Admin",
+              street0: street,
+              zip,
+              city,
+              country,
+              phone,
+              email
+            };
+            const domainContact = await createContact(contact);
 
-          if (register.code == "200") {
-            domainData.accountid = register.cid;
+            if (domainContact.code == 200) {
+              domainData.contact = domainContact["property[contact][0]"];
+              partnerLogs.contact = contact;
+            } else {
+              throw new Error(domainContact.description);
+            }
           } else {
-            throw new Error(register.description);
+            domainData.contact = hasAccount.contactid;
           }
 
-          if (payingoptions.stripe.subscription) {
-            subscription = await addSubscriptionItem(
-              payingoptions.stripe.subscription,
-              findPrice.stripedata.id
-            );
+          const register = await registerDomain(domainData);
 
-            stripeplan = subscription.id;
-          } else {
-            subscription = await createSubscription(payingoptions.stripe.id, [
-              { plan: findPrice.stripedata.id }
-            ]);
+          partnerLogs.domain = register;
 
-            stripeplan = subscription.items.data[0].id;
-
-            await models.DepartmentData.update(
-              {
-                payingoptions: {
-                  ...payingoptions,
-                  stripe: {
-                    ...payingoptions.stripe,
-                    subscription: subscription.id
-                  }
-                }
-              },
-              { where: { unitid: company }, transaction: ta }
-            );
+          if (register.code != "200") {
+            throw new Error(register.description);
           }
 
           const boughtPlan = await models.BoughtPlan.create(
@@ -190,15 +174,10 @@ export default {
               totalprice,
               description: `Registration of ${domainData.domain}`,
               additionalfeatures,
-              totalfeatures,
-              stripeplan
+              totalfeatures
             },
             { transaction: ta }
           );
-
-          const renewaldate = moment(Date.now())
-            .add(1, "year")
-            .subtract(1, "day");
 
           const domain = await models.Domain.create(
             {
@@ -207,7 +186,7 @@ export default {
               accountemail: "domains@vipfy.com",
               domainname: domainData.domain,
               renewalmode: "AUTORENEWAL",
-              renewaldate,
+              renewaldate: register["property[renewal date][0]"],
               unitid: company
             },
             { transaction: ta }
@@ -248,15 +227,6 @@ export default {
             link: "domains",
             changed: ["domains"]
           });
-
-          if (subscription && stripeplan) {
-            const kind = stripeplan.split("_");
-            if (kind[0] == "sub") {
-              await abortSubscription(stripeplan);
-            } else {
-              await cancelPurchase(stripeplan, subscription.id);
-            }
-          }
 
           throw new PartnerError({
             message: err.message,

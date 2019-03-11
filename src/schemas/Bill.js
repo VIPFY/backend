@@ -203,7 +203,4 @@ export const mutations = `
   createMonthlyInvoices: Boolean!
   createInvoice(unitid: ID!): Boolean!
   downloadBill(billid: ID!): String!
-  
-  removeBillingEmail(email: String!): Response!
-  addBillingEmail(email: String!): Email!
 `;

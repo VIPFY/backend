@@ -19,11 +19,11 @@ export const types = `
   }
 
 # The props which can be send to the DD24 Api
-  input DD24 {
+  input DomainInput {
     domain: String
     tld: TLD
     renewalmode: RENEWALMODE
-    whoisprivacy: Int
+    whoisprivacy: Boolean
     renewaldate: Date
     createdate: Date
     dns: [DNSRecord]
@@ -67,8 +67,8 @@ export const queries = `
 
 export const mutations = `
   checkDomain(domain: String!): Boolean!
-  registerDomain(domainData: DD24!): Domain!
-  updateDomain(domainData: DD24!, id: ID!): Response!
-  registerExternalDomain(domainData: DD24!): Domain!
+  registerDomain(domainData: DomainInput!): Domain!
+  updateDomain(domainData: DomainInput!, id: ID!): Response!
+  registerExternalDomain(domainData: DomainInput!): Domain!
   deleteExternalDomain(id: ID!): Response!
 `;
