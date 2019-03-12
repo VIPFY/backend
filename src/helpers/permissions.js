@@ -30,7 +30,7 @@ export const requiresAuth = createResolver(
 
     try {
       const {
-        user: { company }
+        user: { company, unitid }
       } = decode(token);
 
       const vipfyPlans = await models.Plan.findAll({
@@ -41,7 +41,7 @@ export const requiresAuth = createResolver(
 
       const planIds = vipfyPlans.map(plan => plan.id);
 
-      const vipfyPlan = await models.BoughtPlan.findOne({
+      let vipfyPlan = await models.BoughtPlan.findOne({
         where: {
           payer: company,
           endtime: {
@@ -55,7 +55,14 @@ export const requiresAuth = createResolver(
       });
 
       if (!vipfyPlan) {
-        throw new Error("You have no active Vipfy Plan!");
+        vipfyPlan = await models.BoughtPlan.create({
+          planid: 125,
+          payer: company,
+          usedby: company,
+          buyer: unitid,
+          totalprice: 0,
+          disabled: false
+        });
       }
     } catch (error) {
       throw new AuthError(error.message);
