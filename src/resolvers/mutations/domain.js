@@ -1,6 +1,10 @@
 import { decode } from "jsonwebtoken";
-import moment from "moment";
-import { checkDomain, registerDomain, createContact } from "../../services/rrp";
+import {
+  checkDomain,
+  registerDomain,
+  createContact,
+  getDomainSuggestion
+} from "../../services/rrp";
 
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -9,27 +13,59 @@ import {
   createNotification
 } from "../../helpers/functions";
 import {
-  createSubscription,
-  addSubscriptionItem,
   cancelSubscription,
-  abortSubscription,
-  cancelPurchase,
   reactivateSubscription
 } from "../../services/stripe";
 import { PartnerError, NormalError } from "../../errors";
 
 export default {
-  checkDomain: async (parent, { domain }) => {
+  checkDomain: async (parent, { domain }, { models }) => {
     try {
-      const res = await checkDomain(domain);
+      const domainPlans = await models.Plan.findAll({
+        where: {
+          appid: 11,
+          name: {
+            [models.Op.and]: [
+              { [models.Op.notLike]: "DD24%" },
+              { [models.Op.notLike]: "WHOIS%" }
+            ]
+          },
+          enddate: {
+            [models.Op.or]: {
+              [models.Op.eq]: null,
+              [models.Op.gt]: models.sequelize.fn("NOW")
+            }
+          }
+        },
+        raw: true
+      });
 
-      if (res.code == 210) {
-        return true;
-      } else if (res.code == 211) {
-        return false;
-      } else {
-        throw new Error(res.description);
+      const [filteredName] = domain.split(".");
+
+      const domains = domainPlans.map(plan => `${filteredName}.${plan.name}`);
+
+      const response = await checkDomain(domains);
+
+      if (response.code != 200) {
+        throw new Error(response.description);
       }
+
+      const domainList = Object.keys(response)
+        // Filter out the props which are not domains
+        .filter(item => item.includes("[domaincheck]"))
+        .map((item, key) => ({
+          domain: domains[key],
+          availability: response[item].substring(0, 3),
+          price: domainPlans[key].price,
+          currency: domainPlans[key].currency,
+          description: response[item].substring(4)
+        }));
+
+      const suggestion = await getDomainSuggestion(filteredName);
+
+      console.log(suggestion);
+
+      return domainList;
     } catch (err) {
       throw new PartnerError({
         message: err.message,

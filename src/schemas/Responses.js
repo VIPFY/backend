@@ -144,6 +144,14 @@ export const types = `
     error: String
   }
 
+  type DomainResponse {
+    domain: String!
+    price: String!
+    currency: String!
+    availability: String!
+    description: String
+  }
+
   type UserSecurityOverview {
     id: ID!
     unitid: PublicUser!

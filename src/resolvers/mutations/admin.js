@@ -93,6 +93,7 @@ export default {
             },
             { transaction: ta }
           );
+
           return { ok: true };
         } catch (err) {
           throw new Error(err.message);
