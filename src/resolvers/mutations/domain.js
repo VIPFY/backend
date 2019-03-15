@@ -1,11 +1,11 @@
 import { decode } from "jsonwebtoken";
+import punycode from "punycode";
 import {
   checkDomain,
   registerDomain,
   createContact,
   getDomainSuggestion
 } from "../../services/rrp";
-
 import { requiresRights } from "../../helpers/permissions";
 import {
   recursiveAddressCheck,
@@ -40,32 +40,55 @@ export default {
         raw: true
       });
 
-      const [filteredName] = domain.split(".");
+      const splitName = domain.split(".");
+      const punycodeDomain = punycode.toASCII(splitName[0]);
 
-      const domains = domainPlans.map(plan => `${filteredName}.${plan.name}`);
+      const domains = domainPlans.map(plan => `${punycodeDomain}.${plan.name}`);
 
-      const response = await checkDomain(domains);
+      const p1 = checkDomain(domains);
+      const p2 = getDomainSuggestion(punycodeDomain);
 
-      if (response.code != 200) {
-        throw new Error(response.description);
+      const [domainCheck, suggestions] = await Promise.all([p1, p2]);
+
+      if (domainCheck.code != 200) {
+        throw new Error(domainCheck.description);
       }
 
-      const domainList = Object.keys(response)
+      const domainList = Object.keys(domainCheck)
         // Filter out the props which are not domains
         .filter(item => item.includes("[domaincheck]"))
         .map((item, key) => ({
-          domain: domains[key],
-          availability: response[item].substring(0, 3),
+          domain: punycode.toUnicode(domains[key]),
+          availability: domainCheck[item].substring(0, 3),
           price: domainPlans[key].price,
           currency: domainPlans[key].currency,
-          description: response[item].substring(4)
+          description: domainCheck[item].substring(4)
         }));
 
-      const suggestion = await getDomainSuggestion(filteredName);
+      if (splitName.length > 1) {
+        domainList.sort(a => (a.domain == domain ? -1 : 1));
+      }
 
-      console.log(suggestion);
+      const suggestionList = [];
 
-      return domainList;
+      Object.keys(suggestions)
+        .filter(item => item.includes("property[name]"))
+        .forEach((item, key) => {
+          if (suggestions[`property[availability][${key}]`] == "available") {
+            const [, tld] = suggestions[item].split(".");
+            const plan = domainPlans.find(el => el.name == tld);
+
+            suggestionList.push({
+              domain: punycode.toUnicode(suggestions[item]),
+              availability: "210",
+              price: plan.price,
+              currency: plan.currency,
+              description: "available"
+            });
+          }
+        });
+
+      return { domains: domainList, suggestions: suggestionList };
     } catch (err) {
       throw new PartnerError({
         message: err.message,

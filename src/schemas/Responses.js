@@ -152,6 +152,11 @@ export const types = `
     description: String
   }
 
+  type CheckDomainResponse {
+    domains: [DomainResponse!]!
+    suggestions: [DomainResponse!]!
+  }
+
   type UserSecurityOverview {
     id: ID!
     unitid: PublicUser!
