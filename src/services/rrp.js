@@ -5,13 +5,13 @@ let url = "https://api.rrpproxy.net/api/call";
 
 const data = {
   s_login: RRP_USERNAME,
-  s_pw: "3657;S^2wecQ)L,(zCPm&QM3446V-i7"
+  s_pw: RRP_PASSWORD
 };
 
-// if (ENVIRONMENT == "development") {
-//   url = "https://api-ote.rrpproxy.net/api/call";
-//   data.s_opmode = "OTE";
-// }
+if (ENVIRONMENT == "development") {
+  url = "https://api-ote.rrpproxy.net/api/call";
+  data.s_opmode = "OTE";
+}
 
 const config = {
   method: "GET",
@@ -97,21 +97,28 @@ export const getDomainSuggestion = async domain => {
   }
 };
 
-export const registerDomain = async ({ domain, contact, whoisprivacy }) => {
+export const registerDomain = async ({ domain, contactid, whoisPrivacy }) => {
   try {
-    data.command = "AddDomain";
-    data.domain = domain;
-    data.period = 1;
-    data["x-whois-privacy"] = whoisprivacy ? 1 : 0;
-    data.ownercontact0 = contact;
-    data.admincontact0 = contact;
-    data.techcontact0 =
-      ENVIRONMENT == "development" ? "P-DEA453" : "P-DKA10922";
-    data.billingcontact0 =
-      ENVIRONMENT == "development" ? "P-DEA453" : "P-DKA10922";
+    const params = { ...data };
 
-    config.method = "GET";
-    config.params = data;
+    params.command = "AddDomain";
+    params.domain = domain;
+    params.period = 1;
+    params["x-whois-privacy"] = whoisPrivacy ? 1 : 0;
+    params.ownercontact0 = contactid;
+    params.admincontact0 = contactid;
+    params.techcontact0 =
+      ENVIRONMENT == "development" ? "P-DEA453" : "P-DKA10922";
+    params.billingcontact0 =
+      ENVIRONMENT == "development" ? "P-DEA453" : "P-DKA10922";
+    params.nameserver0 =
+      ENVIRONMENT == "development" ? "NS1.VIPFY.NET" : " NS1.VIPFY.COM ";
+    params.nameserver1 =
+      ENVIRONMENT == "development" ? "NS2.VIPFY.NET" : " NS2.VIPFY.COM ";
+    params.nameserver2 =
+      ENVIRONMENT == "development" ? "NS3.VIPFY.NET" : " NS3.VIPFY.COM ";
+
+    config.params = params;
     const res = await Axios(config);
 
     return parseResponse(res.data);
@@ -122,9 +129,9 @@ export const registerDomain = async ({ domain, contact, whoisprivacy }) => {
 
 export const createContact = async contact => {
   try {
-    data.command = "AddContact";
-    config.method = "GET";
-    config.params = { ...data, ...contact };
+    const params = { ...data, command: "AddContact" };
+
+    config.params = { ...params, ...contact };
     const res = await Axios(config);
 
     return parseResponse(res.data);

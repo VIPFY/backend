@@ -26,7 +26,7 @@ export default {
           appid: 11,
           name: {
             [models.Op.and]: [
-              { [models.Op.notLike]: "DD24%" },
+              { [models.Op.notLike]: "RRP%" },
               { [models.Op.notLike]: "WHOIS%" }
             ]
           },
@@ -97,64 +97,102 @@ export default {
     }
   },
   /**
-   * Register a Domain with our Partner DD24
+   * Register a Domain with our Partner RRP Proxy
    *
    * @param {object} domainData Contains the domain as well as the options
+   * @param {number} totalPrice The total price of all domains and features
+   * @param {boolean} agb Confirmation of our terms of service and privacy agreement
+   *
    * @returns {object} domain The registered Domain
    */
-  registerDomain: requiresRights(["create-domains"]).createResolver(
-    async (parent, { domainData }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        const {
-          user: { unitid, company }
-        } = decode(token);
+  registerDomains: requiresRights(["create-domains"]).createResolver(
+    async (parent, { domainData, totalPrice, agb }, { models, token, ip }) => {
+      const {
+        user: { unitid, company }
+      } = decode(token);
 
-        try {
-          const p1 = models.Domain.findOne({
-            where: { unitid: company },
+      try {
+        if (!agb) {
+          throw new Error(
+            "Terms of Service and Privacy Agreement not confirmed!"
+          );
+        }
+
+        const p1 = models.Department.findOne({
+          raw: true,
+          where: { unitid: company }
+        });
+
+        const p2 = models.Plan.findOne({
+          where: { name: "WHOIS privacy", appid: 11 },
+          raw: true
+        });
+
+        const p3 = models.Domain.findOne({
+          where: { unitid: company, external: false },
+          raw: true,
+          attributes: ["contactid"]
+        });
+
+        const [organization, whoisPlan, oldDomain] = await Promise.all([
+          p1,
+          p2,
+          p3
+        ]);
+
+        if (
+          !organization.payingoptions ||
+          !organization.payingoptions.stripe ||
+          !organization.payingoptions.stripe.cards ||
+          organization.payingoptions.stripe.cards.length < 1
+        ) {
+          throw new Error("Missing payment information!");
+        }
+
+        let total = 0;
+
+        // Check whether the price from the frontend was correct
+        for await (const domain of domainData) {
+          const tld = domain.domain.split(".")[1];
+
+          const plan = await models.Plan.findOne({
+            where: { name: tld, appid: 11 },
             raw: true
           });
 
-          const p2 = models.Department.findOne({
-            raw: true,
-            where: { unitid: company }
-          });
-
-          const p3 = models.Plan.findOne({
-            where: { name: domainData.tld, appid: 11 },
-            attributes: ["price", "id", "stripedata"],
-            raw: true
-          });
-
-          const [hasAccount, organization, findPrice] = await Promise.all([
-            p1,
-            p2,
-            p3
-          ]);
-
-          const { payingoptions } = organization;
-
-          if (
-            !payingoptions ||
-            !payingoptions.stripe ||
-            !payingoptions.stripe.cards ||
-            payingoptions.stripe.cards.length < 1
-          ) {
-            throw new Error("Missing payment information!");
+          if (domain.price != plan.price) {
+            throw new Error("Prices don't match!");
           }
 
-          let totalprice = findPrice.price;
-          const additionalfeatures = {};
-          const totalfeatures = {
-            domain: domainData.domain,
-            renewalmode: "AUTORENEW"
-          };
+          if (domain.whoisprivacy) {
+            total += parseFloat(whoisPlan.price);
+          }
 
+          total += parseFloat(plan.price);
+        }
+
+        if (total.toFixed(2) != totalPrice) {
+          throw new Error("Prices don't match!");
+        }
+
+        const partnerLogs = {
+          domainData,
+          unitid: company,
+          failed: [],
+          successful: []
+        };
+
+        let contactid = null;
+
+        if (!oldDomain.contactid) {
+          // eslint-disable-next-line
+          contactid = oldDomain.contactid;
+        } else {
           const accountData = await models.sequelize.query(
             `SELECT ad.address, ad.country, pd.number as phone FROM unit_data hd
-              INNER JOIN address_data ad ON ad.unitid = hd.id INNER JOIN phone_data pd
-              ON pd.unitid = hd.id WHERE hd.id = :company AND
-              ('domain' = ANY(ad.tags) OR 'main' = ANY(ad.tags))`,
+                INNER JOIN address_data ad ON ad.unitid = hd.id INNER JOIN phone_data pd  
+                ON pd.unitid = hd.id WHERE hd.id = :company AND
+                ('domain' = ANY(ad.tags) OR 'main' = ANY(ad.tags))`,
             {
               replacements: { company },
               type: models.sequelize.QueryTypes.SELECT
@@ -179,123 +217,145 @@ export default {
             phone
           } = accountDataCorrect;
 
-          const partnerLogs = {
-            ...domainData,
-            unitid: company
+          const { email } = await models.Email.findOne({
+            where: { unitid },
+            raw: true
+          });
+
+          if (!email) {
+            throw new Error("Valid Email needed!");
+          }
+
+          const contactData = {
+            firstname: "Domain",
+            lastname: "Admin",
+            street0: street,
+            zip,
+            city,
+            country,
+            phone,
+            email
           };
 
-          if (!hasAccount) {
-            const { email } = await models.Email.findOne({
-              where: { unitid },
-              raw: true
-            });
+          const contact = await createContact(contactData);
+          partnerLogs.newContact = contact;
 
-            if (!email) {
-              throw new Error("Valid Email needed!");
-            }
-
-            const contact = {
-              firstname: "Domain",
-              lastname: "Admin",
-              street0: street,
-              zip,
-              city,
-              country,
-              phone,
-              email
-            };
-            const domainContact = await createContact(contact);
-
-            if (domainContact.code == 200) {
-              domainData.contact = domainContact["property[contact][0]"];
-              partnerLogs.contact = contact;
-            } else {
-              throw new Error(domainContact.description);
-            }
+          if (contact.code != 200) {
+            throw new Error(contact.description);
           } else {
-            domainData.contact = hasAccount.contactid;
+            contactid = contact["property[contact][0]"];
           }
-
-          const register = await registerDomain(domainData);
-
-          partnerLogs.domain = register;
-
-          if (register.code != "200") {
-            throw new Error(register.description);
-          }
-
-          const boughtPlan = await models.BoughtPlan.create(
-            {
-              buyer: unitid,
-              payer: company,
-              planid: findPrice.id,
-              disabled: false,
-              totalprice,
-              description: `Registration of ${domainData.domain}`,
-              additionalfeatures,
-              totalfeatures
-            },
-            { transaction: ta }
-          );
-
-          const domain = await models.Domain.create(
-            {
-              ...domainData,
-              boughtplanid: boughtPlan.dataValues.id,
-              accountemail: "domains@vipfy.com",
-              domainname: domainData.domain,
-              renewalmode: "AUTORENEWAL",
-              renewaldate: register["property[renewal date][0]"],
-              unitid: company
-            },
-            { transaction: ta }
-          );
-
-          const p4 = createLog(
-            ip,
-            "registerDomain",
-            {
-              ...partnerLogs,
-              subscription,
-              domain,
-              boughtPlan
-            },
-            unitid,
-            ta
-          );
-
-          const p5 = createNotification(
-            {
-              receiver: unitid,
-              message: `${domainData.domain} successfully registered.`,
-              icon: "laptop",
-              link: "domains",
-              changed: ["domains"]
-            },
-            ta
-          );
-
-          await Promise.all([p4, p5]);
-
-          return domain;
-        } catch (err) {
-          createNotification({
-            receiver: unitid,
-            message: `Registration of ${domainData.domain} failed.`,
-            icon: "bug",
-            link: "domains",
-            changed: ["domains"]
-          });
-
-          throw new PartnerError({
-            message: err.message,
-            internalData: {
-              err,
-              partner: "DD24"
-            }
-          });
         }
-      })
+
+        for await (const domainItem of domainData) {
+          try {
+            // eslint-disable-next-line no-loop-func
+            await models.sequelize.transaction(async ta => {
+              try {
+                const { domain, whoisPrivacy } = domainItem;
+
+                const register = await registerDomain({
+                  domain,
+                  contactid,
+                  whoisPrivacy
+                });
+
+                partnerLogs.successful.push(register);
+                if (register.code != "200") {
+                  console.log(register);
+                  partnerLogs.failed.push(register);
+                  throw new Error(register.description);
+                }
+
+                const tld = domain.split(".")[1];
+                const plan = await models.Plan.findOne({
+                  where: { name: tld, appid: 11 },
+                  raw: true,
+                  transaction: ta
+                });
+
+                const additionalfeatures = {};
+                const totalfeatures = { ...domainItem };
+
+                if (domain.whoisprivacy) {
+                  additionalfeatures.whoisPrivacy = true;
+                  totalfeatures.whoisPrivacy = true;
+                }
+
+                const boughtPlan = await models.BoughtPlan.create(
+                  {
+                    buyer: unitid,
+                    payer: company,
+                    planid: plan.id,
+                    disabled: false,
+                    totalprice: domain.price,
+                    description: `Registration of ${domain}`,
+                    additionalfeatures,
+                    totalfeatures
+                  },
+                  { transaction: ta }
+                );
+
+                register.boughtPlan = boughtPlan;
+                partnerLogs.successful.push(register);
+
+                const p5 = models.Domain.create(
+                  {
+                    domainname: domain,
+                    contactid,
+                    boughtplanid: boughtPlan.dataValues.id,
+                    accountemail: "domains@vipfy.com",
+                    renewalmode: domainItem.renewalmode,
+                    renewaldate: register["property[renewal date][0]"],
+                    unitid: company
+                  },
+                  { transaction: ta }
+                );
+
+                const p4 = createNotification(
+                  {
+                    receiver: unitid,
+                    message: `${domain} successfully registered.`,
+                    icon: "laptop",
+                    link: "domains",
+                    changed: ["domains"]
+                  },
+                  ta
+                );
+
+                await Promise.all([p4, p5]);
+              } catch (error) {
+                createNotification({
+                  receiver: unitid,
+                  message: `Registration of ${domainItem.domain} failed.`,
+                  icon: "bug",
+                  link: "domains",
+                  changed: ["domains"]
+                });
+              }
+            });
+          } catch (error) {
+            partnerLogs.transactionFailed = error;
+          }
+        }
+
+        await createLog(ip, "registerDomains", partnerLogs, unitid, null);
+
+        const allDomains = await models.Domain.findAll({
+          where: { unitid: company }
+        });
+
+        return allDomains;
+      } catch (err) {
+        throw new PartnerError({
+          message: err.message,
+          internalData: {
+            err,
+            partner: "RRP Proxy"
+          }
+        });
+      }
+    }
   ),
 
   registerExternalDomain: requiresRights(["create-domains"]).createResolver(

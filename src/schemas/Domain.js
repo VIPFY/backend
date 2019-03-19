@@ -22,6 +22,8 @@ export const types = `
   input DomainInput {
     domain: String
     tld: TLD
+    price: String
+    currency: String
     renewalmode: RENEWALMODE
     whoisprivacy: Boolean
     renewaldate: Date
@@ -67,7 +69,7 @@ export const queries = `
 
 export const mutations = `
   checkDomain(domain: String!): CheckDomainResponse!
-  registerDomain(domainData: DomainInput!): Domain!
+  registerDomains(domainData: [DomainInput!]!, totalPrice: Float!, agb: Boolean!): [Domain!]!
   updateDomain(domainData: DomainInput!, id: ID!): Response!
   registerExternalDomain(domainData: DomainInput!): Domain!
   deleteExternalDomain(id: ID!): Response!
