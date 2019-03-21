@@ -65,12 +65,15 @@ export const types = `
 
 export const queries = `
   fetchDomains: [Domain]!
+  fetchDomainSuggestions(name: String!): [DomainResponse]!
 `;
 
 export const mutations = `
   checkDomain(domain: String!): CheckDomainResponse!
   registerDomains(domainData: [DomainInput!]!, totalPrice: Float!, agb: Boolean!): [Domain!]!
+  transferInDomain(domain: String!, auth: String!): Boolean!
   updateDomain(domainData: DomainInput!, id: ID!): Response!
+  setWhoisPrivacy(domain: String!): Response!
   registerExternalDomain(domainData: DomainInput!): Domain!
   deleteExternalDomain(id: ID!): Response!
 `;

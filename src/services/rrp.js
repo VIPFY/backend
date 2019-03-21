@@ -4,14 +4,14 @@ const { RRP_USERNAME, RRP_PASSWORD, ENVIRONMENT } = process.env;
 let url = "https://api.rrpproxy.net/api/call";
 
 const data = {
-  s_login: RRP_USERNAME,
-  s_pw: RRP_PASSWORD
+  s_login: "mmmhome1",
+  s_pw: "3657;S^2wecQ)L,(zCPm&QM3446V-i7"
 };
 
-if (ENVIRONMENT == "development") {
-  url = "https://api-ote.rrpproxy.net/api/call";
-  data.s_opmode = "OTE";
-}
+// if (ENVIRONMENT == "development") {
+//   url = "https://api-ote.rrpproxy.net/api/call";
+//   data.s_opmode = "OTE";
+// }
 
 const config = {
   method: "GET",
@@ -132,6 +132,47 @@ export const createContact = async contact => {
     const params = { ...data, command: "AddContact" };
 
     config.params = { ...params, ...contact };
+    const res = await Axios(config);
+
+    return parseResponse(res.data);
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+/**
+ * Activate or deactivate WHOIS-privacy for a domain
+ *
+ * @param {number} status 0 for off, 1 for on
+ *
+ * @returns {object}
+ */
+export const toggleWhoisPrivacy = async status => {
+  try {
+    const params = { ...data, command: "ModifyDomain" };
+    params["x-whois-privacy"] = status;
+
+    config.params = params;
+    const res = await Axios(config);
+
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+export const transferIn = async (domain, auth, contact) => {
+  try {
+    const [, tld] = domain.split(".");
+    const params = { ...data, command: "TransferDomain", domain };
+    params.auth = auth;
+    params.action = "request";
+
+    if (tld == "de") {
+      params.ownercontact0 = contact;
+    }
+
+    config.params = params;
     const res = await Axios(config);
 
     return parseResponse(res.data);

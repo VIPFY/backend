@@ -4,7 +4,9 @@ import {
   checkDomain,
   registerDomain,
   createContact,
-  getDomainSuggestion
+  getDomainSuggestion,
+  toggleWhoisPrivacy,
+  transferIn
 } from "../../services/rrp";
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -12,10 +14,7 @@ import {
   createLog,
   createNotification
 } from "../../helpers/functions";
-import {
-  cancelSubscription,
-  reactivateSubscription
-} from "../../services/stripe";
+import { reactivateSubscription } from "../../services/stripe";
 import { PartnerError, NormalError } from "../../errors";
 
 export default {
@@ -349,10 +348,64 @@ export default {
       } catch (err) {
         throw new PartnerError({
           message: err.message,
-          internalData: {
-            err,
-            partner: "RRP Proxy"
-          }
+          internalData: { err, partner: "RRP Proxy" }
+        });
+      }
+    }
+  ),
+
+  transferInDomain: requiresRights(["create-domains"]).createResolver(
+    async (parent, { domain, auth }, { models, token }) => {
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        const res = await transferIn(domain, auth);
+
+        if (res.code != "200") {
+          throw new Error(res.description);
+        }
+
+        const [, tld] = domain.split(".");
+
+        const plan = await models.Plan.findAll({
+          where: {
+            appid: 11,
+            name: tld,
+            enddate: {
+              [models.Op.or]: {
+                [models.Op.eq]: null,
+                [models.Op.gt]: models.sequelize.fn("NOW")
+              }
+            }
+          },
+          raw: true
+        });
+
+        const boughtPlan = await models.BoughtPlan.create({
+          buyer: unitid,
+          payer: company,
+          planid: plan.id,
+          disabled: false,
+          totalprice: plan.price,
+          description: `Transfer-In of ${domain}`,
+          additionalfeatures: {},
+          totalfeatures: {}
+        });
+
+        await models.Domain.create({
+          domain,
+          acountemail: "domains@vifpy.com",
+          boughtplanid: boughtPlan.id,
+          unitid: company
+        });
+
+        return true;
+      } catch (err) {
+        throw new PartnerError({
+          message: err.message,
+          internalData: { err, partner: "RRP Proxy" }
         });
       }
     }
@@ -491,17 +544,43 @@ export default {
     }),
 
   /**
+   * Update Whois Privacy
+   *
+   * @param whoisPrivacy: {integer}
+   *
+   * @returns {any}
+   */
+  setWhoisPrivacy: requiresRights(["edit-domains"]).createResolver(
+    async (parent, { domain }, { models, token }) => {
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        const domainToUpdate = await models.Domain.findOne({
+          where: { domain, unitid: company },
+          raw: true
+        });
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  /**
    * Update Whois Privacy or Renewal Mode of a domain. Updating both at the
    * same time is not possible!
    *
-   * @param id: {integer}
-   * @param domainData: {object}
+   * @param {integer} id
+   * @param {object} domainData
    * domainData can contain the properties:
    * @param domain: {string}
    * @param renewalmode: {enum}
-   * @param whoisPrivacy: {integer}
    * @param cid: {string}
    * @param dns: {object[]}
+   *
    * @returns {any}
    */
   updateDomain: requiresRights(["edit-domains"]).createResolver(
@@ -510,17 +589,13 @@ export default {
         const {
           user: { unitid, company }
         } = decode(token);
-        let cancelledDomain = null;
 
         try {
           const oldDomain = await models.Domain.findOne(
-            { where: { id } },
-            {
-              raw: true,
-              transaction: ta
-            }
+            { where: { id, unitid: company } },
+            { raw: true, transaction: ta }
           );
-          domainData.cid = oldDomain.accountid;
+
           domainData.domain = oldDomain.domainname;
           let message;
 
@@ -587,6 +662,15 @@ export default {
           const addLogs = {};
 
           if (domainData.hasOwnProperty("whoisprivacy")) {
+            let status = 0;
+
+            if (domainData.whoisprivacy) {
+              status = 1;
+            }
+
+            const res = await toggleWhoisPrivacy(status);
+            console.log(res);
+
             const endtime = new Date();
             let totalprice = 5;
             const additionalfeatures = { whoisprivacy: true };
@@ -651,24 +735,18 @@ export default {
                 : "AUTORENEW";
 
             if (toUpdate.renewalmode == "AUTODELETE") {
-              cancelledDomain = await cancelSubscription(
-                predecessor.stripeplan
-              );
-
               p1 = models.BoughtPlan.update(
                 {
-                  endtime: new Date(cancelledDomain.current_period_end * 1000),
-                  planid: 25
+                  endtime: oldDomain.renewaldate,
+                  planid: predecessor.planid
                 },
                 {
-                  where: {
-                    id: predecessor.id
-                  },
+                  where: { id: predecessor.id },
                   transaction: ta,
                   returning: true
                 }
               );
-              addLogs.cancelledDomain = cancelledDomain;
+
               message = `Renewalmode of ${
                 domainData.domain
               } changed to AUTODELETE`;
@@ -676,6 +754,7 @@ export default {
               message = `Renewal of ${domainData.domain} was successful`;
             }
           }
+
           const updateDomain = await rrpApi("UpdateDomain", domainData);
 
           if (updateDomain.code == 200) {
