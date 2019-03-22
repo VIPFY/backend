@@ -6,7 +6,9 @@ import {
   createContact,
   getDomainSuggestion,
   toggleWhoisPrivacy,
-  transferIn
+  transferIn,
+  toggleRenewalMode,
+  updateNS
 } from "../../services/rrp";
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -251,22 +253,22 @@ export default {
             // eslint-disable-next-line no-loop-func
             await models.sequelize.transaction(async ta => {
               try {
-                const { domain, whoisPrivacy } = domainItem;
+                const { domain, whoisprivacy } = domainItem;
 
-                const register = await registerDomain({
+                const registerRes = await registerDomain({
                   domain,
                   contactid,
-                  whoisPrivacy
+                  whoisprivacy
                 });
 
-                partnerLogs.successful.push(register);
-                if (register.code != "200") {
-                  console.log(register);
-                  partnerLogs.failed.push(register);
-                  throw new Error(register.description);
+                partnerLogs.successful.push(registerRes);
+                if (registerRes.code != "200") {
+                  console.log(registerRes);
+                  partnerLogs.failed.push(registerRes);
+                  throw new Error(registerRes.description);
                 }
 
-                const tld = domain.split(".")[1];
+                const [, tld] = domain.split(".");
                 const plan = await models.Plan.findOne({
                   where: { name: tld, appid: 11 },
                   raw: true,
@@ -275,10 +277,12 @@ export default {
 
                 const additionalfeatures = {};
                 const totalfeatures = { ...domainItem };
+                let totalprice = parseFloat(domainItem.price);
 
-                if (domain.whoisprivacy) {
+                if (whoisprivacy) {
                   additionalfeatures.whoisPrivacy = true;
                   totalfeatures.whoisPrivacy = true;
+                  totalprice += parseFloat(whoisPlan.price);
                 }
 
                 const boughtPlan = await models.BoughtPlan.create(
@@ -287,7 +291,7 @@ export default {
                     payer: company,
                     planid: plan.id,
                     disabled: false,
-                    totalprice: domain.price,
+                    totalprice,
                     description: `Registration of ${domain}`,
                     additionalfeatures,
                     totalfeatures
@@ -295,23 +299,31 @@ export default {
                   { transaction: ta }
                 );
 
-                register.boughtPlan = boughtPlan;
-                partnerLogs.successful.push(register);
+                registerRes.boughtPlan = boughtPlan;
+                partnerLogs.successful.push(registerRes);
+                let dns = ["NS1.VIPFY.COM", "NS2.VIPFY.COM", "NS3.VIPFY.COM"];
 
-                const p5 = models.Domain.create(
+                if (process.env.ENVIRONMENT == "development") {
+                  dns = ["NS1.VIPFY.NET", "NS2.VIPFY.NET", "NS3.VIPFY.NET"];
+                }
+
+                const p4 = models.Domain.create(
                   {
                     domainname: domain,
                     contactid,
+                    whoisprivacy,
+                    dns,
                     boughtplanid: boughtPlan.dataValues.id,
                     accountemail: "domains@vipfy.com",
                     renewalmode: domainItem.renewalmode,
-                    renewaldate: register["property[renewal date][0]"],
+                    renewaldate:
+                      registerRes["property[registration expiration date][0]"],
                     unitid: company
                   },
                   { transaction: ta }
                 );
 
-                const p4 = createNotification(
+                const p5 = createNotification(
                   {
                     receiver: unitid,
                     message: `${domain} successfully registered.`,
@@ -324,6 +336,7 @@ export default {
 
                 await Promise.all([p4, p5]);
               } catch (error) {
+                console.log(error);
                 createNotification({
                   receiver: unitid,
                   message: `Registration of ${domainItem.domain} failed.`,
@@ -354,6 +367,14 @@ export default {
     }
   ),
 
+  /**
+   * Transfer-In a Domain from another provider
+   *
+   * @param {string} domain The full domain name
+   * @param {string} auth The Authcode
+   *
+   * @returns {object} ok
+   */
   transferInDomain: requiresRights(["create-domains"]).createResolver(
     async (parent, { domain, auth }, { models, token }) => {
       try {
@@ -477,9 +498,7 @@ export default {
 
           throw new NormalError({
             message: err.message,
-            internalData: {
-              err
-            }
+            internalData: { err, partner: "RRP Proxy" }
           });
         }
       })
@@ -490,7 +509,7 @@ export default {
    *
    * @param {number} id The domains id
    *
-   * @returns {obj} ok
+   * @returns {object} ok
    */
   deleteExternalDomain: async (parent, { id }, { models, token, ip }) =>
     models.sequelize.transaction(async ta => {
@@ -536,9 +555,9 @@ export default {
           changed: ["domains"]
         });
 
-        throw new NormalError({
+        throw new PartnerError({
           message: err.message,
-          internalData: { err }
+          internalData: { err, partner: "RRP Proxy" }
         });
       }
     }),
@@ -551,253 +570,249 @@ export default {
    * @returns {any}
    */
   setWhoisPrivacy: requiresRights(["edit-domains"]).createResolver(
-    async (parent, { domain }, { models, token }) => {
-      try {
-        const {
-          user: { unitid, company }
-        } = decode(token);
-
-        const domainToUpdate = await models.Domain.findOne({
-          where: { domain, unitid: company },
-          raw: true
-        });
-
-        return true;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
-  /**
-   * Update Whois Privacy or Renewal Mode of a domain. Updating both at the
-   * same time is not possible!
-   *
-   * @param {integer} id
-   * @param {object} domainData
-   * domainData can contain the properties:
-   * @param domain: {string}
-   * @param renewalmode: {enum}
-   * @param cid: {string}
-   * @param dns: {object[]}
-   *
-   * @returns {any}
-   */
-  updateDomain: requiresRights(["edit-domains"]).createResolver(
-    (parent, { domainData, id }, { models, token, ip }) =>
+    async (_parent, { id, status }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid, company }
         } = decode(token);
 
         try {
-          const oldDomain = await models.Domain.findOne(
+          const p1 = models.Domain.findOne({
+            where: { id, unitid: company },
+            raw: true,
+            transaction: ta
+          });
+
+          const p2 = models.Plan.findOne({
+            where: { name: { [models.Op.like]: "WHOIS%" } },
+            raw: true,
+            transaction: ta
+          });
+
+          const [domainToUpdate, whoisPlan] = await Promise.all([p1, p2]);
+          const { domainname, totalfeatures, boughtplanid } = domainToUpdate;
+
+          const plan = await models.Plan.findOne({
+            where: { name: domainname.split(".")[1] },
+            raw: true,
+            transaction: ta
+          });
+
+          const additionalfeatures = {
+            ...domainToUpdate.additionalfeatures,
+            whoisprivacy: status
+          };
+
+          const newTotalfeatures = { ...totalfeatures, whoisprivacy: status };
+
+          let totalprice = parseFloat(plan.price);
+
+          if (status) {
+            totalprice += parseFloat(whoisPlan.price);
+          }
+
+          const res = await toggleWhoisPrivacy(domainname, status);
+
+          if (res.code != 200) {
+            console.log(res);
+            throw new Error(res.description);
+          }
+
+          const oldBP = await models.BoughtPlan.findOne({
+            where: { id: boughtplanid },
+            transaction: ta,
+            raw: true
+          });
+
+          await models.BoughtPlan.update(
+            { endtime: models.sequelize.fn("NOW") },
+            { where: { id: boughtplanid, payer: company }, transaction: ta }
+          );
+
+          const newBP = await models.BoughtPlan.create(
+            {
+              buyer: unitid,
+              payer: company,
+              predecessor: oldBP.id,
+              planid: oldBP.planid,
+              disabled: false,
+              description: `Updated Plan for ${domainname}`,
+              totalfeatures: newTotalfeatures,
+              additionalfeatures,
+              totalprice,
+              whoisprivacy: status
+            },
+            { transaction: ta }
+          );
+
+          await models.Domain.update(
+            {
+              whoisprivacy: status,
+              boughtplanid: newBP.dataValues.id
+            },
+            {
+              where: { id: domainToUpdate.id, unitid: company },
+              transaction: ta
+            }
+          );
+
+          const p3 = createNotification({
+            receiver: unitid,
+            message: `Whois Privacy ${
+              status ? "successfully applied" : "cancelled"
+            } for ${domainname}`,
+            icon: "laptop",
+            link: "domains",
+            changed: ["domains"]
+          });
+
+          const p4 = createLog(ip, "setWhoisPrivacy", { res }, unitid, ta);
+
+          await Promise.all(p3, p4);
+
+          return { ...domainToUpdate, whoisprivacy: status ? true : false };
+        } catch (err) {
+          await createNotification({
+            receiver: unitid,
+            message: `Updating Whois Privacy failed`,
+            icon: "bug",
+            link: "domains",
+            changed: ["domains"]
+          });
+
+          throw new PartnerError({
+            message: err.message,
+            internalData: { err, partner: "RRP Proxy" }
+          });
+        }
+      })
+  ),
+
+  /**
+   * Update Renewal Mode of a domain
+   *
+   * @param {ID} id
+   * @param {String} renewalmode An enum which can be AUTORENEW or AUTODELETE
+   *
+   * @returns {any}
+   */
+  setRenewalMode: async (parent, { id, renewalmode }, { models, token, ip }) =>
+    models.sequelize.transaction(async ta => {
+      const {
+        user: { unitid, company }
+      } = decode(token);
+
+      try {
+        const domain = await models.Domain.findOne({
+          where: { id, unitid: company },
+          raw: true
+        });
+
+        const res = await toggleRenewalMode(domain.domainname, renewalmode);
+
+        if (res.code != 200) {
+          console.log(res);
+          throw new Error(res.description);
+        }
+
+        const boughtPlan = await models.BoughtPlan.findOne(
+          { where: { id: domain.boughtplanid } },
+          { raw: true }
+        );
+
+        let endtime = null;
+
+        if (renewalmode == "AUTODELETE") {
+          endtime = domain.renewaldate;
+        }
+
+        const p1 = models.BoughtPlan.update(
+          { endtime },
+          { where: { id: boughtPlan.id, payer: company }, transaction: ta }
+        );
+
+        const p2 = models.Domain.update(
+          { renewalmode },
+          { where: { id, unitid: company } }
+        );
+
+        await Promise.all([p1, p2]);
+
+        const p3 = createNotification({
+          receiver: unitid,
+          message: `Renewalmode of ${
+            domain.domainname
+          } changed to ${renewalmode}`,
+          icon: "laptop",
+          link: "domains",
+          changed: ["domains"]
+        });
+
+        const p4 = createLog(ip, "setRenewalMode", { res }, unitid, ta);
+
+        await Promise.all([p3, p4]);
+
+        return { ...domain, renewalmode };
+      } catch (err) {
+        await createNotification({
+          receiver: unitid,
+          message: `Updating Renewalmode failed`,
+          icon: "bug",
+          link: "domains",
+          changed: ["domains"]
+        });
+
+        throw new PartnerError({
+          message: err.message,
+          internalData: { err, partner: "RRP Proxy" }
+        });
+      }
+    }),
+
+  /**
+   * Update Whois Privacy or Renewal Mode of a domain. Updating both at the
+   *
+   * @param {ID} id
+   * @param {string[]} dns The new nameservers for the domain
+   *
+   * @returns {any}
+   */
+  updateDns: requiresRights(["edit-domains"]).createResolver(
+    (parent, { dns, id }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        try {
+          const domain = await models.Domain.findOne(
             { where: { id, unitid: company } },
             { raw: true, transaction: ta }
           );
 
-          domainData.domain = oldDomain.domainname;
-          let message;
+          const res = await updateNS(domain.domainname, dns);
 
-          const predecessor = await models.BoughtPlan.findOne(
-            { where: { id: oldDomain.boughtplanid } },
-            { raw: true }
+          if (res && res.code != 200) {
+            throw new Error(res.description);
+          }
+
+          const updatedDomain = await models.Domain.update(
+            { dns: [...dns] },
+            { transaction: ta, where: { id } }
           );
 
-          // Update of the domains DNS settings
-          if (domainData.dns) {
-            message = `DNS update of ${domainData.domain} was successful`;
+          const log = await createLog(
+            ip,
+            "updateDns",
+            { res, updatedDomain },
+            unitid,
+            ta
+          );
 
-            const rr = [];
-            domainData.dns.forEach(dns => {
-              rr.push({
-                [dns.type]: [dns.data],
-                ZONE: [dns.host],
-                ADD: ["1"]
-              });
-            });
-
-            domainData.rr = rr;
-            delete domainData.dns;
-            const updatedDNS = await rrpApi("UpdateDomain", domainData);
-
-            if (updatedDNS && updatedDNS.code == 200) {
-              const updatedDomain = await models.Domain.update(
-                {
-                  dns: { ...domainData.dns }
-                },
-                { transaction: ta, where: { id } }
-              );
-
-              const log = await createLog(
-                ip,
-                "updateDomain",
-                { updatedDNS, domainData, oldDomain, updatedDomain },
-                unitid,
-                ta
-              );
-
-              const notification = createNotification(
-                {
-                  receiver: unitid,
-                  message,
-                  icon: "laptop",
-                  link: "domains",
-                  changed: ["domains"]
-                },
-                ta
-              );
-
-              await Promise.all([log, notification]);
-
-              return { ok: true };
-            } else {
-              throw new Error(updatedDNS.description);
-            }
-          }
-
-          // Has to be created here to avoid problems when using Promise.all
-          let p1;
-          const toUpdate = {};
-          const addLogs = {};
-
-          if (domainData.hasOwnProperty("whoisprivacy")) {
-            let status = 0;
-
-            if (domainData.whoisprivacy) {
-              status = 1;
-            }
-
-            const res = await toggleWhoisPrivacy(status);
-            console.log(res);
-
-            const endtime = new Date();
-            let totalprice = 5;
-            const additionalfeatures = { whoisprivacy: true };
-            message = `Whois Privacy for ${
-              domainData.domain
-            } was successfully applied`;
-
-            const totalfeatures = {
-              domain: domainData.domain,
-              renewalmode: "AUTORENEW",
-              whoisprivacy: true
-            };
-
-            if (domainData.domain.indexOf(".org")) {
-              totalprice += 15;
-            } else if (domainData.domain.indexOf(".com")) {
-              totalprice += 10;
-            } else {
-              totalprice += 20;
-            }
-
-            const bpOld = models.BoughtPlan.update(
-              { endtime, planid: 25 },
-              {
-                where: {
-                  id: predecessor.id
-                },
-                transaction: ta,
-                returning: true
-              }
-            );
-
-            const bpNew = await models.BoughtPlan.create(
-              {
-                buyer: unitid,
-                predecessor: predecessor.id,
-                payer: company,
-                planid: 25,
-                disabled: false,
-                totalprice,
-                description: `Registration of ${domainData.domain}`,
-                additionalfeatures,
-                totalfeatures,
-                stripeplan: predecessor.stripeplan
-              },
-              { transaction: ta, returning: true }
-            );
-
-            const [oldBoughtPlan, updatedBoughtPlan] = await Promise.all([
-              bpOld,
-              bpNew
-            ]);
-
-            toUpdate.whoisprivacy = domainData.whoisprivacy;
-            addLogs.oldBoughtPlan = oldBoughtPlan;
-            addLogs.updatedBoughtPlan = updatedBoughtPlan;
-          } else {
-            toUpdate.renewalmode =
-              domainData.renewalmode == "ONCE" ||
-              domainData.renewalmode == "AUTODELETE"
-                ? "AUTODELETE"
-                : "AUTORENEW";
-
-            if (toUpdate.renewalmode == "AUTODELETE") {
-              p1 = models.BoughtPlan.update(
-                {
-                  endtime: oldDomain.renewaldate,
-                  planid: predecessor.planid
-                },
-                {
-                  where: { id: predecessor.id },
-                  transaction: ta,
-                  returning: true
-                }
-              );
-
-              message = `Renewalmode of ${
-                domainData.domain
-              } changed to AUTODELETE`;
-            } else {
-              message = `Renewal of ${domainData.domain} was successful`;
-            }
-          }
-
-          const updateDomain = await rrpApi("UpdateDomain", domainData);
-
-          if (updateDomain.code == 200) {
-            const p2 = models.Domain.update(
-              { ...toUpdate },
-              {
-                where: { id, unitid: company },
-                transaction: ta,
-                returning: true
-              }
-            );
-            const [boughtPlan, updatedDomain] = await Promise.all([p1, p2]);
-
-            const log = createLog(
-              ip,
-              "updateDomain",
-              { boughtPlan, domainData, oldDomain, updatedDomain, ...addLogs },
-              unitid,
-              ta
-            );
-
-            const notification = createNotification(
-              {
-                receiver: unitid,
-                message,
-                icon: "laptop",
-                link: "domains",
-                changed: ["domains"]
-              },
-              ta
-            );
-
-            await Promise.all([log, notification]);
-
-            return { ok: true };
-          } else {
-            throw new Error(updateDomain.description);
-          }
-        } catch (err) {
-          await createNotification(
+          const notification = createNotification(
             {
               receiver: unitid,
-              message: "Update failed",
+              message: `DNS update of ${domain.domainname} was successful`,
               icon: "laptop",
               link: "domains",
               changed: ["domains"]
@@ -805,13 +820,24 @@ export default {
             ta
           );
 
-          if (cancelledDomain) {
-            await reactivateSubscription(cancelledDomain.id);
-          }
+          await Promise.all([log, notification]);
+
+          return true;
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "DNS Update failed",
+              icon: "laptop",
+              link: "domains",
+              changed: ["domains"]
+            },
+            ta
+          );
 
           throw new PartnerError({
             message: err.message,
-            internalData: { err }
+            internalData: { err, partner: "RRP Proxy" }
           });
         }
       })

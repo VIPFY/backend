@@ -4,14 +4,15 @@ const { RRP_USERNAME, RRP_PASSWORD, ENVIRONMENT } = process.env;
 let url = "https://api.rrpproxy.net/api/call";
 
 const data = {
-  s_login: "mmmhome1",
-  s_pw: "3657;S^2wecQ)L,(zCPm&QM3446V-i7"
+  s_login: RRP_USERNAME,
+  s_pw: RRP_PASSWORD
 };
 
-// if (ENVIRONMENT == "development") {
-//   url = "https://api-ote.rrpproxy.net/api/call";
-//   data.s_opmode = "OTE";
-// }
+const envCheck = ENVIRONMENT == "development";
+if (envCheck) {
+  url = "https://api-ote.rrpproxy.net/api/call";
+  data.s_opmode = "OTE";
+}
 
 const config = {
   method: "GET",
@@ -50,14 +51,12 @@ const parseResponse = res => {
  */
 export const checkDomain = async domains => {
   try {
-    const params = { ...data };
+    const params = { ...data, command: "CheckDomains" };
     domains.forEach((domain, key) => {
       params[`domain${key}`] = domain;
     });
 
-    params.command = "CheckDomains";
-    config.params = params;
-    const res = await Axios(config);
+    const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);
   } catch (err) {
@@ -73,23 +72,23 @@ export const checkDomain = async domains => {
  */
 export const getDomainSuggestion = async domain => {
   try {
-    const params = { ...data };
+    const params = {
+      ...data,
+      command: "GetNameSuggestion",
+      name: domain,
+      type: "SUGGEST",
+      tld0: "com,",
+      tld1: "de",
+      tld2: "net",
+      tld3: "org",
+      tld4: "ch",
+      "USE-NUMBERS": 1,
+      "USE-IDNS": 1,
+      "USE-DASHES": 1,
+      "SHOW-UNAVAILABLE": 0
+    };
 
-    params.command = "GetNameSuggestion";
-    params.name = domain;
-    params.type = "SUGGEST";
-    params.tld0 = "com,";
-    params.tld1 = "de";
-    params.tld2 = "net";
-    params.tld3 = "org";
-    params.tld4 = "ch";
-    params["USE-NUMBERS"] = 1;
-    params["USE-IDNS"] = 1;
-    params["USE-DASHES"] = 1;
-    params["SHOW-UNAVAILABLE"] = 0;
-    config.params = params;
-
-    const res = await Axios(config);
+    const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);
   } catch (error) {
@@ -97,29 +96,24 @@ export const getDomainSuggestion = async domain => {
   }
 };
 
-export const registerDomain = async ({ domain, contactid, whoisPrivacy }) => {
+export const registerDomain = async ({ domain, contactid, whoisprivacy }) => {
   try {
-    const params = { ...data };
+    const params = {
+      ...data,
+      command: "AddDomain",
+      domain,
+      period: 1,
+      "x-whois-privacy": whoisprivacy ? 1 : 0,
+      ownercontact0: contactid,
+      admincontact0: contactid,
+      techcontact0: envCheck ? "P-DEA453" : "P-DKA10922",
+      billingcontact0: envCheck ? "P-DEA453" : "P-DKA10922",
+      nameserver0: envCheck ? "NS1.VIPFY.NET" : " NS1.VIPFY.COM ",
+      nameserver1: envCheck ? "NS2.VIPFY.NET" : " NS2.VIPFY.COM ",
+      nameserver2: envCheck ? "NS3.VIPFY.NET" : " NS3.VIPFY.COM "
+    };
 
-    params.command = "AddDomain";
-    params.domain = domain;
-    params.period = 1;
-    params["x-whois-privacy"] = whoisPrivacy ? 1 : 0;
-    params.ownercontact0 = contactid;
-    params.admincontact0 = contactid;
-    params.techcontact0 =
-      ENVIRONMENT == "development" ? "P-DEA453" : "P-DKA10922";
-    params.billingcontact0 =
-      ENVIRONMENT == "development" ? "P-DEA453" : "P-DKA10922";
-    params.nameserver0 =
-      ENVIRONMENT == "development" ? "NS1.VIPFY.NET" : " NS1.VIPFY.COM ";
-    params.nameserver1 =
-      ENVIRONMENT == "development" ? "NS2.VIPFY.NET" : " NS2.VIPFY.COM ";
-    params.nameserver2 =
-      ENVIRONMENT == "development" ? "NS3.VIPFY.NET" : " NS3.VIPFY.COM ";
-
-    config.params = params;
-    const res = await Axios(config);
+    const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);
   } catch (err) {
@@ -129,10 +123,9 @@ export const registerDomain = async ({ domain, contactid, whoisPrivacy }) => {
 
 export const createContact = async contact => {
   try {
-    const params = { ...data, command: "AddContact" };
+    const params = { ...data, ...contact, command: "AddContact" };
 
-    config.params = { ...params, ...contact };
-    const res = await Axios(config);
+    const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);
   } catch (err) {
@@ -144,16 +137,44 @@ export const createContact = async contact => {
  * Activate or deactivate WHOIS-privacy for a domain
  *
  * @param {number} status 0 for off, 1 for on
+ * @param {string} domain
  *
  * @returns {object}
  */
-export const toggleWhoisPrivacy = async status => {
+export const toggleWhoisPrivacy = async (domain, status) => {
   try {
-    const params = { ...data, command: "ModifyDomain" };
+    const params = { ...data, command: "ModifyDomain", domain };
     params["x-whois-privacy"] = status;
 
-    config.params = params;
-    const res = await Axios(config);
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+export const toggleRenewalMode = async (domain, mode) => {
+  try {
+    const params = { ...data, command: "SetDomainRenewalMode", domain };
+    params.renewalmode = mode;
+
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+export const updateNS = async (domain, dns) => {
+  try {
+    const params = { ...data, command: "ModifyDomain", domain };
+    dns.forEach((ns, key) => {
+      params[`addnameserver${key}`] = ns;
+    });
+
+    const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);
   } catch (error) {
@@ -164,16 +185,14 @@ export const toggleWhoisPrivacy = async status => {
 export const transferIn = async (domain, auth, contact) => {
   try {
     const [, tld] = domain.split(".");
-    const params = { ...data, command: "TransferDomain", domain };
-    params.auth = auth;
+    const params = { ...data, command: "TransferDomain", domain, auth };
     params.action = "request";
 
     if (tld == "de") {
       params.ownercontact0 = contact;
     }
 
-    config.params = params;
-    const res = await Axios(config);
+    const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);
   } catch (err) {

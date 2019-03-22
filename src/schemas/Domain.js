@@ -10,6 +10,7 @@ export const types = `
     dns: JSON,
     boughtplanid: BoughtPlan!
     external: Boolean!
+    status: DOMAINSTATUS
   }
 
 # Data of a specific event
@@ -61,6 +62,12 @@ export const types = `
     ONCE,
     AUTODELETE
   }
+
+  enum DOMAINSTATUS {
+    ACTIVE,
+    PENDING,
+    EXPIRED
+  }
 `;
 
 export const queries = `
@@ -72,8 +79,9 @@ export const mutations = `
   checkDomain(domain: String!): CheckDomainResponse!
   registerDomains(domainData: [DomainInput!]!, totalPrice: Float!, agb: Boolean!): [Domain!]!
   transferInDomain(domain: String!, auth: String!): Boolean!
-  updateDomain(domainData: DomainInput!, id: ID!): Response!
-  setWhoisPrivacy(domain: String!): Response!
+  setWhoisPrivacy(id: ID!, status: Int!): Domain!
+  setRenewalMode(id: ID!, renewalmode: RENEWALMODE!): Domain!
+  updateDns(id: ID!, dns: [String!]!): Boolean!
   registerExternalDomain(domainData: DomainInput!): Domain!
   deleteExternalDomain(id: ID!): Response!
 `;
