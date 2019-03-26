@@ -26,6 +26,25 @@ export default {
     } else throw new AuthError();
   }),
 
+  adminme: requiresAuth.createResolver(
+    async (parent, { unitid }, { models, token }) => {
+      try {
+        const me = await models.User.findById(unitid);
+
+        console.log("ME", me);
+        let user = await parentAdminCheck(me);
+        //user.country = "DE";
+
+        return user;
+      } catch (err) {
+        throw new NormalError({
+          message: `AdminMe-Query-ERROR ${err.message}`,
+          internalData: { err }
+        });
+      }
+    }
+  ),
+
   checkAuthToken: async (parent, { email, token }, { models }) => {
     try {
       const validToken = await models.Token.findOne({
