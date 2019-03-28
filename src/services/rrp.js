@@ -198,7 +198,7 @@ export const removeNs = async (domain, ns) => {
     const params = { ...data, command: "ModifyDomain", domain };
 
     params.delnameserver0 = ns;
-
+    console.log(params);
     const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);

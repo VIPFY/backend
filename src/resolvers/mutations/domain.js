@@ -302,10 +302,20 @@ export default {
 
                 registerRes.boughtPlan = boughtPlan;
                 partnerLogs.successful.push(registerRes);
-                let dns = ["NS1.VIPFY.COM", "NS2.VIPFY.COM", "NS3.VIPFY.COM"];
+                const dns = {
+                  nameservers: [
+                    "NS1.VIPFY.COM",
+                    "NS2.VIPFY.COM",
+                    "NS3.VIPFY.COM"
+                  ]
+                };
 
                 if (process.env.ENVIRONMENT == "development") {
-                  dns = ["NS1.VIPFY.NET", "NS2.VIPFY.NET", "NS3.VIPFY.NET"];
+                  dns.nameservers = [
+                    "NS1.VIPFY.NET",
+                    "NS2.VIPFY.NET",
+                    "NS3.VIPFY.NET"
+                  ];
                 }
 
                 const p4 = models.Domain.create(
@@ -423,7 +433,7 @@ export default {
           renewalmode: "AUTORENEW",
           whoisprivacy: false,
           external: false,
-          dns: [],
+          dns: {},
           acountemail: "domains@vifpy.com",
           boughtplanid: boughtPlan.id,
           unitid: company
@@ -532,9 +542,7 @@ export default {
         const p1 = createLog(
           ip,
           "registerExternalDomain",
-          {
-            domain
-          },
+          { domain },
           unitid,
           ta
         );
@@ -796,7 +804,6 @@ export default {
             { where: { id, unitid: company } },
             { raw: true, transaction: ta }
           );
-          console.log("FIRE!");
 
           if (!domain) {
             throw new Error("Domain not found");
@@ -805,18 +812,19 @@ export default {
           let res = null;
           let newDns = null;
 
-          if (!domain.dns) {
-            domain.dns = [];
+          if (!domain.dns || !domain.dns.nameservers) {
+            domain.dns = { nameservers: [] };
           }
-          if (domain.dns.length == 0) {
+
+          if (domain.dns.nameservers.length == 0) {
             res = await setNs(domain.domainname, ns);
             newDns = [...domain.dns, ns];
           } else if (action == "ADD") {
             res = await addNs(domain.domainname, ns);
-            newDns = [...domain.dns, ns];
+            newDns = [...domain.dns.nameservers, ns];
           } else if (action == "REMOVE") {
             res = await removeNs(domain.domainname, ns);
-            newDns = domain.dns.filter(item => item != ns);
+            newDns = domain.dns.nameservers.filter(item => item != ns);
           } else {
             throw new Error("Action not supported!");
           }
@@ -826,7 +834,7 @@ export default {
           }
 
           await models.Domain.update(
-            { dns: newDns },
+            { dns: { ...domain.dns, nameservers: newDns } },
             { transaction: ta, where: { id }, returning: true }
           );
 
@@ -845,7 +853,10 @@ export default {
 
           await Promise.all([log, notification]);
 
-          return { ...domain.dataValues, dns: newDns };
+          return {
+            ...domain.dataValues,
+            dns: { ...domain.dns, nameservers: newDns }
+          };
         } catch (err) {
           await createNotification(
             {
