@@ -102,7 +102,7 @@ export const createLog = (ip, eventtype, eventdata, user, transaction) =>
       eventdata,
       user
     },
-    { transaction, raw: true }
+    { transaction }
   );
 
 export const formatHumanName = human =>
