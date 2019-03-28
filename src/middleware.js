@@ -5,9 +5,6 @@
  */
 
 import jwt from "jsonwebtoken";
-import formidable from "formidable";
-import mkdirp from "mkdirp";
-import bcrypt from "bcrypt";
 import models from "@vipfy-private/sequelize-setup";
 import { checkAuthentification, getNewPasswordData } from "./helpers/auth";
 import Utility from "./helpers/createHmac";
