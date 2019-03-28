@@ -24,6 +24,24 @@ export default {
     }
   ),
 
+  fetchDomain: requiresRights(["view-domains"]).createResolver(
+    async (parent, { id }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const domain = await models.Domain.findOne({
+          where: { id, unitid: company }
+        });
+
+        return domain;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   fetchDomainSuggestions: requiresRights(["view-domains"]).createResolver(
     async (parent, { name }, { models }) => {
       try {

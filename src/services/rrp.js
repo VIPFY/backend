@@ -167,12 +167,37 @@ export const toggleRenewalMode = async (domain, mode) => {
   }
 };
 
-export const updateNS = async (domain, dns) => {
+export const addNs = async (domain, ns) => {
   try {
     const params = { ...data, command: "ModifyDomain", domain };
-    dns.forEach((ns, key) => {
-      params[`addnameserver${key}`] = ns;
-    });
+
+    params.addnameserver0 = ns;
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+export const setNs = async (domain, ns) => {
+  try {
+    const params = { ...data, command: "ModifyDomain", domain };
+
+    params.nameserver0 = ns;
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+export const removeNs = async (domain, ns) => {
+  try {
+    const params = { ...data, command: "ModifyDomain", domain };
+
+    params.delnameserver0 = ns;
 
     const res = await Axios({ ...config, params });
 
@@ -192,6 +217,17 @@ export const transferIn = async (domain, auth, contact) => {
       params.ownercontact0 = contact;
     }
 
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+export const statusDomain = async domain => {
+  try {
+    const params = { ...data, command: "StatusDomain", domain };
     const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);

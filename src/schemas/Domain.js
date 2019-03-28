@@ -71,6 +71,7 @@ export const types = `
 `;
 
 export const queries = `
+  fetchDomain(id: ID!): Domain!
   fetchDomains: [Domain]!
   fetchDomainSuggestions(name: String!): [DomainResponse]!
 `;
@@ -81,7 +82,7 @@ export const mutations = `
   transferInDomain(domain: String!, auth: String!): Boolean!
   setWhoisPrivacy(id: ID!, status: Int!): Domain!
   setRenewalMode(id: ID!, renewalmode: RENEWALMODE!): Domain!
-  updateDns(id: ID!, dns: [String!]!): Boolean!
+  updateDns(id: ID!, ns: String!, action: String!): Domain!
   registerExternalDomain(domainData: DomainInput!): Domain!
   deleteExternalDomain(id: ID!): Response!
 `;

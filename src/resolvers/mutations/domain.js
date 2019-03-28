@@ -8,7 +8,9 @@ import {
   toggleWhoisPrivacy,
   transferIn,
   toggleRenewalMode,
-  updateNS
+  addNs,
+  removeNs,
+  setNs
 } from "../../services/rrp";
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -16,7 +18,6 @@ import {
   createLog,
   createNotification
 } from "../../helpers/functions";
-import { reactivateSubscription } from "../../services/stripe";
 import { PartnerError, NormalError } from "../../errors";
 
 export default {
@@ -313,6 +314,7 @@ export default {
                     contactid,
                     whoisprivacy,
                     dns,
+                    status: "ACTIVE",
                     boughtplanid: boughtPlan.dataValues.id,
                     accountemail: "domains@vipfy.com",
                     renewalmode: domainItem.renewalmode,
@@ -416,7 +418,12 @@ export default {
         });
 
         await models.Domain.create({
-          domain,
+          domainname: domain,
+          status: "PENDING",
+          renewalmode: "AUTORENEW",
+          whoisprivacy: false,
+          external: false,
+          dns: [],
           acountemail: "domains@vifpy.com",
           boughtplanid: boughtPlan.id,
           unitid: company
@@ -778,7 +785,7 @@ export default {
    * @returns {any}
    */
   updateDns: requiresRights(["edit-domains"]).createResolver(
-    (parent, { dns, id }, { models, token, ip }) =>
+    (parent, { ns, id, action }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid, company }
@@ -789,25 +796,41 @@ export default {
             { where: { id, unitid: company } },
             { raw: true, transaction: ta }
           );
+          console.log("FIRE!");
 
-          const res = await updateNS(domain.domainname, dns);
+          if (!domain) {
+            throw new Error("Domain not found");
+          }
+
+          let res = null;
+          let newDns = null;
+
+          if (!domain.dns) {
+            domain.dns = [];
+          }
+          if (domain.dns.length == 0) {
+            res = await setNs(domain.domainname, ns);
+            newDns = [...domain.dns, ns];
+          } else if (action == "ADD") {
+            res = await addNs(domain.domainname, ns);
+            newDns = [...domain.dns, ns];
+          } else if (action == "REMOVE") {
+            res = await removeNs(domain.domainname, ns);
+            newDns = domain.dns.filter(item => item != ns);
+          } else {
+            throw new Error("Action not supported!");
+          }
 
           if (res && res.code != 200) {
             throw new Error(res.description);
           }
 
-          const updatedDomain = await models.Domain.update(
-            { dns: [...dns] },
-            { transaction: ta, where: { id } }
+          await models.Domain.update(
+            { dns: newDns },
+            { transaction: ta, where: { id }, returning: true }
           );
 
-          const log = await createLog(
-            ip,
-            "updateDns",
-            { res, updatedDomain },
-            unitid,
-            ta
-          );
+          const log = await createLog(ip, "updateDns", { res, ns }, unitid, ta);
 
           const notification = createNotification(
             {
@@ -822,7 +845,7 @@ export default {
 
           await Promise.all([log, notification]);
 
-          return true;
+          return { ...domain.dataValues, dns: newDns };
         } catch (err) {
           await createNotification(
             {
