@@ -24,11 +24,11 @@ const createResolver = resolver => {
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(
   async (parent, args, { token, models }) => {
-    if (!token || token == "null") {
-      throw new Error("No valid token received!");
-    }
-
     try {
+      if (!token || token == "null") {
+        throw new Error("No valid token received!");
+      }
+
       const {
         user: { company, unitid }
       } = decode(token);

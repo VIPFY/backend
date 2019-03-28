@@ -32,15 +32,18 @@ export const InvoiceError = createError("InvoiceError", {
 
 export const AuthError = createError("AuthError", {
   message: "You're not authenticated!",
+  data: { code: 401, id: 5 },
   internalData: { error: "An auth error." }
 });
 
 export const RightsError = createError("RightsError", {
-  message: "You don't have the nessesary rights."
+  message: "You don't have the nessesary rights.",
+  data: { code: 403, id: 6 }
 });
 
 export const AdminError = createError("AdminError", {
   message: "You're not a Vipfy Admin!",
+  data: { code: 403, id: 7 },
   internalData: { error: "Someone tried to login as an Admin." }
 });
 
