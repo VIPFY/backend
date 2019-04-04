@@ -2,6 +2,7 @@ import Axios from "axios";
 
 const { RRP_USERNAME, RRP_PASSWORD, ENVIRONMENT } = process.env;
 let url = "https://api.rrpproxy.net/api/call";
+let verisignUrl = "https://sugapi.verisign-grs.com/ns-api/2.0";
 
 const data = {
   s_login: RRP_USERNAME,
@@ -12,6 +13,7 @@ const envCheck = ENVIRONMENT == "development";
 if (envCheck) {
   url = "https://api-ote.rrpproxy.net/api/call";
   data.s_opmode = "OTE";
+  verisignUrl = "https://ote-sugapi.verisign-grs.com/ns-api/2.0";
 }
 
 const config = {
@@ -65,34 +67,36 @@ export const checkDomain = async domains => {
 };
 
 /**
- * Suggests different domains for a name
- * @param {string} domain
+ * Suggests different domains for a name. Goes to Verisign instead of RRP
+ * @param {string} domain Seed domain name (Unicode or Punycode). If the seed domain name includes a TLD(e.g. seeddomain.example), then that TLDwill also be used for suggestions.
+ * @param {object} options
+ * {string} lang Language of the 'name' used for normalization.
+ * {string} ip-address Include suggestions based on theapproximate geolocation of the provided IPaddress.
  *
  * @returns {object}
  */
-export const getDomainSuggestion = async domain => {
+export const getDomainSuggestion = async (domain, options) => {
   try {
-    const params = {
-      ...data,
-      command: "GetNameSuggestion",
-      name: domain,
-      type: "SUGGEST",
-      tld0: "com,",
-      tld1: "de",
-      tld2: "net",
-      tld3: "org",
-      tld4: "ch",
-      "USE-NUMBERS": 1,
-      "USE-IDNS": 1,
-      "USE-DASHES": 1,
-      "SHOW-UNAVAILABLE": 0
-    };
+    const res = await Axios({
+      method: "GET",
+      baseURL: verisignUrl,
+      url: "/suggest",
+      headers: { "X-NAMESUGGESTION-APIKEY": process.env.VERISIGN_API_KEY },
+      params: {
+        name: domain,
+        tlds: "com,de,net,org,ch,shop,store,tech,app,club,blog,cloud",
+        lang: options.lang || "eng",
+        ...options
+      }
+    });
 
-    const res = await Axios({ ...config, params });
+    if (!res.data && !res.data.results) {
+      throw new Error("Received no data!");
+    }
 
-    return parseResponse(res.data);
+    return res.data.results;
   } catch (error) {
-    throw new Error({ error });
+    throw new Error(error);
   }
 };
 

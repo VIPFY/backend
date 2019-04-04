@@ -43,7 +43,7 @@ export default {
   ),
 
   fetchDomainSuggestions: requiresRights(["view-domains"]).createResolver(
-    async (parent, { name }, { models }) => {
+    async (parent, { name }, { models, ip }) => {
       try {
         const domainPlans = await models.Plan.findAll({
           where: {
@@ -65,25 +65,23 @@ export default {
         });
 
         const punycodeDomain = punycode.toASCII(name);
-        const suggestions = await getDomainSuggestion(punycodeDomain);
-        console.log(suggestions);
-        const suggestionList = [];
+        const suggestions = await getDomainSuggestion(punycodeDomain, {
+          "ip-address": ip
+        });
 
-        Object.keys(suggestions)
-          .filter(item => item.includes("property[name]"))
-          .forEach((item, key) => {
-            if (suggestions[`property[availability][${key}]`] == "available") {
-              const [, tld] = suggestions[item].split(".");
-              const plan = domainPlans.find(el => el.name == tld);
+        const suggestionList = Object.values(suggestions)
+          .filter(item => item.availability == "available")
+          .map(item => {
+            const [, tld] = item.name.split(".");
+            const plan = domainPlans.find(el => el.name == tld);
 
-              suggestionList.push({
-                domain: punycode.toUnicode(suggestions[item]),
-                availability: "210",
-                price: plan.price,
-                currency: plan.currency,
-                description: "available"
-              });
-            }
+            return {
+              domain: punycode.toUnicode(item.name),
+              availability: "210",
+              price: plan.price,
+              currency: plan.currency,
+              description: "available"
+            };
           });
 
         return suggestionList;
