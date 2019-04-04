@@ -96,5 +96,22 @@ export default {
     } catch (err) {
       throw new Error("Invalid Vatnumber!");
     }
+  },
+
+  logSSOError: async (parent, { eventdata }, { models, ip }) => {
+    try {
+      console.error(eventdata);
+
+      await models.Log.create({
+        ip,
+        eventtype: "logSSOError",
+        eventdata,
+        user: null
+      });
+
+      return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
   }
 };
