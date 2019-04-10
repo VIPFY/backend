@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 import Axios from "axios";
 
 const { RRP_USERNAME, RRP_PASSWORD, ENVIRONMENT } = process.env;
@@ -7,6 +8,7 @@ let verisignUrl = "https://sugapi.verisign-grs.com/ns-api/2.0";
 const data = {
   s_login: RRP_USERNAME,
   s_pw: RRP_PASSWORD
+  // s_pw:"3657;S^2wecQ)L,(zCPm&QM3446V-i7"
 };
 
 const envCheck = ENVIRONMENT == "development";
@@ -232,6 +234,28 @@ export const transferIn = async (domain, auth, contact) => {
 export const statusDomain = async domain => {
   try {
     const params = { ...data, command: "StatusDomain", domain };
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+export const checkDomainTransfer = async domain => {
+  try {
+    const params = { ...data, command: "CheckDomainTransfer", domain };
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+export const setAuthcode = async (domain, auth) => {
+  try {
+    const params = { ...data, command: "SetAuthCode", domain, auth, type: 1 };
     const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);

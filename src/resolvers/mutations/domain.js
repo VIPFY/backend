@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import crypto from "crypto";
 import punycode from "punycode";
 import {
   checkDomain,
@@ -10,7 +11,10 @@ import {
   toggleRenewalMode,
   addNs,
   removeNs,
-  setNs
+  setNs,
+  checkDomainTransfer,
+  statusDomain,
+  setAuthcode
 } from "../../services/rrp";
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -679,10 +683,9 @@ export default {
             changed: ["domains"]
           });
 
-          const p4 = createLog(ip, "setWhoisPrivacy", { res }, unitid, ta);
+          const p4 = createLog(ip, "setWhoisPrivacy", res, unitid, ta);
 
-          await Promise.all(p3, p4);
-
+          await Promise.all([p3, p4]);
           return { ...domainToUpdate, whoisprivacy: status ? true : false };
         } catch (err) {
           await createNotification({
@@ -873,5 +876,90 @@ export default {
           });
         }
       })
+  ),
+
+  checkTransferReq: async (parent, { domain }) => {
+    try {
+      const [, tld] = domain.split(".");
+
+      switch (tld) {
+        case "de":
+        case "ch":
+        case "at":
+        case "io": {
+          const res = await checkDomain([domain]);
+          const code = res["property[domaincheck][0]"].split(" ")[0];
+          return { noCheck: true, code };
+        }
+
+        default: {
+          const res = await checkDomainTransfer(domain);
+          const response = {
+            noCheck: false,
+            code: res.code,
+            description: res.description,
+            age: res["property[age in days][0]"],
+            registrar: res["property[registrar][0]"],
+            transferLock: res["property[transfer lock][0]"],
+            whoisServer: res["property[whois server][0]"]
+          };
+
+          return response;
+        }
+      }
+    } catch (err) {
+      throw new PartnerError({
+        message: err.message,
+        internalData: { err, partner: "RRP Proxy" }
+      });
+    }
+  },
+
+  requestAuthCode: requiresRights(["edit-domains"]).createResolver(
+    async (parent, { id }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+        let authCode = "";
+
+        const { domainname } = await models.Domain.findOne({
+          where: { id, unitid: company },
+          raw: true
+        });
+
+        const res = await statusDomain(domainname);
+
+        if (res.code != 200) {
+          throw new Error(res.description);
+        } else if (!res["property[auth][0]"]) {
+          const validCharacters =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789+-/*";
+          let auth = "";
+
+          for (let i = 0; i < 13; i++) {
+            auth += validCharacters.charAt(
+              Math.floor(Math.random() * validCharacters.length)
+            );
+          }
+
+          const res2 = await setAuthcode(domainname, auth);
+          if (res2.code != 200) {
+            throw new Error(res2.description);
+          } else {
+            authCode = res2["property[auth][0]"];
+          }
+        } else {
+          authCode = res["property[auth][0]"];
+        }
+
+        return authCode;
+      } catch (err) {
+        throw new PartnerError({
+          message: err.message,
+          internalData: { err, partner: "RRP Proxy" }
+        });
+      }
+    }
   )
 };

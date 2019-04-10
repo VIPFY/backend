@@ -78,6 +78,8 @@ export const queries = `
 
 export const mutations = `
   checkDomain(domain: String!): CheckDomainResponse!
+  checkTransferReq(domain: String!): JSON!
+  requestAuthCode(id: ID!): String!
   registerDomains(domainData: [DomainInput!]!, totalPrice: Float!, agb: Boolean!): [Domain!]!
   transferInDomain(domain: String!, auth: String!): Boolean!
   setWhoisPrivacy(id: ID!, status: Int!): Domain!

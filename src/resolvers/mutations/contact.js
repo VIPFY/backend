@@ -81,7 +81,7 @@ export default {
             }
           }
 
-          const oldAddress = await models.Address.findById(id, {
+          const oldAddress = await models.Address.findByPk(id, {
             raw: true,
             transaction: ta
           });
@@ -96,6 +96,10 @@ export default {
             },
             { where: { id, unitid }, returning: true, transaction: ta }
           );
+
+          if (updatedAddress[0] == 0) {
+            throw new Error("Didn't find address!");
+          }
 
           await createLog(
             ip,
