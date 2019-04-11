@@ -101,6 +101,7 @@ export const mutations = `
 
   createEmail(emailData: EmailInput! forCompany: Boolean): Email!
   updateEmail(email: String!, emailData: EmailUpdateInput!): Response!
+  updateEmail08(email: String!, emailData: EmailUpdateInput!): Email!
   deleteEmail(email: String!, forCompany: Boolean): Response!
 
   updateTags(model: String!, tags: [String]!): Response!
