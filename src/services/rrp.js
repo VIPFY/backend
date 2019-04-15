@@ -70,6 +70,7 @@ export const checkDomain = async domains => {
 
 /**
  * Suggests different domains for a name. Goes to Verisign instead of RRP
+ *
  * @param {string} domain Seed domain name (Unicode or Punycode). If the seed domain name includes a TLD(e.g. seeddomain.example), then that TLDwill also be used for suggestions.
  * @param {object} options
  * {string} lang Language of the 'name' used for normalization.
@@ -102,6 +103,64 @@ export const getDomainSuggestion = async (domain, options) => {
   }
 };
 
+/**
+ * Creates a zone for a domain
+ *
+ * @param {string} name Name of the new Zone
+ *
+ * @returns {object}
+ */
+export const addZone = async name => {
+  try {
+    const params = { ...data, command: "AddDNSZone", dnszone: name };
+
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
+ * Modifies a zone for a domain
+ *
+ * @param {string} name Name of the new Zone to modify
+ * @param {string[]} records The records which should be modified
+ * @param {enum} action ADD or DEL
+ * @returns {object}
+ */
+export const modifyZone = async (name, records, action) => {
+  try {
+    const params = {
+      ...data,
+      command: "ModifyDNSZone",
+      dnszone: name
+    };
+
+    if (action != "DEL" || action != "ADD") {
+      throw new Error("Action must either be DEL or ADD");
+    }
+
+    records.forEach((record, key) => {
+      params[`${action}RR${key}`] = record;
+    });
+
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
+ * Registers a Domain with RRPProxy
+ *
+ * @param {object} domainData
+ *
+ * @returns {object}
+ */
 export const registerDomain = async ({ domain, contactid, whoisprivacy }) => {
   try {
     const params = {

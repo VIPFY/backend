@@ -1,5 +1,4 @@
 import { decode } from "jsonwebtoken";
-import crypto from "crypto";
 import punycode from "punycode";
 import {
   checkDomain,
@@ -266,7 +265,7 @@ export default {
 
                 partnerLogs.successful.push(registerRes);
                 if (registerRes.code != "200") {
-                  console.log(registerRes);
+                  console.error(registerRes);
                   partnerLogs.failed.push(registerRes);
                   throw new Error(registerRes.description);
                 }
@@ -350,7 +349,7 @@ export default {
 
                 await Promise.all([p4, p5]);
               } catch (error) {
-                console.log(error);
+                console.error(error);
                 createNotification({
                   receiver: unitid,
                   message: `Registration of ${domainItem.domain} failed.`,
@@ -786,14 +785,15 @@ export default {
     }),
 
   /**
-   * Update Whois Privacy or Renewal Mode of a domain. Updating both at the
+   * Update Nameservers of a domain
    *
    * @param {ID} id
    * @param {string[]} dns The new nameservers for the domain
+   * @param {enum} action Either ADD or REMOVE
    *
    * @returns {any}
    */
-  updateDns: requiresRights(["edit-domains"]).createResolver(
+  updateNs: requiresRights(["edit-domains"]).createResolver(
     (parent, { ns, id, action }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
@@ -877,6 +877,26 @@ export default {
         }
       })
   ),
+
+  updateZone: async (parent, { id, config, action }, { models, token }) => {
+    try {
+      const {
+        user: { unitid, company }
+      } = decode(token);
+      const domain = await models.Domain.findOne(
+        { where: { id, unitid: company } },
+        { raw: true }
+      );
+
+      if (!domain) {
+        throw new Error("Domain not found");
+      }
+
+      return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
 
   checkTransferReq: async (parent, { domain }) => {
     try {

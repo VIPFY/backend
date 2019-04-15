@@ -84,7 +84,8 @@ export const mutations = `
   transferInDomain(domain: String!, auth: String!): Boolean!
   setWhoisPrivacy(id: ID!, status: Int!): Domain!
   setRenewalMode(id: ID!, renewalmode: RENEWALMODE!): Domain!
-  updateDns(id: ID!, ns: String!, action: String!): Domain!
+  updateNs(id: ID!, ns: String!, action: String!): Domain!
+  updateZone(id: ID!, config: JSON!, action: String!): Domain!
   registerExternalDomain(domainData: DomainInput!): Domain!
   deleteExternalDomain(id: ID!): Response!
 `;
