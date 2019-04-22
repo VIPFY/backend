@@ -16,7 +16,7 @@ export const sendEmail = async ({ templateId, personalizations, fromName }) => {
       template_id: templateId,
       personalizations,
       from: {
-        email: "no-reply@vifpy.store",
+        email: "noreply@vipfy.store",
         name: fromName
       },
       reply_to: {
