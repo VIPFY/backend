@@ -883,6 +883,7 @@ export default {
       const {
         user: { unitid, company }
       } = decode(token);
+
       const domain = await models.Domain.findOne(
         { where: { id, unitid: company } },
         { raw: true }
