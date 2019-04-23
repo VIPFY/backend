@@ -68,6 +68,25 @@ export const types = `
     isonline: Boolean
   }
 
+  type SemiPublicUser {
+    id: ID!
+    firstname: String
+    middlename: String
+    lastname: String
+    title: String
+    sex: SEX
+    birthday: Date
+    language: String
+    profilepicture: String
+    isadmin: Boolean!
+    companyban: Boolean
+    isonline: Boolean
+    emails: [Email]
+    addresses: [Address]
+    phones: [Phone]
+    company: Department
+  }
+
   type SignUpConfirmResponse {
     download: DownloadLink
   }
@@ -76,6 +95,9 @@ export const types = `
 export const queries = `
   # Returns the logged-in user. Used for Authentication
   me: User
+
+  #UserView for Company Admins
+  adminme(unitid: ID!): SemiPublicUser
 
   #The token the user receives after registration to set his password
   checkAuthToken(token: String!, email: String!): TokenResponse!

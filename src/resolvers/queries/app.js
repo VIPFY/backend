@@ -254,6 +254,40 @@ export default {
     }
   ),
 
+  fetchUserLicences: requiresRights(["view-licences"]).createResolver(
+    async (parent, { unitid }, { models, token }) => {
+      try {
+        const licences = await models.Licence.findAll({
+          where: { unitid },
+          raw: true
+        });
+
+        const startTime = Date.now();
+
+        licences.forEach(licence => {
+          if (licence.disabled) {
+            licence.agreed = false;
+            licence.key = null;
+          }
+
+          if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
+            licence.key = null;
+          }
+
+          if (licence.endtime) {
+            if (Date.parse(licence.endtime) < startTime) {
+              licence.key = null;
+            }
+          }
+        });
+
+        return licences;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   fetchUnitApps: requiresRights(["view-licences"]).createResolver(
     async (parent, { departmentid }, { models }) => {
       try {

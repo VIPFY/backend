@@ -124,6 +124,12 @@ export default {
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
   Upload: GraphQLUpload,
   User: find({ company: "Department", emails: "[Email]" }),
+  SemiPublicUser: find({
+    company: "Department",
+    emails: "[Email]",
+    addresses: "[Address]",
+    phones: "[Phone]"
+  }),
   UserSecurityOverview: find({ unitid: "User" }),
   Website: find({})
 };
