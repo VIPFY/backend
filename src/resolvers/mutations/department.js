@@ -159,21 +159,21 @@ export default {
             where: { unitid: company }
           });
 
-          let [
+          const [
             human,
             newEmail,
             parentUnit,
             requester,
             companyObj
           ] = await Promise.all([p1, p2, p3, p4, p5]);
-          human = human.get();
-          newEmail = newEmail.get();
-          parentUnit = parentUnit.get();
+          const humanData = human.get();
+          const newEmailData = newEmail.get();
+          const parentUnitData = parentUnit.get();
 
           await createLog(
             ip,
             "addCreateEmployee",
-            { unit, human, newEmail, parentUnit },
+            { unit, humanData, newEmailData, parentUnitData },
             unitid,
             ta
           );
@@ -187,12 +187,7 @@ export default {
             fromName: "VIPFY",
             personalizations: [
               {
-                to: [
-                  {
-                    email,
-                    name: formatHumanName(name)
-                  }
-                ],
+                to: [{ email, name: formatHumanName(name) }],
                 dynamic_template_data: {
                   name: formatHumanName(name),
                   creator: formatHumanName(requester),
