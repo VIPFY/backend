@@ -100,11 +100,7 @@ export default {
   ),
 
   addCreateEmployee: requiresRights(["create-employees"]).createResolver(
-    async (
-      parent,
-      { email, password, name, departmentid },
-      { models, token, ip }
-    ) =>
+    async (_, { email, password, name, departmentid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -159,13 +155,23 @@ export default {
             where: { unitid: company }
           });
 
+          const p6 = models.Right.create(
+            {
+              holder: unit.id,
+              forunit: company,
+              type: "view-apps"
+            },
+            { transaction: ta }
+          );
+
           const [
             human,
             newEmail,
             parentUnit,
             requester,
-            companyObj
-          ] = await Promise.all([p1, p2, p3, p4, p5]);
+            companyObj,
+            rights
+          ] = await Promise.all([p1, p2, p3, p4, p5, p6]);
           const humanData = human.get();
           const newEmailData = newEmail.get();
           const parentUnitData = parentUnit.get();
@@ -173,7 +179,7 @@ export default {
           await createLog(
             ip,
             "addCreateEmployee",
-            { unit, humanData, newEmailData, parentUnitData },
+            { unit, humanData, newEmailData, parentUnitData, rights },
             unitid,
             ta
           );
