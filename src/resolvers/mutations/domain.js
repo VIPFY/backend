@@ -902,16 +902,19 @@ export default {
         user: { unitid, company }
       } = decode(token);
 
-      const domain = await models.Domain.findOne(
-        { where: { id, unitid: company } },
-        { raw: true }
-      );
+      const domain = await models.Domain.findOne({
+        where: { id, unitid: company },
+        raw: true
+      });
 
       if (!domain) {
         throw new Error("Domain not found");
       }
 
-      const zone = domain.dns.zone || { dnszone: domain };
+      const zone =
+        domain.dns && domain.dns.zone
+          ? domain.dns.zone
+          : { dnszone: domain.domainname };
 
       let records = null;
 
@@ -925,18 +928,17 @@ export default {
             }
 
             records = [
-              "A @ 188.165.164.79",
-              "A @ 94.23.156.143",
-              "A @ 192.95.19.39"
+              "@ IN A 188.165.164.79",
+              "@ IN A 94.23.156.143",
+              "@ IN A 192.95.19.39"
             ];
-            console.log("LOG: res", res);
           }
           break;
 
         case "UPDATE":
           {
             const res = await modifyZone(domain.domainname, zoneRecord, "ADD");
-            console.log("LOG: res", res);
+
             if (res.code != 200) {
               throw new Error(res.description);
             }
@@ -947,7 +949,7 @@ export default {
           {
             const res = await modifyZone(domain.domainname, zoneRecord, "DEL");
             records = zone.records.filter(record => record != zoneRecord);
-            console.log(res);
+
             if (res.code != 200) {
               throw new Error(res.description);
             }
@@ -958,12 +960,12 @@ export default {
           throw new Error("Action not supported!");
       }
 
-      const updatedDomain = await models.Domain.update(
+      await models.Domain.update(
         { dns: { ...domain.dns, zone: { ...zone, records } } },
         { where: { id: domain.id }, returning: true }
       );
 
-      return updatedDomain[1];
+      return { ...domain, dns: { ...domain.dns, zone: { ...zone, records } } };
     } catch (err) {
       throw new PartnerError({
         message: err.message,

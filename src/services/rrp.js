@@ -120,9 +120,9 @@ export const addZone = async name => {
       ...data,
       command: "AddDNSZone",
       dnszone: name,
-      rr0: "A @ 188.165.164.79",
-      rr1: "A @ 94.23.156.143",
-      rr2: "A @ 192.95.19.39"
+      rr0: "@ IN A 188.165.164.79",
+      rr1: "@ IN A 94.23.156.143",
+      rr2: "@ IN A 192.95.19.39"
     };
 
     const res = await Axios({ ...config, params });
@@ -141,21 +141,22 @@ export const addZone = async name => {
  * @param {enum} action ADD or DEL
  * @returns {object}
  */
-export const modifyZone = async (name, records, action) => {
+export const modifyZone = async (name, record, action) => {
   try {
     const params = {
       ...data,
       command: "ModifyDNSZone",
-      dnszone: name
+      dnszone: name,
+      [`${action}RR0`]: record
     };
 
-    if (action != "DEL" || action != "ADD") {
+    if (action != "DEL" && action != "ADD") {
       throw new Error("Action must either be DEL or ADD");
     }
 
-    records.forEach((record, key) => {
-      params[`${action}RR${key}`] = record;
-    });
+    // records.forEach((record, key) => {
+    //   params[`${action}RR${key}`] = record;
+    // });
 
     const res = await Axios({ ...config, params });
 
