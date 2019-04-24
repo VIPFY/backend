@@ -52,11 +52,7 @@
     "@lifeomic/graphql-resolvers-xray-tracing": "^3.0.1",
     "@sendgrid/client": "^6.3.0",
     "@vipfy-private/messaging": "1.18.0",
-<<<<<<< HEAD
     "@vipfy-private/sequelize-setup": "1.71.0",
-=======
-    "@vipfy-private/sequelize-setup": "1.70.3",
->>>>>>> afd94a230f135b3d1c83523dd69744a81e5acf7c
     "@vipfy-private/service-base": "^1.1.0",
     "@vipfy-private/services": "1.10.6",
     "apollo-errors": "^1.9.0",
