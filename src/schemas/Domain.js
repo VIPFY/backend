@@ -68,6 +68,12 @@ export const types = `
     PENDING,
     EXPIRED
   }
+
+  enum DOMAINACTION {
+    ADD
+    UPDATE
+    DELETE
+  }
 `;
 
 export const queries = `
@@ -85,7 +91,7 @@ export const mutations = `
   setWhoisPrivacy(id: ID!, status: Int!): Domain!
   setRenewalMode(id: ID!, renewalmode: RENEWALMODE!): Domain!
   updateNs(id: ID!, ns: String!, action: String!): Domain!
-  updateZone(id: ID!, config: JSON!, action: String!): Domain!
+  updateZone(id: ID!, zoneRecord: String, action: DOMAINACTION!): Domain!
   registerExternalDomain(domainData: DomainInput!): Domain!
   deleteExternalDomain(id: ID!): Response!
 `;

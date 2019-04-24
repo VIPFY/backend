@@ -23,6 +23,10 @@ const config = {
   url
 };
 
+const ns0 = envCheck ? "NS1.VIPFY.NET" : " NS1.VIPFY.COM ";
+const ns1 = envCheck ? "NS2.VIPFY.NET" : " NS2.VIPFY.COM ";
+const ns2 = envCheck ? "NS3.VIPFY.NET" : " NS3.VIPFY.COM ";
+
 /**
  * Translates a string to a JSON object
  * @param {string} res The shitty text response we get from RRP
@@ -104,15 +108,22 @@ export const getDomainSuggestion = async (domain, options) => {
 };
 
 /**
- * Creates a zone for a domain
+ * Creates a zone for a domain. Uses the ns of RRP Proxy
  *
- * @param {string} name Name of the new Zone
+ * @param {string} name Name of the new Zone, should be the domain name
  *
  * @returns {object}
  */
 export const addZone = async name => {
   try {
-    const params = { ...data, command: "AddDNSZone", dnszone: name };
+    const params = {
+      ...data,
+      command: "AddDNSZone",
+      dnszone: name,
+      rr0: "A @ 188.165.164.79",
+      rr1: "A @ 94.23.156.143",
+      rr2: "A @ 192.95.19.39"
+    };
 
     const res = await Axios({ ...config, params });
 
@@ -173,9 +184,9 @@ export const registerDomain = async ({ domain, contactid, whoisprivacy }) => {
       admincontact0: contactid,
       techcontact0: envCheck ? "P-DEA453" : "P-DKA10922",
       billingcontact0: envCheck ? "P-DEA453" : "P-DKA10922",
-      nameserver0: envCheck ? "NS1.VIPFY.NET" : " NS1.VIPFY.COM ",
-      nameserver1: envCheck ? "NS2.VIPFY.NET" : " NS2.VIPFY.COM ",
-      nameserver2: envCheck ? "NS3.VIPFY.NET" : " NS3.VIPFY.COM "
+      nameserver0: ns0,
+      nameserver1: ns1,
+      nameserver2: ns2
     };
 
     const res = await Axios({ ...config, params });

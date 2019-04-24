@@ -13,7 +13,9 @@ import {
   setNs,
   checkDomainTransfer,
   statusDomain,
-  setAuthcode
+  setAuthcode,
+  addZone,
+  modifyZone
 } from "../../services/rrp";
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -317,6 +319,25 @@ export default {
                     "NS2.VIPFY.NET",
                     "NS3.VIPFY.NET"
                   ];
+                }
+
+                try {
+                  const res = await addZone(domain);
+
+                  if (res != 200) {
+                    throw new Error(res.description);
+                  }
+
+                  dns.zone = {
+                    dnszone: domain,
+                    records: [
+                      "A @ 188.165.164.79",
+                      "A @ 94.23.156.143",
+                      "A @ 192.95.19.39"
+                    ]
+                  };
+                } catch (error) {
+                  console.error(error);
                 }
 
                 const p4 = models.Domain.create(
@@ -662,10 +683,7 @@ export default {
           );
 
           await models.Domain.update(
-            {
-              whoisprivacy: status,
-              boughtplanid: newBP.dataValues.id
-            },
+            { whoisprivacy: status, boughtplanid: newBP.dataValues.id },
             {
               where: { id: domainToUpdate.id, unitid: company },
               transaction: ta
@@ -836,7 +854,7 @@ export default {
 
           await models.Domain.update(
             { dns: { ...domain.dns, nameservers: newDns } },
-            { transaction: ta, where: { id }, returning: true }
+            { transaction: ta, where: { id } }
           );
 
           const log = await createLog(ip, "updateDns", { res, ns }, unitid, ta);
@@ -878,7 +896,7 @@ export default {
       })
   ),
 
-  updateZone: async (parent, { id, config, action }, { models, token }) => {
+  updateZone: async (parent, { id, zoneRecord, action }, { models, token }) => {
     try {
       const {
         user: { unitid, company }
@@ -893,9 +911,64 @@ export default {
         throw new Error("Domain not found");
       }
 
-      return true;
+      const zone = domain.dns.zone || { dnszone: domain };
+
+      let records = null;
+
+      switch (action) {
+        case "ADD":
+          {
+            const res = await addZone(domain.domainname);
+
+            if (res.code != 200) {
+              throw new Error(res.description);
+            }
+
+            records = [
+              "A @ 188.165.164.79",
+              "A @ 94.23.156.143",
+              "A @ 192.95.19.39"
+            ];
+            console.log("LOG: res", res);
+          }
+          break;
+
+        case "UPDATE":
+          {
+            const res = await modifyZone(domain.domainname, zoneRecord, "ADD");
+            console.log("LOG: res", res);
+            if (res.code != 200) {
+              throw new Error(res.description);
+            }
+          }
+          break;
+
+        case "DELETE":
+          {
+            const res = await modifyZone(domain.domainname, zoneRecord, "DEL");
+            records = zone.records.filter(record => record != zoneRecord);
+            console.log(res);
+            if (res.code != 200) {
+              throw new Error(res.description);
+            }
+          }
+          break;
+
+        default:
+          throw new Error("Action not supported!");
+      }
+
+      const updatedDomain = await models.Domain.update(
+        { dns: { ...domain.dns, zone: { ...zone, records } } },
+        { where: { id: domain.id }, returning: true }
+      );
+
+      return updatedDomain[1];
     } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+      throw new PartnerError({
+        message: err.message,
+        internalData: { err, partner: "RRP Proxy" }
+      });
     }
   },
 
