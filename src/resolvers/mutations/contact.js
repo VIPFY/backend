@@ -256,6 +256,46 @@ export default {
       })
   ),
 
+  updateEmail08: requiresRights(["edit-email"]).createResolver(
+    async (parent, { email, emailData }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const oldEmail = await models.DepartmentEmail.findOne({
+            where: { email, departmentid: company },
+            raw: true
+          });
+
+          if (!oldEmail) {
+            throw new Error("This email doesn't belong to this company");
+          }
+
+          const updatedEmail = await models.Email.update(
+            { ...emailData },
+            { where: { email }, transaction: ta, returning: true }
+          );
+
+          await createLog(
+            ip,
+            "createEmail",
+            { oldEmail, updatedEmail },
+            unitid,
+            ta
+          );
+
+          return updatedEmail[1][0];
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   /**
    * Deletes an existing Email
    * @param {string} email

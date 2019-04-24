@@ -154,6 +154,9 @@ export const queries = `
   # Returns all Licences of a current user that are not department licences
   fetchUsersOwnLicences(unitid: ID!): [Licence]
 
+  # Returns all Licences of a defined user
+  fetchUserLicences(unitid: ID!): [Licence]
+
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
 
   fetchSupportToken: String

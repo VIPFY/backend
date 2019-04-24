@@ -180,7 +180,8 @@ export default {
 
         const planIds = vipfyPlans.map(plan => plan.id);
 
-        let vipfyPlan = await models.BoughtPlan.findOne({
+        // requiresAuth ensures that one exists
+        const vipfyPlan = await models.BoughtPlan.findOne({
           where: {
             payer: company,
             endtime: {
@@ -192,17 +193,6 @@ export default {
             planid: { [models.Op.in]: planIds }
           }
         });
-
-        if (!vipfyPlan) {
-          vipfyPlan = await models.BoughtPlan.create({
-            planid: 125,
-            payer: company,
-            usedby: company,
-            buyer: unitid,
-            totalprice: 0,
-            disabled: false
-          });
-        }
 
         return vipfyPlan;
       } catch (err) {

@@ -23,11 +23,7 @@ export default {
   distributeLicenceToDepartment: requiresRights([
     "create-licences"
   ]).createResolver(
-    (
-      parent,
-      { departmentid, boughtplanid, licencetype },
-      { models, token, ip }
-    ) =>
+    (_, { departmentid, boughtplanid, licencetype }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {

@@ -154,9 +154,15 @@ export const find = data => {
         if (loadMultiple) {
           let result;
 
+          if (value === null || value === undefined) {
+            return [];
+          }
+
           // load data if it's not trivial
           if (fields == [key]) {
-            result = value.map(v => (v === null ? null : { [key]: v }));
+            result = value.map(v =>
+              v === null || v === undefined ? null : { [key]: v }
+            );
           } else {
             const dataloader = getDataLoader(datatype, key, ctx);
             result = await dataloader.loadMany(value);
@@ -174,7 +180,8 @@ export const find = data => {
 
           // load data if it's not trivial
           if (fields == [key]) {
-            result = value === null ? null : { [key]: value };
+            result =
+              value === null || value === undefined ? null : { [key]: value };
           } else {
             const dataloader = getDataLoader(datatype, key, ctx);
             result = await dataloader.load(value);
