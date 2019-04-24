@@ -7,7 +7,7 @@
   "main": "dist/index.js",
   "scripts": {
     "serve": "ENVIRONMENT=production node dist/index.js",
-    "build": "shx rm -rf dist && babel src -d dist --ignore 'tests' --copy-files && bash insert_profiling.sh",
+    "build": "shx rm -rf dist && babel src -d dist --ignore 'tests' --copy-files --source-maps && bash insert_profiling.sh",
     "prestart": "npm run build",
     "start": "node dist/index.js",
     "start-dev": "ENVIRONMENT=development nodemon --exec babel-node src/index.js",
