@@ -10,6 +10,8 @@ export const types = `
     firstname: String
     middlename: String
     lastname: String
+    hiredate: Date
+    position: String
     title: String
     sex: SEX
     birthday: String
@@ -53,6 +55,23 @@ export const types = `
     statisticdata: JSON
   }
 
+  input EmployeeInput {
+    id: ID!
+    firstname: String
+    middlename: String
+    lastname: String
+    hireddate: Date
+    position: String
+    birthday: Date
+    email: EmailInput
+    email2: EmailInput
+    address: AddressInput
+    phone: PhoneInput
+    phone2: PhoneInput
+    workPhone: PhoneInput
+    workPhone2: PhoneInput
+  }
+
   type PublicUser {
     id: ID!
     firstname: String
@@ -73,6 +92,8 @@ export const types = `
     firstname: String
     middlename: String
     lastname: String
+    hiredate: Date
+    position: String
     title: String
     sex: SEX
     birthday: Date
@@ -105,6 +126,8 @@ export const queries = `
 
 export const mutations = `
   createUser(user: UserInput!, file: Upload): Response!
+  updateMyself(user: UserInput!): User!
+  updateEmployee(user: EmployeeInput!): SemiPublicUser!
   updateUser(user: UserInput!): Response!
   updateProfilePic(file: Upload!): String!
 
