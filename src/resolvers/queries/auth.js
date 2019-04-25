@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { parentAdminCheck } from "../../helpers/functions";
-import { requiresAuth } from "../../helpers/permissions";
+import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
 import moment from "moment";
 
@@ -12,7 +12,6 @@ export default {
         const {
           user: { unitid }
         } = decode(token);
-
         const me = await models.User.findById(unitid);
         const user = await parentAdminCheck(me);
 
@@ -26,14 +25,13 @@ export default {
     } else throw new AuthError();
   }),
 
-  adminme: requiresAuth.createResolver(
+  adminme: requiresRights(["view-users"]).createResolver(
     async (parent, { unitid }, { models, token }) => {
       try {
         const me = await models.User.findById(unitid);
 
         console.log("ME", me);
-        let user = await parentAdminCheck(me);
-        //user.country = "DE";
+        const user = await parentAdminCheck(me);
 
         return user;
       } catch (err) {
