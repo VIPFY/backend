@@ -28,6 +28,7 @@ export const types = `
     createdate: String!
     promocode: String
     setupfinished: Boolean
+    iscompany: Boolean
   }
 
   type DepartmentData {
@@ -35,6 +36,10 @@ export const types = `
     legalinformation: JSON
     unitid: Unit!
     promocode: String
+    setupfinished: Boolean
+    iscompany: Boolean
+    statisticdata: JSON
+    internaldata: JSON
   }
 
   type DepartmentEmail {
@@ -92,6 +97,12 @@ export const types = `
     subIndustry: String
     companyStage: String
   }
+
+  input TeamInput {
+    color: String
+    leader: String
+    icon: String
+  }
 `;
 
 export const queries = `
@@ -115,9 +126,11 @@ export const mutations = `
   updateCompanyPic(file: Upload!): String!
   updateStatisticData(data: StatisticInput!): Response!
 
-  addSubDepartment(departmentid: ID! ,name: String!): Response!
+  addSubDepartment(departmentid: ID!, name: String!): Response!
   editDepartmentName(departmentid: ID!, name: String!): Response!
   deleteSubDepartment(departmentid: ID!): Response!
+
+  addTeam(name: String!, data: TeamInput!): Department!
 
   addEmployee(unitid: ID!, departmentid: ID!): Response!
   addCreateEmployee(email: String!, password: String!, name: HumanName!, departmentid: ID!): Response!
