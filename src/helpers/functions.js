@@ -346,7 +346,8 @@ export const checkPaymentData = async (unitid, plan, ta) => {
 };
 
 /**
- * Fetches User `unitid` if `employee` is in `company`, else throw exception
+ * Returns User `unitid` if the provided `employee` is in the `company`,
+ * otherwise it throws an Exception
  * @param {ID} company
  * @param {ID} unitid
  * @param {ID} employee
@@ -357,7 +358,6 @@ export const companyCheck = async (company, unitid, employee) => {
       where: { id: company, employee },
       raw: true
     });
-
     const findAdmin = models.User.findOne({ where: { id: unitid }, raw: true });
 
     const [inCompany, admin] = await Promise.all([findCompany, findAdmin]);
@@ -368,7 +368,7 @@ export const companyCheck = async (company, unitid, employee) => {
 
     return admin;
   } catch (err) {
-    throw new Error({ message: err.message });
+    throw new Error(err);
   }
 };
 
@@ -385,4 +385,21 @@ export const groupBy = (list, keyGetter) => {
     }
   });
   return map;
+};
+
+/**
+ * Checks whether a Team belongs to a Company. Throws an Error if not.
+ *
+ * @param {number} parentunit The company the Team belongs to
+ * @param {number} childunit The Team
+ */
+export const teamCheck = async (parentunit, childunit) => {
+  const team = await models.ParentUnit.findOne({
+    where: { parentunit, childunit },
+    raw: true
+  });
+
+  if (!team) {
+    throw new Error("Team does not belong to company!");
+  }
 };

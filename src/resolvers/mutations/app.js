@@ -258,8 +258,6 @@ export default {
           user: { unitid: giver }
         } = decode(token);
 
-        console.log("DistributeLicence");
-
         try {
           const p1 = models.Licence.findOne({
             where: {
@@ -322,9 +320,7 @@ export default {
           }
 
           const p3 = models.Licence.update(
-            {
-              unitid
-            },
+            { unitid },
             {
               where: { id: licenceid },
               transaction: ta
