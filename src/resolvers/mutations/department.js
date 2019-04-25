@@ -1,4 +1,3 @@
-import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
@@ -375,6 +374,50 @@ export default {
           );
 
           return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  addTeam: requiresRights(["create-team"]).createResolver(
+    async (parent, { name, data }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const unit = await models.Unit.create({}, { transaction: ta });
+
+          const p1 = models.DepartmentData.create(
+            {
+              unitid: unit.dataValues.id,
+              name,
+              internaldata: { created: Date.now(), ...data }
+            },
+            { transaction: ta }
+          );
+
+          const p2 = models.ParentUnit.create(
+            { parentunit: company, childunit: unit.dataValues.id },
+            { transaction: ta }
+          );
+
+          const [department, parentUnit] = await Promise.all([p1, p2]);
+
+          await createLog(
+            ip,
+            "addTeam",
+            { unit, department, parentUnit },
+            unitid,
+            ta
+          );
+
+          return department;
         } catch (err) {
           throw new NormalError({
             message: err.message,
