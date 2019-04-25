@@ -131,6 +131,7 @@ export const mutations = `
   deleteSubDepartment(departmentid: ID!): Response!
 
   addTeam(name: String!, data: TeamInput!): Department!
+  deleteTeam(teamid: ID!): Boolean!
 
   addEmployee(unitid: ID!, departmentid: ID!): Response!
   addCreateEmployee(email: String!, password: String!, name: HumanName!, departmentid: ID!): Response!
