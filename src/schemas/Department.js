@@ -21,7 +21,6 @@ export const types = `
     profilepicture: String
     employees: Int
     employeedata: [PublicUser]!
-    manageemployees: Boolean
     managelicences: Boolean
     apps: JSON
     domains: [Domain]
@@ -29,6 +28,7 @@ export const types = `
     promocode: String
     setupfinished: Boolean
     iscompany: Boolean
+    internaldata: JSON
   }
 
   type DepartmentData {
@@ -97,12 +97,6 @@ export const types = `
     subIndustry: String
     companyStage: String
   }
-
-  input TeamInput {
-    color: String
-    leader: String
-    icon: String
-  }
 `;
 
 export const queries = `
@@ -129,9 +123,6 @@ export const mutations = `
   addSubDepartment(departmentid: ID!, name: String!): Response!
   editDepartmentName(departmentid: ID!, name: String!): Response!
   deleteSubDepartment(departmentid: ID!): Response!
-
-  addTeam(name: String!, data: TeamInput!): Department!
-  deleteTeam(teamid: ID!): Boolean!
 
   addEmployee(unitid: ID!, departmentid: ID!): Response!
   addCreateEmployee(email: String!, password: String!, name: HumanName!, departmentid: ID!): Response!

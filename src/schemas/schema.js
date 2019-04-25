@@ -12,6 +12,7 @@ import * as Review from "./Review";
 import * as Responses from "./Responses";
 import * as Demo from "./Demo";
 import * as Tutorial from "./Tutorial";
+import * as Team from "./Team";
 
 // Create Arrays to store the data from every schema
 const types = [];
@@ -33,7 +34,8 @@ const schemas = [
   Review,
   Responses,
   Unit,
-  Tutorial
+  Tutorial,
+  Team
 ];
 
 // Push the value into the corresponding Array to export it
