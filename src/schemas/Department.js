@@ -21,13 +21,14 @@ export const types = `
     profilepicture: String
     employees: Int
     employeedata: [PublicUser]!
-    manageemployees: Boolean
     managelicences: Boolean
     apps: JSON
     domains: [Domain]
     createdate: String!
     promocode: String
     setupfinished: Boolean
+    iscompany: Boolean
+    internaldata: JSON
   }
 
   type DepartmentData {
@@ -35,6 +36,10 @@ export const types = `
     legalinformation: JSON
     unitid: Unit!
     promocode: String
+    setupfinished: Boolean
+    iscompany: Boolean
+    statisticdata: JSON
+    internaldata: JSON
   }
 
   type DepartmentEmail {
@@ -115,7 +120,7 @@ export const mutations = `
   updateCompanyPic(file: Upload!): String!
   updateStatisticData(data: StatisticInput!): Response!
 
-  addSubDepartment(departmentid: ID! ,name: String!): Response!
+  addSubDepartment(departmentid: ID!, name: String!): Response!
   editDepartmentName(departmentid: ID!, name: String!): Response!
   deleteSubDepartment(departmentid: ID!): Response!
 

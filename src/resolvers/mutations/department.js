@@ -1,4 +1,3 @@
-import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
@@ -215,7 +214,7 @@ export default {
       })
   ),
 
-  addSubDepartment: requiresRights(["create-departments"]).createResolver(
+  addSubDepartment: requiresRights(["create-department"]).createResolver(
     async (parent, { departmentid, name }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -258,7 +257,7 @@ export default {
       })
   ),
 
-  editDepartmentName: requiresRights(["edit-departments"]).createResolver(
+  editDepartmentName: requiresRights(["edit-department"]).createResolver(
     (parent, { departmentid, name }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -293,7 +292,7 @@ export default {
       })
   ),
 
-  deleteSubDepartment: requiresRights(["delete-departments"]).createResolver(
+  deleteSubDepartment: requiresRights(["delete-department"]).createResolver(
     async (parent, { departmentid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
