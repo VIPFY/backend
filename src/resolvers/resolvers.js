@@ -11,6 +11,7 @@ import departmentQueries from "./queries/department";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
 import tutorialQueries from "./queries/tutorial";
+import teamQueries from "./queries/team";
 
 import adminMutations from "./mutations/admin";
 import authMutations from "./mutations/auth";
@@ -43,7 +44,8 @@ const Query = Object.assign(
   domainQueries,
   messageQueries,
   reviewQueries,
-  tutorialQueries
+  tutorialQueries,
+  teamQueries
 );
 
 const Mutation = Object.assign(
@@ -124,6 +126,7 @@ export default {
   Right: find({ holder: "Unit", forunit: "Unit" }),
   SimpleStats: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
+  Team: find(unit),
   Upload: GraphQLUpload,
   User: find({ company: "Department", emails: "[Email]" }),
   SemiPublicUser: find({
