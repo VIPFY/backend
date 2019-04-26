@@ -324,16 +324,16 @@ export default {
                 try {
                   const res = await addZone(domain);
 
-                  if (res != 200) {
+                  if (res.code != 200) {
                     throw new Error(res.description);
                   }
 
                   dns.zone = {
                     dnszone: domain,
                     records: [
-                      "A @ 188.165.164.79",
-                      "A @ 94.23.156.143",
-                      "A @ 192.95.19.39"
+                      "@ IN A 188.165.164.79",
+                      "@ IN A 94.23.156.143",
+                      "@ IN A 192.95.19.39"
                     ]
                   };
                 } catch (error) {
@@ -901,6 +901,7 @@ export default {
       const {
         user: { unitid, company }
       } = decode(token);
+      console.log("LOG: zoneRecord", zoneRecord);
 
       const domain = await models.Domain.findOne({
         where: { id, unitid: company },
@@ -948,11 +949,14 @@ export default {
         case "DELETE":
           {
             const res = await modifyZone(domain.domainname, zoneRecord, "DEL");
-            records = zone.records.filter(record => record != zoneRecord);
+            console.log("LOG: res", res);
 
             if (res.code != 200) {
               throw new Error(res.description);
             }
+
+            records = zone.records.filter(record => record != zoneRecord);
+            console.log("LOG: records", records);
           }
           break;
 
