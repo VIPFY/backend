@@ -5,12 +5,17 @@ export default {
   fetchTeams: requiresRights(["view-teams", "view-licences"]).createResolver(
     async (parent, { userid }, { models }) => {
       try {
-        const { parentunit } = await models.ParentUnit.find({
-          where: { childunit: userid },
-          raw: true
-        });
+        const teams = await models.sequelize.query(
+          `SELECT * FROM team_view
+            JOIN parentunit_data p ON (p.parentunit = team_view.unitid)
+          WHERE childunit = :userid`,
+          {
+            replacements: { userid },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
 
-        return models.Team.findAll({ where: { unitid: parentunit } });
+        return teams;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

@@ -18,8 +18,8 @@ export const types = `
     managelicences: Boolean
     apps: JSON
     domains: [Domain]
-    licences: JSON
-    services: JSON
+    licences: [Licence]
+    services: [BoughtPlan]
     createdate: String!
     promocode: String
     setupfinished: Boolean
