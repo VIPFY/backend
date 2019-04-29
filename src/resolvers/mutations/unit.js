@@ -217,17 +217,19 @@ export default {
               if (item.hasOwnProperty("id")) {
                 promises.push(
                   models[model].update(
-                    { ...item },
+                    { ...item, address: { ...item } },
                     { where: { id: item.id }, transaction: ta }
                   )
                 );
               } else {
                 item.tags =
-                  itemKey == "Phone" || "Address" ? ["private"] : ["work"];
-
+                  itemKey == "Phone" || itemKey == "Address"
+                    ? ["private"]
+                    : ["work"];
+                console.log("ITEM KEY", item, itemKey);
                 promises.push(
                   models[model].create(
-                    { ...item, unitid: id },
+                    { ...item, address: { ...item }, unitid: id },
                     { transaction: ta }
                   )
                 );

@@ -60,7 +60,7 @@ export const types = `
     firstname: String
     middlename: String
     lastname: String
-    hireddate: Date
+    hiredate: Date
     position: String
     birthday: Date
     email: EmailInput
