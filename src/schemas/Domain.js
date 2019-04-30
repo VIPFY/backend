@@ -94,4 +94,5 @@ export const mutations = `
   updateZone(id: ID!, zoneRecord: String, action: DOMAINACTION!): Domain!
   registerExternalDomain(domainData: DomainInput!): Domain!
   deleteExternalDomain(id: ID!): Response!
+  checkZone(domain: String!): JSON!
 `;

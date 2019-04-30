@@ -15,7 +15,8 @@ import {
   statusDomain,
   setAuthcode,
   addZone,
-  modifyZone
+  modifyZone,
+  checkZone
 } from "../../services/rrp";
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -189,7 +190,7 @@ export default {
 
         let contactid = null;
 
-        if (!oldDomain.contactid) {
+        if (oldDomain && oldDomain.contactid) {
           // eslint-disable-next-line
           contactid = oldDomain.contactid;
         } else {
@@ -243,11 +244,11 @@ export default {
           };
 
           const contact = await createContact(contactData);
-          partnerLogs.newContact = contact;
 
           if (contact.code != 200) {
             throw new Error(contact.description);
           } else {
+            partnerLogs.newContact = contact;
             contactid = contact["property[contact][0]"];
           }
         }
@@ -334,7 +335,8 @@ export default {
                       "@ IN A 188.165.164.79",
                       "@ IN A 94.23.156.143",
                       "@ IN A 192.95.19.39"
-                    ]
+                    ],
+                    ttl: 3600
                   };
                 } catch (error) {
                   console.error(error);
@@ -901,7 +903,6 @@ export default {
       const {
         user: { unitid, company }
       } = decode(token);
-      console.log("LOG: zoneRecord", zoneRecord);
 
       const domain = await models.Domain.findOne({
         where: { id, unitid: company },
@@ -938,8 +939,13 @@ export default {
 
         case "UPDATE":
           {
-            const res = await modifyZone(domain.domainname, zoneRecord, "ADD");
+            let res = null;
 
+            if (!zone.records) {
+              res = await addZone(domain.domainname, zoneRecord);
+            } else {
+              res = await modifyZone(domain.domainname, zoneRecord, "ADD");
+            }
             if (res.code != 200) {
               throw new Error(res.description);
             }
@@ -1061,5 +1067,16 @@ export default {
         });
       }
     }
-  )
+  ),
+
+  checkZone: async (parent, { domain }) => {
+    try {
+      const res = await checkZone(domain);
+      console.log("LOG: res", res);
+
+      return res;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };

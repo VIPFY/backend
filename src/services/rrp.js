@@ -34,7 +34,7 @@ const ns2 = envCheck ? "NS3.VIPFY.NET" : " NS3.VIPFY.COM ";
  * @returns {object} An object built out of the shitty response
  */
 const parseResponse = res => {
-  const parsedRes = res.split("\n");
+  const parsedRes = res.split("\n").filter(pRes => pRes.length > 0);
   // Remove unneccessary text from response
   parsedRes.pop();
   parsedRes.pop();
@@ -107,23 +107,45 @@ export const getDomainSuggestion = async (domain, options) => {
   }
 };
 
+export const checkZone = async dnszone => {
+  try {
+    const params = {
+      ...data,
+      command: "StatusDNSZone",
+      dnszone
+    };
+
+    const res = await Axios({ ...config, params });
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
 /**
  * Creates a zone for a domain. Uses the ns of RRP Proxy
  *
  * @param {string} name Name of the new Zone, should be the domain name
+ * @param {string} record Optional record to use
  *
  * @returns {object}
  */
-export const addZone = async name => {
+export const addZone = async (name, record) => {
   try {
     const params = {
       ...data,
       command: "AddDNSZone",
       dnszone: name,
-      rr0: "@ IN A 188.165.164.79",
-      rr1: "@ IN A 94.23.156.143",
-      rr2: "@ IN A 192.95.19.39"
+      SOAMINTTL: 3600
     };
+
+    if (record) {
+      params.rr0 = record;
+    } else {
+      params.rr0 = "@ IN A 188.165.164.79";
+      params.rr1 = "@ IN A 94.23.156.143";
+      params.rr2 = "@ IN A 192.95.19.39";
+    }
 
     const res = await Axios({ ...config, params });
 
