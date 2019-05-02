@@ -209,5 +209,5 @@ export const mutations = `
   voteForApp(app: String!): Response!
 
   # Updates the login data of an external app
-  updateCredentials(licenceid: ID!, username: String, password: String): Boolean!
+  updateCredentials(licenceid: ID!, username: String, password: String, loginurl: String): Boolean!
   `;

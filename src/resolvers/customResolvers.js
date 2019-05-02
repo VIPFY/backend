@@ -154,8 +154,16 @@ export const find = data => {
         if (loadMultiple) {
           let result;
 
-          if (value === null || value === undefined) {
+          if (value == null || value == undefined) {
             return [];
+          }
+
+          if (
+            typeof value === "object" &&
+            value.length === 1 &&
+            value[0] === null
+          ) {
+            return [null];
           }
 
           // load data if it's not trivial

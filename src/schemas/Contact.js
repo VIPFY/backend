@@ -42,6 +42,7 @@ export const types = `
   }
 
   input AddressInput {
+    id: ID
     department: Boolean
     description: String
     country: String
