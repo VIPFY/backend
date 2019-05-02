@@ -481,13 +481,9 @@ export default {
       })
   ),
 
-  newsletterSignup: async (
-    parent,
-    { email, firstname, lastname },
-    { models }
-  ) => {
+  newsletterSignup: async (parent, { email, firstname, lastname }) => {
     try {
-      await newsletterSignup(models, email, firstname, lastname);
+      await newsletterSignup(email, firstname, lastname);
       return { ok: true };
     } catch (err) {
       logger.error(err);
@@ -498,9 +494,9 @@ export default {
     }
   },
 
-  newsletterSignupConfirm: async (parent, { email, token }, { models }) => {
+  newsletterSignupConfirm: async (parent, { email, token }) => {
     try {
-      const result = await newsletterConfirmSignup(models, email, token);
+      const result = await newsletterConfirmSignup(email, token);
       return { ok: result };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });

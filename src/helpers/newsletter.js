@@ -1,3 +1,4 @@
+import models from "@vipfy-private/sequelize-setup";
 import { Client as ClientClass } from "@sendgrid/client";
 import logger from "../loggers";
 import { sendEmail } from "./email";
@@ -10,7 +11,7 @@ Client.setApiKey(
 
 const cryptoRandomString = require("crypto-random-string");
 
-export async function newsletterSignup(models, email, firstname, lastname) {
+export async function newsletterSignup(email, firstname, lastname) {
   const token = cryptoRandomString(10);
   const name = `${firstname} ${lastname}`;
   await models.NewsletterSignup.create({ email, token, firstname, lastname });
@@ -33,13 +34,15 @@ export async function newsletterSignup(models, email, firstname, lastname) {
   return true;
 }
 
-export async function newsletterConfirmSignup(models, email, token) {
+export async function newsletterConfirmSignup(email, token) {
   const signup = await models.NewsletterSignup.findOne({
     where: { email, token }
   });
+
   if (!signup) {
     throw new Error("Token not found");
   }
+
   if (signup.usedat) {
     // already successful in the past, no need to present user with error
     return true;
@@ -81,3 +84,8 @@ export async function newsletterConfirmSignup(models, email, token) {
 
   return true;
 }
+
+export const unsubscribe = async email => {
+  try {
+  } catch (error) {}
+};

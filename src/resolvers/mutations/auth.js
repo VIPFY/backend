@@ -35,7 +35,7 @@ const ZENDESK_TOKEN =
 export default {
   signUp: async (
     parent,
-    { email, companyname: name, privacy, termsOfService },
+    { email, companyname: name, privacy, termsOfService, newsletter },
     { models, SECRET, ip }
   ) =>
     models.sequelize.transaction(async ta => {
@@ -72,6 +72,7 @@ export default {
             unitid: unit.id,
             firstlogin: false,
             needspasswordchange: false,
+            newsletter,
             ...pwData
           },
           { transaction: ta }
