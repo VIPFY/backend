@@ -9,6 +9,7 @@ import {
 import logger from "../../loggers";
 import { googleMapsClient } from "../../services/gcloud";
 import { sendEmail } from "../../helpers/email";
+import { notLoggedIn } from "../../helpers/retention";
 
 /* eslint-disable prefer-const */
 
@@ -556,6 +557,14 @@ export default {
       await Promise.all([reply, toVipfy]);
 
       return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
+
+  informUsers: async () => {
+    try {
+      return await notLoggedIn();
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }

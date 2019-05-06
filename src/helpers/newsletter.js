@@ -15,6 +15,7 @@ export async function newsletterSignup(email, firstname, lastname) {
   const token = cryptoRandomString(10);
   const name = `${firstname} ${lastname}`;
   await models.NewsletterSignup.create({ email, token, firstname, lastname });
+
   await sendEmail({
     templateId: "d-8059caceeda04753a138e623ba6f67e5",
     fromName: "VIPFY Newsletter",
@@ -23,7 +24,7 @@ export async function newsletterSignup(email, firstname, lastname) {
         to: [{ email, name }],
         dynamic_template_data: {
           name,
-          url: `https://vipfy.store/verifyemail/${encodeURIComponent(
+          url: `https://vipfy.store/newsletter-confirm/${encodeURIComponent(
             email
           )}/${token}`
         }
@@ -84,8 +85,3 @@ export async function newsletterConfirmSignup(email, token) {
 
   return true;
 }
-
-export const unsubscribe = async email => {
-  try {
-  } catch (error) {}
-};

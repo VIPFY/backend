@@ -23,6 +23,7 @@ export const types = `
     profilepicture: String
     emails: [Email]
     createdate: String
+    lastactive: Date
     company: Department
     statisticdata: JSON
     needspasswordchange: Boolean!
@@ -132,9 +133,9 @@ export const mutations = `
   updateProfilePic(file: Upload!): String!
 
   # Only an email is required for the signup
-  signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!, newsletter: Boolean): RegisterResponse!
+  signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!): RegisterResponse!
 
-  #Setup Finished
+  # Setup Finished
   setupFinished(country: String, vatoption: Int, vatnumber: String, placeId: String, ownAdress: String, username: String): Response!
 
   # The user will be passed back a JSON Web token for authentication

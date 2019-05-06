@@ -107,4 +107,5 @@ export const mutations = `
   deleteEmail(email: String!, forCompany: Boolean): Response!
 
   updateTags(model: String!, tags: [String]!): Response!
+  informUsers: JSON!
 `;

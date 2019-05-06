@@ -1,8 +1,8 @@
 import { decode } from "jsonwebtoken";
+import moment from "moment";
 import { parentAdminCheck } from "../../helpers/functions";
 import { requiresAuth } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
-import moment from "moment";
 
 export default {
   me: requiresAuth.createResolver(async (parent, args, { models, token }) => {

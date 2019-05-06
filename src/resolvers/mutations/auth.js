@@ -28,14 +28,15 @@ import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import logger from "../../loggers";
 import { createToken as createRandomToken } from "../../helpers/token";
+import { newsletterSignup } from "../../helpers/newsletter";
 
 const ZENDESK_TOKEN =
   "Basic bnZAdmlwZnkuc3RvcmUvdG9rZW46bndGc3lDVWFpMUg2SWNKOXBpbFk3UGRtOHk0bXVhamZlYzFrbzBHeQ==";
 
 export default {
   signUp: async (
-    parent,
-    { email, companyname: name, privacy, termsOfService, newsletter },
+    _,
+    { email, companyname: name, privacy, termsOfService },
     { models, SECRET, ip }
   ) =>
     models.sequelize.transaction(async ta => {
@@ -72,7 +73,6 @@ export default {
             unitid: unit.id,
             firstlogin: false,
             needspasswordchange: false,
-            newsletter,
             ...pwData
           },
           { transaction: ta }
