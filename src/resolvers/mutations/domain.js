@@ -1,3 +1,4 @@
+/* eslint-disable no-lone-blocks */
 import { decode } from "jsonwebtoken";
 import punycode from "punycode";
 import {
@@ -16,7 +17,9 @@ import {
   setAuthcode,
   addZone,
   modifyZone,
-  checkZone
+  checkZone,
+  addWebforwarding,
+  checkWebforwarding
 } from "../../services/rrp";
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -59,10 +62,6 @@ export default {
       });
 
       const [domainCheck, suggestions] = await Promise.all([p1, p2]);
-
-      if (domainCheck.code != 200) {
-        throw new Error(domainCheck.description);
-      }
 
       const domainList = Object.keys(domainCheck)
         // Filter out the props which are not domains
@@ -245,12 +244,8 @@ export default {
 
           const contact = await createContact(contactData);
 
-          if (contact.code != 200) {
-            throw new Error(contact.description);
-          } else {
-            partnerLogs.newContact = contact;
-            contactid = contact["property[contact][0]"];
-          }
+          partnerLogs.newContact = contact;
+          contactid = contact["property[contact][0]"];
         }
 
         for await (const domainItem of domainData) {
@@ -323,11 +318,7 @@ export default {
                 }
 
                 try {
-                  const res = await addZone(domain);
-
-                  if (res.code != 200) {
-                    throw new Error(res.description);
-                  }
+                  await addZone(domain);
 
                   dns.zone = {
                     dnszone: domain,
@@ -652,11 +643,6 @@ export default {
 
           const res = await toggleWhoisPrivacy(domainname, status);
 
-          if (res.code != 200) {
-            console.log(res);
-            throw new Error(res.description);
-          }
-
           const oldBP = await models.BoughtPlan.findOne({
             where: { id: boughtplanid },
             transaction: ta,
@@ -745,11 +731,6 @@ export default {
 
         const res = await toggleRenewalMode(domain.domainname, renewalmode);
 
-        if (res.code != 200) {
-          console.log(res);
-          throw new Error(res.description);
-        }
-
         const boughtPlan = await models.BoughtPlan.findOne(
           { where: { id: domain.boughtplanid } },
           { raw: true }
@@ -830,7 +811,6 @@ export default {
             throw new Error("Domain not found");
           }
 
-          let res = null;
           let newDns = null;
 
           if (!domain.dns || !domain.dns.nameservers) {
@@ -838,20 +818,16 @@ export default {
           }
 
           if (domain.dns.nameservers.length == 0) {
-            res = await setNs(domain.domainname, ns);
+            await setNs(domain.domainname, ns);
             newDns = [...domain.dns, ns];
           } else if (action == "ADD") {
-            res = await addNs(domain.domainname, ns);
+            await addNs(domain.domainname, ns);
             newDns = [...domain.dns.nameservers, ns];
           } else if (action == "REMOVE") {
-            res = await removeNs(domain.domainname, ns);
+            await removeNs(domain.domainname, ns);
             newDns = domain.dns.nameservers.filter(item => item != ns);
           } else {
             throw new Error("Action not supported!");
-          }
-
-          if (res && res.code != 200) {
-            throw new Error(res.description);
           }
 
           await models.Domain.update(
@@ -859,7 +835,7 @@ export default {
             { transaction: ta, where: { id } }
           );
 
-          const log = await createLog(ip, "updateDns", { res, ns }, unitid, ta);
+          const log = await createLog(ip, "updateDns", { ns }, unitid, ta);
 
           const notification = createNotification(
             {
@@ -901,7 +877,7 @@ export default {
   updateZone: async (parent, { id, zoneRecord, action }, { models, token }) => {
     try {
       const {
-        user: { unitid, company }
+        user: { company }
       } = decode(token);
 
       const domain = await models.Domain.findOne({
@@ -913,21 +889,21 @@ export default {
         throw new Error("Domain not found");
       }
 
+      let records = [];
+      const res = await checkZone(domain.domainname);
+      Object.keys(res)
+        .filter(item => item.includes("[rr]"))
+        .map(item => records.push(res[item]));
+
       const zone =
         domain.dns && domain.dns.zone
           ? domain.dns.zone
           : { dnszone: domain.domainname };
 
-      let records = null;
-
       switch (action) {
         case "ADD":
           {
-            const res = await addZone(domain.domainname);
-
-            if (res.code != 200) {
-              throw new Error(res.description);
-            }
+            await addZone(domain.domainname);
 
             records = [
               "@ IN A 188.165.164.79",
@@ -939,30 +915,21 @@ export default {
 
         case "UPDATE":
           {
-            let res = null;
-
             if (!zone.records) {
-              res = await addZone(domain.domainname, zoneRecord);
+              await addZone(domain.domainname, zoneRecord);
+              records = [zoneRecord];
             } else {
-              res = await modifyZone(domain.domainname, zoneRecord, "ADD");
-            }
-            if (res.code != 200) {
-              throw new Error(res.description);
+              await modifyZone(domain.domainname, zoneRecord, "ADD");
+              records = [...records, zoneRecord];
             }
           }
           break;
 
         case "DELETE":
           {
-            const res = await modifyZone(domain.domainname, zoneRecord, "DEL");
-            console.log("LOG: res", res);
-
-            if (res.code != 200) {
-              throw new Error(res.description);
-            }
+            await modifyZone(domain.domainname, zoneRecord, "DEL");
 
             records = zone.records.filter(record => record != zoneRecord);
-            console.log("LOG: records", records);
           }
           break;
 
@@ -970,12 +937,110 @@ export default {
           throw new Error("Action not supported!");
       }
 
-      await models.Domain.update(
-        { dns: { ...domain.dns, zone: { ...zone, records } } },
-        { where: { id: domain.id }, returning: true }
-      );
+      const dns = { ...domain.dns, zone: { ...zone, records } };
+      await models.Domain.update({ dns }, { where: { id: domain.id } });
 
-      return { ...domain, dns: { ...domain.dns, zone: { ...zone, records } } };
+      return { ...domain, dns };
+    } catch (err) {
+      throw new PartnerError({
+        message: err.message,
+        internalData: { err, partner: "RRP Proxy" }
+      });
+    }
+  },
+
+  addWebforwarding: async (_, args, { models, token }) => {
+    try {
+      const { id, ...data } = args;
+      const {
+        user: { company }
+      } = decode(token);
+
+      const domain = await models.Domain.findOne({
+        where: { id, unitid: company },
+        raw: true
+      });
+
+      if (!domain) {
+        throw new Error("Domain not found");
+      }
+
+      const res = await checkWebforwarding(domain.domainname);
+      const forwardings = [];
+      const forwards = res["property[total][0]"];
+
+      for (let i = 0; i < forwards; i++) {
+        forwardings[i] = {
+          source: res[`property[source][${i}]`],
+          target: res[`property[target][${i}]`],
+          type: res[`property[type][${i}]`]
+        };
+      }
+
+      const source = `${data.source}.${domain.domainname}`;
+
+      await addWebforwarding(source, data.target, data.type);
+
+      const webforwardings = [...forwardings, { ...data, source }];
+
+      const dns = {
+        ...domain.dns,
+        zone: { ...domain.dns.zone, webforwardings }
+      };
+
+      await models.Domain.update({ dns }, { where: { id: domain.id } });
+
+      return { ...domain, dns };
+    } catch (err) {
+      throw new PartnerError({
+        message: err.message,
+        internalData: { err, partner: "RRP Proxy" }
+      });
+    }
+  },
+
+  deleteWebforwarding: async (_, args, { models, token }) => {
+    try {
+      const { id, ...data } = args;
+      const {
+        user: { company }
+      } = decode(token);
+
+      const domain = await models.Domain.findOne({
+        where: { id, unitid: company },
+        raw: true
+      });
+
+      if (!domain) {
+        throw new Error("Domain not found");
+      }
+
+      const res = await checkWebforwarding(domain.domainname);
+      const forwardings = [];
+      const forwards = res["property[total][0]"];
+
+      for (let i = 0; i < forwards; i++) {
+        forwardings[i] = {
+          source: res[`property[source][${i}]`],
+          target: res[`property[target][${i}]`],
+          type: res[`property[type][${i}]`]
+        };
+      }
+
+      const source = `${data.source}.${domain.domainname}`;
+
+      await addWebforwarding(source, data.target, data.type);
+
+      const webforwardings = [...forwardings, { ...data, source }];
+
+      const dns = {
+        ...domain.dns,
+        zone: { ...domain.dns.zone, webforwardings }
+      };
+
+      await models.Domain.update({ dns }, { where: { id: domain.id } });
+
+      return { ...domain, dns };
     } catch (err) {
       throw new PartnerError({
         message: err.message,
@@ -1071,10 +1136,7 @@ export default {
 
   checkZone: async (parent, { domain }) => {
     try {
-      const res = await checkZone(domain);
-      console.log("LOG: res", res);
-
-      return res;
+      return await checkZone(domain);
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }

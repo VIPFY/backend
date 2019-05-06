@@ -48,6 +48,10 @@ const parseResponse = res => {
     jsonRes[key.trim()] = value.trim();
   });
 
+  if (jsonRes.code != 200) {
+    throw new Error(jsonRes.description);
+  }
+
   return jsonRes;
 };
 
@@ -107,11 +111,37 @@ export const getDomainSuggestion = async (domain, options) => {
   }
 };
 
+/**
+ * Returns the full zone of the domain
+ *
+ * @param {string} dnszone Per default the domain name
+ */
 export const checkZone = async dnszone => {
   try {
     const params = {
       ...data,
-      command: "StatusDNSZone",
+      command: "QueryDNSZoneRRList",
+      dnszone
+    };
+
+    const res = await Axios({ ...config, params });
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
+ * Returns all forwardings of the domain
+ *
+ * @param {string} dnszone Per default the domain name
+ */
+export const checkWebforwarding = async dnszone => {
+  try {
+    const params = {
+      ...data,
+      command: "QueryWebFwdList",
+      wide: 1,
       dnszone
     };
 
@@ -159,7 +189,7 @@ export const addZone = async (name, record) => {
  * Modifies a zone for a domain
  *
  * @param {string} name Name of the new Zone to modify
- * @param {string[]} records The records which should be modified
+ * @param {string} record The record which should be modified
  * @param {enum} action ADD or DEL
  * @returns {object}
  */
@@ -176,9 +206,31 @@ export const modifyZone = async (name, record, action) => {
       throw new Error("Action must either be DEL or ADD");
     }
 
-    // records.forEach((record, key) => {
-    //   params[`${action}RR${key}`] = record;
-    // });
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
+ * Adds a webforwarding for a domain
+ *
+ * @param {string} source Zone to be forwarded
+ * @param {string} target Target of the forwarding
+ * @param {string} type Type of forward: RD 301 redirect | MRD frame redirect | SELF static content; When TYPE is SELF it can not be used with TARGET
+ * @returns {object}
+ */
+export const addWebforwarding = async (source, target, type) => {
+  try {
+    const params = {
+      ...data,
+      command: "AddWebFwd",
+      source,
+      target,
+      type
+    };
 
     const res = await Axios({ ...config, params });
 

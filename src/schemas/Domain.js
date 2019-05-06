@@ -74,6 +74,12 @@ export const types = `
     UPDATE
     DELETE
   }
+
+  enum WEBFORWARDING {
+    rd
+    mrd
+    self
+  }
 `;
 
 export const queries = `
@@ -95,4 +101,6 @@ export const mutations = `
   registerExternalDomain(domainData: DomainInput!): Domain!
   deleteExternalDomain(id: ID!): Response!
   checkZone(domain: String!): JSON!
+  addWebforwarding(id: ID!, source: String!, target: String!, type: WEBFORWARDING!): Domain
+  deleteWebforwarding(id: ID!, source: String!, target: String!, type: WEBFORWARDING!): Domain
 `;
