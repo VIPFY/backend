@@ -241,6 +241,28 @@ export const addWebforwarding = async (source, target, type) => {
 };
 
 /**
+ * Deletes a webforwarding for a domain
+ *
+ * @param {string} source Redirected zone to be deleted
+ * @returns {object}
+ */
+export const deleteWebforwarding = async source => {
+  try {
+    const params = {
+      ...data,
+      command: "DeleteWebFwd",
+      source
+    };
+
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
  * Registers a Domain with RRPProxy
  *
  * @param {object} domainData
@@ -368,6 +390,22 @@ export const transferIn = async (domain, auth, contact) => {
       params.ownercontact0 = contact;
     }
 
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+/**
+ * Returns the data of a contact in RRP
+ *
+ * @param {string} contact The contact handle
+ */
+export const statusContact = async contact => {
+  try {
+    const params = { ...data, command: "StatusContact", contact };
     const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);

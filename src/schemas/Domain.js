@@ -80,12 +80,40 @@ export const types = `
     mrd
     self
   }
+
+  type WhoisData {
+    created: Date!
+    updated: Date
+    expiration: Date!
+    transfermode: String!
+    renewalmode: String!
+    domain: String!
+    domainIdn: String!
+    status: String!
+    transferLock: Boolean!
+    nameservers: [String]
+    owner: DomainContact!
+    admin: DomainContact!
+  }
+
+  type DomainContact {
+    name: String!
+    email: String!
+    street: String
+    city: String
+    country: String
+    phone: String
+    validated: Boolean!
+    verificationRequested: Boolean!
+    verified: Boolean!
+  }
 `;
 
 export const queries = `
   fetchDomain(id: ID!): Domain!
   fetchDomains: [Domain]!
   fetchDomainSuggestions(name: String!): [DomainResponse]!
+  fetchWHOISData(id: ID!): WhoisData!
 `;
 
 export const mutations = `
@@ -102,5 +130,5 @@ export const mutations = `
   deleteExternalDomain(id: ID!): Response!
   checkZone(domain: String!): JSON!
   addWebforwarding(id: ID!, source: String!, target: String!, type: WEBFORWARDING!): Domain
-  deleteWebforwarding(id: ID!, source: String!, target: String!, type: WEBFORWARDING!): Domain
+  deleteWebforwarding(id: ID!, source: String!, target: String!): Domain
 `;

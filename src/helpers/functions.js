@@ -386,3 +386,20 @@ export const groupBy = (list, keyGetter) => {
   });
   return map;
 };
+
+/**
+ * Takes an object of shit and returns something useful
+ *
+ * @param {o} object The parsed object returned from RRP Proxy
+ */
+export const normalizeDomainContact = o => ({
+  name: `${o["property[first name][0]"]} ${o["property[last name][0]"]}`,
+  email: o["property[email][0]"],
+  street: o["property[street][0]"],
+  city: o["property[city][0]"],
+  country: o["property[country][0]"],
+  phone: o["property[phone][0]"],
+  validated: o["property[validated][0]"] == "1",
+  verificationRequested: o["property[verification requested][0]"] == "1",
+  verified: o["property[verified][0]"] == "1"
+});

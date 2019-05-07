@@ -19,7 +19,8 @@ import {
   modifyZone,
   checkZone,
   addWebforwarding,
-  checkWebforwarding
+  checkWebforwarding,
+  deleteWebforwarding
 } from "../../services/rrp";
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -874,180 +875,180 @@ export default {
       })
   ),
 
-  updateZone: async (parent, { id, zoneRecord, action }, { models, token }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
+  updateZone: requiresRights(["edit-domains"]).createResolver(
+    async (parent, { id, zoneRecord, action }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
 
-      const domain = await models.Domain.findOne({
-        where: { id, unitid: company },
-        raw: true
-      });
+        const domain = await models.Domain.findOne({
+          where: { id, unitid: company },
+          raw: true
+        });
 
-      if (!domain) {
-        throw new Error("Domain not found");
-      }
+        if (!domain) {
+          throw new Error("Domain not found");
+        }
 
-      let records = [];
-      const res = await checkZone(domain.domainname);
-      Object.keys(res)
-        .filter(item => item.includes("[rr]"))
-        .map(item => records.push(res[item]));
+        let records = [];
+        const res = await checkZone(domain.domainname);
+        Object.keys(res)
+          .filter(item => item.includes("[rr]"))
+          .map(item => records.push(res[item]));
 
-      const zone =
-        domain.dns && domain.dns.zone
-          ? domain.dns.zone
-          : { dnszone: domain.domainname };
+        const zone =
+          domain.dns && domain.dns.zone
+            ? domain.dns.zone
+            : { dnszone: domain.domainname };
 
-      switch (action) {
-        case "ADD":
-          {
-            await addZone(domain.domainname);
+        switch (action) {
+          case "ADD":
+            {
+              await addZone(domain.domainname);
 
-            records = [
-              "@ IN A 188.165.164.79",
-              "@ IN A 94.23.156.143",
-              "@ IN A 192.95.19.39"
-            ];
-          }
-          break;
-
-        case "UPDATE":
-          {
-            if (!zone.records) {
-              await addZone(domain.domainname, zoneRecord);
-              records = [zoneRecord];
-            } else {
-              await modifyZone(domain.domainname, zoneRecord, "ADD");
-              records = [...records, zoneRecord];
+              records = [
+                "@ IN A 188.165.164.79",
+                "@ IN A 94.23.156.143",
+                "@ IN A 192.95.19.39"
+              ];
             }
-          }
-          break;
+            break;
 
-        case "DELETE":
-          {
-            await modifyZone(domain.domainname, zoneRecord, "DEL");
+          case "UPDATE":
+            {
+              if (!zone.records) {
+                await addZone(domain.domainname, zoneRecord);
+                records = [zoneRecord];
+              } else {
+                await modifyZone(domain.domainname, zoneRecord, "ADD");
+                records = [...records, zoneRecord];
+              }
+            }
+            break;
 
-            records = zone.records.filter(record => record != zoneRecord);
-          }
-          break;
+          case "DELETE":
+            {
+              await modifyZone(domain.domainname, zoneRecord, "DEL");
 
-        default:
-          throw new Error("Action not supported!");
+              records = zone.records.filter(record => record != zoneRecord);
+            }
+            break;
+
+          default:
+            throw new Error("Action not supported!");
+        }
+
+        const dns = { ...domain.dns, zone: { ...zone, records } };
+        await models.Domain.update({ dns }, { where: { id: domain.id } });
+
+        return { ...domain, dns };
+      } catch (err) {
+        throw new PartnerError({
+          message: err.message,
+          internalData: { err, partner: "RRP Proxy" }
+        });
       }
-
-      const dns = { ...domain.dns, zone: { ...zone, records } };
-      await models.Domain.update({ dns }, { where: { id: domain.id } });
-
-      return { ...domain, dns };
-    } catch (err) {
-      throw new PartnerError({
-        message: err.message,
-        internalData: { err, partner: "RRP Proxy" }
-      });
     }
-  },
+  ),
 
-  addWebforwarding: async (_, args, { models, token }) => {
-    try {
-      const { id, ...data } = args;
-      const {
-        user: { company }
-      } = decode(token);
+  addWebforwarding: requiresRights(["edit-domains"]).createResolver(
+    async (_, args, { models, token }) => {
+      try {
+        const { id, ...data } = args;
+        const {
+          user: { company }
+        } = decode(token);
 
-      const domain = await models.Domain.findOne({
-        where: { id, unitid: company },
-        raw: true
-      });
+        const domain = await models.Domain.findOne({
+          where: { id, unitid: company },
+          raw: true
+        });
 
-      if (!domain) {
-        throw new Error("Domain not found");
-      }
+        if (!domain) {
+          throw new Error("Domain not found");
+        }
 
-      const res = await checkWebforwarding(domain.domainname);
-      const forwardings = [];
-      const forwards = res["property[total][0]"];
+        const res = await checkWebforwarding(domain.domainname);
+        const forwardings = [];
+        const forwards = res["property[total][0]"];
 
-      for (let i = 0; i < forwards; i++) {
-        forwardings[i] = {
-          source: res[`property[source][${i}]`],
-          target: res[`property[target][${i}]`],
-          type: res[`property[type][${i}]`]
+        for (let i = 0; i < forwards; i++) {
+          forwardings[i] = {
+            source: res[`property[source][${i}]`],
+            target: res[`property[target][${i}]`],
+            type: res[`property[type][${i}]`]
+          };
+        }
+
+        const source = `${data.source}.${domain.domainname}`;
+
+        await addWebforwarding(source, data.target, data.type);
+
+        const records = [];
+        const zone = await checkZone(domain.domainname);
+
+        Object.keys(zone)
+          .filter(item => item.includes("[rr]"))
+          .map(item => records.push(res[item]));
+
+        const webforwardings = [...forwardings, { ...data, source }];
+
+        const dns = {
+          ...domain.dns,
+          zone: { ...domain.dns.zone, records, webforwardings }
         };
+
+        await models.Domain.update({ dns }, { where: { id: domain.id } });
+
+        return { ...domain, dns };
+      } catch (err) {
+        throw new PartnerError({
+          message: err.message,
+          internalData: { err, partner: "RRP Proxy" }
+        });
       }
-
-      const source = `${data.source}.${domain.domainname}`;
-
-      await addWebforwarding(source, data.target, data.type);
-
-      const webforwardings = [...forwardings, { ...data, source }];
-
-      const dns = {
-        ...domain.dns,
-        zone: { ...domain.dns.zone, webforwardings }
-      };
-
-      await models.Domain.update({ dns }, { where: { id: domain.id } });
-
-      return { ...domain, dns };
-    } catch (err) {
-      throw new PartnerError({
-        message: err.message,
-        internalData: { err, partner: "RRP Proxy" }
-      });
     }
-  },
+  ),
 
-  deleteWebforwarding: async (_, args, { models, token }) => {
-    try {
-      const { id, ...data } = args;
-      const {
-        user: { company }
-      } = decode(token);
+  deleteWebforwarding: requiresRights(["edit-domains"]).createResolver(
+    async (_, { id, source }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
 
-      const domain = await models.Domain.findOne({
-        where: { id, unitid: company },
-        raw: true
-      });
+        const domain = await models.Domain.findOne({
+          where: { id, unitid: company },
+          raw: true
+        });
 
-      if (!domain) {
-        throw new Error("Domain not found");
-      }
+        if (!domain) {
+          throw new Error("Domain not found");
+        }
 
-      const res = await checkWebforwarding(domain.domainname);
-      const forwardings = [];
-      const forwards = res["property[total][0]"];
+        await deleteWebforwarding(source);
 
-      for (let i = 0; i < forwards; i++) {
-        forwardings[i] = {
-          source: res[`property[source][${i}]`],
-          target: res[`property[target][${i}]`],
-          type: res[`property[type][${i}]`]
+        const webforwardings = domain.dns.zone.webforwardings.filter(
+          forwarding => forwarding.source != source
+        );
+
+        const dns = {
+          ...domain.dns,
+          zone: { ...domain.dns.zone, webforwardings }
         };
+
+        await models.Domain.update({ dns }, { where: { id: domain.id } });
+
+        return { ...domain, dns };
+      } catch (err) {
+        throw new PartnerError({
+          message: err.message,
+          internalData: { err, partner: "RRP Proxy" }
+        });
       }
-
-      const source = `${data.source}.${domain.domainname}`;
-
-      await addWebforwarding(source, data.target, data.type);
-
-      const webforwardings = [...forwardings, { ...data, source }];
-
-      const dns = {
-        ...domain.dns,
-        zone: { ...domain.dns.zone, webforwardings }
-      };
-
-      await models.Domain.update({ dns }, { where: { id: domain.id } });
-
-      return { ...domain, dns };
-    } catch (err) {
-      throw new PartnerError({
-        message: err.message,
-        internalData: { err, partner: "RRP Proxy" }
-      });
     }
-  },
+  ),
 
   checkTransferReq: async (parent, { domain }) => {
     try {
