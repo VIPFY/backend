@@ -132,27 +132,6 @@ export const checkZone = async dnszone => {
 };
 
 /**
- * Returns all forwardings of the domain
- *
- * @param {string} dnszone Per default the domain name
- */
-export const checkWebforwarding = async dnszone => {
-  try {
-    const params = {
-      ...data,
-      command: "QueryWebFwdList",
-      wide: 1,
-      dnszone
-    };
-
-    const res = await Axios({ ...config, params });
-    return parseResponse(res.data);
-  } catch (error) {
-    throw new Error(error);
-  }
-};
-
-/**
  * Creates a zone for a domain. Uses the ns of RRP Proxy
  *
  * @param {string} name Name of the new Zone, should be the domain name
@@ -215,6 +194,27 @@ export const modifyZone = async (name, record, action) => {
 };
 
 /**
+ * Returns all forwardings of the domain
+ *
+ * @param {string} dnszone Per default the domain name
+ */
+export const checkWebforwarding = async dnszone => {
+  try {
+    const params = {
+      ...data,
+      command: "QueryWebFwdList",
+      wide: 1,
+      dnszone
+    };
+
+    const res = await Axios({ ...config, params });
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
  * Adds a webforwarding for a domain
  *
  * @param {string} source Zone to be forwarded
@@ -252,6 +252,74 @@ export const deleteWebforwarding = async source => {
       ...data,
       command: "DeleteWebFwd",
       source
+    };
+
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
+ * Returns all mailforwardings of the domain
+ *
+ * @param {string} dnszone Per default the domain name
+ */
+export const checkMailforwarding = async dnszone => {
+  try {
+    const params = {
+      ...data,
+      command: "QueryMailFwdList",
+      wide: 1,
+      dnszone
+    };
+
+    const res = await Axios({ ...config, params });
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
+ * Add a mail forward to a DNSZone in RRP Proxy
+ *
+ * @param {string} from Email address to be forwarded
+ * @param {string} to Target email address
+ */
+export const addMailforwarding = async (from, to) => {
+  try {
+    const params = {
+      ...data,
+      command: "AddMailFwd",
+      from,
+      to
+    };
+
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
+ * Deletes a mailforwarding for a domain
+ *
+ * @param {string} from Email address - forwarding to be deleted
+ * @param {string} to Target email address
+ * @returns {object}
+ */
+export const deleteMailforwarding = async (from, to) => {
+  try {
+    const params = {
+      ...data,
+      command: "DeleteMailFwd",
+      from,
+      to
     };
 
     const res = await Axios({ ...config, params });
@@ -414,6 +482,11 @@ export const statusContact = async contact => {
   }
 };
 
+/**
+ * Returns the data of a domain in RRP
+ *
+ * @param {string} domain The name of the domain to check
+ */
 export const statusDomain = async domain => {
   try {
     const params = { ...data, command: "StatusDomain", domain };

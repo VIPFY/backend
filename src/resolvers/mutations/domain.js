@@ -20,7 +20,10 @@ import {
   checkZone,
   addWebforwarding,
   checkWebforwarding,
-  deleteWebforwarding
+  deleteWebforwarding,
+  checkMailforwarding,
+  addMailforwarding,
+  deleteMailforwarding
 } from "../../services/rrp";
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -988,9 +991,11 @@ export default {
         const records = [];
         const zone = await checkZone(domain.domainname);
 
-        Object.keys(zone)
-          .filter(item => item.includes("[rr]"))
-          .map(item => records.push(res[item]));
+        Object.keys(zone).forEach(item => {
+          if (item.includes("[rr]")) {
+            records.push(zone[item]);
+          }
+        });
 
         const webforwardings = [...forwardings, { ...data, source }];
 
@@ -1036,6 +1041,102 @@ export default {
         const dns = {
           ...domain.dns,
           zone: { ...domain.dns.zone, webforwardings }
+        };
+
+        await models.Domain.update({ dns }, { where: { id: domain.id } });
+
+        return { ...domain, dns };
+      } catch (err) {
+        throw new PartnerError({
+          message: err.message,
+          internalData: { err, partner: "RRP Proxy" }
+        });
+      }
+    }
+  ),
+
+  addMailforwarding: async (_, { id, source, to }, { models, token }) => {
+    try {
+      const {
+        user: { company }
+      } = decode(token);
+
+      const domain = await models.Domain.findOne({
+        where: { id, unitid: company },
+        raw: true
+      });
+
+      if (!domain) {
+        throw new Error("Domain not found");
+      }
+
+      const res = await checkMailforwarding(domain.domainname);
+      const forwardings = [];
+      const forwards = res["property[total][0]"];
+
+      for (let i = 0; i < forwards; i++) {
+        forwardings[i] = {
+          from: res[`property[from][${i}]`],
+          to: res[`property[to][${i}]`]
+        };
+      }
+
+      const from = `${source}${domain.domainname}`;
+
+      await addMailforwarding(from, to);
+
+      const records = [];
+      const zone = await checkZone(domain.domainname);
+
+      Object.keys(zone).forEach(item => {
+        if (item.includes("[rr]")) {
+          records.push(zone[item]);
+        }
+      });
+
+      const mailforwardings = [...forwardings, { from, to }];
+
+      const dns = {
+        ...domain.dns,
+        zone: { ...domain.dns.zone, records, mailforwardings }
+      };
+
+      await models.Domain.update({ dns }, { where: { id: domain.id } });
+
+      return { ...domain, dns };
+    } catch (err) {
+      throw new PartnerError({
+        message: err.message,
+        internalData: { err, partner: "RRP Proxy" }
+      });
+    }
+  },
+
+  deleteMailforwarding: requiresRights(["edit-domains"]).createResolver(
+    async (_, { id, from, to }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const domain = await models.Domain.findOne({
+          where: { id, unitid: company },
+          raw: true
+        });
+
+        if (!domain) {
+          throw new Error("Domain not found");
+        }
+
+        await deleteMailforwarding(from, to);
+
+        const mailforwardings = domain.dns.zone.mailforwardings.filter(
+          forwarding => forwarding.from != from && forwarding.to != to
+        );
+
+        const dns = {
+          ...domain.dns,
+          zone: { ...domain.dns.zone, mailforwardings }
         };
 
         await models.Domain.update({ dns }, { where: { id: domain.id } });

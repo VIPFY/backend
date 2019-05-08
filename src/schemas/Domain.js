@@ -129,6 +129,8 @@ export const mutations = `
   registerExternalDomain(domainData: DomainInput!): Domain!
   deleteExternalDomain(id: ID!): Response!
   checkZone(domain: String!): JSON!
+  addMailforwarding(id: ID!, source: String!, to: String!): Domain
+  deleteMailforwarding(id: ID!, from: String!, to: String!): Domain
   addWebforwarding(id: ID!, source: String!, target: String!, type: WEBFORWARDING!): Domain
   deleteWebforwarding(id: ID!, source: String!, target: String!): Domain
 `;
