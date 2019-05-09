@@ -34,11 +34,7 @@ const ns2 = envCheck ? "NS3.VIPFY.NET" : " NS3.VIPFY.COM ";
  * @returns {object} An object built out of the shitty response
  */
 const parseResponse = res => {
-  const parsedRes = res.split("\n").filter(pRes => pRes.length > 0);
-  // Remove unneccessary text from response
-  parsedRes.pop();
-  parsedRes.pop();
-  parsedRes.shift();
+  const parsedRes = res.split("\n").filter(line => line.includes("="));
 
   const jsonRes = {};
 
@@ -439,7 +435,6 @@ export const removeNs = async (domain, ns) => {
     const params = { ...data, command: "ModifyDomain", domain };
 
     params.delnameserver0 = ns;
-    console.log(params);
     const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);
@@ -470,6 +465,8 @@ export const transferIn = async (domain, auth, contact) => {
  * Returns the data of a contact in RRP
  *
  * @param {string} contact The contact handle
+ *
+ * @returns {object}
  */
 export const statusContact = async contact => {
   try {
@@ -486,10 +483,30 @@ export const statusContact = async contact => {
  * Returns the data of a domain in RRP
  *
  * @param {string} domain The name of the domain to check
+ *
+ * @returns {object}
  */
 export const statusDomain = async domain => {
   try {
     const params = { ...data, command: "StatusDomain", domain };
+    const res = await Axios({ ...config, params });
+
+    return parseResponse(res.data);
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+/**
+ * Check the status of a domain in transfer
+ *
+ * @param {string} domain
+ *
+ * @returns {object}
+ */
+export const checkTransferStatus = async domain => {
+  try {
+    const params = { ...data, command: "StatusDomainTransfer", domain };
     const res = await Axios({ ...config, params });
 
     return parseResponse(res.data);

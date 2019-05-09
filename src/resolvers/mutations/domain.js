@@ -23,7 +23,8 @@ import {
   deleteWebforwarding,
   checkMailforwarding,
   addMailforwarding,
-  deleteMailforwarding
+  deleteMailforwarding,
+  checkTransferStatus
 } from "../../services/rrp";
 import { requiresRights } from "../../helpers/permissions";
 import {
@@ -695,7 +696,7 @@ export default {
           const p4 = createLog(ip, "setWhoisPrivacy", res, unitid, ta);
 
           await Promise.all([p3, p4]);
-          return { ...domainToUpdate, whoisprivacy: status ? true : false };
+          return { ...domainToUpdate, whoisprivacy: status == "1" };
         } catch (err) {
           await createNotification({
             receiver: unitid,
@@ -799,83 +800,81 @@ export default {
    * @returns {any}
    */
   updateNs: requiresRights(["edit-domains"]).createResolver(
-    (parent, { ns, id, action }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        const {
-          user: { unitid, company }
-        } = decode(token);
+    // Removed transaction because it prevented the update to be successful
+    async (parent, { ns, id, action }, { models, token, ip }) => {
+      const {
+        user: { unitid, company }
+      } = decode(token);
 
-        try {
-          const domain = await models.Domain.findOne(
-            { where: { id, unitid: company } },
-            { raw: true, transaction: ta }
-          );
+      try {
+        const domain = await models.Domain.findOne({
+          where: { id, unitid: company },
+          raw: true
+        });
 
-          if (!domain) {
-            throw new Error("Domain not found");
-          }
-
-          let newDns = null;
-
-          if (!domain.dns || !domain.dns.nameservers) {
-            domain.dns = { nameservers: [] };
-          }
-
-          if (domain.dns.nameservers.length == 0) {
-            await setNs(domain.domainname, ns);
-            newDns = [...domain.dns, ns];
-          } else if (action == "ADD") {
-            await addNs(domain.domainname, ns);
-            newDns = [...domain.dns.nameservers, ns];
-          } else if (action == "REMOVE") {
-            await removeNs(domain.domainname, ns);
-            newDns = domain.dns.nameservers.filter(item => item != ns);
-          } else {
-            throw new Error("Action not supported!");
-          }
-
-          await models.Domain.update(
-            { dns: { ...domain.dns, nameservers: newDns } },
-            { transaction: ta, where: { id } }
-          );
-
-          const log = await createLog(ip, "updateDns", { ns }, unitid, ta);
-
-          const notification = createNotification(
-            {
-              receiver: unitid,
-              message: `DNS update of ${domain.domainname} was successful`,
-              icon: "laptop",
-              link: "domains",
-              changed: ["domains"]
-            },
-            ta
-          );
-
-          await Promise.all([log, notification]);
-
-          return {
-            ...domain.dataValues,
-            dns: { ...domain.dns, nameservers: newDns }
-          };
-        } catch (err) {
-          await createNotification(
-            {
-              receiver: unitid,
-              message: "DNS Update failed",
-              icon: "laptop",
-              link: "domains",
-              changed: ["domains"]
-            },
-            ta
-          );
-
-          throw new PartnerError({
-            message: err.message,
-            internalData: { err, partner: "RRP Proxy" }
-          });
+        if (!domain) {
+          throw new Error("Domain not found");
         }
-      })
+
+        const res = await statusDomain(domain.domainname);
+
+        const nameservers = [];
+        Object.keys(res).forEach(property => {
+          if (property.includes("nameserver")) {
+            nameservers.push(res[property]);
+          }
+        });
+
+        const options = { dns: { ...domain.dns } };
+
+        if (nameservers.length == 0) {
+          await setNs(domain.domainname, ns);
+          options.dns.nameservers = [ns.toUpperCase()];
+        } else if (action == "ADD") {
+          await addNs(domain.domainname, ns);
+          options.dns.nameservers = [...nameservers, ns.toUpperCase()];
+        } else if (action == "REMOVE") {
+          await removeNs(domain.domainname, ns);
+          options.dns.nameservers = nameservers.filter(
+            item => item.toUpperCase() != ns.toUpperCase()
+          );
+        } else {
+          throw new Error("Action not supported!");
+        }
+        await models.Domain.update(options, {
+          where: { id }
+        });
+
+        const log = createLog(ip, "updateDns", { ns }, unitid);
+        const notification = createNotification({
+          receiver: unitid,
+          message: `DNS update of ${domain.domainname} was successful`,
+          icon: "laptop"
+          // link: "domains",
+          // changed: ["domains"]
+        });
+
+        await Promise.all([log, notification]);
+
+        return { ...domain, ...options };
+      } catch (err) {
+        await createNotification(
+          {
+            receiver: unitid,
+            message: "DNS Update failed",
+            icon: "laptop"
+            // link: "domains",
+            // changed: ["domains"]
+          },
+          ta
+        );
+
+        throw new PartnerError({
+          message: err.message,
+          internalData: { err, partner: "RRP Proxy" }
+        });
+      }
+    }
   ),
 
   updateZone: requiresRights(["edit-domains"]).createResolver(

@@ -5,7 +5,8 @@ import { NormalError } from "../../errors";
 import {
   getDomainSuggestion,
   statusDomain,
-  statusContact
+  statusContact,
+  checkTransferStatus
 } from "../../services/rrp";
 import { normalizeDomainContact } from "../../helpers/functions";
 
@@ -96,54 +97,81 @@ export default {
     }
   ),
 
-  fetchWHOISData: async (parent, { id }, { models, token }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
+  fetchWHOISData: requiresRights(["view-domains"]).createResolver(
+    async (parent, { id }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
 
-      const domain = await models.Domain.findOne({
-        where: { id, unitid: company },
-        raw: true
-      });
+        const domain = await models.Domain.findOne({
+          where: { id, unitid: company },
+          raw: true
+        });
 
-      if (!domain) {
-        throw new Error("Domain not found");
-      }
-
-      const res = await statusDomain(domain.domainname);
-
-      const nameservers = [];
-      Object.keys(res).forEach(property => {
-        if (property.includes("nameserver")) {
-          nameservers.push(res[property]);
+        if (!domain) {
+          throw new Error("Domain not found");
         }
-      });
 
-      const p1 = statusContact(res["property[owner contact][0]"]);
-      const p2 = statusContact(res["property[admin contact][0]"]);
+        const res = await statusDomain(domain.domainname);
 
-      const [o, a] = await Promise.all([p1, p2]);
+        const nameservers = [];
+        Object.keys(res).forEach(property => {
+          if (property.includes("nameserver")) {
+            nameservers.push(res[property]);
+          }
+        });
 
-      const owner = normalizeDomainContact(o);
-      const admin = normalizeDomainContact(a);
+        const p1 = statusContact(res["property[owner contact][0]"]);
+        const p2 = statusContact(res["property[admin contact][0]"]);
 
-      return {
-        domain: res["property[domain][0]"],
-        domainIdn: res["property[domain idn][0]"],
-        created: res["property[created date][0]"],
-        updated: res["property[updated date][0]"],
-        expiration: res["property[registration expiration date][0]"],
-        transfermode: res["property[transfermode][0]"],
-        renewalmode: res["property[renewalmode][0]"],
-        status: res["property[status][0]"],
-        transferLock: res["property[transfer lock][0]"] == "1",
-        nameservers,
-        owner,
-        admin
-      };
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        const [o, a] = await Promise.all([p1, p2]);
+
+        const owner = normalizeDomainContact(o);
+        const admin = normalizeDomainContact(a);
+
+        return {
+          domain: res["property[domain][0]"],
+          domainIdn: res["property[domain idn][0]"],
+          created: res["property[created date][0]"],
+          updated: res["property[updated date][0]"],
+          expiration: res["property[registration expiration date][0]"],
+          transfermode: res["property[transfermode][0]"],
+          renewalmode: res["property[renewalmode][0]"],
+          status: res["property[status][0]"],
+          transferLock: res["property[transfer lock][0]"] == "1",
+          nameservers,
+          owner,
+          admin
+        };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  }
+  ),
+
+  checkTransferStatus: requiresRights(["show-domains"]).createResolver(
+    async (parent, { id }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
+
+        const domain = await models.Domain.findOne({
+          where: { id, unitid: company },
+          raw: true
+        });
+
+        if (!domain) {
+          throw new Error("Domain not found");
+        }
+
+        const res = await checkTransferStatus(domain.domainname);
+
+        return res["property[TRANSFERSTATUS][0]"];
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  )
 };

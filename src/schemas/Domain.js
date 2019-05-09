@@ -114,6 +114,7 @@ export const queries = `
   fetchDomains: [Domain]!
   fetchDomainSuggestions(name: String!): [DomainResponse]!
   fetchWHOISData(id: ID!): WhoisData!
+  checkTransferStatus(id: ID!): String!
 `;
 
 export const mutations = `
