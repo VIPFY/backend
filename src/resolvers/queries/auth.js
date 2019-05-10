@@ -29,8 +29,6 @@ export default {
     async (parent, { unitid }, { models, token }) => {
       try {
         const me = await models.User.findById(unitid);
-
-        console.log("ME", me);
         const user = await parentAdminCheck(me);
 
         return user;

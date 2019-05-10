@@ -126,7 +126,12 @@ export default {
   Right: find({ holder: "Unit", forunit: "Unit" }),
   SimpleStats: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
-  Team: find(unit),
+  Team: find({
+    unitid: "Unit",
+    employees: "[User]",
+    licences: "[Licence]",
+    services: "[BoughtPlan]"
+  }),
   Upload: GraphQLUpload,
   User: find({ company: "Department", emails: "[Email]" }),
   SemiPublicUser: find({
