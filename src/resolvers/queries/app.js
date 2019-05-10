@@ -107,7 +107,6 @@ export default {
           .spread(res => res);
 
         const startTime = Date.now();
-
         if (
           info.fieldNodes[0].selectionSet.selections.find(
             item => item.name.value == "key"
@@ -138,7 +137,7 @@ export default {
             if (licence.appid == 4) {
               // just forward the key for demo purposes, until pipedrive is implemented
             } else if (licence.key && licence.appid != 11) {
-              licence.key = Services.getLoginData(
+              licence.key = await Services.getLoginData(
                 models,
                 licence.appid,
                 licence.id,
@@ -180,7 +179,6 @@ export default {
 
           await Promise.all(createLoginLinks);
         }
-
         return licences;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });

@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import moment from "moment";
 import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createLog, teamCheck, companyCheck } from "../../helpers/functions";
@@ -284,5 +285,157 @@ export default {
         });
       }
     }
+  ),
+
+  removeFromTeam: requiresRights(["edit-team"]).createResolver(
+    async (parent, { teamid, userid, keepLicences }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          await teamCheck(company, teamid);
+
+          //Destroy all licences except the ones that they want to keep
+
+          const team = await models.sequelize.query(
+            `SELECT services FROM team_view 
+            WHERE unitid = :teamid`,
+            {
+              replacements: { teamid },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+          const promises = [];
+          if (team[0] && team[0].services) {
+            team[0].services.forEach(serviceid => {
+              if (!keepLicences.find(l => l == serviceid)) {
+                promises.push(
+                  models.Licence.update(
+                    { endtime: moment().valueOf() },
+                    {
+                      where: {
+                        boughtplanid: serviceid,
+                        endtime: null,
+                        unitid: userid,
+                        options: { teamlicence: teamid }
+                      },
+                      transaction: ta
+                    }
+                  )
+                );
+              } else {
+                promises.push(
+                  models.sequelize.query(
+                    `Update licence_data set options = options - 'teamlicence'
+                     where boughtplanid = :serviceid
+                     and endtime is null
+                     and unitid = :userid
+                     and options ->> 'teamlicence' = :teamid`,
+                    {
+                      replacements: { serviceid, userid, teamid },
+                      type: models.sequelize.QueryTypes.SELECT
+                    }
+                  )
+                );
+              }
+            });
+          }
+          await Promise.all(promises);
+
+          await models.ParentUnit.destroy(
+            { where: { parentunit: teamid, childunit: userid } },
+            { transaction: ta }
+          );
+
+          await createLog(
+            ip,
+            "removeEmployeeFromTeam",
+            { teamid, userid },
+            unitid,
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  addToTeam: requiresRights(["edit-team"]).createResolver(
+    async (parent, addInformation, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const { teamid, services, userid } = addInformation;
+
+          await teamCheck(company, teamid);
+
+          //Nutzer add to team
+
+          await models.ParentUnit.create(
+            { parentunit: teamid, childunit: userid },
+            { transaction: ta }
+          );
+
+          //Lizenzen aufsetzen
+          const promises = [];
+
+          services.forEach(service =>
+            promises.push(
+              models.Licence.create(
+                {
+                  unitid: userid,
+                  disabled: false,
+                  boughtplanid: service.id,
+                  agreed: true,
+                  key: {
+                    email: service.setup.email,
+                    password: service.setup.password,
+                    subdomain: service.setup.subdomain,
+                    external: true
+                  },
+                  options: service.setupfinished
+                    ? {
+                        teamlicence: teamid
+                      }
+                    : {
+                        teamlicence: teamid,
+                        nosetup: true
+                      }
+                },
+                { transaction: ta }
+              )
+            )
+          );
+
+          await Promise.all(promises);
+
+          //TODO notfiy user
+
+          await createLog(
+            ip,
+            "addEmployeeFromTeam",
+            { teamid, userid },
+            unitid,
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };

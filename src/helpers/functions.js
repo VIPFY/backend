@@ -200,7 +200,6 @@ export const checkVat = async (cc, vatNumber) => {
     );
 
     if (res.valid == false) {
-      console.log(res);
       throw new Error(res);
     } else {
       return res;

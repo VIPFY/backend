@@ -1225,10 +1225,14 @@ export default {
           if (!licence) {
             throw new Error("Licence not found");
           }
+          if (licence.options && licence.options.nosetup) {
+            delete licence.options.nosetup;
+          }
 
           await models.Licence.update(
             {
-              key: { ...licence.key, ...credentials }
+              key: { ...licence.key, ...credentials },
+              options: licence.options
             },
             {
               where: { id: licenceid },

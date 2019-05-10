@@ -13,8 +13,8 @@ export const types = `
     deleted: Boolean!
     suspended: Boolean!
     profilepicture: String
-    employees: Int
-    employeedata: [PublicUser]!
+    employees: [PublicUser]
+    employeenumber: Int
     managelicences: Boolean
     apps: JSON
     domains: [Domain]
@@ -31,15 +31,24 @@ export const types = `
     ADD
     REMOVE
   }
+
+  input SetupService {
+    id: ID!
+    setup: JSON
+    setupfinished: Boolean!
+  }
 `;
 
 export const queries = `
   fetchTeams(userid: ID!): [Team]
+  fetchCompanyTeams: [Team]
 `;
 
 export const mutations = `
   addTeam(name: String!, data: TeamInput!): Department!
   deleteTeam(teamid: ID!): Boolean!
+  removeFromTeam(teamid: ID!, userid: ID!, keepLicences: [ID!]): Boolean!
+  addToTeam(userid: ID!, teamid: ID!, services: [SetupService]!): Boolean!
   updateTeamMembers(members: [ID!]!, teamid: ID!, action: TEAMACTION!): Department!
   updateTeamInfos(teamid: ID!, data: TeamInput!): Department!
   addTeamLicence(teamid: ID!, boughtplanid: [ID!]!): Department!
