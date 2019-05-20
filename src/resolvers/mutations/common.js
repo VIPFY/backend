@@ -66,7 +66,10 @@ export default {
 
       try {
         const nameExists = await models.App.findOne({
-          where: { name: { [models.sequelize.Op.iLike]: `%${name}` } }
+          where: {
+            name: { [models.sequelize.Op.iLike]: `%${name}` },
+            owner: null
+          }
         });
 
         if (nameExists) {

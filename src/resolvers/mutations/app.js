@@ -16,6 +16,7 @@ import {
 //   cancelPurchase
 // } from "../../services/stripe";
 import logger from "../../loggers";
+import { uploadAppImage } from "../../services/aws";
 
 /* eslint-disable no-return-await */
 
@@ -608,7 +609,7 @@ export default {
    * @returns {object}
    */
   addExternalBoughtPlan: requiresAuth.createResolver(
-    (parent, { alias, appid, price, loginurl }, { models, token, ip }) =>
+    (_, { alias, appid, price, loginurl }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid, company }
@@ -1285,6 +1286,85 @@ export default {
           await Promise.all(promises);
 
           return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  createOwnApp: requiresRights(["create-licences"]).createResolver(
+    async (_, { appData }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+          const { images, ...data } = appData;
+
+          const [logo, icon] = await Promise.all(
+            images.map(async (upload, index) => {
+              const pic = await upload;
+              const filename = index == 0 ? "logo.png" : "icon.png";
+
+              const name = await uploadAppImage(pic, appData.name, filename);
+              return name;
+            })
+          );
+
+          const appOwned = await models.App.create(
+            {
+              ...data,
+              logo,
+              icon,
+              disabled: false,
+              developer: company,
+              supportunit: company,
+              owner: company,
+              options: {}
+            },
+            { transaction: ta }
+          );
+
+          const plan = await models.Plan.create(
+            {
+              name: `${appData.name} Integrated`,
+              appid: appOwned.dataValues.id,
+              teaserdescription: `Integrated Plan for ${appData.name}`,
+              startdate: models.sequelize.fn("NOW"),
+              numlicences: 0,
+              price: 0.0,
+              options: { external: true, integrated: true },
+              payperiod: { years: 1 },
+              cancelperiod: { secs: 1 },
+              hidden: true
+            },
+            { transaction: ta }
+          );
+
+          const boughtPlan = await models.BoughtPlan.create(
+            {
+              planid: plan.id,
+              alias: appData.name,
+              disabled: false,
+              buyer: unitid,
+              payer: company,
+              usedby: company,
+              totalprice: 0,
+              key: {
+                integrated: true,
+                external: true,
+                externaltotalprice: 0,
+                loginurl: appData.loginurl
+              },
+              stripeplan: null // Maybe we need one later
+            },
+            { transaction: ta }
+          );
+
+          return boughtPlan;
         } catch (err) {
           throw new NormalError({
             message: err.message,
