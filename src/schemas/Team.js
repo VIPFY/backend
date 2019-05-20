@@ -13,7 +13,7 @@ export const types = `
     deleted: Boolean!
     suspended: Boolean!
     profilepicture: String
-    employees: [PublicUser]
+    employees: [SemiPublicUser]
     employeenumber: Int
     managelicences: Boolean
     apps: JSON
@@ -42,13 +42,16 @@ export const types = `
 export const queries = `
   fetchTeams(userid: ID!): [Team]
   fetchCompanyTeams: [Team]
+  fetchTeam(teamid: ID!): Team
 `;
 
 export const mutations = `
   addTeam(name: String!, data: TeamInput!): Department!
   deleteTeam(teamid: ID!): Boolean!
   removeFromTeam(teamid: ID!, userid: ID!, keepLicences: [ID!]): Boolean!
+  removeServiceFromTeam(teamid: ID!, serviceid: ID!, keepLicences: [ID!]): Boolean!
   addToTeam(userid: ID!, teamid: ID!, services: [SetupService]!): Boolean!
+  addAppToTeam(serviceid: ID!, teamid: ID!, employees: [SetupService]!): Boolean!
   updateTeamMembers(members: [ID!]!, teamid: ID!, action: TEAMACTION!): Department!
   updateTeamInfos(teamid: ID!, data: TeamInput!): Department!
   addTeamLicence(teamid: ID!, boughtplanid: [ID!]!): Department!

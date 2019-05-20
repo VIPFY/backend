@@ -45,5 +45,21 @@ export default {
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
-  })
+  }),
+  fetchTeam: requiresRights(["view-teams", "view-licences"]).createResolver(
+    async (parent, { teamid }, { models }) => {
+      try {
+        const team = await models.sequelize.query(
+          `SELECT * FROM team_view WHERE unitid = :teamid`,
+          {
+            replacements: { teamid },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+        return team && team[0];
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  )
 };
