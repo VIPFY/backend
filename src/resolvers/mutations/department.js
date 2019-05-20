@@ -1059,7 +1059,7 @@ export default {
           );
           resetCompanyMembershipCache(company, unit.id);
 
-          await sendEmail({
+          /*await sendEmail({
             templateId: "d-e049cce50d20428d81f011e521605d4c",
             fromName: "VIPFY",
             personalizations: [
@@ -1074,7 +1074,7 @@ export default {
                 }
               }
             ]
-          });
+          });*/
 
           return true;
         } catch (err) {
