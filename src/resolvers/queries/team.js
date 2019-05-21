@@ -22,6 +22,7 @@ export default {
       }
     }
   ),
+
   fetchCompanyTeams: requiresRights([
     "view-teams",
     "view-licences"
@@ -46,6 +47,7 @@ export default {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
   }),
+
   fetchTeam: requiresRights(["view-teams", "view-licences"]).createResolver(
     async (parent, { teamid }, { models }) => {
       try {

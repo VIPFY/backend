@@ -55,4 +55,5 @@ export const mutations = `
   updateTeamMembers(members: [ID!]!, teamid: ID!, action: TEAMACTION!): Department!
   updateTeamInfos(teamid: ID!, data: TeamInput!): Department!
   addTeamLicence(teamid: ID!, boughtplanid: [ID!]!): Department!
+  updateTeamPic(file: Upload!, teamid: ID!): Team!
 `;
