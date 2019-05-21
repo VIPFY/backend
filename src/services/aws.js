@@ -53,6 +53,28 @@ export const uploadUserImage = async ({ stream, filename }, folder) => {
   }
 };
 
+export const uploadTeamImage = async ({ stream, filename }, folder) => {
+  const ourFilename = formatFilename(filename);
+  const Key = `${folder}/${ourFilename}`;
+  const Bucket = "userimages.vipfy.store";
+
+  try {
+    const Body = stream;
+
+    const params = {
+      Key,
+      Body,
+      Bucket
+    };
+
+    await s3.upload(params).promise();
+
+    return Key;
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
 export const uploadAppImage = async (
   { stream, filename },
   folder,
