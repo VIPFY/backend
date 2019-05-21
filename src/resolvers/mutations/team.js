@@ -56,8 +56,151 @@ export default {
       })
   ),
 
+  createTeam: requiresRights(["create-team"]).createResolver(
+    async (parent, { teamdata, addemployees, apps }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const unit = await models.Unit.create({}, { transaction: ta });
+
+          const { name } = { ...teamdata };
+
+          const p1 = models.DepartmentData.create(
+            {
+              unitid: unit.dataValues.id,
+              name,
+              internaldata: { created: Date.now(), ...teamdata }
+            },
+            { transaction: ta }
+          );
+
+          const p2 = models.ParentUnit.create(
+            { parentunit: company, childunit: unit.dataValues.id },
+            { transaction: ta }
+          );
+
+          const [department, parentUnit] = await Promise.all([p1, p2]);
+
+          //add employees
+
+          const employeepromises = [];
+          addemployees.forEach(employee =>
+            employeepromises.push(
+              models.ParentUnit.create(
+                { parentunit: unit.dataValues.id, childunit: employee.id },
+                { transaction: ta }
+              )
+            )
+          );
+
+          await Promise.all(employeepromises);
+
+          //services aufsetzen
+
+          for await (const service of apps) {
+            const servicepromises = [];
+            const app = await models.Plan.findOne({
+              where: { id: service.id },
+              raw: true,
+              transaction: ta
+            });
+
+            const plan = await models.Plan.findOne({
+              where: { appid: service.id, options: { external: true } },
+              raw: true,
+              transaction: ta
+            });
+
+            if (!plan) {
+              throw new Error(
+                "This App is not integrated to handle external Accounts yet."
+              );
+            }
+            console.log("BEFORE CHECK", plan);
+            await checkPlanValidity(plan);
+            console.log("AFTER CHECK", plan);
+
+            const boughtPlan = await models.BoughtPlan.create(
+              {
+                planid: plan.id,
+                alias: app.name,
+                disabled: false,
+                buyer: unitid,
+                payer: company,
+                usedby: company,
+                totalprice: 0,
+                key: {
+                  external: true,
+                  externaltotalprice: 0
+                }
+              },
+              { transaction: ta }
+            );
+
+            console.log("AFTER Boughtplan");
+
+            await models.DepartmentApp.create(
+              { departmentid: unit.dataValues.id, boughtplanid: boughtPlan.id },
+              { transaction: ta }
+            );
+
+            console.log("AFTER DepartmentApp");
+
+            service.employees.forEach(employee =>
+              servicepromises.push(
+                models.Licence.create(
+                  {
+                    unitid: employee.id,
+                    disabled: false,
+                    boughtplanid: boughtPlan.id,
+                    agreed: true,
+                    key: {
+                      email: employee.setup.email,
+                      password: employee.setup.password,
+                      subdomain: employee.setup.subdomain,
+                      external: true
+                    },
+                    options: employee.setupfinished
+                      ? {
+                          teamlicence: unit.dataValues.id
+                        }
+                      : {
+                          teamlicence: unit.dataValues.id,
+                          nosetup: true
+                        }
+                  },
+                  { transaction: ta }
+                )
+              )
+            );
+
+            console.log("AFTER Services");
+            await Promise.all(servicepromises);
+          }
+
+          await createLog(
+            ip,
+            "addTeam",
+            { unit, department, parentUnit },
+            unitid,
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   deleteTeam: requiresRights(["delete-team"]).createResolver(
-    async (parent, { teamid }, { models, token, ip }) =>
+    async (parent, { teamid, keepLicences }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -88,6 +231,63 @@ export default {
             transaction: ta
           });
 
+          //Keep Licences
+
+          const team = await models.sequelize.query(
+            `SELECT employees, services FROM team_view 
+            WHERE unitid = :teamid`,
+            {
+              replacements: { teamid },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+          const licencesPromises = [];
+          if (team[0] && team[0].services) {
+            team[0].services.forEach(serviceid => {
+              team[0].employees.forEach(employeeid => {
+                if (
+                  !keepLicences.find(
+                    l => l.service == serviceid && l.employee == employeeid
+                  )
+                ) {
+                  licencesPromises.push(
+                    models.Licence.update(
+                      { endtime: moment().valueOf() },
+                      {
+                        where: {
+                          boughtplanid: serviceid,
+                          endtime: null,
+                          unitid: employeeid,
+                          options: { teamlicence: teamid }
+                        },
+                        transaction: ta
+                      }
+                    )
+                  );
+                } else {
+                  licencesPromises.push(
+                    models.sequelize.query(
+                      `Update licence_data set options = options - 'teamlicence'
+                      where boughtplanid = :serviceid
+                      and endtime is null
+                      and unitid = :employeeid
+                      and options ->> 'teamlicence' = :teamid`,
+                      {
+                        replacements: { serviceid, employeeid, teamid },
+                        type: models.sequelize.QueryTypes.SELECT
+                      }
+                    )
+                  );
+                }
+              });
+            });
+          }
+          await Promise.all(licencesPromises);
+
+          await models.DepartmentApp.destroy(
+            { where: { departmentid: teamid } },
+            { transaction: ta }
+          );
           const p8 = models.Unit.update(
             { deleted: true },
             { where: { id: teamid }, transaction: ta }
@@ -104,10 +304,6 @@ export default {
             },
             { transaction: ta }
           );
-          const p14 = models.DepartmentApp.destroy(
-            { where: { departmentid: teamid } },
-            { transaction: ta }
-          );
 
           const [
             oldUnit,
@@ -119,7 +315,7 @@ export default {
             oldDepartmentApps
           ] = await Promise.all([p1, p2, p3, p4, p5, p6, p7]);
 
-          await Promise.all([p7, p8, p9, p10, p11, p12, p13, p14]);
+          await Promise.all([p7, p8, p9, p10, p11, p12, p13]);
 
           await createLog(
             ip,
