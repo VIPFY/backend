@@ -21,6 +21,25 @@ export const types = `
     hasboughtplan: Boolean
   }
 
+  type AppOverview {
+    id: ID!
+    app: AppDetails!
+    singles: [SingleLicence]
+    teams: [Team]
+  }
+
+  type SingleLicence{
+    employee: SemiPublicUser!
+    licence: Licence!
+  }
+
+  type CompanyService{
+    id: ID!
+    app: AppDetails!
+    licences: [NLicence]
+    teams: [Team]
+  }
+
   type AppDetails {
     id: ID!
     name: String
@@ -85,6 +104,31 @@ export const types = `
     waituntil: String
     predomain: String
     afterdomain: String
+  }
+
+  type ServiceLicence{
+    id: ID!
+    licence: Licence!
+    starttime: Date!
+    endtime: Date
+    agreed: Boolean
+    alias: String
+  }
+
+  type NLicence{
+    id: ID!
+    options: JSON
+    starttime: String!
+    endtime: Date
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
+    boughtplanid: BoughtPlan!
+    unitid: SemiPublicUser
+    layouthorizontal: Int
+    layoutvertical: Int
+    teamlicence: Team
+    teamaccount: Team
   }
 
   type Licence {
@@ -167,6 +211,12 @@ export const queries = `
 
   # Total time spend in a specific boughtplan at some time, broken down by user
   fetchBoughtplanUsagePerUser(starttime: Date!, endtime: Date!, boughtplanid: ID!): [BoughtplanUsagePerUser]!
+
+  fetchCompanyServicesOld: [AppOverview]
+  fetchCompanyServiceOld(serviceid: ID!): [AppOverview]!
+  fetchServiceLicences(employees: [ID!], serviceid: ID!): [ServiceLicence]
+  fetchCompanyServices: [CompanyService]
+  fetchCompanyService(serviceid: ID!): CompanyService
 `;
 
 export const mutations = `
@@ -193,6 +243,7 @@ export const mutations = `
   clearLicence(licenceid: ID!): Response!
   # Deletes a licence on a set date, if it is after the normal cancel period
   deleteLicenceAt(licenceid: ID!, time: Date!): Date!
+  deleteServiceLicenceAt(serviceid: ID!, licenceid: ID!, time: Date!): Date!
   # Deletes a boughtPlan on a set date, if it is after the normal cancel period
   deleteBoughtPlanAt(boughtplanid: ID!, time: Date!): Date!
 

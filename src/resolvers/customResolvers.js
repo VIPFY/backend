@@ -94,6 +94,20 @@ const postprocessors = {
       value.verifyuntil = new Date(verifyuntil.format());
     }
     return value;
+  },
+  Licence: async (value, fields) => {
+    //logger.debug("postprocessing Email", { value, fields });
+    console.log("DEBUG", value, fields);
+    if (value.options) {
+      if (value.options.teamlicence) {
+        value.teamlicence = value.options.teamlicence;
+      }
+      if (value.options.teamaccount) {
+        value.teamaccount = value.options.teamaccount;
+      }
+    }
+    console.log("DEBUGAFTER", value, fields);
+    return value;
   }
 };
 
@@ -133,6 +147,7 @@ export const find = data => {
     searches[search] = async (parent, args, ctx, info) => {
       const { models } = ctx;
       try {
+        console.log("TESTING", data, search);
         const loadMultiple = data[search][0] == "[";
         const datatype = loadMultiple
           ? data[search].substring(1, data[search].length - 1)
@@ -167,10 +182,12 @@ export const find = data => {
           }
 
           // load data if it's not trivial
-          if (fields == [key]) {
+          if (fields.length == 1 && fields[0] == key) {
             result = value.map(v =>
               v === null || v === undefined ? null : { [key]: v }
             );
+          } else if (value == null) {
+            result = null;
           } else {
             const dataloader = getDataLoader(datatype, key, ctx);
             result = await dataloader.loadMany(value);
@@ -187,9 +204,11 @@ export const find = data => {
           let result;
 
           // load data if it's not trivial
-          if (fields == [key]) {
+          if (fields.length == 1 && fields[0] == key) {
             result =
               value === null || value === undefined ? null : { [key]: value };
+          } else if (value == null) {
+            result = null;
           } else {
             const dataloader = getDataLoader(datatype, key, ctx);
             result = await dataloader.load(value);
