@@ -19,6 +19,7 @@ export const types = `
     deprecated: Boolean!
     hidden: Boolean!
     hasboughtplan: Boolean
+    owner: Unit
   }
 
   type AppDetails {
@@ -46,6 +47,7 @@ export const types = `
     supportunit: Unit!
     color: String!
     hidden: Boolean!
+    owner: Unit
   }
 
   input AppInput {
@@ -173,6 +175,8 @@ export const mutations = `
   updateLayout(layouts: [LayoutInput]!): Boolean!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
+
+  createOwnApp(appData: AppInput!): BoughtPlan!
 
   # Admin: toogle App between disabled and enabled
   toggleAppStatus(id: ID!): Response!

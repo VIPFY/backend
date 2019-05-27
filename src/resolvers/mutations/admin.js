@@ -27,7 +27,7 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const app = await models.App.findOne({
-            where: { id: appId },
+            where: { id: appId, owner: null },
             raw: true,
             attributes: ["internaldata", "name"]
           });
@@ -173,7 +173,7 @@ export default {
     async (parent, { images, appid }, { models }) => {
       try {
         const app = await models.App.findOne({
-          where: { id: appid },
+          where: { id: appid, owner: null },
           raw: true
         });
 
@@ -181,7 +181,10 @@ export default {
           images.map(image => processMultipleFiles(image, app.name))
         );
 
-        await models.App.update({ images: names }, { where: { id: appid } });
+        await models.App.update(
+          { images: names },
+          { where: { id: appid, owner: null } }
+        );
         return true;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -194,7 +197,7 @@ export default {
       try {
         if (type == "app") {
           const { name, images } = await models.App.findOne({
-            where: { id },
+            where: { id, owner: null },
             raw: true,
             attributes: ["images", "name"]
           });
@@ -204,7 +207,7 @@ export default {
 
           await models.App.update(
             { images: filteredImages },
-            { where: { id }, returning: true }
+            { where: { id, owner: null }, returning: true }
           );
         }
 
@@ -224,7 +227,7 @@ export default {
           } = decode(token);
 
           const nameExists = await models.App.findOne({
-            where: { name: app.name },
+            where: { name: app.name, owner: null },
             raw: true
           });
 
@@ -308,7 +311,7 @@ export default {
           if (app.image) {
             // eslint-disable-next-line prefer-const
             let { name, images } = await models.App.findOne({
-              where: { id: appid },
+              where: { id: appid, owner: null },
               attributes: ["name", "images"],
               raw: true
             });
@@ -324,13 +327,17 @@ export default {
 
             return await models.App.update(
               { images },
-              { where: { id: appid }, transaction: ta, returning: true }
+              {
+                where: { id: appid, owner: null },
+                transaction: ta,
+                returning: true
+              }
             );
           }
 
           if (app.logo) {
             const { name, logo: oldLogo } = await models.App.findOne({
-              where: { id: appid },
+              where: { id: appid, owner: null },
               attributes: ["name", "logo"],
               raw: true
             });
@@ -347,7 +354,7 @@ export default {
 
           if (app.icon) {
             const { name, icon: oldIcon } = await models.App.findOne({
-              where: { id: appid },
+              where: { id: appid, owner: null },
               attributes: ["name", "icon"],
               raw: true
             });
@@ -417,19 +424,27 @@ export default {
 
           if (options) {
             const { options: oldOptions } = await models.App.findOne({
-              where: { id: appid },
+              where: { id: appid, owner: null },
               raw: true
             });
 
             await models.App.update(
               { options: { ...oldOptions, ...options } },
-              { where: { id: appid }, transaction: ta, returning: true }
+              {
+                where: { id: appid, owner: null },
+                transaction: ta,
+                returning: true
+              }
             );
           } else {
             console.log("SHIT!");
             await models.App.update(
               { ...app },
-              { where: { id: appid }, transaction: ta, returning: true }
+              {
+                where: { id: appid, owner: null },
+                transaction: ta,
+                returning: true
+              }
             );
           }
         } catch ({ message }) {
@@ -437,7 +452,7 @@ export default {
         }
       });
 
-      return models.AppDetails.findOne({ where: { id: appid } });
+      return models.AppDetails.findOne({ where: { id: appid, owner: null } });
     }
   ),
 
@@ -445,7 +460,7 @@ export default {
     async (parent, { id }, { models }) => {
       try {
         const app = await models.App.findById(id);
-        await models.App.destroy({ where: { id } });
+        await models.App.destroy({ where: { id, owner: null } });
 
         if (app.logo) {
           await deleteAppImage(app.logo, app.name);
@@ -463,7 +478,10 @@ export default {
     async (parent, { id }, { models }) => {
       try {
         const { disabled } = await models.App.findById(id);
-        await models.App.update({ disabled: !disabled }, { where: { id } });
+        await models.App.update(
+          { disabled: !disabled },
+          { where: { id, owner: null } }
+        );
         return { ok: true };
       } catch ({ message }) {
         throw new Error(message);

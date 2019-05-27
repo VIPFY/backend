@@ -11,7 +11,7 @@ export default {
         const {
           user: { unitid }
         } = jwt.decode(token);
-        const p1 = models.App.findById(appid);
+        const p1 = models.App.findOne({ where: { id: appid, owner: null } });
         const p2 = models.User.findById(unitid);
         const [app, user] = await Promise.all([p1, p2]);
 

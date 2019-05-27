@@ -11,13 +11,12 @@ export default {
   adminFetchAllApps: requiresVipfyAdmin.createResolver(
     async (parent, { limit, offset, sortOptions }, { models }) => {
       try {
-        const allApps = await models.AppDetails.findAll({
+        return await models.AppDetails.findAll({
           limit,
           offset,
+          where: { owner: null },
           order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
         });
-
-        return allApps;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
@@ -29,7 +28,7 @@ export default {
       try {
         const p1 = models.User.count();
 
-        const p2 = models.App.count();
+        const p2 = models.App.count({ where: { owner: null } });
 
         const childunits = await models.ParentUnit.findAll({
           attributes: ["childunit"],
