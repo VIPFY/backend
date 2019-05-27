@@ -103,6 +103,11 @@ export default {
   }),
   Email: find(unit),
   Licence: find({ unitid: "User", boughtplanid: "BoughtPlan" }),
+  NLicence: find({
+    unitid: "User",
+    boughtplanid: "BoughtPlan",
+    teamlicence: "Team"
+  }),
   Log: find({ user: "User", sudoer: "User" }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
@@ -131,6 +136,23 @@ export default {
     employees: "[User]",
     licences: "[Licence]",
     services: "[BoughtPlan]"
+  }),
+  AppOverview: find({
+    app: "App",
+    singles: "[SingleLicence]",
+    teams: "[Team]"
+  }),
+  SingleLicence: find({
+    employee: "User",
+    licence: "Licence"
+  }),
+  ServiceLicence: find({
+    licence: "Licence"
+  }),
+  CompanyService: find({
+    app: "App",
+    licences: "[Licence]",
+    teams: "[Team]"
   }),
   Upload: GraphQLUpload,
   User: find({ company: "Department", emails: "[Email]" }),

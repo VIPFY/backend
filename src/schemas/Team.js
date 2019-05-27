@@ -6,6 +6,7 @@ export const types = `
   }
 
   type Team {
+    id: ID!
     name: String!
     legalinformation: JSON
     unitid: Unit!

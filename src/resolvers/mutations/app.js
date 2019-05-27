@@ -1009,6 +1009,87 @@ export default {
       })
   ),
 
+  deleteServiceLicenceAt: requiresRights(["delete-licences"]).createResolver(
+    async (parent, { serviceid, licenceid, time }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const parsedTime = moment(time).valueOf();
+          const config = { endtime: parsedTime };
+
+          const licence = await models.sequelize.query(
+            `
+        SELECT ld.*, pd.cancelperiod
+        FROM licence_data ld
+            LEFT OUTER JOIN boughtplan_data bd on ld.boughtplanid = bd.id
+            INNER JOIN plan_data pd on bd.planid = pd.id
+        WHERE ld.id = :licenceid
+          AND (bd.endtime IS NULL OR bd.endtime > NOW())
+          AND bd.payer = :company`,
+            {
+              replacements: { licenceid, company },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+
+          if (licence.length < 1) {
+            throw new Error(
+              "BoughtPlan doesn't exist or isn't active anymore!"
+            );
+          }
+
+          if (!licence[0].key || (licence[0].key && !licence[0].key.external)) {
+            // Only "normal" licences have an end time. External ones end directly.
+            const period = Object.keys(licence[0].cancelperiod)[0];
+
+            const estimatedEndtime = moment()
+              .add(licence[0].cancelperiod[period], period)
+              .valueOf();
+
+            if (parsedTime <= estimatedEndtime) {
+              config.endtime = estimatedEndtime;
+            }
+          }
+
+          const updatedLicence = await models.Licence.update(config, {
+            where: { id: licence[0].id },
+            transaction: ta
+          });
+
+          if (updatedLicence[0] == 0) {
+            throw new Error("Couldn't update Licence");
+          }
+
+          const p1 = createLog(ip, "deleteLicenceAt", { licence }, unitid, ta);
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: `Set endtime of Licence ${licence[0].id} to ${moment(
+                config.endtime
+              ).toDate()}`,
+              icon: "business-time",
+              link: `teams`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
+
+          return moment(config.endtime).toDate();
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   deleteLicenceAt: requiresRights(["delete-licences"]).createResolver(
     async (parent, { licenceid, time }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
