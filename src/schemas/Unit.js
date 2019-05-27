@@ -129,7 +129,8 @@ export const mutations = `
   updateMyself(user: UserInput!): User!
   updateEmployee(user: EmployeeInput!): SemiPublicUser!
   updateUser(user: UserInput!): Response!
-  updateProfilePic(file: Upload!): String!
+  updateProfilePic(file: Upload!): User!
+  updateEmployeePic(file: Upload!, unitid: ID!): SemiPublicUser!
 
   # Only an email is required for the signup
   signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!): RegisterResponse!

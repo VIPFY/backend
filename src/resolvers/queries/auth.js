@@ -26,7 +26,7 @@ export default {
   }),
 
   adminme: requiresRights(["view-users"]).createResolver(
-    async (parent, { unitid }, { models, token }) => {
+    async (parent, { unitid }, { models }) => {
       try {
         const me = await models.User.findById(unitid);
         const user = await parentAdminCheck(me);

@@ -1,5 +1,6 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
+import { teamPicFolder } from "../../constants";
 import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import {
@@ -8,6 +9,7 @@ import {
   companyCheck,
   checkPlanValidity
 } from "../../helpers/functions";
+import { uploadTeamImage, deleteUserImage } from "../../services/aws";
 
 export default {
   addTeam: requiresRights(["create-team"]).createResolver(
@@ -55,16 +57,25 @@ export default {
   ),
 
   createTeam: requiresRights(["create-team"]).createResolver(
-    async (parent, { teamdata, addemployees, apps }, { models, token, ip }) =>
+    async (parent, { team, addemployees, apps }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(token);
 
-          const unit = await models.Unit.create({}, { transaction: ta });
+          const { name, picture, ...teamdata } = team;
+          const parsedFile = await picture;
 
-          const { name } = { ...teamdata };
+          const profilepicture = await uploadTeamImage(
+            parsedFile,
+            teamPicFolder
+          );
+
+          const unit = await models.Unit.create(
+            { profilepicture },
+            { transaction: ta }
+          );
 
           const p1 = models.DepartmentData.create(
             {
@@ -198,7 +209,7 @@ export default {
   ),
 
   deleteTeam: requiresRights(["delete-team"]).createResolver(
-    async (parent, { teamid, keepLicences }, { models, token, ip }) =>
+    async (_, { teamid, keepLicences }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -229,7 +240,7 @@ export default {
             transaction: ta
           });
 
-          //Keep Licences
+          // Keep Licences
 
           const team = await models.sequelize.query(
             `SELECT employees, services FROM team_view 
@@ -312,6 +323,18 @@ export default {
             oldParentUnit,
             oldDepartmentApps
           ] = await Promise.all([p1, p2, p3, p4, p5, p6, p7]);
+
+          try {
+            await deleteUserImage(oldUnit.profilepicture);
+          } catch (err) {
+            await createLog(
+              ip,
+              "deleteTeam - Image",
+              { pic: oldUnit.profilepicture },
+              unitid,
+              ta
+            );
+          }
 
           await Promise.all([p7, p8, p9, p10, p11, p12, p13]);
 
@@ -428,6 +451,60 @@ export default {
           );
 
           return { ...team, internaldata: { ...team.internaldata, ...data } };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  updateTeamPic: requiresRights(["edit-team"]).createResolver(
+    async (_, { file, teamid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const oldUnit = await models.Unit.findOne({
+            where: { id: teamid },
+            raw: true
+          });
+
+          await teamCheck(company, teamid);
+
+          const parsedFile = await file;
+          await deleteUserImage(oldUnit.profilepicture);
+
+          const profilepicture = await uploadTeamImage(
+            parsedFile,
+            teamPicFolder
+          );
+
+          const updatedUnit = await models.Unit.update(
+            { profilepicture },
+            { where: { id: teamid }, returning: true, transaction: ta }
+          );
+
+          const p1 = models.Team.findOne({
+            where: { unitid: teamid },
+            raw: true,
+            transaction: ta
+          });
+
+          const p2 = createLog(
+            ip,
+            "updateTeamPic",
+            { oldUnit, updatedUnit: updatedUnit[1] },
+            unitid,
+            ta
+          );
+
+          const [team] = await Promise.all([p1, p2]);
+
+          return { ...team, profilepicture };
         } catch (err) {
           throw new NormalError({
             message: err.message,
