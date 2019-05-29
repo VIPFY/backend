@@ -75,6 +75,14 @@ export const types = `
     image: Upload
   }
 
+  input SSOInput {
+    name: String!
+    images: [Upload!]
+    email: String!
+    password: String!
+    loginurl: String!
+  }
+
   input AppOptions {
     type: String!
     emailobject: String!
@@ -176,7 +184,7 @@ export const mutations = `
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
 
-  createOwnApp(appData: AppInput!): BoughtPlan!
+  createOwnApp(ssoData: SSOInput!): BoughtPlan!
 
   # Admin: toogle App between disabled and enabled
   toggleAppStatus(id: ID!): Response!
