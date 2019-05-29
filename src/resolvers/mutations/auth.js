@@ -655,12 +655,9 @@ export default {
           ]
         });
 
-        return {
-          ok: true,
-          email
-        };
+        return { ok: true, email };
       } catch (err) {
-        throw new AuthError({ message: err.message, internalData: { err } });
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }),
 
