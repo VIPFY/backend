@@ -41,6 +41,25 @@ export const types = `
     teams: [TeamBoughtPlan]
   }
 
+  type AppOverview {
+    id: ID!
+    app: AppDetails!
+    singles: [SingleLicence]
+    teams: [Team]
+  }
+
+  type SingleLicence{
+    employee: SemiPublicUser!
+    licence: Licence!
+  }
+
+  type CompanyService{
+    id: ID!
+    app: AppDetails!
+    licences: [NLicence]
+    teams: [Team]
+  }
+
   type AppDetails {
     id: ID!
     name: String
