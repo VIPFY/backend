@@ -648,7 +648,7 @@ export default {
   removeServiceFromTeam: requiresRights(["edit-team"]).createResolver(
     async (
       parent,
-      { teamid, serviceid, keepLicences },
+      { teamid, boughtplanid, keepLicences },
       { models, token, ip }
     ) =>
       models.sequelize.transaction(async ta => {
@@ -678,7 +678,7 @@ export default {
                     { endtime: moment().valueOf() },
                     {
                       where: {
-                        boughtplanid: serviceid,
+                        boughtplanid,
                         endtime: null,
                         unitid: employeeid,
                         options: { teamlicence: teamid }
@@ -691,12 +691,12 @@ export default {
                 promises.push(
                   models.sequelize.query(
                     `Update licence_data set options = options - 'teamlicence'
-                     where boughtplanid = :serviceid
+                     where boughtplanid = :boughtplanid
                      and endtime is null
                      and unitid = :employeeid
                      and options ->> 'teamlicence' = :teamid`,
                     {
-                      replacements: { serviceid, employeeid, teamid },
+                      replacements: { boughtplanid, employeeid, teamid },
                       type: models.sequelize.QueryTypes.SELECT
                     }
                   )
@@ -707,14 +707,14 @@ export default {
           await Promise.all(promises);
 
           await models.DepartmentApp.destroy(
-            { where: { departmentid: teamid, boughtplanid: serviceid } },
+            { where: { departmentid: teamid, boughtplanid } },
             { transaction: ta }
           );
 
           await createLog(
             ip,
             "removeServiceFromTeam",
-            { teamid, serviceid },
+            { teamid, boughtplanid },
             unitid,
             ta
           );

@@ -1377,5 +1377,222 @@ export default {
           });
         }
       })
+  ),
+
+  createService: requiresAuth.createResolver(
+    async (
+      parent,
+      { serviceData, addedTeams, addedEmployees },
+      { models, token, ip }
+    ) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          console.log("Inputs", serviceData, addedTeams, addedEmployees);
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          //Nutzer add to team
+
+          const app = await models.Plan.findOne({
+            where: { id: serviceData.id },
+            raw: true
+          });
+
+          const plan = await models.Plan.findOne({
+            where: { appid: serviceData.id, options: { external: true } },
+            raw: true
+          });
+
+          if (!plan) {
+            throw new Error(
+              "This App is not integrated to handle external Accounts yet."
+            );
+          }
+          await checkPlanValidity(plan);
+
+          const boughtPlan = await models.BoughtPlan.create(
+            {
+              planid: plan.id,
+              alias: app.name,
+              disabled: false,
+              buyer: unitid,
+              payer: company,
+              usedby: company,
+              totalprice: 0,
+              key: {
+                external: true,
+                externaltotalprice: 0
+              }
+            },
+            { transaction: ta }
+          );
+
+          const teamaddpromises = [];
+          const employeepromises = [];
+          addedTeams.forEach(team => {
+            teamaddpromises.push(
+              models.DepartmentApp.create(
+                { departmentid: team.unitid.id, boughtplanid: boughtPlan.id },
+                { transaction: ta }
+              )
+            );
+
+            team.employees.forEach(employee =>
+              employeepromises.push(
+                models.Licence.create(
+                  {
+                    unitid: employee.id,
+                    disabled: false,
+                    boughtplanid: boughtPlan.id,
+                    agreed: true,
+                    key: {
+                      email: employee.setup.email,
+                      password: employee.setup.password,
+                      subdomain: employee.setup.subdomain,
+                      external: true
+                    },
+                    options: employee.setupfinished
+                      ? {
+                          teamlicence: team.unitid.id
+                        }
+                      : {
+                          teamlicence: team.unitid.id,
+                          nosetup: true
+                        }
+                  },
+                  { transaction: ta }
+                )
+              )
+            );
+          });
+
+          addedEmployees.forEach(employee =>
+            employeepromises.push(
+              models.Licence.create(
+                {
+                  unitid: employee.id,
+                  disabled: false,
+                  boughtplanid: boughtPlan.id,
+                  agreed: true,
+                  key: {
+                    email: employee.setup.email,
+                    password: employee.setup.password,
+                    subdomain: employee.setup.subdomain,
+                    external: true
+                  },
+                  options: employee.setupfinished
+                    ? {}
+                    : {
+                        nosetup: true
+                      }
+                },
+                { transaction: ta }
+              )
+            )
+          );
+
+          await Promise.all(teamaddpromises, employeepromises);
+
+          //TODO notfiy user
+
+          await createLog(
+            ip,
+            "createService",
+            { service: serviceData.id },
+            unitid,
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+  deleteService: requiresAuth.createResolver(
+    async (parent, { serviceid, time }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const parsedTime = moment(time).valueOf();
+          const config = { endtime: parsedTime };
+
+          const boughtPlans = await models.sequelize.query(
+            `
+            SELECT bd.*, pd.cancelperiod
+            FROM boughtplan_data bd
+                INNER JOIN plan_data pd on bd.planid = pd.id
+            WHERE (bd.endtime IS NULL OR bd.endtime > NOW())
+              AND bd.payer = :company
+              and appid = :serviceid`,
+            {
+              replacements: { company, serviceid },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+
+          if (boughtPlans.length < 1) {
+            throw new Error(
+              "BoughtPlan doesn't exist or isn't active anymore!"
+            );
+          }
+
+          const updatePromises = [];
+          const licencePromises = [];
+          const departmentPromisies = [];
+          boughtPlans.forEach(boughtPlan => {
+            const period = Object.keys(boughtPlan.cancelperiod)[0];
+            const estimatedEndtime = moment()
+              .add(boughtPlan.cancelperiod[period], period)
+              .valueOf();
+
+            if (parsedTime <= estimatedEndtime) {
+              config.endtime = estimatedEndtime;
+            }
+
+            updatePromises.push(
+              models.BoughtPlan.update(config, {
+                where: { id: boughtPlan.id },
+                transaction: ta
+              })
+            );
+
+            licencePromises.push(
+              models.Licence.update(config, {
+                where: { boughtplanid: boughtPlan.id }
+              })
+            );
+
+            departmentPromisies.push(
+              models.DepartmentApp.destroy(
+                { where: { boughtplanid: boughtPlan.id } },
+                { transaction: ta }
+              )
+            );
+          });
+
+          await Promise.all(
+            updatePromises,
+            licencePromises,
+            departmentPromisies
+          );
+
+          await createLog(ip, "deleteService", { serviceid }, unitid, ta);
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };

@@ -67,7 +67,11 @@ const Mutation = Object.assign(
 
 const unit = { unitid: "Unit" };
 const unitAndPlan = { sponsor: "Unit", planid: "Plan" };
-const developerAndSupport = { developer: "Unit", supportunit: "Unit" };
+const developerAndSupport = {
+  developer: "Unit",
+  supportunit: "Unit",
+  owner: "Unit"
+};
 const plans = { appid: "App", gotoplan: "Plan" };
 
 export default {
@@ -106,7 +110,8 @@ export default {
   NLicence: find({
     unitid: "User",
     boughtplanid: "BoughtPlan",
-    teamlicence: "Team"
+    teamlicence: "Team",
+    teamaccount: "Team"
   }),
   Log: find({ user: "User", sudoer: "User" }),
   Message: find({ receiver: "Human" }),
@@ -151,8 +156,11 @@ export default {
   }),
   CompanyService: find({
     app: "App",
-    licences: "[Licence]",
-    teams: "[Team]"
+    licences: "[Licence]"
+  }),
+  TeamBoughtPlan: find({
+    departmentid: "Team",
+    boughtplanid: "BoughtPlan"
   }),
   Upload: GraphQLUpload,
   User: find({ company: "Department", emails: "[Email]" }),

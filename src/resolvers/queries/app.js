@@ -243,6 +243,14 @@ export default {
               licence.key = null;
             }
           }
+          if (licence.options) {
+            if (licence.options.teamlicence) {
+              licence.teamlicence = licence.options.teamlicence;
+            }
+            if (licence.options.teamlicence) {
+              licence.teamaccount = licence.options.teamaccount;
+            }
+          }
         });
 
         return licences;
@@ -514,7 +522,11 @@ export default {
       } = decode(token);
       try {
         const companyServices = await models.sequelize.query(
-          `Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app, COALESCE(li.licences, ARRAY[]::bigint[]) as licences, COALESCE(t.teams, ARRAY[]::bigint[]) as teams from (Select appid, COALESCE(array_agg(departmentid), ARRAY[]::bigint[]) as teams from departmentapps_data join boughtplan_data
+          `Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
+          COALESCE(li.licences, ARRAY[]::bigint[]) as licences,
+          COALESCE(t.teams, ARRAY[]::json[]) as teams from
+          (Select appid, COALESCE(array_agg(json_build_object('departmentid', departmentid, 'boughtplanid', departmentapps_data.boughtplanid)), ARRAY[]::json[]) as teams
+            from departmentapps_data join boughtplan_data
           on departmentapps_data.boughtplanid = boughtplan_data.id join plan_data
           on boughtplan_data.planid = plan_data.id group by appid) t full outer join (
       Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_data l
@@ -548,8 +560,12 @@ export default {
       } = decode(token);
       try {
         const companyServices = await models.sequelize.query(
-          `Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app, COALESCE(li.licences, ARRAY[]::bigint[]) as licences, COALESCE(t.teams, ARRAY[]::bigint[]) as teams from (Select appid, COALESCE(array_agg(departmentid), ARRAY[]::bigint[]) as teams from departmentapps_data join boughtplan_data
-          on departmentapps_data.boughtplanid = boughtplan_data.id join plan_data
+          `Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
+          COALESCE(li.licences, ARRAY[]::bigint[]) as licences,
+          COALESCE(t.teams, ARRAY[]::json[]) as teams from
+          (Select appid, COALESCE(array_agg(json_build_object('departmentid', departmentid, 'boughtplanid', departmentapps_data.boughtplanid)), ARRAY[]::json[]) as teams
+            from departmentapps_data join boughtplan_data
+            on departmentapps_data.boughtplanid = boughtplan_data.id join plan_data
           on boughtplan_data.planid = plan_data.id group by appid) t full outer join (
       Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_data l
         join boughtplan_data b on l.boughtplanid = b.id

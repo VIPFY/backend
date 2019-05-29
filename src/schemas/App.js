@@ -19,6 +19,7 @@ export const types = `
     deprecated: Boolean!
     hidden: Boolean!
     hasboughtplan: Boolean
+    owner: Department
   }
 
   type AppOverview {
@@ -37,7 +38,7 @@ export const types = `
     id: ID!
     app: AppDetails!
     licences: [NLicence]
-    teams: [Team]
+    teams: [TeamBoughtPlan]
   }
 
   type AppDetails {
@@ -65,6 +66,12 @@ export const types = `
     supportunit: Unit!
     color: String!
     hidden: Boolean!
+    owner: Unit
+  }
+
+  type TeamBoughtPlan {
+    departmentid: Team
+    boughtplanid: BoughtPlan
   }
 
   input AppInput {
@@ -196,10 +203,10 @@ export const queries = `
   fetchLicences(licenceid: ID): [Licence]!
 
   # Returns all Licences of a current user that are not department licences
-  fetchUsersOwnLicences(unitid: ID!): [Licence]
+  fetchUsersOwnLicences(unitid: ID!): [NLicence]
 
   # Returns all Licences of a defined user
-  fetchUserLicences(unitid: ID!): [Licence]
+  fetchUserLicences(unitid: ID!): [NLicence]
 
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
 
@@ -261,4 +268,7 @@ export const mutations = `
 
   # Updates the login data of an external app
   updateCredentials(licenceid: ID!, username: String, password: String, loginurl: String): Boolean!
+
+  createService(serviceData: JSON!, addedTeams: [JSON]!, addedEmployees: [JSON]!):Boolean!
+  deleteService(serviceid: ID!): Boolean!
   `;

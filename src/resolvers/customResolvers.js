@@ -108,6 +108,49 @@ const postprocessors = {
     }
     console.log("DEBUGAFTER", value, fields);
     return value;
+  },
+  NLicence: async (value, fields) => {
+    //logger.debug("postprocessing Email", { value, fields });
+    console.log("DEBUGNL", value, fields);
+    if (value.options) {
+      if (value.options.teamlicence) {
+        value.teamlicence = value.options.teamlicence;
+      }
+      if (value.options.teamaccount) {
+        value.teamaccount = value.options.teamaccount;
+      }
+    }
+    console.log("DEBUGAFTERNL", value, fields);
+    return value;
+  },
+  // Wird das benötigt?
+  CompanyService: async (value, fields) => {
+    //logger.debug("postprocessing Email", { value, fields });
+    console.log("DEBUGCom", value, fields);
+    if (value.options) {
+      if (value.options.teamlicence) {
+        value.teamlicence = value.options.teamlicence;
+      }
+      if (value.options.teamaccount) {
+        value.teamaccount = value.options.teamaccount;
+      }
+    }
+    console.log("DEBUGAFTERCom", value, fields);
+    return value;
+  },
+  TeamBoughtPlan: async (value, fields) => {
+    //logger.debug("postprocessing Email", { value, fields });
+    console.log("DEBUGTBP", value, fields);
+    if (value.options) {
+      if (value.options.teamlicence) {
+        value.teamlicence = value.options.teamlicence;
+      }
+      if (value.options.teamaccount) {
+        value.teamaccount = value.options.teamaccount;
+      }
+    }
+    console.log("DEBUGAFTERTBP", value, fields);
+    return value;
   }
 };
 
