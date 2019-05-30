@@ -21,7 +21,7 @@ export const authMiddleware = async (req, res, next) => {
       req.user = user;
       const { unitid, company } = user;
 
-      await checkAuthentification(models, unitid, company);
+      await checkAuthentification(unitid, company);
     } catch (err) {
       logger.info(err);
       logger.info(err);

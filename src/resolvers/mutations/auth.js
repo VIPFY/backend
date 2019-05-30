@@ -131,6 +131,7 @@ export default {
         const p4 = models.DepartmentData.create(
           {
             unitid: company.id,
+            iscompany: true,
             name,
             legalinformation: {
               privacy: new Date(),
@@ -464,11 +465,7 @@ export default {
       const valid = await bcrypt.compare(password, emailExists.passwordhash);
       if (!valid) throw new Error(message);
 
-      await checkAuthentification(
-        models,
-        emailExists.unitid,
-        emailExists.company
-      );
+      await checkAuthentification(emailExists.unitid, emailExists.company);
 
       // update password length and strength.
       // This is temporary to fill values we didn't catch before implementing these metrics
@@ -727,11 +724,7 @@ export default {
 
       if (!emailExists) throw new Error("user not found");
 
-      await checkAuthentification(
-        models,
-        emailExists.unitid,
-        emailExists.company
-      );
+      await checkAuthentification(emailExists.unitid, emailExists.company);
 
       await createLog(
         ip,
