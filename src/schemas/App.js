@@ -271,4 +271,9 @@ export const mutations = `
 
   createService(serviceData: JSON!, addedTeams: [JSON]!, addedEmployees: [JSON]!):Boolean!
   deleteService(serviceid: ID!): Boolean!
+  removeLicence(licenceid: ID!, oldname: String!): Boolean!
+
+  distributeLicence10(licenceid: ID!, userid: ID!): Boolean!
+
+  addExternalAccountLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String): Boolean!
   `;
