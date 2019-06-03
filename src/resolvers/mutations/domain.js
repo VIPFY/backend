@@ -414,11 +414,7 @@ export default {
           user: { unitid, company }
         } = decode(token);
 
-        const res = await transferIn(domain, auth);
-
-        if (res.code != "200") {
-          throw new Error(res.description);
-        }
+        await transferIn(domain, auth);
 
         const [, tld] = domain.split(".");
 
@@ -1166,6 +1162,7 @@ export default {
 
         default: {
           const res = await checkDomainTransfer(domain);
+          console.log("LOG: res", res);
           const response = {
             noCheck: false,
             code: res.code,
