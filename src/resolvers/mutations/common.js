@@ -60,26 +60,6 @@ export default {
     }
   ),
 
-  checkName: requiresAuth.createResolver(
-    async (parent, { name }, { models }) => {
-      if (!name) return { ok: true };
-
-      try {
-        const nameExists = await models.App.findOne({
-          where: { name: { [models.sequelize.Op.iLike]: `%${name}` } }
-        });
-
-        if (nameExists) {
-          throw new Error("There already exists an app with this name");
-        }
-
-        return { ok: true };
-      } catch (err) {
-        throw new NormalError({ message: err.message });
-      }
-    }
-  ),
-
   ping: async (parent, args, context) => ({ ok: true }),
 
   checkVat: async (parent, { vat, cc }) => {

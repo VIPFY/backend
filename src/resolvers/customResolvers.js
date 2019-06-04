@@ -178,7 +178,12 @@ const getDataLoader = (datatype, key, ctx) => {
         type: ctx.models.sequelize.QueryTypes.SELECT,
         plain: true
       });
-      return keys.map(id => data.find(r => r[key] == id) || null);
+
+      if (data) {
+        return keys.map(id => data.find(r => r[key] == id));
+      }
+
+      return keys.map(() => null);
     });
   }
   return ctx.dataloaders[datatype];

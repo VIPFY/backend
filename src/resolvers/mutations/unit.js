@@ -5,7 +5,8 @@ import { NormalError } from "../../errors";
 import {
   createLog,
   companyCheck,
-  parentAdminCheck
+  parentAdminCheck,
+  createNotification
 } from "../../helpers/functions";
 import { uploadUserImage } from "../../services/aws";
 /* eslint-disable no-unused-vars, prefer-destructuring */
@@ -311,5 +312,47 @@ export default {
 
       return models.User.findOne({ where: { id: user.id } });
     }
+  ),
+
+  setConsent: requiresAuth.createResolver(
+    async (parent, { consent }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        try {
+          await models.Human.update(
+            { consent },
+            { where: { unitid }, transaction: ta }
+          );
+
+          const p1 = createLog(ip, "setConsent", { consent }, unitid, ta);
+          const p2 = models.User.findOne({
+            where: { id: unitid },
+            transaction: ta,
+            raw: true
+          });
+
+          const [, user] = await Promise.all([p1, p2]);
+
+          return { ...user, consent };
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Saving consent failed",
+              icon: "bug",
+              link: "profile"
+            },
+            ta
+          );
+
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };

@@ -94,7 +94,7 @@ export default {
   fetchPlans: async (parent, { appid }, { models }) => {
     try {
       const app = await models.App.findOne({
-        where: { id: appid, disabled: false, deprecated: false }
+        where: { id: appid, disabled: false, deprecated: false, owner: null }
       });
 
       if (!app) {

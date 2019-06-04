@@ -12,6 +12,7 @@ export default {
         const {
           user: { unitid }
         } = decode(token);
+
         const me = await models.User.findById(unitid);
         const user = await parentAdminCheck(me);
 

@@ -33,6 +33,7 @@ export const types = `
     config: JSON
     tutorialprogress: JSON
     isonline: Boolean
+    consent: Boolean
   }
 
   input NameInput {
@@ -157,4 +158,5 @@ export const mutations = `
   redeemSetupToken(setuptoken: String!): LoginResponse!
 
   resendToken(email: String!): Boolean!
+  setConsent(consent: Boolean!): User!
 `;

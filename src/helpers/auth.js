@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { pick } from "lodash";
 import bcrypt from "bcrypt";
+import models from "@vipfy-private/sequelize-setup";
 import { AuthError } from "../errors";
 import {
   getCompanyMembershipCacheStats,
@@ -13,9 +14,7 @@ export const createToken = async (user, SECRET, expiresIn = "1w") => {
     const newToken = await jwt.sign(
       { user: pick(user, ["unitid", "company"]) },
       SECRET,
-      {
-        expiresIn
-      }
+      { expiresIn }
     );
 
     return newToken;
@@ -32,7 +31,7 @@ const unitAuthCache = new NodeCache({
   deleteOnExpire: true
 });
 
-const getAuthentificationObject = async (models, unitid) => {
+const getAuthentificationObject = async unitid => {
   try {
     let permissions = unitAuthCache.get(unitid);
     if (permissions != undefined) return permissions;
@@ -64,7 +63,7 @@ const checkAuthentificationObject = (permissions, name) => {
   }
 };
 
-export const checkAuthentification = async (models, unitid, company) => {
+export const checkAuthentification = async (unitid, company) => {
   if (unitid === undefined || unitid === null || unitid === "null") {
     throw new AuthError();
   }
@@ -74,8 +73,8 @@ export const checkAuthentification = async (models, unitid, company) => {
   }
 
   const [userPerm, companyPerm] = await Promise.all([
-    getAuthentificationObject(models, unitid),
-    getAuthentificationObject(models, company)
+    getAuthentificationObject(unitid),
+    getAuthentificationObject(company)
   ]);
 
   checkAuthentificationObject(userPerm, "User");

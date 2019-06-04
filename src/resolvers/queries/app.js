@@ -10,8 +10,12 @@ import logger from "../../loggers";
 
 export default {
   allApps: requiresRights(["view-apps"]).createResolver(
-    async (parent, { limit, offset, sortOptions }, { models }) => {
+    async (parent, { limit, offset, sortOptions }, { models, token }) => {
       try {
+        const {
+          user: { company }
+        } = decode(token);
+
         const allApps = await models.AppDetails.findAll({
           limit,
           offset,
@@ -29,7 +33,12 @@ export default {
             "needssubdomain",
             "options"
           ],
-          where: { disabled: false, deprecated: false, hidden: false },
+          where: {
+            disabled: false,
+            deprecated: false,
+            hidden: false,
+            owner: { [models.Op.or]: [null, company] }
+          },
           order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
         });
 
@@ -69,10 +78,19 @@ export default {
   }),
 
   fetchAppById: requiresRights(["view-apps"]).createResolver(
-    async (parent, { id }, { models }) => {
+    async (parent, { id }, { models, token }) => {
       try {
+        const {
+          user: { company }
+        } = decode(token);
+
         const app = await models.AppDetails.findOne({
-          where: { id, disabled: false, deprecated: false }
+          where: {
+            id,
+            disabled: false,
+            deprecated: false,
+            owner: { [models.Op.or]: [null, company] }
+          }
         });
 
         return app;
@@ -484,7 +502,7 @@ export default {
     }
   ),
 
-  fetchTotalAppUsage: requiresRights(["view-usage"]).createResolver(
+  fetchMonthlyAppUsage: requiresRights(["view-usage"]).createResolver(
     async (parent, args, { models, token }) => {
       const {
         user: { company }
@@ -757,6 +775,36 @@ export default {
         );
         console.log(companyService);
         return companyService;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchTotalAppUsage: requiresRights(["view-usage"]).createResolver(
+    async (parent, args, { models, token }) => {
+      const {
+        user: { company }
+      } = decode(token);
+      try {
+        const stats = await models.sequelize.query(
+          `
+          SELECT appid app, sum(minutesspent) totalminutes
+          FROM timetracking_data tt
+                JOIN boughtplan_data bp on tt.boughtplanid = bp.id
+                JOIN plan_data pd on bp.planid = pd.id
+                JOIN department_employee_view dev ON tt.unitid = dev.employee
+          WHERE dev.id = :company
+          GROUP BY appid
+          ORDER BY appid;
+        `,
+          {
+            replacements: { company },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+        return stats;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

@@ -16,6 +16,7 @@ import {
 //   cancelPurchase
 // } from "../../services/stripe";
 import logger from "../../loggers";
+import { uploadAppImage } from "../../services/aws";
 
 /* eslint-disable no-return-await */
 
@@ -608,7 +609,7 @@ export default {
    * @returns {object}
    */
   addExternalBoughtPlan: requiresAuth.createResolver(
-    (parent, { alias, appid, price, loginurl }, { models, token, ip }) =>
+    (_, { alias, appid, price, loginurl }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid, company }
@@ -1379,51 +1380,103 @@ export default {
       })
   ),
 
-  createService: requiresAuth.createResolver(
-    async (
-      parent,
-      { serviceData, addedTeams, addedEmployees },
-      { models, token, ip }
-    ) =>
+  // createService: requiresAuth.createResolver(
+  //   async (
+  //     parent,
+  //     { serviceData, addedTeams, addedEmployees },
+  //     { models, token, ip }
+  //   ) =>
+  //     models.sequelize.transaction(async ta => {
+  //       try {
+  //         console.log("Inputs", serviceData, addedTeams, addedEmployees);
+  //         const {
+  //           user: { unitid, company }
+  //         } = decode(token);
+
+  //         //Nutzer add to team
+
+  //         const app = await models.Plan.findOne({
+  //           where: { id: serviceData.id },
+  //           raw: true
+  //         });
+
+  //         const plan = await models.Plan.findOne({
+  //           where: { appid: serviceData.id, options: { external: true } },
+  //           raw: true
+  //         });
+
+  //         if (!plan) {
+  //           throw new Error(
+  //             "This App is not integrated to handle external Accounts yet."
+  //           );
+  //         }
+  //         await checkPlanValidity(plan);
+  createOwnApp: requiresRights(["create-licences"]).createResolver(
+    async (_, { ssoData }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
-          console.log("Inputs", serviceData, addedTeams, addedEmployees);
           const {
             user: { unitid, company }
           } = decode(token);
+          const { images, loginurl, ...data } = ssoData;
 
-          //Nutzer add to team
+          const [logo, icon] = await Promise.all(
+            images.map(async (upload, index) => {
+              const pic = await upload;
+              const filename = index == 0 ? "logo.png" : "icon.png";
 
-          const app = await models.Plan.findOne({
-            where: { id: serviceData.id },
-            raw: true
-          });
+              const name = await uploadAppImage(pic, ssoData.name, filename);
+              return name;
+            })
+          );
 
-          const plan = await models.Plan.findOne({
-            where: { appid: serviceData.id, options: { external: true } },
-            raw: true
-          });
+          const appOwned = await models.App.create(
+            {
+              ...data,
+              loginurl,
+              logo,
+              icon,
+              options: { universallogin: true },
+              disabled: false,
+              developer: company,
+              supportunit: company,
+              owner: company
+            },
+            { transaction: ta }
+          );
 
-          if (!plan) {
-            throw new Error(
-              "This App is not integrated to handle external Accounts yet."
-            );
-          }
-          await checkPlanValidity(plan);
+          const plan = await models.Plan.create(
+            {
+              name: `${data.name} Integrated`,
+              appid: appOwned.dataValues.id,
+              teaserdescription: `Integrated Plan for ${data.name}`,
+              startdate: models.sequelize.fn("NOW"),
+              numlicences: 0,
+              price: 0.0,
+              options: { external: true, integrated: true },
+              payperiod: { years: 1 },
+              cancelperiod: { secs: 1 },
+              hidden: true
+            },
+            { transaction: ta }
+          );
 
           const boughtPlan = await models.BoughtPlan.create(
             {
               planid: plan.id,
-              alias: app.name,
+              alias: data.name,
               disabled: false,
               buyer: unitid,
               payer: company,
               usedby: company,
               totalprice: 0,
               key: {
+                integrated: true,
                 external: true,
-                externaltotalprice: 0
-              }
+                externaltotalprice: 0,
+                loginurl: data.loginurl
+              },
+              stripeplan: null // Maybe we need one later
             },
             { transaction: ta }
           );
