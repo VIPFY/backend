@@ -496,7 +496,7 @@ export default {
     }
   ),
 
-  fetchTotalAppUsage: requiresRights(["view-usage"]).createResolver(
+  fetchMonthlyAppUsage: requiresRights(["view-usage"]).createResolver(
     async (parent, args, { models, token }) => {
       const {
         user: { company }
@@ -511,6 +511,36 @@ export default {
                 JOIN department_employee_view dev ON tt.unitid = dev.employee
           WHERE day >= date_trunc('month', current_date)
             AND dev.id = :company
+          GROUP BY appid
+          ORDER BY appid;
+        `,
+          {
+            replacements: { company },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+        return stats;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchTotalAppUsage: requiresRights(["view-usage"]).createResolver(
+    async (parent, args, { models, token }) => {
+      const {
+        user: { company }
+      } = decode(token);
+      try {
+        const stats = await models.sequelize.query(
+          `
+          SELECT appid app, sum(minutesspent) totalminutes
+          FROM timetracking_data tt
+                JOIN boughtplan_data bp on tt.boughtplanid = bp.id
+                JOIN plan_data pd on bp.planid = pd.id
+                JOIN department_employee_view dev ON tt.unitid = dev.employee
+          WHERE dev.id = :company
           GROUP BY appid
           ORDER BY appid;
         `,

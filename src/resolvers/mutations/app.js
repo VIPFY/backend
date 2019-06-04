@@ -1296,20 +1296,20 @@ export default {
   ),
 
   createOwnApp: requiresRights(["create-licences"]).createResolver(
-    async (_, { appData }, { models, token }) =>
+    async (_, { ssoData }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(token);
-          const { images, ...data } = appData;
+          const { images, loginurl, ...data } = ssoData;
 
           const [logo, icon] = await Promise.all(
             images.map(async (upload, index) => {
               const pic = await upload;
               const filename = index == 0 ? "logo.png" : "icon.png";
 
-              const name = await uploadAppImage(pic, appData.name, filename);
+              const name = await uploadAppImage(pic, ssoData.name, filename);
               return name;
             })
           );
@@ -1317,22 +1317,23 @@ export default {
           const appOwned = await models.App.create(
             {
               ...data,
+              loginurl,
               logo,
               icon,
+              options: { universallogin: true },
               disabled: false,
               developer: company,
               supportunit: company,
-              owner: company,
-              options: {}
+              owner: company
             },
             { transaction: ta }
           );
 
           const plan = await models.Plan.create(
             {
-              name: `${appData.name} Integrated`,
+              name: `${data.name} Integrated`,
               appid: appOwned.dataValues.id,
-              teaserdescription: `Integrated Plan for ${appData.name}`,
+              teaserdescription: `Integrated Plan for ${data.name}`,
               startdate: models.sequelize.fn("NOW"),
               numlicences: 0,
               price: 0.0,
@@ -1347,7 +1348,7 @@ export default {
           const boughtPlan = await models.BoughtPlan.create(
             {
               planid: plan.id,
-              alias: appData.name,
+              alias: data.name,
               disabled: false,
               buyer: unitid,
               payer: company,
@@ -1357,14 +1358,25 @@ export default {
                 integrated: true,
                 external: true,
                 externaltotalprice: 0,
-                loginurl: appData.loginurl
+                loginurl: data.loginurl
               },
               stripeplan: null // Maybe we need one later
             },
             { transaction: ta }
           );
 
-          return boughtPlan;
+          const licence = await models.Licence.create(
+            {
+              unitid,
+              disabled: false,
+              boughtplanid: boughtPlan.id,
+              agreed: true,
+              key: { ...data, external: true }
+            },
+            { transaction: ta }
+          );
+
+          return licence;
         } catch (err) {
           throw new NormalError({
             message: err.message,
