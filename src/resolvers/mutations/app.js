@@ -1302,7 +1302,7 @@ export default {
           const {
             user: { unitid, company }
           } = decode(token);
-          const { images, ...data } = ssoData;
+          const { images, loginurl, ...data } = ssoData;
 
           const [logo, icon] = await Promise.all(
             images.map(async (upload, index) => {
@@ -1317,13 +1317,14 @@ export default {
           const appOwned = await models.App.create(
             {
               ...data,
+              loginurl,
               logo,
               icon,
+              options: { universallogin: true },
               disabled: false,
               developer: company,
               supportunit: company,
-              owner: company,
-              options: {}
+              owner: company
             },
             { transaction: ta }
           );
