@@ -75,6 +75,15 @@ export const types = `
     image: Upload
   }
 
+  input SSOInput {
+    images: [Upload!]!
+    name: String!
+    loginurl: String!
+    email: String!
+    password: String!
+    color: String!
+  }
+
   input AppOptions {
     type: String!
     emailobject: String!
@@ -165,6 +174,7 @@ export const queries = `
   fetchAppIcon(licenceid: ID!): TabResponse!
 
   # The total minutes spend per app, this month, combined for all users of the company
+  fetchMonthlyAppUsage: [AppUsage]!
   fetchTotalAppUsage: [AppUsage]!
 
   # Total time spend in a specific boughtplan at some time, broken down by user
@@ -176,7 +186,7 @@ export const mutations = `
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
 
-  createOwnApp(appData: AppInput!): BoughtPlan!
+  createOwnApp(ssoData: SSOInput!): Licence!
 
   # Admin: toogle App between disabled and enabled
   toggleAppStatus(id: ID!): Response!
