@@ -65,17 +65,19 @@ export default {
           } = decode(token);
 
           const { name, picture, ...teamdata } = team;
-          const parsedFile = await picture;
+          const unitArgs = {};
+          if (picture) {
+            const parsedFile = await picture;
 
-          const profilepicture = await uploadTeamImage(
-            parsedFile,
-            teamPicFolder
-          );
+            const profilepicture = await uploadTeamImage(
+              parsedFile,
+              teamPicFolder
+            );
 
-          const unit = await models.Unit.create(
-            { profilepicture },
-            { transaction: ta }
-          );
+            unitArgs.profilepicture = profilepicture;
+          }
+
+          const unit = await models.Unit.create(unitArgs, { transaction: ta });
 
           const p1 = models.DepartmentData.create(
             {
