@@ -576,7 +576,7 @@ export default {
           `INSERT INTO timetracking_data (licenceid, unitid, boughtplanid, day, minutesspent)
             VALUES (:licenceid, :unitid, :boughtplanid, now(), :minutesspent)
             ON CONFLICT (licenceid, unitid, day)
-            DO UPDATE SET minutesspent = timetracking_data.minutesspent + EXCLUDED.minutesspent
+            DO UPDATE SET minutesspent = timetracking_data.minutesspent  EXCLUDED.minutesspent
             `,
           {
             replacements: {
@@ -765,7 +765,7 @@ export default {
           let externaltotalprice = args.price;
 
           if (oldBoughtPlan.key && oldBoughtPlan.key.externaltotalprice) {
-            externaltotalprice += oldBoughtPlan.key.externaltotalprice;
+            externaltotalprice = oldBoughtPlan.key.externaltotalprice;
           }
 
           await models.BoughtPlan.update(
@@ -1411,6 +1411,85 @@ export default {
   //           );
   //         }
   //         await checkPlanValidity(plan);
+  // const teamaddpromises = [];
+  // const employeepromises = [];
+  // addedTeams.forEach(team => {
+  //   teamaddpromises.push(
+  //     models.DepartmentApp.create(
+  //       { departmentid: team.unitid.id, boughtplanid: boughtPlan.id },
+  //       { transaction: ta }
+  //     )
+  //   );
+
+  //   team.employees.forEach(employee =>
+  //     employeepromises.push(
+  //       models.Licence.create(
+  //         {
+  //           unitid: employee.id,
+  //           disabled: false,
+  //           boughtplanid: boughtPlan.id,
+  //           agreed: true,
+  //           key: employee.setupfinished
+  //             ? {
+  //                 email: employee.setup.email,
+  //                 password: employee.setup.password,
+  //                 subdomain: employee.setup.subdomain,
+  //                 external: true
+  //               }
+  //             : {},
+  //           options: employee.setupfinished
+  //             ? {
+  //                 teamlicence: team.unitid.id
+  //               }
+  //             : {
+  //                 teamlicence: team.unitid.id,
+  //                 nosetup: true
+  //               }
+  //         },
+  //         { transaction: ta }
+  //       )
+  //     )
+  //   );
+  // });
+
+  // addedEmployees.forEach(employee =>
+  //   employeepromises.push(
+  //     models.Licence.create(
+  //       {
+  //         unitid: employee.id,
+  //         disabled: false,
+  //         boughtplanid: boughtPlan.id,
+  //         agreed: true,
+  //         key: employee.setupfinished
+  //           ? {
+  //               email: employee.setup.email,
+  //               password: employee.setup.password,
+  //               subdomain: employee.setup.subdomain,
+  //               external: true
+  //             }
+  //           : {},
+  //         options: employee.setupfinished
+  //           ? {}
+  //           : {
+  //               nosetup: true
+  //             }
+  //       },
+  //       { transaction: ta }
+  //     )
+  //   )
+  // );
+
+  // await Promise.all(teamaddpromises, employeepromises);
+
+  // //TODO notfiy user
+
+  // await createLog(
+  //   ip,
+  //   "createService",
+  //   { service: serviceData.id },
+  //   unitid,
+  //   ta
+  // );
   createOwnApp: requiresRights(["create-licences"]).createResolver(
     async (_, { ssoData }, { models, token }) =>
       models.sequelize.transaction(async ta => {
@@ -1481,87 +1560,18 @@ export default {
             { transaction: ta }
           );
 
-          const teamaddpromises = [];
-          const employeepromises = [];
-          addedTeams.forEach(team => {
-            teamaddpromises.push(
-              models.DepartmentApp.create(
-                { departmentid: team.unitid.id, boughtplanid: boughtPlan.id },
-                { transaction: ta }
-              )
-            );
-
-            team.employees.forEach(employee =>
-              employeepromises.push(
-                models.Licence.create(
-                  {
-                    unitid: employee.id,
-                    disabled: false,
-                    boughtplanid: boughtPlan.id,
-                    agreed: true,
-                    key: employee.setupfinished
-                      ? {
-                          email: employee.setup.email,
-                          password: employee.setup.password,
-                          subdomain: employee.setup.subdomain,
-                          external: true
-                        }
-                      : {},
-                    options: employee.setupfinished
-                      ? {
-                          teamlicence: team.unitid.id
-                        }
-                      : {
-                          teamlicence: team.unitid.id,
-                          nosetup: true
-                        }
-                  },
-                  { transaction: ta }
-                )
-              )
-            );
-          });
-
-          addedEmployees.forEach(employee =>
-            employeepromises.push(
-              models.Licence.create(
-                {
-                  unitid: employee.id,
-                  disabled: false,
-                  boughtplanid: boughtPlan.id,
-                  agreed: true,
-                  key: employee.setupfinished
-                    ? {
-                        email: employee.setup.email,
-                        password: employee.setup.password,
-                        subdomain: employee.setup.subdomain,
-                        external: true
-                      }
-                    : {},
-                  options: employee.setupfinished
-                    ? {}
-                    : {
-                        nosetup: true
-                      }
-                },
-                { transaction: ta }
-              )
-            )
+          const licence = await models.Licence.create(
+            {
+              unitid,
+              disabled: false,
+              boughtplanid: boughtPlan.id,
+              agreed: true,
+              key: { ...data, external: true }
+            },
+            { transaction: ta }
           );
 
-          await Promise.all(teamaddpromises, employeepromises);
-
-          //TODO notfiy user
-
-          await createLog(
-            ip,
-            "createService",
-            { service: serviceData.id },
-            unitid,
-            ta
-          );
-
-          return true;
+          return licence;
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -1793,7 +1803,7 @@ export default {
           let externaltotalprice = price;
 
           if (oldBoughtPlan.key && oldBoughtPlan.key.externaltotalprice) {
-            externaltotalprice += oldBoughtPlan.key.externaltotalprice;
+            externaltotalprice = oldBoughtPlan.key.externaltotalprice;
           }
 
           await models.BoughtPlan.update(
