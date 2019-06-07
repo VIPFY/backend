@@ -9,6 +9,12 @@ export const implementDate = {
   name: "Date",
   description: "Date custom scalar type. Returns a large integer",
   parseValue(value) {
+    if (typeof value == "string" && value.toLowerCase == "infinity") {
+      return new Date(8640000000000000);
+    }
+    if (typeof value == "string" && value.toLowerCase == "-infinity") {
+      return new Date(-8640000000000000);
+    }
     return new Date(value); // value from the client
   },
   serialize(value) {
