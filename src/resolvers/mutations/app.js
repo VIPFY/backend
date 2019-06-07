@@ -17,6 +17,8 @@ import {
 // } from "../../services/stripe";
 import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
+import { checkAuthentification } from "../../helpers/auth";
+import { checkCompanyMembership } from "../../helpers/companyMembership";
 
 /* eslint-disable no-return-await */
 
@@ -1389,5 +1391,27 @@ export default {
           });
         }
       })
-  )
+  ),
+
+  giveVacationAccess: async (_, { licence, vacationer }, { models, token }) => {
+    try {
+      const {
+        user: { company }
+      } = decode(token);
+
+      const { id: licenceid, ...data } = licence;
+
+      checkCompanyMembership(vacationer, company);
+
+      await models.LicenceRight.create({
+        ...data,
+        licenceid,
+        unitid: vacationer
+      });
+
+      return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };

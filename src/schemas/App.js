@@ -114,6 +114,8 @@ export const types = `
     edit: Boolean!
     delete: Boolean!
     use: Boolean!
+    vacationstart: Date
+    vacationend: String
     tags: [String]
   }
 
@@ -128,6 +130,13 @@ export const types = `
     id: ID!
     disabled: Boolean
     endtime: Date
+    view: Boolean
+    edit: Boolean
+    delete: Boolean
+    use: Boolean
+    tags: [String]
+    vacationstart: Date
+    vacationend: Date
   }
 
   input LayoutInput {
@@ -199,6 +208,7 @@ export const mutations = `
   deleteApp(id: ID!): Response!
 
   createOwnApp(ssoData: SSOInput!): Licence!
+  giveVacationAccess(licence: LicenceInput, vacationer: ID!): Boolean!
 
   # Admin: toogle App between disabled and enabled
   toggleAppStatus(id: ID!): Response!
