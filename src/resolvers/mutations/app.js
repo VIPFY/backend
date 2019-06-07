@@ -1393,25 +1393,123 @@ export default {
       })
   ),
 
-  giveVacationAccess: async (_, { licence, vacationer }, { models, token }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
+  giveTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
+    async (_, { licence, impersonator }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(token);
 
-      const { id: licenceid, ...data } = licence;
+          if (!licence.starttime && !licence.endtime) {
+            throw new Error("No start or endtime set!");
+          }
 
-      checkCompanyMembership(vacationer, company);
+          if (!licence.tags || licence.tags.length < 1) {
+            throw new Error("Please specify the reason for the access!");
+          }
 
-      await models.LicenceRight.create({
-        ...data,
-        licenceid,
-        unitid: vacationer
-      });
+          const { id: licenceid, ...data } = licence;
 
-      return true;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
-    }
-  }
+          checkCompanyMembership(impersonator, company);
+
+          await models.LicenceRight.create({
+            ...data,
+            licenceid,
+            unitid: impersonator,
+            transaction: ta
+          });
+
+          await createNotification(
+            {
+              receiver: impersonator,
+              message: `You got vacation access granted for a new Service`,
+              icon: "th",
+              changed: ["foreignLicences"]
+            },
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  updateTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
+    async (_, { licence, rightid }, { models }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          // Don't update the id!!!
+          if (licence.id) {
+            delete licence.id;
+          }
+
+          const { unitid } = await models.LicenceRight.findOne({
+            where: { id: rightid, raw: true }
+          });
+
+          await models.LicenceRight.update(licence, {
+            where: { id: rightid },
+            returning: true,
+            transaction: ta
+          });
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `The admin updated your vacation licence`,
+              icon: "th",
+              changed: ["foreignLicences"]
+            },
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  removeTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
+    async (_, { rightid }, { models }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const { unitid } = await models.LicenceRight.findOne({
+            where: { id: rightid },
+            raw: true
+          });
+
+          await models.LicenceRight(
+            { vacationend: models.sequelize.fn("NOW") },
+            { where: { id: rightid, transaction: ta } }
+          );
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `The admin removed your access to a vacation licence`,
+              icon: "th",
+              changed: ["foreignLicences"]
+            },
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  )
 };

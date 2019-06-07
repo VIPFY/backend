@@ -8,18 +8,16 @@ import { EMAIL_VERIFICATION_TIME } from "../constants";
 export const implementDate = {
   name: "Date",
   description: "Date custom scalar type. Returns a large integer",
-  parseValue(value) {
-    if (typeof value == "string" && value.toLowerCase == "infinity") {
+  parseValue: value => new Date(value), // value from the client
+  serialize(value) {
+    if (value === Number.POSITIVE_INFINITY) {
       return new Date(8640000000000000);
     }
-    if (typeof value == "string" && value.toLowerCase == "-infinity") {
+
+    if (value === Number.NEGATIVE_INFINITY) {
       return new Date(-8640000000000000);
     }
-    return new Date(value); // value from the client
-  },
-  serialize(value) {
-    //console.log("VALUE Time", value.getTime());
-    //return value.getTime(); // value sent to the client
+
     return new Date(value).getTime();
   },
   parseLiteral(ast) {
