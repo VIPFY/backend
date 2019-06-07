@@ -146,7 +146,7 @@ export default {
 
           const takeLicences = employees.map(
             async (employee, i) =>
-              await models.Licence.update(
+              await models.LicenceData.update(
                 {
                   unitid: employee
                 },
@@ -320,7 +320,7 @@ export default {
             };
           }
 
-          const p3 = models.Licence.update(
+          const p3 = models.LicenceData.update(
             { unitid },
             {
               where: { id: licenceid },
@@ -453,7 +453,7 @@ export default {
             }
           );
 
-          await models.Licence.update(
+          await models.LicenceData.update(
             { unitid: null },
             {
               where: { id, unitid: { [models.Op.not]: null } },
@@ -525,7 +525,7 @@ export default {
             user: { unitid }
           } = decode(token);
 
-          const updatedLicence = await models.Licence.update(
+          const updatedLicence = await models.LicenceData.update(
             { agreed: true },
             {
               where: { id: licenceid, unitid },
@@ -782,7 +782,7 @@ export default {
             }
           );
 
-          const licence = await models.Licence.create(
+          const licence = await models.LicenceData.create(
             {
               unitid: args.touser || unitid,
               disabled: false,
@@ -893,7 +893,7 @@ export default {
             raw: true
           });
 
-          const suspended = await models.Licence.update(config, {
+          const suspended = await models.LicenceData.update(config, {
             where: { id, unitid: licence.unitid },
             transaction: ta
           });
@@ -973,7 +973,7 @@ export default {
             throw new Error("This Licence still belongs to an user!");
           }
 
-          const suspended = await models.Licence.update(
+          const suspended = await models.LicenceData.update(
             { key: null },
             {
               where: { id: licence.id },
@@ -1055,7 +1055,7 @@ export default {
             }
           }
 
-          const updatedLicence = await models.Licence.update(config, {
+          const updatedLicence = await models.LicenceData.update(config, {
             where: { id: licence[0].id },
             transaction: ta
           });
@@ -1148,7 +1148,7 @@ export default {
           }
 
           const licencesToUpdate = licences.map(async ({ id }) => {
-            await models.Licence.update(config, { where: { id } });
+            await models.LicenceData.update(config, { where: { id } });
           });
 
           await Promise.all(licencesToUpdate);
@@ -1227,7 +1227,7 @@ export default {
             throw new Error("Licence not found");
           }
 
-          await models.Licence.update(
+          await models.LicenceData.update(
             {
               key: { ...licence.key, ...credentials }
             },
@@ -1269,30 +1269,35 @@ export default {
   ),
 
   updateLayout: requiresAuth.createResolver(
-    async (parent, { layouts }, { models, token }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
+    async (_, { layout }, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
 
-          const promises = layouts.map(async ({ id, ...data }) => {
-            return await models.Licence.update(data, {
-              where: { id, unitid },
-              transaction: ta
-            });
+        const { id: licenceid, ...data } = layout;
+
+        const layoutExists = await models.LicenceLayout.findOne({
+          where: { licenceid, unitid },
+          raw: true
+        });
+
+        if (layoutExists) {
+          await models.LicenceLayout.update(data, {
+            where: { licenceid, unitid }
           });
-
-          await Promise.all(promises);
-
-          return true;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+        } else {
+          await models.LicenceLayout.create({ ...data, licenceid, unitid });
         }
-      })
+
+        return true;
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
   ),
 
   createOwnApp: requiresRights(["create-licences"]).createResolver(
@@ -1365,7 +1370,7 @@ export default {
             { transaction: ta }
           );
 
-          const licence = await models.Licence.create(
+          const licence = await models.LicenceData.create(
             {
               unitid,
               disabled: false,

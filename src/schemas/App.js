@@ -108,8 +108,20 @@ export const types = `
     key: JSON
     boughtplanid: BoughtPlan!
     unitid: User
-    layouthorizontal: Int
-    layoutvertical: Int
+    dashboard: Int
+    sidebar: Int
+    view: Boolean!
+    edit: Boolean!
+    delete: Boolean!
+    use: Boolean!
+    tags: [String]
+  }
+
+  type LicenceLayout {
+    unitid: User!
+    licenceid: Licence!
+    sidebar: Int
+    dashboard: Int
   }
 
   input LicenceInput {
@@ -120,8 +132,8 @@ export const types = `
 
   input LayoutInput {
     id: ID!
-    layouthorizontal: Int
-    layoutvertical: Int
+    dashboard: Int
+    sidebar: Int
   }
 
   type SimpleStats {
@@ -182,7 +194,7 @@ export const queries = `
 `;
 
 export const mutations = `
-  updateLayout(layouts: [LayoutInput]!): Boolean!
+  updateLayout(layout: LayoutInput!): Boolean!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
 
