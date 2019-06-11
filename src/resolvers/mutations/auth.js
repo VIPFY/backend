@@ -3,7 +3,6 @@ import axios from "axios";
 import moment from "moment";
 import { decode } from "jsonwebtoken";
 import { sleep } from "@vipfy-private/service-base";
-import { debug } from "util";
 import { parseName } from "humanparser";
 import {
   createToken,
@@ -21,8 +20,8 @@ import {
   parseAddress
 } from "../../helpers/functions";
 import { googleMapsClient } from "../../services/gcloud";
-import { AuthError, NormalError } from "../../errors";
-import { MAX_PASSWORD_LENGTH } from "../../constants";
+import { NormalError } from "../../errors";
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "../../constants";
 import { sendEmail } from "../../helpers/email";
 import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
@@ -357,9 +356,13 @@ export default {
       }
 
       if (password.length > MAX_PASSWORD_LENGTH) {
-        throw new Error("Password too long");
+        throw new Error("Password too long!");
       }
-      console.log(email);
+
+      if (password.length < MIN_PASSWORD_LENGTH) {
+        throw new Error("Password must be at least 8 characters long!");
+      }
+
       try {
         const promises = [
           models.Token.findOne({
@@ -495,18 +498,23 @@ export default {
   },
 
   changePassword: requiresAuth.createResolver(
-    async (parent, { pw, newPw, confirmPw }, { models, token, SECRET, ip }) =>
+    async (_, { pw, newPw, confirmPw }, { models, token, SECRET, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           if (newPw != confirmPw) throw new Error("New passwords don't match!");
           if (pw == newPw) {
             throw new Error("Current and new password can't be the same one!");
           }
+
           if (
             pw.length > MAX_PASSWORD_LENGTH ||
             newPw.length > MAX_PASSWORD_LENGTH
           ) {
             throw new Error("Password too long");
+          }
+
+          if (newPw.length < MIN_PASSWORD_LENGTH) {
+            throw new Error("Password must be at least 8 characters long!");
           }
 
           const {
