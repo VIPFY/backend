@@ -360,7 +360,9 @@ export default {
       }
 
       if (password.length < MIN_PASSWORD_LENGTH) {
-        throw new Error("Password must be at least 8 characters long!");
+        throw new Error(
+          `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+        );
       }
 
       try {
@@ -514,7 +516,9 @@ export default {
           }
 
           if (newPw.length < MIN_PASSWORD_LENGTH) {
-            throw new Error("Password must be at least 8 characters long!");
+            throw new Error(
+              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+            );
           }
 
           const {

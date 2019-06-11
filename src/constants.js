@@ -17,4 +17,4 @@ export const EMAIL_VERIFICATION_TIME = duration(7, "months");
 
 // A reasonable upper limit on password length to prevent DOS from slow hash function
 export const MAX_PASSWORD_LENGTH = 500;
-export const MIN_PASSWORD_LENGTH = 7;
+export const MIN_PASSWORD_LENGTH = 8;
