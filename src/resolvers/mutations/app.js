@@ -1450,7 +1450,8 @@ export default {
           }
 
           const { unitid } = await models.LicenceRight.findOne({
-            where: { id: rightid, raw: true }
+            where: { id: rightid },
+            raw: true
           });
 
           await models.LicenceRight.update(licence, {
@@ -1485,12 +1486,13 @@ export default {
         try {
           const { unitid } = await models.LicenceRight.findOne({
             where: { id: rightid },
+            transaction: ta,
             raw: true
           });
 
-          await models.LicenceRight(
+          await models.LicenceRight.update(
             { vacationend: models.sequelize.fn("NOW") },
-            { where: { id: rightid, transaction: ta } }
+            { where: { id: rightid }, transaction: ta }
           );
 
           await createNotification(
