@@ -19,7 +19,26 @@ export const types = `
     deprecated: Boolean!
     hidden: Boolean!
     hasboughtplan: Boolean
-    owner: Unit
+    owner: Department
+  }
+
+  type AppOverview {
+    id: ID!
+    app: AppDetails!
+    singles: [SingleLicence]
+    teams: [Team]
+  }
+
+  type SingleLicence{
+    employee: SemiPublicUser!
+    licence: Licence!
+  }
+
+  type CompanyService{
+    id: ID!
+    app: AppDetails!
+    licences: [NLicence]
+    teams: [TeamBoughtPlan]
   }
 
   type AppDetails {
@@ -48,6 +67,11 @@ export const types = `
     color: String!
     hidden: Boolean!
     owner: Unit
+  }
+
+  type TeamBoughtPlan {
+    departmentid: Team
+    boughtplanid: BoughtPlan
   }
 
   input AppInput {
@@ -96,6 +120,31 @@ export const types = `
     waituntil: String
     predomain: String
     afterdomain: String
+  }
+
+  type ServiceLicence{
+    id: ID!
+    licence: Licence!
+    starttime: Date!
+    endtime: Date
+    agreed: Boolean
+    alias: String
+  }
+
+  type NLicence{
+    id: ID!
+    options: JSON
+    starttime: String!
+    endtime: Date
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
+    boughtplanid: BoughtPlan!
+    unitid: SemiPublicUser
+    layouthorizontal: Int
+    layoutvertical: Int
+    teamlicence: Team
+    teamaccount: Team
   }
 
   type Licence {
@@ -188,10 +237,10 @@ export const queries = `
   fetchLicences(licenceid: ID): [Licence]!
 
   # Returns all Licences of a current user that are not department licences
-  fetchUsersOwnLicences(unitid: ID!): [Licence]
+  fetchUsersOwnLicences(unitid: ID!): [NLicence]
 
   # Returns all Licences of a defined user
-  fetchUserLicences(unitid: ID!): [Licence]
+  fetchUserLicences(unitid: ID!): [NLicence]
 
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
 
@@ -204,6 +253,12 @@ export const queries = `
 
   # Total time spend in a specific boughtplan at some time, broken down by user
   fetchBoughtplanUsagePerUser(starttime: Date!, endtime: Date!, boughtplanid: ID!): [BoughtplanUsagePerUser]!
+
+  fetchCompanyServicesOld: [AppOverview]
+  fetchCompanyServiceOld(serviceid: ID!): [AppOverview]!
+  fetchServiceLicences(employees: [ID!], serviceid: ID!): [ServiceLicence]
+  fetchCompanyServices: [CompanyService]
+  fetchCompanyService(serviceid: ID!): CompanyService
 `;
 
 export const mutations = `
@@ -235,6 +290,7 @@ export const mutations = `
   clearLicence(licenceid: ID!): Response!
   # Deletes a licence on a set date, if it is after the normal cancel period
   deleteLicenceAt(licenceid: ID!, time: Date!): Date!
+  deleteServiceLicenceAt(serviceid: ID!, licenceid: ID!, time: Date!): Date!
   # Deletes a boughtPlan on a set date, if it is after the normal cancel period
   deleteBoughtPlanAt(boughtplanid: ID!, time: Date!): Date!
 
@@ -252,4 +308,12 @@ export const mutations = `
 
   # Updates the login data of an external app
   updateCredentials(licenceid: ID!, username: String, password: String, loginurl: String): Boolean!
+
+  createService(serviceData: JSON!, addedTeams: [JSON]!, addedEmployees: [JSON]!):Boolean!
+  deleteService(serviceid: ID!): Boolean!
+  removeLicence(licenceid: ID!, oldname: String!): Boolean!
+
+  distributeLicence10(licenceid: ID!, userid: ID!): Boolean!
+
+  addExternalAccountLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String): Boolean!
   `;

@@ -10,6 +10,7 @@ export const NEW_NOTIFICATION = "NEW_NOTIFICATION";
 
 // The location for uploaded files to be saved
 export const userPicFolder = "profilepictures";
+export const teamPicFolder = "teamlogos";
 export const appPicFolder = "logos";
 export const appIconFolder = "icons";
 

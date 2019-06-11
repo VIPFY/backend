@@ -264,7 +264,7 @@ export default {
             raw: true
           });
 
-          console.log("PLAN", plan);
+          //console.log("PLAN", plan);
 
           if (!plan) {
             throw new Error("Couldn't find the Plan!");
@@ -286,7 +286,7 @@ export default {
             transaction: ta
           });
 
-          console.log("department", department);
+          //console.log("department", department);
 
           const calculatedPrice = calculatePlanPrice(
             plan.price,
@@ -294,7 +294,7 @@ export default {
             JSON.parse(JSON.stringify(features)) // hacky deep copy
           );
 
-          console.log("calculatedPrice", calculatedPrice);
+          //console.log("calculatedPrice", calculatedPrice);
 
           logger.debug(
             `calulated price: ${calculatedPrice}, supplied price: ${price}`
@@ -342,7 +342,7 @@ export default {
             }
           );
 
-          console.log("BOUGHTPLAN");
+          //console.log("BOUGHTPLAN");
           const boughtPlan = createBoughtPlan.get();
 
           logger.debug("createdBoughtPlan", { boughtPlan });
@@ -351,7 +351,7 @@ export default {
 
           const numLicences = mergedFeatures.users || 0;
 
-          console.log("BUY PLAN LICENCES", numLicences, mergedFeatures);
+          //console.log("BUY PLAN LICENCES", numLicences, mergedFeatures);
           if (numLicences > 0) {
             for (let i = 0; i < numLicences; i++) {
               createLicences.push(
@@ -386,7 +386,7 @@ export default {
 
           // await sleep(500);
 
-          console.log(
+          /* console.log(
             "CREATEACCOUNT START",
             plan,
             planinputs,
@@ -402,7 +402,7 @@ export default {
             mergedFeatures,
             boughtPlan.id,
             ta
-          );
+          ); */
 
           // if (dns && dns.length > 0) {
           //   throw new Error("setting dns settings not implemented yet");
