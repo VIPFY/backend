@@ -116,14 +116,14 @@ export default {
         const replacements = { unitid };
 
         if (licenceid) {
-          query += " AND licence_data.id = :licenceid";
+          query += " AND licence_view.id = :licenceid";
           replacements.licenceid = licenceid;
         }
 
         const licences = await models.sequelize
           .query(query, { replacements })
           .spread(res => res);
-        console.log(licences);
+
         const startTime = Date.now();
 
         if (
@@ -165,7 +165,7 @@ export default {
               );
             } else if (licence.key) {
               const domain = await models.sequelize.query(
-                `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
+                `SELECT ld.id, ld.key FROM licence_view ld INNER JOIN
                   boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
                   bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid LIMIT 1;`,
                 {
@@ -190,7 +190,7 @@ export default {
               } else {
                 throw new PartnerError({
                   message: accountData.description,
-                  internalData: { partner: "DD24" }
+                  internalData: { partner: "RRP" }
                 });
               }
             }
@@ -440,7 +440,7 @@ export default {
       const app = await models.sequelize.query(
         `
       SELECT DISTINCT ad.icon, ad.name as appname, bd.alias, ld.id as licenceid
-      FROM licence_data ld
+      FROM licence_view ld
         INNER JOIN boughtplan_data bd on ld.boughtplanid = bd.id
         INNER JOIN plan_data pd on bd.planid = pd.id
         INNER JOIN app_data ad on pd.appid = ad.id
