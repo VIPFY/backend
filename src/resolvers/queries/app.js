@@ -9,45 +9,43 @@ import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import logger from "../../loggers";
 
 export default {
-  allApps: requiresRights(["view-apps"]).createResolver(
-    async (parent, { limit, offset, sortOptions }, { models, token }) => {
-      try {
-        const {
-          user: { company }
-        } = decode(token);
+  allApps: async (_, { limit, offset, sortOptions }, { models, token }) => {
+    try {
+      const {
+        user: { company }
+      } = decode(token);
 
-        const allApps = await models.AppDetails.findAll({
-          limit,
-          offset,
-          attributes: [
-            "id",
-            "icon",
-            "logo",
-            "disabled",
-            "name",
-            "teaserdescription",
-            "features",
-            "cheapestprice",
-            "avgstars",
-            "cheapestpromo",
-            "needssubdomain",
-            "options"
-          ],
-          where: {
-            disabled: false,
-            deprecated: false,
-            hidden: false,
-            owner: { [models.Op.or]: [null, company] }
-          },
-          order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
-        });
+      const allApps = await models.AppDetails.findAll({
+        limit,
+        offset,
+        attributes: [
+          "id",
+          "icon",
+          "logo",
+          "disabled",
+          "name",
+          "teaserdescription",
+          "features",
+          "cheapestprice",
+          "avgstars",
+          "cheapestpromo",
+          "needssubdomain",
+          "options"
+        ],
+        where: {
+          disabled: false,
+          deprecated: false,
+          hidden: false,
+          owner: { [models.Op.or]: [null, company] }
+        },
+        order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
+      });
 
-        return allApps;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
+      return allApps;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
-  ),
+  },
 
   fetchAllAppsEnhanced: requiresRights([
     "view-apps",
@@ -805,6 +803,27 @@ export default {
           }
         );
         return stats;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchIssuedLicences: requiresAuth.createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        const tempLicences = await models.sequelize.query(
+          `SELECT licenceright_data.*, ld.unitid as owner
+          FROM licenceright_data LEFT OUTER JOIN licence_data ld on licenceright_data.licenceid = ld.id
+          WHERE ld.unitid=:unitid AND licenceright_data.endtime > NOW();`,
+          { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
+        );
+
+        return tempLicences;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

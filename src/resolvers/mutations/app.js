@@ -1589,42 +1589,53 @@ export default {
   ),
 
   giveTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
-    async (_, { licence, impersonator }, { models, token }) =>
+    async (_, { licences }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company }
           } = decode(token);
 
-          if (!licence.starttime && !licence.endtime) {
-            throw new Error("No start or endtime set!");
+          const errors = [];
+          let ok = true;
+
+          for await (const licence of licences) {
+            try {
+              if (!licence.starttime && !licence.endtime) {
+                throw new Error("No start or endtime set!");
+              }
+
+              if (!licence.tags || licence.tags.length < 1) {
+                throw new Error("Please specify the reason for the access!");
+              }
+
+              const { id: licenceid, ...data } = licence;
+
+              checkCompanyMembership(licence.impersonator, company);
+
+              await models.LicenceRight.create({
+                ...data,
+                licenceid,
+                unitid: licence.impersonator,
+                transaction: ta
+              });
+
+              await createNotification(
+                {
+                  receiver: licence.impersonator,
+                  message: `You got vacation access granted for a new Service`,
+                  icon: "th",
+                  changed: ["foreignLicences"]
+                },
+                ta
+              );
+            } catch (error) {
+              errors.push(licence.id);
+              ok = false;
+            }
           }
 
-          if (!licence.tags || licence.tags.length < 1) {
-            throw new Error("Please specify the reason for the access!");
-          }
-
-          const { id: licenceid, ...data } = licence;
-
-          checkCompanyMembership(impersonator, company);
-
-          await models.LicenceRight.create({
-            ...data,
-            licenceid,
-            unitid: impersonator,
-            transaction: ta
-          });
-
-          await createNotification(
-            {
-              receiver: impersonator,
-              message: `You got vacation access granted for a new Service`,
-              icon: "th",
-              changed: ["foreignLicences"]
-            },
-            ta
-          );
-          return true;
+          return { errors, ok };
         } catch (err) {
           throw new NormalError({
             message: err.message,

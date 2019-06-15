@@ -102,10 +102,12 @@ export default {
     childid: "Unit",
     employee: "User"
   }),
-  Domain: find({
-    boughtplanid: "BoughtPlan"
-  }),
+  Domain: find({ boughtplanid: "BoughtPlan" }),
   Email: find(unit),
+  IssuedLicence: find({
+    licenceid: "Licence",
+    unitid: "User"
+  }),
   Licence: find({ unitid: "User", boughtplanid: "BoughtPlan" }),
   LicenceLayout: find({ unitid: "User", licenceid: "Licence" }),
   NLicence: find({

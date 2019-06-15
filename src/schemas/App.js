@@ -168,6 +168,30 @@ export const types = `
     tags: [String]
   }
 
+  type PublicLicence {
+    id: ID!
+    starttime: String!
+    endtime: Date
+    boughtplanid: BoughtPlan!
+    unitid: PublicUser
+    dashboard: Int
+    sidebar: Int
+    tags: [String]
+  }
+
+  type IssuedLicence {
+    id: ID!
+    licenceid: PublicLicence!
+    view: Boolean!
+    edit: Boolean!
+    delete: Boolean!
+    use: Boolean!
+    starttime: Date!
+    endtime: Date!
+    unitid: SemiPublicUser!
+    tags: [String]!
+  }
+
   type LicenceLayout {
     unitid: User!
     licenceid: Licence!
@@ -183,6 +207,7 @@ export const types = `
   
   input LicenceRightInput {
     id: ID!
+    impersonator: ID!
     view: Boolean
     edit: Boolean
     delete: Boolean
@@ -259,6 +284,8 @@ export const queries = `
   fetchServiceLicences(employees: [ID!], serviceid: ID!): [ServiceLicence]
   fetchCompanyServices: [CompanyService]
   fetchCompanyService(serviceid: ID!): CompanyService
+
+  fetchIssuedLicences: [IssuedLicence!]
 `;
 
 export const mutations = `
@@ -267,7 +294,7 @@ export const mutations = `
   deleteApp(id: ID!): Response!
 
   createOwnApp(ssoData: SSOInput!): Licence!
-  giveTemporaryAccess(licence: LicenceRightInput, impersonator: ID!): Boolean!
+  giveTemporaryAccess(licences: [LicenceRightInput!]!): TempAccessResponse!
   updateTemporaryAccess(licence: LicenceRightInput, rightid: ID!): Boolean!
   removeTemporaryAccess(rightid: ID!): Boolean!
 

@@ -1,62 +1,67 @@
 // eslint-disable-next-line
 export const types = `
-  # The basic Response
-    type Response {
-      ok: Boolean!
-    }
+# The basic Response
+  type Response {
+    ok: Boolean!
+  }
 
-    type TokenResponse {
-      ok: Boolean!
-      used: Boolean
-      expired: Boolean
-    }
+  type TempAccessResponse {
+    ok: Boolean!
+    errors: [ID!]
+  }
 
-  # Contains the changed rating
-    type ReviewResponse {
-      ok: Boolean!
-      balance: Int
-      id: ID
-    }
+  type TokenResponse {
+    ok: Boolean!
+    used: Boolean
+    expired: Boolean
+  }
 
-  # Contains the amount of the respective Unit
-    type ListCountResponse {
-      allUsers: Int!
-      allApps: Int!
-      allCompanies: Int!
-    }
+# Contains the changed rating
+  type ReviewResponse {
+    ok: Boolean!
+    balance: Int
+    id: ID
+  }
 
-  # If the registration was successful, a boolean will be given back
-    type RegisterResponse {
-      ok: Boolean!
-      token: String
-      downloads: DownloadLink
-    }
+# Contains the amount of the respective Unit
+  type ListCountResponse {
+    allUsers: Int!
+    allApps: Int!
+    allCompanies: Int!
+  }
 
-    type DownloadLink {
-      win64: String
-      macOS: String
-    }
+# If the registration was successful, a boolean will be given back
+  type RegisterResponse {
+    ok: Boolean!
+    token: String
+    downloads: DownloadLink
+  }
 
-  # The user receives tokens upon a successful login
-    type LoginResponse {
-      ok: Boolean!
-      token: String
-    }
+  type DownloadLink {
+    win64: String
+    macOS: String
+  }
 
-  # The user gets the email where the new auth is send back
-   type ForgotPwResponse {
-     ok: Boolean!
-     email: String
-   }
+# The user receives tokens upon a successful login
+  type LoginResponse {
+    ok: Boolean!
+    token: String
+  }
 
-   type TabResponse {
-     icon: String!
-     appname: String!
-     alias: String
-     licenceid: ID!
-   }
+# The user gets the email where the new auth is send back
+  type ForgotPwResponse {
+    ok: Boolean!
+    email: String
+  }
 
-  # Response from with a link to login to an app
+  type TabResponse {
+    icon: String!
+    appname: String!
+    alias: String
+    licenceid: ID!
+  }
+
+# Response from with a link to login to an app
   type ProductResponse {
     ok: Boolean!
     loginLink: String
@@ -93,8 +98,8 @@ export const types = `
   }
 
   type JsonResponse {
-      data: JSON!
-    }
+    data: JSON!
+  }
 
   type Error {
     code: Int!

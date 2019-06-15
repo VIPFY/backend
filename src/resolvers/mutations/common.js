@@ -78,20 +78,22 @@ export default {
     }
   },
 
-  logSSOError: async (parent, { eventdata }, { models, ip }) => {
-    try {
-      console.error(eventdata);
+  logSSOError: requiresAuth.createResolver(
+    async (parent, { eventdata }, { models, ip }) => {
+      try {
+        console.error(eventdata);
 
-      await models.Log.create({
-        ip,
-        eventtype: "logSSOError",
-        eventdata,
-        user: null
-      });
+        await models.Log.create({
+          ip,
+          eventtype: "logSSOError",
+          eventdata,
+          user: null
+        });
 
-      return true;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  }
+  )
 };
