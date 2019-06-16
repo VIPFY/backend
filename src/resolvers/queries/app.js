@@ -7,6 +7,7 @@ import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 
 import logger from "../../loggers";
+import { companyCheck } from "../../helpers/functions";
 
 export default {
   allApps: async (_, { limit, offset, sortOptions }, { models, token }) => {
@@ -809,18 +810,44 @@ export default {
     }
   ),
 
-  fetchIssuedLicences: requiresAuth.createResolver(
-    async (parent, args, { models, token }) => {
+  fetchIssuedLicences: requiresRights(["view-licences"]).createResolver(
+    async (_, { unitid: userId }, { models, token }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid, company }
         } = decode(token);
 
-        const tempLicences = await models.sequelize.query(
+        await companyCheck(company, unitid, userId);
+
+        const issuedLicences = await models.sequelize.query(
           `SELECT licenceright_data.*, ld.unitid as owner
           FROM licenceright_data LEFT OUTER JOIN licence_data ld on licenceright_data.licenceid = ld.id
-          WHERE ld.unitid=:unitid AND licenceright_data.endtime > NOW();`,
-          { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
+          WHERE ld.unitid=:userId AND licenceright_data.endtime > NOW();`,
+          { replacements: { userId }, type: models.sequelize.QueryTypes.SELECT }
+        );
+
+        return issuedLicences;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchTempLicences: requiresRights(["view-licences"]).createResolver(
+    async (_, { unitid: userId }, { models, token }) => {
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        await companyCheck(company, unitid, userId);
+
+        const tempLicences = await models.sequelize.query(
+          `SELECT lrd.*, ld.unitid as owner
+            FROM licenceright_data lrd LEFT OUTER JOIN licence_data ld on lrd.licenceid = ld.id
+            WHERE lrd.unitid = :userId AND lrd.licenceid = ld.id AND lrd.endtime > NOW();
+          `,
+          { replacements: { userId }, type: models.sequelize.QueryTypes.SELECT }
         );
 
         return tempLicences;

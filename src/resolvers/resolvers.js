@@ -104,10 +104,7 @@ export default {
   }),
   Domain: find({ boughtplanid: "BoughtPlan" }),
   Email: find(unit),
-  IssuedLicence: find({
-    licenceid: "Licence",
-    unitid: "User"
-  }),
+  TempLicence: find({ licenceid: "Licence", unitid: "User", owner: "User" }),
   Licence: find({ unitid: "User", boughtplanid: "BoughtPlan" }),
   LicenceLayout: find({ unitid: "User", licenceid: "Licence" }),
   NLicence: find({
@@ -134,6 +131,7 @@ export default {
   PlansRunning: find({ appid: "App" }),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
+  PublicLicence: find({ unitid: "SemiPublicUser", boughtplanid: "BoughtPlan" }),
   Review: find({ unitid: "User", appid: "App", answerto: "Review" }),
   ReviewHelpful: find({ unitid: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),

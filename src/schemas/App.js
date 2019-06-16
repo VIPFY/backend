@@ -179,7 +179,7 @@ export const types = `
     tags: [String]
   }
 
-  type IssuedLicence {
+  type TempLicence {
     id: ID!
     licenceid: PublicLicence!
     view: Boolean!
@@ -189,6 +189,7 @@ export const types = `
     starttime: Date!
     endtime: Date!
     unitid: SemiPublicUser!
+    owner: SemiPublicUser!
     tags: [String]!
   }
 
@@ -285,7 +286,8 @@ export const queries = `
   fetchCompanyServices: [CompanyService]
   fetchCompanyService(serviceid: ID!): CompanyService
 
-  fetchIssuedLicences: [IssuedLicence!]
+  fetchIssuedLicences(unitid: ID!): [TempLicence!]
+  fetchTempLicences(unitid: ID!): [TempLicence!]
 `;
 
 export const mutations = `

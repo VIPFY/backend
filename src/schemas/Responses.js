@@ -7,6 +7,7 @@ export const types = `
 
   type TempAccessResponse {
     ok: Boolean!
+    licences: [TempLicence!]
     errors: [ID!]
   }
 

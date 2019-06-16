@@ -1597,6 +1597,7 @@ export default {
           } = decode(token);
 
           const errors = [];
+          const newLicences = [];
           let ok = true;
 
           for await (const licence of licences) {
@@ -1613,12 +1614,14 @@ export default {
 
               checkCompanyMembership(licence.impersonator, company);
 
-              await models.LicenceRight.create({
+              const createdLicence = await models.LicenceRight.create({
                 ...data,
                 licenceid,
                 unitid: licence.impersonator,
                 transaction: ta
               });
+
+              newLicences.push(createdLicence.dataValues);
 
               await createNotification(
                 {
@@ -1635,7 +1638,7 @@ export default {
             }
           }
 
-          return { errors, ok };
+          return { errors, licences: newLicences, ok };
         } catch (err) {
           throw new NormalError({
             message: err.message,
