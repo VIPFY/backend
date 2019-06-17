@@ -218,6 +218,13 @@ export const types = `
     endtime: Date
   }
 
+  input LicenceRightUpdateInput {
+    licenceid: ID!
+    starttime: Date
+    endtime: Date
+    user: ID
+  }
+
   input LayoutInput {
     id: ID!
     dashboard: Int
@@ -297,7 +304,7 @@ export const mutations = `
 
   createOwnApp(ssoData: SSOInput!): Licence!
   giveTemporaryAccess(licences: [LicenceRightInput!]!): TempAccessResponse!
-  updateTemporaryAccess(licence: LicenceRightInput, rightid: ID!): Boolean!
+  updateTemporaryAccess(licence: LicenceRightUpdateInput, rightid: ID!): TempLicence!
   removeTemporaryAccess(rightid: ID!): Boolean!
 
   # Admin: toogle App between disabled and enabled

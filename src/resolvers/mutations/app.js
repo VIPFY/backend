@@ -1740,7 +1740,14 @@ export default {
             delete licence.id;
           }
 
-          const { unitid } = await models.LicenceRight.findOne({
+          if (licence.licenceid) {
+            delete licence.licenceid;
+          }
+
+          licence.unitid = licence.user;
+          delete licence.user;
+
+          const oldLicence = await models.LicenceRight.findOne({
             where: { id: rightid },
             raw: true
           });
@@ -1753,15 +1760,16 @@ export default {
 
           await createNotification(
             {
-              receiver: unitid,
+              receiver: oldLicence.unitid,
               message: `The admin updated your vacation licence`,
+              link: "teammanager",
               icon: "th",
               changed: ["foreignLicences"]
             },
             ta
           );
 
-          return true;
+          return { ...oldLicence, ...licence };
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -1858,19 +1866,21 @@ export default {
           });
 
           await models.LicenceRight.update(
-            { vacationend: models.sequelize.fn("NOW") },
+            { endtime: models.sequelize.fn("NOW") },
             { where: { id: rightid }, transaction: ta }
           );
 
           await createNotification(
             {
               receiver: unitid,
-              message: `The admin removed your access to a vacation licence`,
+              message: "The admin removed your access to a vacation licence",
               icon: "th",
+              link: `teammanager`,
               changed: ["foreignLicences"]
             },
             ta
           );
+
           return true;
         } catch (err) {
           throw new NormalError({
