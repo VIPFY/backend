@@ -157,7 +157,7 @@ export default {
 
             service.employees.forEach(employee =>
               servicepromises.push(
-                models.Licence.create(
+                models.LicenceData.create(
                   {
                     unitid: employee.id,
                     disabled: false,
@@ -271,7 +271,7 @@ export default {
                   )
                 ) {
                   licencesPromises.push(
-                    models.Licence.update(
+                    models.LicenceData.update(
                       { endtime: moment().valueOf() },
                       {
                         where: {
@@ -619,7 +619,7 @@ export default {
             team[0].services.forEach(serviceid => {
               if (!keepLicences.find(l => l == serviceid)) {
                 promises.push(
-                  models.Licence.update(
+                  models.LicenceData.update(
                     { endtime: moment().valueOf() },
                     {
                       where: {
@@ -711,7 +711,7 @@ export default {
             team[0].employees.forEach(employeeid => {
               if (!keepLicences.find(l => l == employeeid)) {
                 promises.push(
-                  models.Licence.update(
+                  models.LicenceData.update(
                     { endtime: moment().valueOf() },
                     {
                       where: {
@@ -807,7 +807,7 @@ export default {
 
           services.forEach(service =>
             promises.push(
-              models.Licence.create(
+              models.LicenceData.create(
                 {
                   unitid: userid,
                   disabled: false,
@@ -923,7 +923,7 @@ export default {
 
           employees.forEach(employee =>
             promises.push(
-              models.Licence.create(
+              models.LicenceData.create(
                 {
                   unitid: employee.id,
                   disabled: false,
