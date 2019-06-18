@@ -1,6 +1,10 @@
 import { decode } from "jsonwebtoken";
 import { parseName } from "humanparser";
-import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
+import {
+  userPicFolder,
+  MAX_PASSWORD_LENGTH,
+  MIN_PASSWORD_LENGTH
+} from "../../constants";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { getNewPasswordData } from "../../helpers/auth";
 import { NormalError } from "../../errors";
@@ -118,6 +122,12 @@ export default {
           if (emailInUse) throw new Error("Email already in use!");
           if (password.length > MAX_PASSWORD_LENGTH) {
             throw new Error("Password too long");
+          }
+
+          if (password.length < MIN_PASSWORD_LENGTH) {
+            throw new Error(
+              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+            );
           }
 
           const pwData = await getNewPasswordData(password);
