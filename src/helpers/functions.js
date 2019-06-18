@@ -119,6 +119,7 @@ export const formatHumanName = human =>
  * @param {string} link
  */
 export const createNotification = async (notificationBody, transaction) => {
+  console.log("SENDED Notification to");
   try {
     const sendtime = getDate();
 
@@ -200,7 +201,6 @@ export const checkVat = async (cc, vatNumber) => {
     );
 
     if (res.valid == false) {
-      console.log(res);
       throw new Error(res);
     } else {
       return res;

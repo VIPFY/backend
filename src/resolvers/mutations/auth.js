@@ -260,7 +260,7 @@ export default {
     { models, SECRET, ip, token }
   ) =>
     models.sequelize.transaction(async ta => {
-      console.log(
+      /* console.log(
         "PROPS",
         country,
         vatoption,
@@ -268,7 +268,7 @@ export default {
         placeId,
         ownAdress,
         username
-      );
+      ); */
       try {
         const {
           user: { unitid, company }
@@ -359,7 +359,6 @@ export default {
       if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
       }
-      console.log(email);
       try {
         const promises = [
           models.Token.findOne({

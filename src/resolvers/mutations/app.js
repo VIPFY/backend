@@ -576,7 +576,7 @@ export default {
           `INSERT INTO timetracking_data (licenceid, unitid, boughtplanid, day, minutesspent)
             VALUES (:licenceid, :unitid, :boughtplanid, now(), :minutesspent)
             ON CONFLICT (licenceid, unitid, day)
-            DO UPDATE SET minutesspent = timetracking_data.minutesspent + EXCLUDED.minutesspent
+            DO UPDATE SET minutesspent = timetracking_data.minutesspent  EXCLUDED.minutesspent
             `,
           {
             replacements: {
@@ -765,7 +765,7 @@ export default {
           let externaltotalprice = args.price;
 
           if (oldBoughtPlan.key && oldBoughtPlan.key.externaltotalprice) {
-            externaltotalprice += oldBoughtPlan.key.externaltotalprice;
+            externaltotalprice = oldBoughtPlan.key.externaltotalprice;
           }
 
           await models.BoughtPlan.update(
@@ -1010,6 +1010,87 @@ export default {
       })
   ),
 
+  deleteServiceLicenceAt: requiresRights(["delete-licences"]).createResolver(
+    async (parent, { serviceid, licenceid, time }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const parsedTime = moment(time).valueOf();
+          const config = { endtime: parsedTime };
+
+          const licence = await models.sequelize.query(
+            `
+        SELECT ld.*, pd.cancelperiod
+        FROM licence_data ld
+            LEFT OUTER JOIN boughtplan_data bd on ld.boughtplanid = bd.id
+            INNER JOIN plan_data pd on bd.planid = pd.id
+        WHERE ld.id = :licenceid
+          AND (bd.endtime IS NULL OR bd.endtime > NOW())
+          AND bd.payer = :company`,
+            {
+              replacements: { licenceid, company },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+
+          if (licence.length < 1) {
+            throw new Error(
+              "BoughtPlan doesn't exist or isn't active anymore!"
+            );
+          }
+
+          if (!licence[0].key || (licence[0].key && !licence[0].key.external)) {
+            // Only "normal" licences have an end time. External ones end directly.
+            const period = Object.keys(licence[0].cancelperiod)[0];
+
+            const estimatedEndtime = moment()
+              .add(licence[0].cancelperiod[period], period)
+              .valueOf();
+
+            if (parsedTime <= estimatedEndtime) {
+              config.endtime = estimatedEndtime;
+            }
+          }
+
+          const updatedLicence = await models.Licence.update(config, {
+            where: { id: licence[0].id },
+            transaction: ta
+          });
+
+          if (updatedLicence[0] == 0) {
+            throw new Error("Couldn't update Licence");
+          }
+
+          const p1 = createLog(ip, "deleteLicenceAt", { licence }, unitid, ta);
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: `Set endtime of Licence ${licence[0].id} to ${moment(
+                config.endtime
+              ).toDate()}`,
+              icon: "business-time",
+              link: `teams`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
+
+          return moment(config.endtime).toDate();
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   deleteLicenceAt: requiresRights(["delete-licences"]).createResolver(
     async (parent, { licenceid, time }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
@@ -1226,10 +1307,14 @@ export default {
           if (!licence) {
             throw new Error("Licence not found");
           }
+          if (licence.options && licence.options.nosetup) {
+            delete licence.options.nosetup;
+          }
 
           await models.Licence.update(
             {
-              key: { ...licence.key, ...credentials }
+              key: { ...licence.key, ...credentials },
+              options: licence.options
             },
             {
               where: { id: licenceid },
@@ -1295,6 +1380,116 @@ export default {
       })
   ),
 
+  // createService: requiresAuth.createResolver(
+  //   async (
+  //     parent,
+  //     { serviceData, addedTeams, addedEmployees },
+  //     { models, token, ip }
+  //   ) =>
+  //     models.sequelize.transaction(async ta => {
+  //       try {
+  //         console.log("Inputs", serviceData, addedTeams, addedEmployees);
+  //         const {
+  //           user: { unitid, company }
+  //         } = decode(token);
+
+  //         //Nutzer add to team
+
+  //         const app = await models.Plan.findOne({
+  //           where: { id: serviceData.id },
+  //           raw: true
+  //         });
+
+  //         const plan = await models.Plan.findOne({
+  //           where: { appid: serviceData.id, options: { external: true } },
+  //           raw: true
+  //         });
+
+  //         if (!plan) {
+  //           throw new Error(
+  //             "This App is not integrated to handle external Accounts yet."
+  //           );
+  //         }
+  //         await checkPlanValidity(plan);
+  // const teamaddpromises = [];
+  // const employeepromises = [];
+  // addedTeams.forEach(team => {
+  //   teamaddpromises.push(
+  //     models.DepartmentApp.create(
+  //       { departmentid: team.unitid.id, boughtplanid: boughtPlan.id },
+  //       { transaction: ta }
+  //     )
+  //   );
+
+  //   team.employees.forEach(employee =>
+  //     employeepromises.push(
+  //       models.Licence.create(
+  //         {
+  //           unitid: employee.id,
+  //           disabled: false,
+  //           boughtplanid: boughtPlan.id,
+  //           agreed: true,
+  //           key: employee.setupfinished
+  //             ? {
+  //                 email: employee.setup.email,
+  //                 password: employee.setup.password,
+  //                 subdomain: employee.setup.subdomain,
+  //                 external: true
+  //               }
+  //             : {},
+  //           options: employee.setupfinished
+  //             ? {
+  //                 teamlicence: team.unitid.id
+  //               }
+  //             : {
+  //                 teamlicence: team.unitid.id,
+  //                 nosetup: true
+  //               }
+  //         },
+  //         { transaction: ta }
+  //       )
+  //     )
+  //   );
+  // });
+
+  // addedEmployees.forEach(employee =>
+  //   employeepromises.push(
+  //     models.Licence.create(
+  //       {
+  //         unitid: employee.id,
+  //         disabled: false,
+  //         boughtplanid: boughtPlan.id,
+  //         agreed: true,
+  //         key: employee.setupfinished
+  //           ? {
+  //               email: employee.setup.email,
+  //               password: employee.setup.password,
+  //               subdomain: employee.setup.subdomain,
+  //               external: true
+  //             }
+  //           : {},
+  //         options: employee.setupfinished
+  //           ? {}
+  //           : {
+  //               nosetup: true
+  //             }
+  //       },
+  //       { transaction: ta }
+  //     )
+  //   )
+  // );
+
+  // await Promise.all(teamaddpromises, employeepromises);
+
+  // //TODO notfiy user
+
+  // await createLog(
+  //   ip,
+  //   "createService",
+  //   { service: serviceData.id },
+  //   unitid,
+  //   ta
+  // );
   createOwnApp: requiresRights(["create-licences"]).createResolver(
     async (_, { ssoData }, { models, token }) =>
       models.sequelize.transaction(async ta => {
@@ -1378,6 +1573,320 @@ export default {
 
           return licence;
         } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+  deleteService: requiresAuth.createResolver(
+    async (parent, { serviceid, time }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const parsedTime = moment(time).valueOf();
+          const config = { endtime: parsedTime };
+
+          const boughtPlans = await models.sequelize.query(
+            `
+            SELECT bd.*, pd.cancelperiod
+            FROM boughtplan_data bd
+                INNER JOIN plan_data pd on bd.planid = pd.id
+            WHERE (bd.endtime IS NULL OR bd.endtime > NOW())
+              AND bd.payer = :company
+              and appid = :serviceid`,
+            {
+              replacements: { company, serviceid },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+
+          if (boughtPlans.length < 1) {
+            throw new Error(
+              "BoughtPlan doesn't exist or isn't active anymore!"
+            );
+          }
+
+          const updatePromises = [];
+          const licencePromises = [];
+          const departmentPromisies = [];
+          boughtPlans.forEach(boughtPlan => {
+            const period = Object.keys(boughtPlan.cancelperiod)[0];
+            const estimatedEndtime = moment()
+              .add(boughtPlan.cancelperiod[period], period)
+              .valueOf();
+
+            if (parsedTime <= estimatedEndtime) {
+              config.endtime = estimatedEndtime;
+            }
+
+            updatePromises.push(
+              models.BoughtPlan.update(config, {
+                where: { id: boughtPlan.id },
+                transaction: ta
+              })
+            );
+
+            licencePromises.push(
+              models.Licence.update(config, {
+                where: { boughtplanid: boughtPlan.id }
+              })
+            );
+
+            departmentPromisies.push(
+              models.DepartmentApp.destroy(
+                { where: { boughtplanid: boughtPlan.id } },
+                { transaction: ta }
+              )
+            );
+          });
+
+          await Promise.all(
+            updatePromises,
+            licencePromises,
+            departmentPromisies
+          );
+
+          await createLog(ip, "deleteService", { serviceid }, unitid, ta);
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  removeLicence: requiresRights(["delete-licences"]).createResolver(
+    async (parent, { licenceid, oldname }, { models, ip, token }) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        try {
+          const remove = await models.Licence.update(
+            {
+              unitid: null,
+              options: models.sequelize.literal(
+                `options || jsonb '{"identifier": "Old account of ${oldname}"}'`
+              )
+            },
+            {
+              where: { id: licenceid },
+              transaction: ta
+            }
+          );
+
+          if (remove == 0) {
+            throw new Error("Licence not found!");
+          }
+
+          await createLog(ip, "removeLicence", { licenceid }, unitid, ta);
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  distributeLicence10: requiresAuth.createResolver(
+    async (parent, { licenceid, userid }, { models, ip, token }) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        try {
+          const distribute = await models.Licence.update(
+            {
+              unitid: userid
+            },
+            {
+              where: { id: licenceid },
+              transaction: ta
+            }
+          );
+
+          if (distribute == 0) {
+            throw new Error("Licence not found!");
+          }
+
+          await createLog(
+            ip,
+            "distributeLicence",
+            { licenceid, userid },
+            unitid,
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  addExternalAccountLicence: requiresAuth.createResolver(
+    (
+      parent,
+      {
+        touser,
+        boughtplanid,
+        price,
+        appid,
+        loginurl,
+        password,
+        username,
+        subdomain,
+        identifier
+      },
+      { models, token, ip }
+    ) =>
+      models.sequelize.transaction(async ta => {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        try {
+          let admin = null;
+
+          if (touser) {
+            admin = await companyCheck(company, unitid, touser);
+          } else {
+            admin = await models.User.findOne({
+              where: { id: unitid },
+              raw: true
+            });
+          }
+
+          const oldBoughtPlan = await models.BoughtPlan.findOne({
+            where: { id: boughtplanid },
+            endtime: {
+              [models.Op.or]: {
+                [models.Op.gt]: models.sequelize.fn("NOW"),
+                [models.Op.eq]: null
+              }
+            },
+            raw: true
+          });
+
+          if (!oldBoughtPlan) {
+            throw new Error("Couldn't find a valid Plan!");
+          }
+
+          const plan = await models.Plan.findOne({
+            where: { id: oldBoughtPlan.planid, options: { external: true } },
+            raw: true
+          });
+
+          if (!plan) {
+            throw new Error(
+              "This App is not integrated to handle external Accounts yet."
+            );
+          }
+
+          await checkPlanValidity(plan);
+          let externaltotalprice = price;
+
+          if (oldBoughtPlan.key && oldBoughtPlan.key.externaltotalprice) {
+            externaltotalprice = oldBoughtPlan.key.externaltotalprice;
+          }
+
+          await models.BoughtPlan.update(
+            {
+              key: {
+                ...oldBoughtPlan.key,
+                externaltotalprice
+              }
+            },
+            {
+              where: { id: boughtplanid },
+              transaction: ta,
+              returning: true
+            }
+          );
+
+          const licence = await models.Licence.create(
+            {
+              unitid: touser,
+              disabled: false,
+              boughtplanid,
+              agreed: true,
+              key: { loginurl, password, username, subdomain, external: true },
+              options: { identifier }
+            },
+            { transaction: ta }
+          );
+
+          const p1 = createLog(
+            ip,
+            "addExternalLicence",
+            {
+              licence: licence.id,
+              oldBoughtPlan
+            },
+            unitid,
+            ta
+          );
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: `Integrated external Account`,
+              icon: "user-plus",
+              link: `marketplace/${appid}`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          const promises = [p1, p2];
+
+          if (touser) {
+            const p3 = createNotification(
+              {
+                receiver: touser,
+                message: `${admin.firstname} ${
+                  admin.lastname
+                } integrated an external Account for you.`,
+                icon: "user-plus",
+                link: `marketplace/${appid}`,
+                changed: ["ownLicences"]
+              },
+              ta
+            );
+
+            promises.push(p3);
+          }
+
+          await Promise.all(promises);
+
+          return true;
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Integration of external Account failed",
+              icon: "bug",
+              link: `marketplace/${appid}`,
+              changed: []
+            },
+            ta
+          );
           throw new NormalError({
             message: err.message,
             internalData: { err }

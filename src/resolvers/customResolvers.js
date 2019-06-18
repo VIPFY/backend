@@ -86,12 +86,56 @@ const postprocessors = {
     return value;
   },
   Email: async (value, fields) => {
-    //logger.debug("postprocessing Email", { value, fields });
     if (fields.includes("verifyuntil") && !value.verified) {
       const verifyuntil = moment(value.createdat).subtract(
         EMAIL_VERIFICATION_TIME
       );
       value.verifyuntil = new Date(verifyuntil.format());
+    }
+    return value;
+  },
+  Licence: async (value, fields) => {
+    if (value.options) {
+      if (value.options.teamlicence) {
+        value.teamlicence = value.options.teamlicence;
+      }
+      if (value.options.teamaccount) {
+        value.teamaccount = value.options.teamaccount;
+      }
+    }
+    return value;
+  },
+  NLicence: async (value, fields) => {
+    if (value.options) {
+      if (value.options.teamlicence) {
+        value.teamlicence = value.options.teamlicence;
+      }
+      if (value.options.teamaccount) {
+        value.teamaccount = value.options.teamaccount;
+      }
+    }
+    return value;
+  },
+  // Wird das benötigt?
+  CompanyService: async (value, fields) => {
+    if (value.options) {
+      if (value.options.teamlicence) {
+        value.teamlicence = value.options.teamlicence;
+      }
+      if (value.options.teamaccount) {
+        value.teamaccount = value.options.teamaccount;
+      }
+    }
+    return value;
+  },
+  TeamBoughtPlan: async (value, fields) => {
+    if (value.options) {
+      if (value.options.teamlicence) {
+        value.teamlicence = value.options.teamlicence;
+      }
+      if (value.options.teamaccount) {
+        value.teamaccount = value.options.teamaccount;
+      }
     }
     return value;
   }
@@ -172,10 +216,12 @@ export const find = data => {
           }
 
           // load data if it's not trivial
-          if (fields == [key]) {
+          if (fields.length == 1 && fields[0] == key) {
             result = value.map(v =>
               v === null || v === undefined ? null : { [key]: v }
             );
+          } else if (value == null) {
+            result = null;
           } else {
             const dataloader = getDataLoader(datatype, key, ctx);
             result = await dataloader.loadMany(value);
@@ -192,9 +238,11 @@ export const find = data => {
           let result;
 
           // load data if it's not trivial
-          if (fields == [key]) {
+          if (fields.length == 1 && fields[0] == key) {
             result =
               value === null || value === undefined ? null : { [key]: value };
+          } else if (value == null) {
+            result = null;
           } else {
             const dataloader = getDataLoader(datatype, key, ctx);
             result = await dataloader.load(value);
