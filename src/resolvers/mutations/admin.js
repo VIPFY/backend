@@ -145,7 +145,7 @@ export default {
   adminUpdateLicence: requiresVipfyAdmin.createResolver(
     async (parent, { unitid, boughtplanid, licenceData }, { models }) => {
       try {
-        await models.Licence.update(
+        await models.LicenceData.update(
           { ...licenceData },
           { where: { unitid, boughtplanid } }
         );
@@ -160,7 +160,7 @@ export default {
   adminCreateLicence: requiresVipfyAdmin.createResolver(
     async (parent, { licenceData }, { models }) => {
       try {
-        await models.Licence.create({ ...licenceData });
+        await models.LicenceData.create({ ...licenceData });
 
         return { ok: true };
       } catch (err) {
@@ -834,7 +834,7 @@ export default {
   adminRemoveLicence: requiresVipfyAdmin.createResolver(
     async (parent, { licenceid }, { models }) => {
       try {
-        await models.Licence.update(
+        await models.LicenceData.update(
           { unitid: null },
           { where: { id: licenceid } }
         );

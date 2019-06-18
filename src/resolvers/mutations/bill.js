@@ -355,7 +355,7 @@ export default {
           if (numLicences > 0) {
             for (let i = 0; i < numLicences; i++) {
               createLicences.push(
-                models.Licence.create(
+                models.LicenceData.create(
                   {
                     unitid: null,
                     boughtplanid: boughtPlan.id,
@@ -549,7 +549,7 @@ export default {
             }
           );
 
-          const p5 = models.Licence.update(
+          const p5 = models.LicenceData.update(
             { endtime: cancelledBoughtPlan.endtime },
             { where: { id: cancelledBoughtPlan.id }, transaction: ta }
           );
@@ -677,7 +677,7 @@ export default {
 
           for (let i = 0; i < mergedFeatures.users; i++) {
             createLicences.push(
-              models.Licence.create(
+              models.LicenceData.create(
                 {
                   unitid: null,
                   boughtplanid: newBoughtPlan.id,
@@ -760,7 +760,7 @@ export default {
 
           for (let i = 0; i < boughtPlan.totalfeatures.users; i++) {
             createLicences.push(
-              models.Licence.create(
+              models.LicenceData.create(
                 {
                   unitid: null,
                   boughtplanid: boughtPlan.id,

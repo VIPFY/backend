@@ -17,6 +17,8 @@ import {
 // } from "../../services/stripe";
 import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
+import { checkAuthentification } from "../../helpers/auth";
+import { checkCompanyMembership } from "../../helpers/companyMembership";
 
 /* eslint-disable no-return-await */
 
@@ -146,7 +148,7 @@ export default {
 
           const takeLicences = employees.map(
             async (employee, i) =>
-              await models.Licence.update(
+              await models.LicenceData.update(
                 {
                   unitid: employee
                 },
@@ -320,7 +322,7 @@ export default {
             };
           }
 
-          const p3 = models.Licence.update(
+          const p3 = models.LicenceData.update(
             { unitid },
             {
               where: { id: licenceid },
@@ -453,7 +455,7 @@ export default {
             }
           );
 
-          await models.Licence.update(
+          await models.LicenceData.update(
             { unitid: null },
             {
               where: { id, unitid: { [models.Op.not]: null } },
@@ -525,7 +527,7 @@ export default {
             user: { unitid }
           } = decode(token);
 
-          const updatedLicence = await models.Licence.update(
+          const updatedLicence = await models.LicenceData.update(
             { agreed: true },
             {
               where: { id: licenceid, unitid },
@@ -782,7 +784,7 @@ export default {
             }
           );
 
-          const licence = await models.Licence.create(
+          const licence = await models.LicenceData.create(
             {
               unitid: args.touser || unitid,
               disabled: false,
@@ -893,7 +895,7 @@ export default {
             raw: true
           });
 
-          const suspended = await models.Licence.update(config, {
+          const suspended = await models.LicenceData.update(config, {
             where: { id, unitid: licence.unitid },
             transaction: ta
           });
@@ -973,7 +975,7 @@ export default {
             throw new Error("This Licence still belongs to an user!");
           }
 
-          const suspended = await models.Licence.update(
+          const suspended = await models.LicenceData.update(
             { key: null },
             {
               where: { id: licence.id },
@@ -1136,7 +1138,7 @@ export default {
             }
           }
 
-          const updatedLicence = await models.Licence.update(config, {
+          const updatedLicence = await models.LicenceData.update(config, {
             where: { id: licence[0].id },
             transaction: ta
           });
@@ -1229,7 +1231,7 @@ export default {
           }
 
           const licencesToUpdate = licences.map(async ({ id }) => {
-            await models.Licence.update(config, { where: { id } });
+            await models.LicenceData.update(config, { where: { id } });
           });
 
           await Promise.all(licencesToUpdate);
@@ -1293,7 +1295,7 @@ export default {
           const [licence] = await models.sequelize.query(
             `
             SELECT ld.*, bd.alias
-            FROM licence_data ld
+            FROM licence_view ld
                   INNER JOIN boughtplan_data bd on ld.boughtplanid = bd.id
             WHERE bd.payer = :company
               AND ld.id = :licenceid
@@ -1311,7 +1313,7 @@ export default {
             delete licence.options.nosetup;
           }
 
-          await models.Licence.update(
+          await models.LicenceData.update(
             {
               key: { ...licence.key, ...credentials },
               options: licence.options
@@ -1354,30 +1356,35 @@ export default {
   ),
 
   updateLayout: requiresAuth.createResolver(
-    async (parent, { layouts }, { models, token }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
+    async (_, { layout }, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
 
-          const promises = layouts.map(async ({ id, ...data }) => {
-            return await models.Licence.update(data, {
-              where: { id, unitid },
-              transaction: ta
-            });
+        const { id: licenceid, ...data } = layout;
+
+        const layoutExists = await models.LicenceLayout.findOne({
+          where: { licenceid, unitid },
+          raw: true
+        });
+
+        if (layoutExists) {
+          await models.LicenceLayout.update(data, {
+            where: { licenceid, unitid }
           });
-
-          await Promise.all(promises);
-
-          return true;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+        } else {
+          await models.LicenceLayout.create({ ...data, licenceid, unitid });
         }
-      })
+
+        return true;
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
   ),
 
   // createService: requiresAuth.createResolver(
@@ -1560,7 +1567,7 @@ export default {
             { transaction: ta }
           );
 
-          const licence = await models.Licence.create(
+          const licence = await models.LicenceData.create(
             {
               unitid,
               disabled: false,
@@ -1580,6 +1587,67 @@ export default {
         }
       })
   ),
+
+  giveTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
+    async (_, { licences }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(token);
+
+          const errors = [];
+          const newLicences = [];
+          let ok = true;
+
+          for await (const licence of licences) {
+            try {
+              if (!licence.starttime && !licence.endtime) {
+                throw new Error("No start or endtime set!");
+              }
+
+              if (!licence.tags || licence.tags.length < 1) {
+                throw new Error("Please specify the reason for the access!");
+              }
+
+              const { id: licenceid, ...data } = licence;
+
+              checkCompanyMembership(licence.impersonator, company);
+
+              const createdLicence = await models.LicenceRight.create({
+                ...data,
+                licenceid,
+                unitid: licence.impersonator,
+                transaction: ta
+              });
+
+              newLicences.push(createdLicence.dataValues);
+
+              await createNotification(
+                {
+                  receiver: licence.impersonator,
+                  message: `You got vacation access granted for a new Service`,
+                  icon: "th",
+                  changed: ["foreignLicences"]
+                },
+                ta
+              );
+            } catch (error) {
+              errors.push(licence.id);
+              ok = false;
+            }
+          }
+
+          return { errors, licences: newLicences, ok };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   deleteService: requiresAuth.createResolver(
     async (parent, { serviceid, time }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
@@ -1663,6 +1731,53 @@ export default {
       })
   ),
 
+  updateTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
+    async (_, { licence, rightid }, { models }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          // Don't update the id!!!
+          if (licence.id) {
+            delete licence.id;
+          }
+
+          if (licence.licenceid) {
+            delete licence.licenceid;
+          }
+
+          licence.unitid = licence.user;
+          delete licence.user;
+
+          const oldLicence = await models.LicenceRight.findOne({
+            where: { id: rightid },
+            raw: true
+          });
+
+          await models.LicenceRight.update(licence, {
+            where: { id: rightid },
+            returning: true,
+            transaction: ta
+          });
+
+          await createNotification(
+            {
+              receiver: oldLicence.unitid,
+              message: `The admin updated your vacation licence`,
+              link: "teammanager",
+              icon: "th",
+              changed: ["foreignLicences"]
+            },
+            ta
+          );
+
+          return { ...oldLicence, ...licence };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
   removeLicence: requiresRights(["delete-licences"]).createResolver(
     async (parent, { licenceid, oldname }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
@@ -1727,6 +1842,42 @@ export default {
             "distributeLicence",
             { licenceid, userid },
             unitid,
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  removeTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
+    async (_, { rightid }, { models }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const { unitid } = await models.LicenceRight.findOne({
+            where: { id: rightid },
+            transaction: ta,
+            raw: true
+          });
+
+          await models.LicenceRight.update(
+            { endtime: models.sequelize.fn("NOW") },
+            { where: { id: rightid }, transaction: ta }
+          );
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "The admin removed your access to a vacation licence",
+              icon: "th",
+              link: `teammanager`,
+              changed: ["foreignLicences"]
+            },
             ta
           );
 

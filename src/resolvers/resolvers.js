@@ -102,11 +102,11 @@ export default {
     childid: "Unit",
     employee: "User"
   }),
-  Domain: find({
-    boughtplanid: "BoughtPlan"
-  }),
+  Domain: find({ boughtplanid: "BoughtPlan" }),
   Email: find(unit),
+  TempLicence: find({ licenceid: "Licence", unitid: "User", owner: "User" }),
   Licence: find({ unitid: "User", boughtplanid: "BoughtPlan" }),
+  LicenceLayout: find({ unitid: "User", licenceid: "Licence" }),
   NLicence: find({
     unitid: "User",
     boughtplanid: "BoughtPlan",
@@ -131,6 +131,7 @@ export default {
   PlansRunning: find({ appid: "App" }),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
+  PublicLicence: find({ unitid: "SemiPublicUser", boughtplanid: "BoughtPlan" }),
   Review: find({ unitid: "User", appid: "App", answerto: "Review" }),
   ReviewHelpful: find({ unitid: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),

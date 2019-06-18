@@ -7,47 +7,46 @@ import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 
 import logger from "../../loggers";
+import { companyCheck } from "../../helpers/functions";
 
 export default {
-  allApps: requiresRights(["view-apps"]).createResolver(
-    async (parent, { limit, offset, sortOptions }, { models, token }) => {
-      try {
-        const {
-          user: { company }
-        } = decode(token);
+  allApps: async (_, { limit, offset, sortOptions }, { models, token }) => {
+    try {
+      const {
+        user: { company }
+      } = decode(token);
 
-        const allApps = await models.AppDetails.findAll({
-          limit,
-          offset,
-          attributes: [
-            "id",
-            "icon",
-            "logo",
-            "disabled",
-            "name",
-            "teaserdescription",
-            "features",
-            "cheapestprice",
-            "avgstars",
-            "cheapestpromo",
-            "needssubdomain",
-            "options"
-          ],
-          where: {
-            disabled: false,
-            deprecated: false,
-            hidden: false,
-            owner: { [models.Op.or]: [null, company] }
-          },
-          order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
-        });
+      const allApps = await models.AppDetails.findAll({
+        limit,
+        offset,
+        attributes: [
+          "id",
+          "icon",
+          "logo",
+          "disabled",
+          "name",
+          "teaserdescription",
+          "features",
+          "cheapestprice",
+          "avgstars",
+          "cheapestpromo",
+          "needssubdomain",
+          "options"
+        ],
+        where: {
+          disabled: false,
+          deprecated: false,
+          hidden: false,
+          owner: { [models.Op.or]: [null, company] }
+        },
+        order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
+      });
 
-        return allApps;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
+      return allApps;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
-  ),
+  },
 
   fetchAllAppsEnhanced: requiresRights([
     "view-apps",
@@ -107,16 +106,16 @@ export default {
           user: { unitid }
         } = decode(token);
 
-        let query = `SELECT licence_data.*, plan_data.appid FROM licence_data JOIN
-           boughtplan_data ON licence_data.boughtplanid = boughtplan_data.id
+        let query = `SELECT licence_view.*, plan_data.appid FROM licence_view JOIN
+           boughtplan_data ON licence_view.boughtplanid = boughtplan_data.id
            JOIN plan_data ON boughtplan_data.planid = plan_data.id
            JOIN app_data ON plan_data.appid = app_data.id
-           WHERE licence_data.unitid = :unitid AND not app_data.disabled`;
+           WHERE licence_view.unitid = :unitid AND not app_data.disabled`;
 
         const replacements = { unitid };
 
         if (licenceid) {
-          query += " AND licence_data.id = :licenceid";
+          query += " AND licence_view.id = :licenceid";
           replacements.licenceid = licenceid;
         }
 
@@ -164,7 +163,7 @@ export default {
               );
             } else if (licence.key) {
               const domain = await models.sequelize.query(
-                `SELECT ld.id, ld.key FROM licence_data ld INNER JOIN
+                `SELECT ld.id, ld.key FROM licence_view ld INNER JOIN
                   boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
                   bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid LIMIT 1;`,
                 {
@@ -189,7 +188,7 @@ export default {
               } else {
                 throw new PartnerError({
                   message: accountData.description,
-                  internalData: { partner: "DD24" }
+                  internalData: { partner: "RRP" }
                 });
               }
             }
@@ -446,7 +445,7 @@ export default {
       const app = await models.sequelize.query(
         `
       SELECT DISTINCT ad.icon, ad.name as appname, bd.alias, ld.id as licenceid
-      FROM licence_data ld
+      FROM licence_view ld
         INNER JOIN boughtplan_data bd on ld.boughtplanid = bd.id
         INNER JOIN plan_data pd on bd.planid = pd.id
         INNER JOIN app_data ad on pd.appid = ad.id
@@ -805,6 +804,53 @@ export default {
           }
         );
         return stats;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchIssuedLicences: requiresRights(["view-licences"]).createResolver(
+    async (_, { unitid: userId }, { models, token }) => {
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        await companyCheck(company, unitid, userId);
+
+        const issuedLicences = await models.sequelize.query(
+          `SELECT licenceright_data.*, ld.unitid as owner
+          FROM licenceright_data LEFT OUTER JOIN licence_data ld on licenceright_data.licenceid = ld.id
+          WHERE ld.unitid=:userId AND licenceright_data.endtime > NOW();`,
+          { replacements: { userId }, type: models.sequelize.QueryTypes.SELECT }
+        );
+
+        return issuedLicences;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchTempLicences: requiresRights(["view-licences"]).createResolver(
+    async (_, { unitid: userId }, { models, token }) => {
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        await companyCheck(company, unitid, userId);
+
+        const tempLicences = await models.sequelize.query(
+          `SELECT lrd.*, ld.unitid as owner
+            FROM licenceright_data lrd LEFT OUTER JOIN licence_data ld on lrd.licenceid = ld.id
+            WHERE lrd.unitid = :userId AND lrd.licenceid = ld.id AND lrd.endtime > NOW();
+          `,
+          { replacements: { userId }, type: models.sequelize.QueryTypes.SELECT }
+        );
+
+        return tempLicences;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

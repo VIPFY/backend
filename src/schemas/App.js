@@ -157,8 +157,47 @@ export const types = `
     key: JSON
     boughtplanid: BoughtPlan!
     unitid: User
-    layouthorizontal: Int
-    layoutvertical: Int
+    dashboard: Int
+    sidebar: Int
+    view: Boolean!
+    edit: Boolean!
+    delete: Boolean!
+    use: Boolean!
+    vacationstart: Date
+    vacationend: Date
+    tags: [String]
+  }
+
+  type PublicLicence {
+    id: ID!
+    starttime: String!
+    endtime: Date
+    boughtplanid: BoughtPlan!
+    unitid: PublicUser
+    dashboard: Int
+    sidebar: Int
+    tags: [String]
+  }
+
+  type TempLicence {
+    id: ID!
+    licenceid: PublicLicence!
+    view: Boolean!
+    edit: Boolean!
+    delete: Boolean!
+    use: Boolean!
+    starttime: Date!
+    endtime: Date!
+    unitid: SemiPublicUser!
+    owner: SemiPublicUser!
+    tags: [String]!
+  }
+
+  type LicenceLayout {
+    unitid: User!
+    licenceid: Licence!
+    sidebar: Int
+    dashboard: Int
   }
 
   input LicenceInput {
@@ -166,11 +205,30 @@ export const types = `
     disabled: Boolean
     endtime: Date
   }
+  
+  input LicenceRightInput {
+    id: ID!
+    impersonator: ID!
+    view: Boolean
+    edit: Boolean
+    delete: Boolean
+    use: Boolean
+    tags: [String]
+    starttime: Date
+    endtime: Date
+  }
+
+  input LicenceRightUpdateInput {
+    licenceid: ID!
+    starttime: Date
+    endtime: Date
+    user: ID
+  }
 
   input LayoutInput {
     id: ID!
-    layouthorizontal: Int
-    layoutvertical: Int
+    dashboard: Int
+    sidebar: Int
   }
 
   type SimpleStats {
@@ -234,14 +292,20 @@ export const queries = `
   fetchServiceLicences(employees: [ID!], serviceid: ID!): [ServiceLicence]
   fetchCompanyServices: [CompanyService]
   fetchCompanyService(serviceid: ID!): CompanyService
+
+  fetchIssuedLicences(unitid: ID!): [TempLicence!]
+  fetchTempLicences(unitid: ID!): [TempLicence!]
 `;
 
 export const mutations = `
-  updateLayout(layouts: [LayoutInput]!): Boolean!
+  updateLayout(layout: LayoutInput!): Boolean!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
 
   createOwnApp(ssoData: SSOInput!): Licence!
+  giveTemporaryAccess(licences: [LicenceRightInput!]!): TempAccessResponse!
+  updateTemporaryAccess(licence: LicenceRightUpdateInput, rightid: ID!): TempLicence!
+  removeTemporaryAccess(rightid: ID!): Boolean!
 
   # Admin: toogle App between disabled and enabled
   toggleAppStatus(id: ID!): Response!

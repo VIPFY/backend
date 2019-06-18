@@ -567,7 +567,7 @@ export default {
               });
             }
 
-            await models.Licence.update(
+            await models.LicenceData.update(
               { unitid: teamid },
               { transaction: ta }
             );
