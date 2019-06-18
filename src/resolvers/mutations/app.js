@@ -1971,7 +1971,7 @@ export default {
             }
           );
 
-          const licence = await models.Licence.create(
+          const licence = await models.LicenceData.create(
             {
               unitid: touser,
               disabled: false,

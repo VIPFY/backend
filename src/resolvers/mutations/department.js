@@ -961,7 +961,7 @@ export default {
             if (team.services) {
               team.services.forEach(service =>
                 licencepromises.push(
-                  models.Licence.create(
+                  models.LicenceData.create(
                     {
                       unitid: unit.id,
                       disabled: false,
@@ -1023,7 +1023,7 @@ export default {
               { transaction: ta }
             );
 
-            const licence = await models.Licence.create(
+            const licence = await models.LicenceData.create(
               {
                 unitid: unit.id,
                 disabled: false,
