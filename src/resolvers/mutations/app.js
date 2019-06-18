@@ -1057,7 +1057,7 @@ export default {
             }
           }
 
-          const updatedLicence = await models.Licence.update(config, {
+          const updatedLicence = await models.LicenceData.update(config, {
             where: { id: licence[0].id },
             transaction: ta
           });
@@ -1700,7 +1700,7 @@ export default {
             );
 
             licencePromises.push(
-              models.Licence.update(config, {
+              models.LicenceData.update(config, {
                 where: { boughtplanid: boughtPlan.id }
               })
             );
@@ -1786,7 +1786,7 @@ export default {
         } = decode(token);
 
         try {
-          const remove = await models.Licence.update(
+          const remove = await models.LicenceData.update(
             {
               unitid: null,
               options: models.sequelize.literal(
@@ -1823,7 +1823,7 @@ export default {
         } = decode(token);
 
         try {
-          const distribute = await models.Licence.update(
+          const distribute = await models.LicenceData.update(
             {
               unitid: userid
             },
