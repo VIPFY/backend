@@ -354,10 +354,25 @@ export const checkPaymentData = async (unitid, plan, ta) => {
  */
 export const companyCheck = async (company, unitid, employee) => {
   try {
-    const findCompany = models.DepartmentEmployee.findOne({
+    // Do not use DepartmentEmployee any longer use departmentEmployeeTreeView instead
+    /* const findCompany = models.DepartmentEmployee.findOne({
       where: { id: company, employee },
       raw: true
-    });
+    }); */
+
+    const findCompany = await models.sequelize.query(
+      `
+      SELECT level
+      FROM department_tree_view
+      WHERE id = :company and childid = :employee
+    `,
+      {
+        replacements: { company, employee },
+        raw: true,
+        type: models.sequelize.QueryTypes.SELECT
+      }
+    );
+
     const findAdmin = models.User.findOne({ where: { id: unitid }, raw: true });
 
     const [inCompany, admin] = await Promise.all([findCompany, findAdmin]);

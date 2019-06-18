@@ -546,7 +546,7 @@ export default {
             from departmentapps_data join boughtplan_data
           on departmentapps_data.boughtplanid = boughtplan_data.id join plan_data
           on boughtplan_data.planid = plan_data.id group by appid) t full outer join (
-      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_data l
+      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_view l
         join boughtplan_data b on l.boughtplanid = b.id
         join plan_data p on b.planid = p.id
         join app_data a on p.appid = a.id
@@ -584,7 +584,7 @@ export default {
             from departmentapps_data join boughtplan_data
             on departmentapps_data.boughtplanid = boughtplan_data.id join plan_data
           on boughtplan_data.planid = plan_data.id group by appid) t full outer join (
-      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_data l
+      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_view l
         join boughtplan_data b on l.boughtplanid = b.id
         join plan_data p on b.planid = p.id
         join app_data a on p.appid = a.id
