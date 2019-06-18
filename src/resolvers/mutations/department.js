@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import { parseName } from "humanparser";
 import {
   userPicFolder,
   MAX_PASSWORD_LENGTH,
@@ -11,7 +12,8 @@ import {
   createLog,
   createNotification,
   formatHumanName,
-  selectCredit
+  selectCredit,
+  checkPlanValidity
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
@@ -850,6 +852,298 @@ export default {
           await Promise.all([p3, p4]);
 
           return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  createEmployee: requiresRights(["create-employees"]).createResolver(
+    async (_, { addpersonal, addteams, apps }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const { wmail1, wmail2, password, name } = addpersonal;
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const isEmail = wmail1.indexOf("@");
+
+          if (isEmail < 0) {
+            throw new Error("Please enter a valid Email!");
+          }
+
+          const emailInUse = await models.Email.findOne({
+            where: { email: wmail1 }
+          });
+          if (emailInUse) throw new Error("Email already in use!");
+          if (password.length > MAX_PASSWORD_LENGTH) {
+            throw new Error("Password too long");
+          }
+
+          const pwData = await getNewPasswordData(password);
+
+          let unit = await models.Unit.create({}, { transaction: ta });
+          unit = unit.get();
+
+          const username = parseName(name);
+          const p1 = models.Human.create(
+            {
+              title: username.salutation || "",
+              firstname: username.firstName || "",
+              middlename: username.middleName || "",
+              lastname: username.lastName || "",
+              suffix: username.suffix || "",
+              unitid: unit.id,
+              needspasswordchange: true,
+              firstlogin: true,
+              ...pwData,
+              statisticdata: {
+                name
+              }
+            },
+            { where: { unitid }, transaction: ta, raw: true }
+          );
+
+          const p2 = models.Email.create(
+            { email: wmail1, unitid: unit.id, verified: true },
+            { transaction: ta }
+          );
+          let p2a = null;
+          if (wmail2) {
+            p2a = models.Email.create(
+              { email: wmail2, unitid: unit.id, verified: true },
+              { transaction: ta }
+            );
+          }
+          const teampromises = [];
+          teampromises.push(
+            models.ParentUnit.create(
+              { parentunit: company, childunit: unit.id },
+              { transaction: ta }
+            )
+          );
+          addteams.forEach(team =>
+            teampromises.push(
+              models.ParentUnit.create(
+                { parentunit: team.unitid.id, childunit: unit.id },
+                { transaction: ta }
+              )
+            )
+          );
+          Promise.all(teampromises);
+
+          const p4 = models.Human.findOne({ where: { unitid } });
+
+          const p5 = models.DepartmentData.findOne({
+            where: { unitid: company }
+          });
+
+          const p6 = models.Right.create(
+            {
+              holder: unit.id,
+              forunit: company,
+              type: "view-apps"
+            },
+            { transaction: ta }
+          );
+
+          //distribute licences
+
+          const licencepromises = [];
+
+          //Teamlicences
+
+          addteams.forEach(team => {
+            if (team.services) {
+              team.services.forEach(service =>
+                licencepromises.push(
+                  models.Licence.create(
+                    {
+                      unitid: unit.id,
+                      disabled: false,
+                      boughtplanid: service.id,
+                      agreed: true,
+                      key: {
+                        email: service.setup.email,
+                        password: service.setup.password,
+                        subdomain: service.setup.subdomain,
+                        external: true
+                      },
+                      options: service.setupfinished
+                        ? {
+                            teamlicence: team.unitid.id
+                          }
+                        : {
+                            teamlicence: team.unitid.id,
+                            nosetup: true
+                          }
+                    },
+                    { transaction: ta }
+                  )
+                )
+              );
+            }
+          });
+
+          await Promise.all(licencepromises);
+
+          //SingleLicences
+
+          const mainapppromise = apps.map(async app => {
+            const plan = await models.Plan.findOne({
+              where: { appid: app.id, options: { external: true } },
+              raw: true
+            });
+
+            if (!plan) {
+              throw new Error(
+                "This App is not integrated to handle external Accounts yet."
+              );
+            }
+            await checkPlanValidity(plan);
+
+            const boughtPlan = await models.BoughtPlan.create(
+              {
+                planid: plan.id,
+                alias: app.name,
+                disabled: false,
+                buyer: unitid,
+                payer: company,
+                usedby: company,
+                totalprice: 0,
+                key: {
+                  external: true,
+                  externaltotalprice: 0
+                }
+              },
+              { transaction: ta }
+            );
+
+            const licence = await models.Licence.create(
+              {
+                unitid: unit.id,
+                disabled: false,
+                boughtplanid: boughtPlan.id,
+                agreed: true,
+                key: {
+                  email: app.email,
+                  password: app.password,
+                  subdomain: app.subdomain,
+                  external: true
+                }
+              },
+              { transaction: ta }
+            );
+          });
+
+          await Promise.all(mainapppromise);
+
+          let human = null;
+          let newEmail = null;
+          let newEmail2 = null;
+          let requester = null;
+          let companyObj = null;
+          let rights = null;
+
+          if (p2a) {
+            [
+              human,
+              newEmail,
+              newEmail2,
+              requester,
+              companyObj,
+              rights
+            ] = await Promise.all([p1, p2, p2a, p4, p5, p6]);
+          } else {
+            [
+              human,
+              newEmail,
+              requester,
+              companyObj,
+              rights
+            ] = await Promise.all([p1, p2, p4, p5, p6]);
+          }
+          const humanData = human.get();
+          const newEmailData = newEmail.get();
+
+          await createLog(
+            ip,
+            "addCreateEmployee",
+            { unit, humanData, newEmailData, rights },
+            unitid,
+            ta
+          );
+
+          // brand new person, but better to be too careful
+          addteams.forEach(team =>
+            resetCompanyMembershipCache(team.unitid.id, unit.id)
+          );
+          resetCompanyMembershipCache(company, unit.id);
+
+          await sendEmail({
+            templateId: "d-e049cce50d20428d81f011e521605d4c",
+            fromName: "VIPFY",
+            personalizations: [
+              {
+                to: [{ email: wmail1, name: username.fullName }],
+                dynamic_template_data: {
+                  name: username.fullName,
+                  creator: formatHumanName(requester),
+                  companyname: companyObj.name,
+                  email: wmail1,
+                  password
+                }
+              }
+            ]
+          });
+
+          await createNotification({
+            receiver: unitid,
+            message: `${username.fullName} was successfully created`,
+            icon: "user-plus",
+            link: "employeemanager",
+            changed: []
+          });
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+  deleteEmployee: requiresRights(["delete-employees"]).createResolver(
+    async (parent, { employeeid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+          await models.Unit.update(
+            { deleted: true },
+            { where: { id: employeeid } },
+            { transaction: ta, returning: true }
+          );
+
+          await createLog(
+            ip,
+            "fireEmployee",
+            {
+              employeeid
+            },
+            unitid.id,
+            ta
+          );
+
+          resetCompanyMembershipCache(company, unitid.id);
+
+          return true;
         } catch (err) {
           throw new NormalError({
             message: err.message,

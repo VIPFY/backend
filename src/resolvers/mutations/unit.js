@@ -5,6 +5,7 @@ import { NormalError } from "../../errors";
 import {
   createLog,
   companyCheck,
+  parentAdminCheck,
   createNotification
 } from "../../helpers/functions";
 import { uploadUserImage } from "../../services/aws";
@@ -12,7 +13,7 @@ import { uploadUserImage } from "../../services/aws";
 
 export default {
   updateProfilePic: requiresAuth.createResolver(
-    async (parent, { file }, { models, token, ip }) =>
+    async (_, { file }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -20,12 +21,13 @@ export default {
           } = decode(token);
 
           const parsedFile = await file;
+
           const profilepicture = await uploadUserImage(
             parsedFile,
             userPicFolder
           );
 
-          const oldUnit = await models.Unit.findOne({
+          const user = await models.User.findOne({
             where: { id: unitid },
             raw: true
           });
@@ -45,12 +47,60 @@ export default {
           await createLog(
             ip,
             "updateProfilePic",
-            { oldUnit, updatedUnit: updatedUnit[1] },
+            { user, updatedUnit: updatedUnit[1] },
             unitid,
             ta
           );
 
-          return profilepicture;
+          return { ...user, profilepicture };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  updateEmployeePic: requiresRights(["edit-user"]).createResolver(
+    async (_, { file, unitid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid: adminid }
+          } = decode(token);
+
+          const parsedFile = await file;
+
+          const profilepicture = await uploadUserImage(
+            parsedFile,
+            userPicFolder
+          );
+
+          const oldUnit = await models.Unit.findOne({
+            where: { id: unitid },
+            raw: true
+          });
+
+          const updatedUnit = await models.Unit.update(
+            { profilepicture },
+            { where: { id: unitid }, returning: true, transaction: ta }
+          );
+
+          const p1 = createLog(
+            ip,
+            "updateEmployeePic",
+            { oldUnit, updatedUnit: updatedUnit[1] },
+            adminid,
+            ta
+          );
+
+          const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
+
+          const [, user] = await Promise.all([p1, p2]);
+          const employee = await parentAdminCheck(user);
+
+          return { ...employee, profilepicture };
         } catch (err) {
           throw new NormalError({
             message: err.message,

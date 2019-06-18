@@ -157,7 +157,6 @@ export default {
           .asPromise();
 
         res.json.result.name = name;
-        console.log(res.json.result);
         return res.json.result;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });

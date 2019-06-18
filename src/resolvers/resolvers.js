@@ -67,7 +67,11 @@ const Mutation = Object.assign(
 
 const unit = { unitid: "Unit" };
 const unitAndPlan = { sponsor: "Unit", planid: "Plan" };
-const developerAndSupport = { developer: "Unit", supportunit: "Unit" };
+const developerAndSupport = {
+  developer: "Unit",
+  supportunit: "Unit",
+  owner: "Unit"
+};
 const plans = { appid: "App", gotoplan: "Plan" };
 
 export default {
@@ -103,6 +107,12 @@ export default {
   }),
   Email: find(unit),
   Licence: find({ unitid: "User", boughtplanid: "BoughtPlan" }),
+  NLicence: find({
+    unitid: "User",
+    boughtplanid: "BoughtPlan",
+    teamlicence: "Team",
+    teamaccount: "Team"
+  }),
   Log: find({ user: "User", sudoer: "User" }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
@@ -126,7 +136,32 @@ export default {
   Right: find({ holder: "Unit", forunit: "Unit" }),
   SimpleStats: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
-  Team: find(unit),
+  Team: find({
+    unitid: "Unit",
+    employees: "[User]",
+    licences: "[Licence]",
+    services: "[BoughtPlan]"
+  }),
+  AppOverview: find({
+    app: "App",
+    singles: "[SingleLicence]",
+    teams: "[Team]"
+  }),
+  SingleLicence: find({
+    employee: "User",
+    licence: "Licence"
+  }),
+  ServiceLicence: find({
+    licence: "Licence"
+  }),
+  CompanyService: find({
+    app: "App",
+    licences: "[Licence]"
+  }),
+  TeamBoughtPlan: find({
+    departmentid: "Team",
+    boughtplanid: "BoughtPlan"
+  }),
   Upload: GraphQLUpload,
   User: find({ company: "Department", emails: "[Email]" }),
   SemiPublicUser: find({

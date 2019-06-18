@@ -259,7 +259,7 @@ export default {
     { models, SECRET, ip, token }
   ) =>
     models.sequelize.transaction(async ta => {
-      console.log(
+      /* console.log(
         "PROPS",
         country,
         vatoption,
@@ -267,7 +267,7 @@ export default {
         placeId,
         ownAdress,
         username
-      );
+      ); */
       try {
         const {
           user: { unitid, company }

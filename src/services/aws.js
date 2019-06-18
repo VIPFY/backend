@@ -2,6 +2,7 @@ import AWS from "aws-sdk";
 import fs from "fs";
 import moment from "moment";
 import { formatFilename } from "../helpers/functions";
+import { teamPicFolder, userPicFolder } from "../constants";
 
 const s3 = new AWS.S3({ region: "eu-central-1" });
 
@@ -53,6 +54,28 @@ export const uploadUserImage = async ({ stream, filename }, folder) => {
   }
 };
 
+export const uploadTeamImage = async ({ stream, filename }, folder) => {
+  const ourFilename = formatFilename(filename);
+  const Key = `${folder}/${ourFilename}`;
+  const Bucket = "userimages.vipfy.store";
+
+  try {
+    const Body = stream;
+
+    const params = {
+      Key,
+      Body,
+      Bucket
+    };
+
+    await s3.upload(params).promise();
+
+    return Key;
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
 export const uploadAppImage = async (
   { stream, filename },
   folder,
@@ -79,20 +102,37 @@ export const uploadAppImage = async (
   }
 };
 
-export const deleteUserImage = async (file, folder) => {
+export const deleteUserImage = async file => {
   const params = {
     Key: file,
     Bucket: "userimages.vipfy.store"
   };
-  return s3.deleteObject(params).promise;
+  // Use the fucking callback because Amazon can't handle promises
+  return s3.deleteObject(params, (err, data) => {
+    if (err) {
+      throw new Error(err);
+    }
+    // an error occurred
+    else {
+      console.log("I AM AMAZON S3", data);
+    } // successful response
+  });
 };
 
-export const deleteAppImage = async (file, folder) => {
+export const deleteAppImage = async file => {
   const params = {
     Key: file,
     Bucket: "appimages.vipfy.store"
   };
-  return s3.deleteObject(params).promise;
+  return s3.deleteObject(params, (err, data) => {
+    if (err) {
+      throw new Error(err);
+    }
+    // an error occurred
+    else {
+      console.log("I AM AMAZON S3", data);
+    } // successful response
+  });
 };
 
 /**
