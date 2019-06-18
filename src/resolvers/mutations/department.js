@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import { parseName } from "humanparser";
 import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { getNewPasswordData } from "../../helpers/auth";
@@ -854,8 +855,7 @@ export default {
     async (_, { addpersonal, addteams, apps }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
-          console.log("INPUTS", addpersonal, addteams, apps);
-          const { wmail1, password, name } = addpersonal;
+          const { wmail1, wmail2, password, name } = addpersonal;
           const {
             user: { unitid, company }
           } = decode(token);
@@ -879,35 +879,36 @@ export default {
           let unit = await models.Unit.create({}, { transaction: ta });
           unit = unit.get();
 
-          const namearray = name.split(" ");
-          let middlename = "";
-          console.log("Namearray", namearray);
-          if (namearray.length > 2) {
-            const middlearray = namearray.splice(1, namearray.length - 2);
-            middlename = middlearray.join(" ");
-          }
-          console.log("Middlename", middlename);
-
+          const username = parseName(name);
           const p1 = models.Human.create(
             {
-              firstname: namearray[0],
-              middlename,
-              lastname:
-                namearray.length > 1 ? namearray[namearray.length - 1] : "",
-              // title: name.title,
-              // suffix: name.suffix,
+              title: username.salutation || "",
+              firstname: username.firstName || "",
+              middlename: username.middleName || "",
+              lastname: username.lastName || "",
+              suffix: username.suffix || "",
               unitid: unit.id,
               needspasswordchange: true,
               firstlogin: true,
-              ...pwData
+              ...pwData,
+              statisticdata: {
+                name
+              }
             },
-            { transaction: ta }
+            { where: { unitid }, transaction: ta, raw: true }
           );
 
           const p2 = models.Email.create(
             { email: wmail1, unitid: unit.id, verified: true },
             { transaction: ta }
           );
+          let p2a = null;
+          if (wmail2) {
+            p2a = models.Email.create(
+              { email: wmail2, unitid: unit.id, verified: true },
+              { transaction: ta }
+            );
+          }
           const teampromises = [];
           teampromises.push(
             models.ParentUnit.create(
@@ -983,7 +984,6 @@ export default {
           //SingleLicences
 
           const mainapppromise = apps.map(async app => {
-            console.log("APP", app);
             const plan = await models.Plan.findOne({
               where: { appid: app.id, options: { external: true } },
               raw: true
@@ -994,9 +994,7 @@ export default {
                 "This App is not integrated to handle external Accounts yet."
               );
             }
-            console.log("BEFORE CHECK", plan);
             await checkPlanValidity(plan);
-            console.log("AFTER CHECK", plan);
 
             const boughtPlan = await models.BoughtPlan.create(
               {
@@ -1014,7 +1012,6 @@ export default {
               },
               { transaction: ta }
             );
-            console.log("boughtPlan", app, boughtPlan);
 
             const licence = await models.Licence.create(
               {
@@ -1035,13 +1032,31 @@ export default {
 
           await Promise.all(mainapppromise);
 
-          const [
-            human,
-            newEmail,
-            requester,
-            companyObj,
-            rights
-          ] = await Promise.all([p1, p2, p4, p5, p6]);
+          let human = null;
+          let newEmail = null;
+          let newEmail2 = null;
+          let requester = null;
+          let companyObj = null;
+          let rights = null;
+
+          if (p2a) {
+            [
+              human,
+              newEmail,
+              newEmail2,
+              requester,
+              companyObj,
+              rights
+            ] = await Promise.all([p1, p2, p2a, p4, p5, p6]);
+          } else {
+            [
+              human,
+              newEmail,
+              requester,
+              companyObj,
+              rights
+            ] = await Promise.all([p1, p2, p4, p5, p6]);
+          }
           const humanData = human.get();
           const newEmailData = newEmail.get();
 
@@ -1059,14 +1074,14 @@ export default {
           );
           resetCompanyMembershipCache(company, unit.id);
 
-          /*await sendEmail({
+          await sendEmail({
             templateId: "d-e049cce50d20428d81f011e521605d4c",
             fromName: "VIPFY",
             personalizations: [
               {
-                to: [{ email: wmail1, name: formatHumanName(name) }],
+                to: [{ email: wmail1, name: username.fullName }],
                 dynamic_template_data: {
-                  name: formatHumanName(name),
+                  name: username.fullName,
                   creator: formatHumanName(requester),
                   companyname: companyObj.name,
                   email: wmail1,
@@ -1074,7 +1089,15 @@ export default {
                 }
               }
             ]
-          });*/
+          });
+
+          await createNotification({
+            receiver: unitid,
+            message: `${username.fullName} was successfully created`,
+            icon: "user-plus",
+            link: "employeemanager",
+            changed: []
+          });
 
           return true;
         } catch (err) {

@@ -119,6 +119,7 @@ export const formatHumanName = human =>
  * @param {string} link
  */
 export const createNotification = async (notificationBody, transaction) => {
+  console.log("SENDED Notification to");
   try {
     const sendtime = getDate();
 

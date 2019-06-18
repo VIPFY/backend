@@ -5,6 +5,7 @@ import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import {
   createLog,
+  createNotification,
   teamCheck,
   companyCheck,
   checkPlanValidity
@@ -130,9 +131,7 @@ export default {
                 "This App is not integrated to handle external Accounts yet."
               );
             }
-            console.log("BEFORE CHECK", plan);
             await checkPlanValidity(plan);
-            console.log("AFTER CHECK", plan);
 
             const boughtPlan = await models.BoughtPlan.create(
               {
@@ -151,14 +150,10 @@ export default {
               { transaction: ta }
             );
 
-            console.log("AFTER Boughtplan");
-
             await models.DepartmentApp.create(
               { departmentid: unit.dataValues.id, boughtplanid: boughtPlan.id },
               { transaction: ta }
             );
-
-            console.log("AFTER DepartmentApp");
 
             service.employees.forEach(employee =>
               servicepromises.push(
@@ -188,7 +183,6 @@ export default {
               )
             );
 
-            console.log("AFTER Services");
             await Promise.all(servicepromises);
           }
 
@@ -199,6 +193,21 @@ export default {
             unitid,
             ta
           );
+
+          const employeeNotifypromises = [];
+          addemployees.forEach(employee =>
+            employeeNotifypromises.push(
+              createNotification({
+                receiver: employee.id,
+                message: `You are now assigned to team ${name}`,
+                icon: "users",
+                link: "teammanger",
+                changed: ["ownLicences"]
+              })
+            )
+          );
+
+          await Promise.all(employeeNotifypromises);
 
           return true;
         } catch (err) {
@@ -356,6 +365,23 @@ export default {
             ta
           );
 
+          if (team[0] && team[0].employees) {
+            const employeeNotifypromises = [];
+            team[0].employees.forEach(employee =>
+              employeeNotifypromises.push(
+                createNotification({
+                  receiver: employee.id,
+                  message: `A Team is deleted`,
+                  icon: "users",
+                  link: "teammanger",
+                  changed: ["ownLicences"]
+                })
+              )
+            );
+
+            await Promise.all(employeeNotifypromises);
+          }
+
           return true;
         } catch (err) {
           throw new NormalError({
@@ -366,6 +392,7 @@ export default {
       })
   ),
 
+  // TODO Remove?
   updateTeamMembers: requiresRights(["edit-team"]).createResolver(
     async (parent, { members, teamid, action }, { models, token, ip }) => {
       try {
@@ -422,7 +449,7 @@ export default {
       }
     }
   ),
-
+  // TODO Remove?
   updateTeamInfos: requiresRights(["edit-team"]).createResolver(
     async (parent, { teamid, data }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
@@ -515,7 +542,7 @@ export default {
         }
       })
   ),
-
+  // TODO implement to work
   addTeamLicence: requiresRights(["edit-team"]).createResolver(
     async (parent, { teamid, boughtplanid }, { models, token, ip }) => {
       try {
@@ -637,6 +664,14 @@ export default {
             ta
           );
 
+          await createNotification({
+            receiver: userid,
+            message: `You have been removed from a team`,
+            icon: "user-minus",
+            link: "teammanger",
+            changed: ["ownLicences"]
+          });
+
           return true;
         } catch (err) {
           throw new NormalError({
@@ -721,6 +756,23 @@ export default {
             ta
           );
 
+          if (team[0] && team[0].employees) {
+            const employeeNotifypromises = [];
+            team[0].employees.forEach(employee =>
+              employeeNotifypromises.push(
+                createNotification({
+                  receiver: employee.id,
+                  message: `A service has been removed from a team`,
+                  icon: "minus-circle",
+                  link: "teammanger",
+                  changed: ["ownLicences"]
+                })
+              )
+            );
+
+            await Promise.all(employeeNotifypromises);
+          }
+
           return true;
         } catch (err) {
           throw new NormalError({
@@ -792,6 +844,14 @@ export default {
             unitid,
             ta
           );
+
+          await createNotification({
+            receiver: userid,
+            message: `You have been added to a team`,
+            icon: "user-plus",
+            link: "teammanger",
+            changed: ["ownLicences"]
+          });
 
           return true;
         } catch (err) {
@@ -891,7 +951,20 @@ export default {
 
           await Promise.all(promises);
 
-          //TODO notfiy user
+          const employeeNotifypromises = [];
+          employees.forEach(employee =>
+            employeeNotifypromises.push(
+              createNotification({
+                receiver: employee.id,
+                message: `A service has been added to a team`,
+                icon: "plus-circle",
+                link: "teammanger",
+                changed: ["ownLicences"]
+              })
+            )
+          );
+
+          await Promise.all(employeeNotifypromises);
 
           await createLog(
             ip,
