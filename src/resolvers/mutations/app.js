@@ -1627,6 +1627,7 @@ export default {
                 {
                   receiver: licence.impersonator,
                   message: `You got vacation access granted for a new Service`,
+                  link: "dashboard",
                   icon: "th",
                   changed: ["foreignLicences"]
                 },
