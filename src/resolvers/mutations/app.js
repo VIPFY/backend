@@ -578,7 +578,7 @@ export default {
           `INSERT INTO timetracking_data (licenceid, unitid, boughtplanid, day, minutesspent)
             VALUES (:licenceid, :unitid, :boughtplanid, now(), :minutesspent)
             ON CONFLICT (licenceid, unitid, day)
-            DO UPDATE SET minutesspent = timetracking_data.minutesspent  EXCLUDED.minutesspent
+            DO UPDATE SET minutesspent = timetracking_data.minutesspent + EXCLUDED.minutesspent
             `,
           {
             replacements: {
