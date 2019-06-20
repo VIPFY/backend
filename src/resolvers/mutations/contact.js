@@ -173,12 +173,17 @@ export default {
    * @returns {object} newEmail The newly generated Email.
    */
   createEmail: requiresRights(["create-email"]).createResolver(
-    async (parent, { emailData, forCompany }, { models, ip, token }) =>
+    async (_, { emailData, forCompany }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company, unitid }
           } = decode(token);
+          const emailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+          if (!emailData.email.match(emailRegex)) {
+            throw new Error("This is not a valid email!");
+          }
 
           // Necessary for correct logs
           let id;
@@ -300,7 +305,7 @@ export default {
    * @returns {object}
    */
   deleteEmail: requiresRights(["delete-email"]).createResolver(
-    async (parent, { email, forCompany }, { models, ip, token }) => {
+    async (_, { email, forCompany }, { models, ip, token }) => {
       try {
         const {
           user: { company, unitid }
@@ -325,7 +330,10 @@ export default {
           throw new Error("The email doesn't belong to this user!");
         }
 
-        if (!userHasAnotherEmail || userHasAnotherEmail.length < 2) {
+        if (
+          !forCompany &&
+          (!userHasAnotherEmail || userHasAnotherEmail.length < 2)
+        ) {
           throw new Error(
             "This is the users last email address. He needs at least one!"
           );
