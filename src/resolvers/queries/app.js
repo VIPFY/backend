@@ -855,5 +855,42 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  bulkUpdateLayout: requiresAuth.createResolver(
+    async (_, { layouts }, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        const data = layouts.map(layout => {
+          layout.unitid = unitid;
+          layout.licenceid = layout.id;
+          delete layout.id;
+
+          return layout;
+        });
+
+        // const promises = [];
+
+        // layouts.forEach(layout => {
+        //   const { id: licenceid, ...data } = layout;
+
+        await models.LicenceLayout.bulkCreate(data);
+
+        //   promises.push(newLayout);
+        // });
+
+        // await Promise.all(promises);
+
+        return true;
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
   )
 };
