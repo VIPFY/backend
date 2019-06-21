@@ -31,7 +31,7 @@ export default {
   ),
 
   fetchEmails: requiresRights(["view-emails"]).createResolver(
-    async (parent, { forCompany, tag }, { models, token }) => {
+    async (_, { forCompany, tag }, { models, token }) => {
       try {
         const {
           user: { unitid, company }
