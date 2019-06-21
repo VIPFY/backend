@@ -295,6 +295,7 @@ export const queries = `
 
   fetchIssuedLicences(unitid: ID!): [TempLicence!]
   fetchTempLicences(unitid: ID!): [TempLicence!]
+  bulkUpdateLayout(layouts: [LayoutInput!]!): Boolean!
 `;
 
 export const mutations = `
