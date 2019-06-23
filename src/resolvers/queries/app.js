@@ -329,9 +329,9 @@ export default {
               COALESCE(l.used, 0)           AS licencesused,
               COALESCE(l.total, 0)          AS licencestotal
             FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit =
-                                                                  bp.usedby AND r.type = 'canuselicences' AND
-                                                                  r.holder = :departmentid)
-                                                                  OR bp.usedby = :departmentid
+                        bp.usedby AND r.type = 'canuselicences' AND
+                        r.holder = :departmentid)
+                        OR bp.usedby = :departmentid
               INNER JOIN plan_data p
                 on bp.planid = p.id
               INNER JOIN app_data a on p.appid = a.id

@@ -1094,7 +1094,7 @@ export default {
   ),
 
   deleteLicenceAt: requiresRights(["delete-licences"]).createResolver(
-    async (parent, { licenceid, time }, { models, token, ip }) =>
+    async (_, { licenceid, time }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
