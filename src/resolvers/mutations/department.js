@@ -862,7 +862,7 @@ export default {
   ),
 
   createEmployee: requiresRights(["create-employees"]).createResolver(
-    async (_, { addpersonal, addteams, apps }, { models, token, ip }) =>
+    async (_, { file, addpersonal, addteams, apps }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const { wmail1, wmail2, password, name } = addpersonal;
@@ -879,14 +879,26 @@ export default {
           const emailInUse = await models.Email.findOne({
             where: { email: wmail1 }
           });
+
           if (emailInUse) throw new Error("Email already in use!");
           if (password.length > MAX_PASSWORD_LENGTH) {
             throw new Error("Password too long");
           }
 
+          const data = {};
+
+          if (file) {
+            const parsedFile = await file;
+            const profilepicture = await uploadUserImage(
+              parsedFile,
+              userPicFolder
+            );
+            data.profilepicture = profilepicture;
+          }
+
           const pwData = await getNewPasswordData(password);
 
-          let unit = await models.Unit.create({}, { transaction: ta });
+          let unit = await models.Unit.create(data, { transaction: ta });
           unit = unit.get();
 
           const username = parseName(name);
@@ -951,11 +963,11 @@ export default {
             { transaction: ta }
           );
 
-          //distribute licences
+          // distribute licences
 
           const licencepromises = [];
 
-          //Teamlicences
+          // Teamlicences
 
           addteams.forEach(team => {
             if (team.services) {
