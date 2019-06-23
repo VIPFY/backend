@@ -1,5 +1,6 @@
 import { decode, sign } from "jsonwebtoken";
 import uuid from "uuid";
+import moment from "moment";
 // import { getLoginData } from "@vipfy-private/weebly";
 import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
@@ -464,7 +465,7 @@ export default {
   },
 
   fetchBoughtplanUsagePerUser: requiresRights(["view-usage"]).createResolver(
-    async (parent, { starttime, endtime, boughtplanid }, { models, token }) => {
+    async (_, { starttime, endtime, boughtplanid }, { models, token }) => {
       try {
         const {
           user: { company }
@@ -475,9 +476,9 @@ export default {
                   tt.unitid unit,
                   sum(minutesspent) totalminutes,
                   array_to_json(array_agg(CASE
-                                            WHEN ld.id IS NULL OR ld.unitid != tt.unitid THEN 'unknown date'
-                                            WHEN ld.endtime < now() THEN to_char(ld.endtime, 'YYYY-MM-DD')
-                                            ELSE NULL END)) licenceenddates
+                      WHEN ld.id IS NULL OR ld.unitid != tt.unitid THEN 'unknown date'
+                      WHEN ld.endtime < now() THEN to_char(ld.endtime, 'YYYY-MM-DD')
+                      ELSE NULL END)) licenceenddates
           FROM timetracking_data tt
                   LEFT OUTER JOIN licence_data ld on tt.licenceid = ld.id
                   JOIN department_employee_view dev ON tt.unitid = dev.employee
@@ -509,14 +510,15 @@ export default {
       try {
         const stats = await models.sequelize.query(
           `
-          SELECT appid app, sum(minutesspent) totalminutes
+          SELECT appid app, lv.options, sum(minutesspent) totalminutes
           FROM timetracking_data tt
                 JOIN boughtplan_data bp on tt.boughtplanid = bp.id
                 JOIN plan_data pd on bp.planid = pd.id
                 JOIN department_employee_view dev ON tt.unitid = dev.employee
-          WHERE day >= date_trunc('month', current_date)
+                JOIN licence_view lv ON tt.licenceid = lv.id
+                WHERE day >= date_trunc('month', current_date)
             AND dev.id = :company
-          GROUP BY appid
+          GROUP BY appid, lv.options
           ORDER BY appid;
         `,
           {
@@ -525,6 +527,7 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
+
         return stats;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -781,20 +784,28 @@ export default {
   ),
 
   fetchTotalAppUsage: requiresRights(["view-usage"]).createResolver(
-    async (parent, args, { models, token }) => {
+    async (_, { starttime, endtime }, { models, token }) => {
       const {
         user: { company }
       } = decode(token);
       try {
+        let interval = "";
+        if (starttime && endtime) {
+          interval = `day >= '${moment(starttime).format()}' :: date
+          AND day < '${moment(endtime).format()}' :: date
+          AND`;
+        }
+
         const stats = await models.sequelize.query(
           `
-          SELECT appid app, sum(minutesspent) totalminutes
+          SELECT appid app, lv.options, sum(minutesspent) totalminutes
           FROM timetracking_data tt
                 JOIN boughtplan_data bp on tt.boughtplanid = bp.id
                 JOIN plan_data pd on bp.planid = pd.id
                 JOIN department_employee_view dev ON tt.unitid = dev.employee
-          WHERE dev.id = :company
-          GROUP BY appid
+                JOIN licence_view lv ON tt.licenceid = lv.id
+          WHERE ${interval} dev.id = :company
+          GROUP BY appid, lv.options
           ORDER BY appid;
         `,
           {
@@ -803,6 +814,8 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
+
+        console.log("LOG: stats", stats);
         return stats;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });

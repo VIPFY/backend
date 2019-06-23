@@ -172,6 +172,7 @@ export const types = `
     id: ID!
     starttime: String!
     endtime: Date
+    options: JSON
     boughtplanid: BoughtPlan!
     unitid: PublicUser
     dashboard: Int
@@ -244,6 +245,7 @@ export const types = `
 
   type AppUsage {
     app: App!
+    options: JSON
     totalminutes: Int
   }
 
@@ -282,7 +284,7 @@ export const queries = `
 
   # The total minutes spend per app, this month, combined for all users of the company
   fetchMonthlyAppUsage: [AppUsage]!
-  fetchTotalAppUsage: [AppUsage]!
+  fetchTotalAppUsage(starttime: Date, endtime: Date): [AppUsage]!
 
   # Total time spend in a specific boughtplan at some time, broken down by user
   fetchBoughtplanUsagePerUser(starttime: Date!, endtime: Date!, boughtplanid: ID!): [BoughtplanUsagePerUser]!
