@@ -763,7 +763,7 @@ export default {
     }),
 
   changeAdminStatus: requiresRights(["edit-rights"]).createResolver(
-    async (parent, { unitid, admin }, { models, token, ip }) =>
+    async (_, { unitid, admin }, { models, token, ip }) =>
       models.sequelize.transaction(async transaction => {
         try {
           const {
@@ -793,7 +793,7 @@ export default {
             await Promise.all([p1, p2]);
           }
 
-          return { ok: true };
+          return { id: unitid, status: admin };
         } catch (err) {
           throw new NormalError({
             message: err.message,

@@ -135,7 +135,7 @@ export const mutations = `
   saveProposalData(data: ProposalInput!): Response!
 
   # (un)makes user an admin of their company
-  changeAdminStatus(unitid: ID!, admin: Boolean!): Response!
+  changeAdminStatus(unitid: ID!, admin: Boolean!): StatusResponse!
 
   # force the given users to change their password on next login
   forcePasswordChange(userids: [ID]!): Response!
