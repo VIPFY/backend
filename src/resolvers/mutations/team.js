@@ -8,9 +8,12 @@ import {
   createNotification,
   teamCheck,
   companyCheck,
-  checkPlanValidity
+  checkPlanValidity,
+  formatHumanName
 } from "../../helpers/functions";
 import { uploadTeamImage, deleteUserImage } from "../../services/aws";
+import { createHuman } from "../../helpers/employee";
+import { sendEmail } from "../../helpers/email";
 
 export default {
   addTeam: requiresRights(["create-team"]).createResolver(
@@ -98,17 +101,84 @@ export default {
 
           //add employees
 
+          console.log("before", addemployees);
+
           const employeepromises = [];
-          addemployees.forEach(employee =>
-            employeepromises.push(
-              models.ParentUnit.create(
-                { parentunit: unit.dataValues.id, childunit: employee.id },
-                { transaction: ta }
-              )
-            )
-          );
+          let counter = 0;
+          const newemployees = [];
+          for await (const employee of addemployees) {
+            if (employee.id == "new") {
+              const userid = await createHuman(
+                models,
+                ta,
+                company,
+                employee.name,
+                employee.password,
+                employee.wmail1,
+                employee.wmail2
+              );
+
+              console.log("Created Human", userid);
+
+              employee.id = userid;
+              newemployees.push({ email: employee.wmail1, id: userid });
+
+              employeepromises.push(
+                models.ParentUnit.create(
+                  { parentunit: unit.dataValues.id, childunit: userid },
+                  { transaction: ta }
+                )
+              );
+              const e1 = models.Human.findOne({ where: { unitid } });
+
+              const e2 = models.DepartmentData.findOne({
+                where: { unitid: company }
+              });
+
+              const [requester, companyObj] = await Promise.all([e1, e2]);
+              await sendEmail({
+                templateId: "d-e049cce50d20428d81f011e521605d4c",
+                fromName: "VIPFY",
+                personalizations: [
+                  {
+                    to: [
+                      {
+                        email: employee.wmail1,
+                        name: employee.name
+                      }
+                    ],
+                    dynamic_template_data: {
+                      name: employee.name,
+                      creator: formatHumanName(requester),
+                      companyname: companyObj.name,
+                      email: employee.wmail1,
+                      password: employee.password
+                    }
+                  }
+                ]
+              });
+
+              await createNotification({
+                receiver: unitid,
+                message: `${employee.name} was successfully created`,
+                icon: "user-plus",
+                link: "employeemanager",
+                changed: []
+              });
+              counter++;
+            } else {
+              employeepromises.push(
+                models.ParentUnit.create(
+                  { parentunit: unit.dataValues.id, childunit: employee.id },
+                  { transaction: ta }
+                )
+              );
+            }
+          }
 
           await Promise.all(employeepromises);
+
+          console.log("after", addemployees);
 
           //services aufsetzen
 
@@ -155,11 +225,15 @@ export default {
               { transaction: ta }
             );
 
-            service.employees.forEach(employee =>
+            service.employees.forEach(employee => {
+              console.log("CREATE LICENCE", employee, service);
+              const empid = newemployees.find(e => e.email == employee.wmail1)
+                ? newemployees.find(e => e.email == employee.wmail1).id
+                : employee.id;
               servicepromises.push(
                 models.LicenceData.create(
                   {
-                    unitid: employee.id,
+                    unitid: empid,
                     disabled: false,
                     boughtplanid: boughtPlan.id,
                     agreed: true,
@@ -180,8 +254,8 @@ export default {
                   },
                   { transaction: ta }
                 )
-              )
-            );
+              );
+            });
 
             await Promise.all(servicepromises);
           }
@@ -787,15 +861,65 @@ export default {
     async (parent, addInformation, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
+          console.log("addInformation", addInformation);
           const {
             user: { unitid, company }
           } = decode(token);
 
-          const { teamid, services, userid } = addInformation;
+          let newEmployee = false;
+          const { services, newEmployeeInfo, newteam } = addInformation;
+          let { teamid, userid } = addInformation;
 
           await teamCheck(company, teamid);
 
-          //Nutzer add to team
+          if (userid == "new") {
+            newEmployee = true;
+            userid = await createHuman(
+              models,
+              ta,
+              company,
+              newEmployeeInfo.name,
+              newEmployeeInfo.password,
+              newEmployeeInfo.wmail1,
+              newEmployeeInfo.wmail2
+            );
+          }
+
+          if (teamid == "new") {
+            const { name, picture, ...teamdata } = newteam;
+            const unitArgs = {};
+            if (picture) {
+              const parsedFile = await picture;
+
+              const profilepicture = await uploadTeamImage(
+                parsedFile,
+                teamPicFolder
+              );
+
+              unitArgs.profilepicture = profilepicture;
+            }
+            const unit = await models.Unit.create(unitArgs, {
+              transaction: ta
+            });
+
+            const p1 = models.DepartmentData.create(
+              {
+                unitid: unit.dataValues.id,
+                name,
+                internaldata: { created: Date.now(), ...teamdata }
+              },
+              { transaction: ta }
+            );
+
+            const p2 = models.ParentUnit.create(
+              { parentunit: company, childunit: unit.dataValues.id },
+              { transaction: ta }
+            );
+            await Promise.all([p1, p2]);
+            teamid = unit.dataValues.id;
+          }
+
+          //User add to team
 
           await models.ParentUnit.create(
             { parentunit: teamid, childunit: userid },
@@ -853,12 +977,48 @@ export default {
             changed: ["ownLicences"]
           });
 
+          if (newEmployee) {
+            const p1 = models.Human.findOne({ where: { unitid } });
+
+            const p2 = models.DepartmentData.findOne({
+              where: { unitid: company }
+            });
+
+            const [requester, companyObj] = await Promise.all([p1, p2]);
+            await sendEmail({
+              templateId: "d-e049cce50d20428d81f011e521605d4c",
+              fromName: "VIPFY",
+              personalizations: [
+                {
+                  to: [
+                    {
+                      email: newEmployeeInfo.wmail1,
+                      name: newEmployeeInfo.name
+                    }
+                  ],
+                  dynamic_template_data: {
+                    name: newEmployeeInfo.name,
+                    creator: formatHumanName(requester),
+                    companyname: companyObj.name,
+                    email: newEmployeeInfo.wmail1,
+                    password: newEmployeeInfo.password
+                  }
+                }
+              ]
+            });
+
+            await createNotification({
+              receiver: unitid,
+              message: `${addInformation.name} was successfully created`,
+              icon: "user-plus",
+              link: "employeemanager",
+              changed: []
+            });
+          }
+
           return true;
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          throw new Error(err);
         }
       })
   ),

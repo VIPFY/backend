@@ -881,8 +881,16 @@ export default {
           });
 
           if (emailInUse) throw new Error("Email already in use!");
+          /* if (password.length > MAX_PASSWORD_LENGTH) {
+            throw new Error("Password too long");
+          } */
+
+          // Check Password
           if (password.length > MAX_PASSWORD_LENGTH) {
             throw new Error("Password too long");
+          }
+          if (password.length < MIN_PASSWORD_LENGTH) {
+            throw new Error("Password too short");
           }
 
           const data = {};
@@ -917,7 +925,7 @@ export default {
                 name
               }
             },
-            { where: { unitid }, transaction: ta, raw: true }
+            { transaction: ta, raw: true }
           );
 
           const p2 = models.Email.create(

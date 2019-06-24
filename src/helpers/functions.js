@@ -418,3 +418,44 @@ export const teamCheck = async (parentunit, childunit) => {
     throw new Error("Team does not belong to company!");
   }
 };
+
+export const checkMailExistance = async email => {
+  try {
+    console.log("EMAIL", email);
+    const emailExists = await models.Email.findOne({ where: { email } });
+    console.log("EMAILEXISTS", emailExists);
+    if (emailExists) {
+      return true;
+    }
+
+    return false;
+  } catch (err) {
+    throw new NormalError({ message: err.message, internalData: { err } });
+  }
+};
+
+export const checkMailPossible = email => {
+  const tester = /^[-!#$%&'*+\/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
+  // Thanks to:
+  // http://fightingforalostcause.net/misc/2006/compare-email-regex.php
+  // http://thedailywtf.com/Articles/Validating_Email_Addresses.aspx
+  // http://stackoverflow.com/questions/201323/what-is-the-best-regular-expression-for-validating-email-addresses/201378#201378
+
+  if (!email) return false;
+
+  if (email.length > 254) return false;
+
+  const valid = tester.test(email);
+  if (!valid) return false;
+
+  // Further checking of some things regex can't handle
+  const parts = email.split("@");
+  if (parts[0].length > 64) return false;
+
+  const domainParts = parts[1].split(".");
+  if (domainParts.some(part => part.length > 63)) {
+    return false;
+  }
+
+  return true;
+};

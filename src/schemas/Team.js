@@ -52,7 +52,7 @@ export const mutations = `
   deleteTeam(teamid: ID!, keepLicences: [JSON!]): Boolean!
   removeFromTeam(teamid: ID!, userid: ID!, keepLicences: [ID!]): Boolean!
   removeServiceFromTeam(teamid: ID!, boughtplanid: ID!, keepLicences: [ID!]): Boolean!
-  addToTeam(userid: ID!, teamid: ID!, services: [SetupService]!): Boolean!
+  addToTeam(userid: ID!, teamid: ID!, services: [SetupService]!, newEmployeeInfo: JSON, newTeam: JSON): Boolean!
   addAppToTeam(serviceid: ID!, teamid: ID!, employees: [SetupService]!): Boolean!
   updateTeamMembers(members: [ID!]!, teamid: ID!, action: TEAMACTION!): Department!
   updateTeamInfos(teamid: ID!, data: TeamInput!): Department!
