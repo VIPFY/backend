@@ -880,8 +880,16 @@ export default {
             where: { email: wmail1 }
           });
           if (emailInUse) throw new Error("Email already in use!");
+          /* if (password.length > MAX_PASSWORD_LENGTH) {
+            throw new Error("Password too long");
+          } */
+
+          // Check Password
           if (password.length > MAX_PASSWORD_LENGTH) {
             throw new Error("Password too long");
+          }
+          if (password.length < MIN_PASSWORD_LENGTH) {
+            throw new Error("Password too short");
           }
 
           const pwData = await getNewPasswordData(password);
@@ -905,7 +913,7 @@ export default {
                 name
               }
             },
-            { where: { unitid }, transaction: ta, raw: true }
+            { transaction: ta, raw: true }
           );
 
           const p2 = models.Email.create(
