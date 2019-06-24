@@ -867,8 +867,8 @@ export default {
           } = decode(token);
 
           let newEmployee = false;
-          const { teamid, services, newEmployeeInfo } = addInformation;
-          let { userid } = addInformation;
+          const { services, newEmployeeInfo, newteam } = addInformation;
+          let { teamid, userid } = addInformation;
 
           await teamCheck(company, teamid);
 
@@ -883,6 +883,40 @@ export default {
               newEmployeeInfo.wmail1,
               newEmployeeInfo.wmail2
             );
+          }
+
+          if (teamid == "new") {
+            const { name, picture, ...teamdata } = newteam;
+            const unitArgs = {};
+            if (picture) {
+              const parsedFile = await picture;
+
+              const profilepicture = await uploadTeamImage(
+                parsedFile,
+                teamPicFolder
+              );
+
+              unitArgs.profilepicture = profilepicture;
+            }
+            const unit = await models.Unit.create(unitArgs, {
+              transaction: ta
+            });
+
+            const p1 = models.DepartmentData.create(
+              {
+                unitid: unit.dataValues.id,
+                name,
+                internaldata: { created: Date.now(), ...teamdata }
+              },
+              { transaction: ta }
+            );
+
+            const p2 = models.ParentUnit.create(
+              { parentunit: company, childunit: unit.dataValues.id },
+              { transaction: ta }
+            );
+            await Promise.all([p1, p2]);
+            teamid = unit.dataValues.id;
           }
 
           //User add to team
