@@ -127,6 +127,7 @@ export const mutations = `
   addEmployee(unitid: ID!, departmentid: ID!): Response!
   addCreateEmployee(email: String!, password: String!, name: HumanName!, departmentid: ID!): Response!
   createEmployee(file: Upload, addpersonal:JSON!, addteams:[JSON]!, apps:[JSON]!): Boolean!
+  createEmployee09(name: HumanName!, emails: [EmailInput!]!, password: String!, needpasswordchange: Boolean, file: Upload, birthday: Date, hiredate: Date, address: AddressInput, position: String, phones: [PhoneInput]): ID!
   removeEmployee(unitid: ID!, departmentid: ID!): Response!
   fireEmployee(unitid: ID!): Response!
   deleteEmployee(employeeid: ID!): Boolean!

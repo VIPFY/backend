@@ -226,6 +226,204 @@ export default {
       })
   ),
 
+  createEmployee09: requiresRights(["create-employees"]).createResolver(
+    async (
+      _,
+      {
+        name,
+        emails,
+        password,
+        needpasswordchange,
+        file,
+        birthday,
+        hiredate,
+        address,
+        position,
+        phones
+      },
+      { models, token, ip }
+    ) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          let noemail = true;
+          for await (const email of emails) {
+            if (email.email != "") {
+              noemail = false;
+              const isEmail = email.email.indexOf("@");
+
+              if (isEmail < 0) {
+                throw new Error("Please enter a valid Email!");
+              }
+
+              const emailInUse = await models.Email.findOne({
+                where: { email: email.email }
+              });
+              if (emailInUse) throw new Error("Email already in use!");
+            }
+          }
+          if (noemail) {
+            throw new Error("You need at least one Email!");
+          }
+
+          if (password.length > MAX_PASSWORD_LENGTH) {
+            throw new Error("Password too long");
+          }
+
+          if (password.length < MIN_PASSWORD_LENGTH) {
+            throw new Error(
+              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+            );
+          }
+
+          const data = {};
+
+          if (file) {
+            const parsedFile = await file;
+            const profilepicture = await uploadUserImage(
+              parsedFile,
+              userPicFolder
+            );
+            data.profilepicture = profilepicture;
+          }
+
+          const pwData = await getNewPasswordData(password);
+
+          let unit = await models.Unit.create(data, { transaction: ta });
+          unit = unit.get();
+
+          const humanpromises = [];
+
+          humanpromises.push(
+            models.Human.create(
+              {
+                firstname: name.firstname,
+                middlename: name.middlename,
+                lastname: name.lastname,
+                title: name.title,
+                suffix: name.suffix,
+                unitid: unit.id,
+                needspasswordchange:
+                  needpasswordchange === false ? false : true,
+                firstlogin: true,
+                ...pwData,
+                position,
+                hiredate: hiredate != "" ? hiredate : null,
+                birthday: birthday != "" ? birthday : null
+              },
+              { transaction: ta }
+            )
+          );
+
+          //Create Emails
+          emails.forEach(
+            (email, index) =>
+              email &&
+              email.email &&
+              email.email != "" &&
+              humanpromises.push(
+                models.Email.create(
+                  {
+                    email: email.email,
+                    unitid: unit.id,
+                    verified: true,
+                    priority: index
+                  },
+                  { transaction: ta }
+                )
+              )
+          );
+
+          //Create Adress
+
+          if (address) {
+            const { zip, street, city, ...normalData } = address;
+            const addressData = { street, zip, city };
+            humanpromises.push(
+              models.Address.create(
+                { ...normalData, address: addressData, unitid: unit.id },
+                { transaction: ta }
+              )
+            );
+          }
+          //Create Phones
+
+          phones.forEach(
+            phoneData =>
+              phoneData &&
+              phoneData.number &&
+              phoneData.number != "" &&
+              humanpromises.push(
+                models.Phone.create(
+                  { ...phoneData, unitid: unit.id },
+                  { transaction: ta }
+                )
+              )
+          );
+
+          humanpromises.push(
+            models.ParentUnit.create(
+              { parentunit: company, childunit: unit.id },
+              { transaction: ta }
+            )
+          );
+
+          humanpromises.push(
+            models.Right.create(
+              {
+                holder: unit.id,
+                forunit: company,
+                type: "view-apps"
+              },
+              { transaction: ta }
+            )
+          );
+
+          await Promise.all(humanpromises);
+
+          const p4 = models.Human.findOne({ where: { unitid } });
+
+          const p5 = models.DepartmentData.findOne({
+            where: { unitid: company }
+          });
+
+          const [requester, companyObj] = await Promise.all([p4, p5]);
+
+          await createLog(ip, "addCreateEmployee", { unit }, unitid, ta);
+
+          // brand new person, but better to be too careful
+          resetCompanyMembershipCache(company, unit.id);
+
+          await sendEmail({
+            templateId: "d-e049cce50d20428d81f011e521605d4c",
+            fromName: "VIPFY",
+            personalizations: [
+              {
+                to: [{ email: emails[0].email, name: formatHumanName(name) }],
+                dynamic_template_data: {
+                  name: formatHumanName(name),
+                  creator: formatHumanName(requester),
+                  companyname: companyObj.name,
+                  email: emails[0],
+                  password
+                }
+              }
+            ]
+          });
+
+          return unit.id;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   addSubDepartment: requiresRights(["create-department"]).createResolver(
     async (parent, { departmentid, name }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {

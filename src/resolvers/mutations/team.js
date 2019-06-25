@@ -283,7 +283,7 @@ export default {
 
           await Promise.all(employeeNotifypromises);
 
-          return true;
+          return unit.dataValues.id;
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -691,7 +691,7 @@ export default {
           const promises = [];
           if (team[0] && team[0].services) {
             team[0].services.forEach(serviceid => {
-              if (!keepLicences.find(l => l == serviceid)) {
+              if (keepLicences && !keepLicences.find(l => l == serviceid)) {
                 promises.push(
                   models.LicenceData.update(
                     { endtime: moment().valueOf() },
@@ -1015,6 +1015,38 @@ export default {
               changed: []
             });
           }
+
+          return true;
+        } catch (err) {
+          throw new Error(err);
+        }
+      })
+  ),
+
+  addEmployeeToTeam: requiresRights(["edit-team"]).createResolver(
+    async (parent, { teamid, employeeid }, { models, token, ip }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          await teamCheck(company, teamid);
+
+          //User add to team
+
+          await models.ParentUnit.create(
+            { parentunit: teamid, childunit: employeeid },
+            { transaction: ta }
+          );
+
+          await createLog(
+            ip,
+            "addEmployeeFromTeam",
+            { teamid, employeeid },
+            unitid,
+            ta
+          );
 
           return true;
         } catch (err) {

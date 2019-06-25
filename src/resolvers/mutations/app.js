@@ -1899,12 +1899,13 @@ export default {
         touser,
         boughtplanid,
         price,
-        appid,
+        appid = 0,
         loginurl,
         password,
         username,
         subdomain,
-        identifier
+        identifier,
+        options
       },
       { models, token, ip }
     ) =>
@@ -1979,7 +1980,7 @@ export default {
               boughtplanid,
               agreed: true,
               key: { loginurl, password, username, subdomain, external: true },
-              options: { identifier }
+              options: { identifier, ...options }
             },
             { transaction: ta }
           );

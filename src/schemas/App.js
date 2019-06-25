@@ -354,5 +354,5 @@ export const mutations = `
 
   distributeLicence10(licenceid: ID!, userid: ID!): Boolean!
 
-  addExternalAccountLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String): Boolean!
+  addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): Boolean!
   `;
