@@ -26,7 +26,7 @@ export default {
     } else throw new AuthError();
   }),
 
-  adminme: requiresRights(["view-users"]).createResolver(
+  fetchSemiPublicUser: requiresRights(["view-users"]).createResolver(
     async (parent, { unitid }, { models }) => {
       try {
         const me = await models.User.findById(unitid);
@@ -35,7 +35,7 @@ export default {
         return user;
       } catch (err) {
         throw new NormalError({
-          message: `AdminMe-Query-ERROR ${err.message}`,
+          message: `fetchSemiPublicUser-Query-ERROR ${err.message}`,
           internalData: { err }
         });
       }
