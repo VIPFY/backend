@@ -48,11 +48,12 @@ export const queries = `
 
 export const mutations = `
   addTeam(name: String!, data: TeamInput!): Department!
-  createTeam(team: JSON!, addemployees: [JSON]!, apps: [JSON]!): Boolean!
+  createTeam(team: JSON!, addemployees: [JSON]!, apps: [JSON]!): ID!
   deleteTeam(teamid: ID!, keepLicences: [JSON!]): Boolean!
   removeFromTeam(teamid: ID!, userid: ID!, keepLicences: [ID!]): Boolean!
   removeServiceFromTeam(teamid: ID!, boughtplanid: ID!, keepLicences: [ID!]): Boolean!
   addToTeam(userid: ID!, teamid: ID!, services: [SetupService]!, newEmployeeInfo: JSON, newTeam: JSON): Boolean!
+  addEmployeeToTeam(employeeid: ID!, teamid: ID!): Boolean!
   addAppToTeam(serviceid: ID!, teamid: ID!, employees: [SetupService]!): Boolean!
   updateTeamMembers(members: [ID!]!, teamid: ID!, action: TEAMACTION!): Department!
   updateTeamInfos(teamid: ID!, data: TeamInput!): Department!

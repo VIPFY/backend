@@ -305,7 +305,7 @@ export const mutations = `
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
 
-  createOwnApp(ssoData: SSOInput!): Licence!
+  createOwnApp(ssoData: SSOInput!, userid: ID): Licence!
   giveTemporaryAccess(licences: [LicenceRightInput!]!): TempAccessResponse!
   updateTemporaryAccess(licence: LicenceRightUpdateInput, rightid: ID!): TempLicence!
   removeTemporaryAccess(rightid: ID!): Boolean!
@@ -354,5 +354,5 @@ export const mutations = `
 
   distributeLicence10(licenceid: ID!, userid: ID!): Boolean!
 
-  addExternalAccountLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String): Boolean!
+  addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): Boolean!
   `;
