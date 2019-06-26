@@ -731,39 +731,36 @@ export default {
   ),
 
   bulkUpdateLayout: requiresAuth.createResolver(
-    async (_, { layouts }, { models, token }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(token);
+    async (_, { layouts }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
 
-        const data = layouts.map(layout => {
-          layout.unitid = unitid;
-          layout.licenceid = layout.id;
-          delete layout.id;
+          const data = layouts.map(layout => {
+            return [layout.id, unitid, layout.dashboard];
+          });
 
-          return layout;
-        });
+          const query = `INSERT INTO licencelayout_data (licenceid, unitid, dashboard ) VALUES ${data
+            .map(d => "(?)")
+            .join(
+              ","
+            )} ON CONFLICT (licenceid, unitid) DO UPDATE SET dashboard = excluded.dashboard;`;
 
-        // const promises = [];
+          await models.sequelize.query(
+            query,
+            { replacements: data },
+            { type: models.sequelize.QueryTypes.INSERT }
+          );
 
-        // layouts.forEach(layout => {
-        //   const { id: licenceid, ...data } = layout;
-
-        await models.LicenceLayout.bulkCreate(data);
-
-        //   promises.push(newLayout);
-        // });
-
-        // await Promise.all(promises);
-
-        return true;
-      } catch (err) {
-        throw new NormalError({
-          message: err.message,
-          internalData: { err }
-        });
-      }
-    }
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };
