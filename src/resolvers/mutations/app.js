@@ -1094,15 +1094,14 @@ export default {
   ),
 
   deleteLicenceAt: requiresRights(["delete-licences"]).createResolver(
-    async (_, { licenceid, time }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_, { licenceid, time }, { models, token, ip }) => {
+      const parsedTime = moment(time).valueOf();
+      const config = { endtime: parsedTime };
+      await models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(token);
-
-          const parsedTime = moment(time).valueOf();
-          const config = { endtime: parsedTime };
 
           const licence = await models.sequelize.query(
             `
@@ -1163,15 +1162,15 @@ export default {
           );
 
           await Promise.all([p1, p2]);
-
-          return moment(config.endtime).toDate();
         } catch (err) {
           throw new NormalError({
             message: err.message,
             internalData: { err }
           });
         }
-      })
+      });
+      return moment(config.endtime).toDate();
+    }
   ),
 
   deleteBoughtPlanAt: requiresRights(["delete-licences"]).createResolver(
@@ -1498,7 +1497,7 @@ export default {
   //   ta
   // );
   createOwnApp: requiresRights(["create-licences"]).createResolver(
-    async (_, { ssoData, userid }, { models, token }) =>
+    async (_, { ssoData, userids }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -1566,17 +1565,36 @@ export default {
             },
             { transaction: ta }
           );
-
-          const licence = await models.LicenceData.create(
-            {
-              unitid: userid || unitid,
-              disabled: false,
-              boughtplanid: boughtPlan.id,
-              agreed: true,
-              key: { ...data, external: true }
-            },
-            { transaction: ta }
-          );
+          let licence = null;
+          if (userids) {
+            const licencepromises = [];
+            userids.forEach(u =>
+              licencepromises.push(
+                models.LicenceData.create(
+                  {
+                    unitid: u,
+                    disabled: false,
+                    boughtplanid: boughtPlan.id,
+                    agreed: true,
+                    key: { ...data, external: true }
+                  },
+                  { transaction: ta }
+                )
+              )
+            );
+            await Promise.all(licencepromises);
+          } else {
+            licence = await models.LicenceData.create(
+              {
+                unitid,
+                disabled: false,
+                boughtplanid: boughtPlan.id,
+                agreed: true,
+                key: { ...data, external: true }
+              },
+              { transaction: ta }
+            );
+          }
 
           return licence;
         } catch (err) {

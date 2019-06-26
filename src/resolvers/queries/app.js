@@ -553,8 +553,8 @@ export default {
         join boughtplan_data b on l.boughtplanid = b.id
         join plan_data p on b.planid = p.id
         join app_data a on p.appid = a.id
-        where (l.endtime is null or l.endtime >= now())
-        and (b.endtime is null or b.endtime >= now())
+        where (l.endtime is null or l.endtime > now())
+        and (b.endtime is null or b.endtime > now())
         and l.disabled = false and b.disabled = false and a.disabled = false
         and (payer = :company
       or payer in (Select unitid from department_data
@@ -591,8 +591,8 @@ export default {
         join boughtplan_data b on l.boughtplanid = b.id
         join plan_data p on b.planid = p.id
         join app_data a on p.appid = a.id
-        where (l.endtime is null or l.endtime >= now())
-        and (b.endtime is null or b.endtime >= now())
+        where (l.endtime is null or l.endtime > now())
+        and (b.endtime is null or b.endtime > now())
         and l.disabled = false and b.disabled = false and a.disabled = false
         and (payer = :company
       or payer in (Select unitid from department_data
@@ -623,11 +623,11 @@ export default {
               join boughtplan_data d2 on licence_data.boughtplanid = d2.id
               join plan_data plan on d2.planid = plan.id
             where 
-              (licence_data.endtime is null or licence_data.endtime >= now())
+              (licence_data.endtime is null or licence_data.endtime > now())
             and licence_data.disabled = false
             and licence_data.options ->> 'teamlicence' is null
             and d2.disabled = false
-            and (d2.endtime is null or d2.endtime >= now())
+            and (d2.endtime is null or d2.endtime > now())
             and licence_data.unitid = any('{:employees}')
             and appid = :serviceid`,
           {
