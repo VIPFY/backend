@@ -289,8 +289,6 @@ export const queries = `
   # Total time spend in a specific boughtplan at some time, broken down by user
   fetchBoughtplanUsagePerUser(starttime: Date!, endtime: Date!, boughtplanid: ID!): [BoughtplanUsagePerUser]!
 
-  fetchCompanyServicesOld: [AppOverview]
-  fetchCompanyServiceOld(serviceid: ID!): [AppOverview]!
   fetchServiceLicences(employees: [ID!], serviceid: ID!): [ServiceLicence]
   fetchCompanyServices: [CompanyService]
   fetchCompanyService(serviceid: ID!): CompanyService
