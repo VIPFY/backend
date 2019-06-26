@@ -1498,7 +1498,7 @@ export default {
   //   ta
   // );
   createOwnApp: requiresRights(["create-licences"]).createResolver(
-    async (_, { ssoData, userid }, { models, token }) =>
+    async (_, { ssoData, userids }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -1566,17 +1566,36 @@ export default {
             },
             { transaction: ta }
           );
-
-          const licence = await models.LicenceData.create(
-            {
-              unitid: userid || unitid,
-              disabled: false,
-              boughtplanid: boughtPlan.id,
-              agreed: true,
-              key: { ...data, external: true }
-            },
-            { transaction: ta }
-          );
+          let licence = null;
+          if (userids) {
+            const licencepromises = [];
+            userids.forEach(u =>
+              licencepromises.push(
+                models.LicenceData.create(
+                  {
+                    unitid: u,
+                    disabled: false,
+                    boughtplanid: boughtPlan.id,
+                    agreed: true,
+                    key: { ...data, external: true }
+                  },
+                  { transaction: ta }
+                )
+              )
+            );
+            await Promise.all(licencepromises);
+          } else {
+            licence = await models.LicenceData.create(
+              {
+                unitid,
+                disabled: false,
+                boughtplanid: boughtPlan.id,
+                agreed: true,
+                key: { ...data, external: true }
+              },
+              { transaction: ta }
+            );
+          }
 
           return licence;
         } catch (err) {
