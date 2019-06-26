@@ -105,7 +105,12 @@ export default {
   Domain: find({ boughtplanid: "BoughtPlan" }),
   Email: find(unit),
   TempLicence: find({ licenceid: "Licence", unitid: "User", owner: "User" }),
-  Licence: find({ unitid: "User", boughtplanid: "BoughtPlan" }),
+  Licence: find({
+    unitid: "User",
+    boughtplanid: "BoughtPlan",
+    teamlicence: "Team",
+    teamaccount: "Team"
+  }),
   LicenceLayout: find({ unitid: "User", licenceid: "Licence" }),
   NLicence: find({
     unitid: "User",

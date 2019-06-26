@@ -37,7 +37,7 @@ export const types = `
   type CompanyService{
     id: ID!
     app: AppDetails!
-    licences: [NLicence]
+    licences: [Licence]
     teams: [TeamBoughtPlan]
   }
 
@@ -156,7 +156,7 @@ export const types = `
     disabled: Boolean
     key: JSON
     boughtplanid: BoughtPlan!
-    unitid: User
+    unitid: SemiPublicUser
     dashboard: Int
     sidebar: Int
     view: Boolean!
@@ -166,6 +166,8 @@ export const types = `
     vacationstart: Date
     vacationend: Date
     tags: [String]
+    teamlicence: Team
+    teamaccount: Team
   }
 
   type PublicLicence {

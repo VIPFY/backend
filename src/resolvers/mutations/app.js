@@ -1094,15 +1094,14 @@ export default {
   ),
 
   deleteLicenceAt: requiresRights(["delete-licences"]).createResolver(
-    async (_, { licenceid, time }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_, { licenceid, time }, { models, token, ip }) => {
+      const parsedTime = moment(time).valueOf();
+      const config = { endtime: parsedTime };
+      await models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(token);
-
-          const parsedTime = moment(time).valueOf();
-          const config = { endtime: parsedTime };
 
           const licence = await models.sequelize.query(
             `
@@ -1163,15 +1162,15 @@ export default {
           );
 
           await Promise.all([p1, p2]);
-
-          return moment(config.endtime).toDate();
         } catch (err) {
           throw new NormalError({
             message: err.message,
             internalData: { err }
           });
         }
-      })
+      });
+      return moment(config.endtime).toDate();
+    }
   ),
 
   deleteBoughtPlanAt: requiresRights(["delete-licences"]).createResolver(
