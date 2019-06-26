@@ -407,7 +407,7 @@ export default {
                   name: formatHumanName(name),
                   creator: formatHumanName(requester),
                   companyname: companyObj.name,
-                  email: emails[0],
+                  email: emails[0].email,
                   password
                 }
               }
