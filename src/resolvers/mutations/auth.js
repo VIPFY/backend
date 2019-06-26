@@ -146,12 +146,13 @@ export default {
         );
 
         const endtime = moment()
-          .add(1, "months")
+          .add(2, "months")
           .toDate();
 
         const p6 = models.BoughtPlan.create(
           {
             planid: 126,
+            alias: "Vipfy Standard",
             payer: company.id,
             usedby: company.id,
             buyer: unit.id,

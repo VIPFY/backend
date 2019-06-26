@@ -165,10 +165,10 @@ export default {
   ),
 
   fetchVipfyPlan: requiresAuth.createResolver(
-    async (parent, args, { models, token }) => {
+    async (_, args, { models, token }) => {
       try {
         const {
-          user: { company, unitid }
+          user: { company }
         } = decode(token);
 
         const vipfyPlans = await models.Plan.findAll({
@@ -189,6 +189,7 @@ export default {
                 [models.Op.eq]: null
               }
             },
+            buytime: { [models.Op.lt]: models.sequelize.fn("NOW") },
             planid: { [models.Op.in]: planIds }
           }
         });

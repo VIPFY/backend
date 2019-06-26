@@ -1001,8 +1001,85 @@ export default {
       })
   ),
 
+  /**
+   * Adds a promocode to the customers account.
+   * As this is on
+   */
+  addPromocode: requiresAuth.createResolver(
+    async (_, { promocode }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const valid = await models.PromocodePlan.findOne({
+            where: { code: promocode },
+            raw: true,
+            transaction: ta
+          });
+
+          if (!valid) {
+            throw new Error(`The code ${promocode} is not valid`);
+          }
+
+          const p1 = models.sequelize.query(
+            `SELECT bd.*, pd.name
+            FROM boughtplan_data bd
+                     LEFT JOIN plan_data pd on bd.planid = pd.id
+                     LEFT JOIN app_data ad on pd.appid = ad.id
+            WHERE appid = 66
+              AND buytime < now()
+              AND (endtime > now() OR endtime isnull)
+              AND bd.payer = :company;
+          `,
+            {
+              replacements: { company },
+              type: models.sequelize.QueryTypes.SELECT,
+              transaction: ta
+            }
+          );
+
+          const p2 = models.Plan.findOne({
+            where: { id: valid.planid, appid: 66 },
+            raw: true,
+            transaction: ta
+          });
+
+          const p3 = models.DepartmentData.update(
+            { promocode },
+            { where: { unitid: company }, returning: true, transaction: ta }
+          );
+
+          const [currentPlan, promoPlan, dep] = await Promise.all([p1, p2, p3]);
+
+          await models.BoughtPlan.create(
+            {
+              planid: promoPlan.id,
+              buyer: unitid,
+              payer: company,
+              predecessor: currentPlan[0].id,
+              alias: promoPlan.name,
+              disabled: false,
+              totalprice: 3.0,
+              buytime: currentPlan[0].endtime,
+              endtime: null
+            },
+            { transaction: ta }
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   applyPromocode: requiresAuth.createResolver(
-    async (parent, { promocode }, { models, token, ip }) =>
+    async (_, { promocode }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {

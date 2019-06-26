@@ -23,7 +23,7 @@ const processMultipleFiles = async (upload, folder) => {
 
 export default {
   adminCreatePlan: requiresVipfyAdmin.createResolver(
-    async (parent, { plan, appId }, { models }) =>
+    async (_, { plan, appId }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
           const app = await models.App.findOne({

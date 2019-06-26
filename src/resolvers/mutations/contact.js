@@ -489,11 +489,7 @@ export default {
       })
   ),
 
-  newsletterSignup: async (
-    parent,
-    { email, firstname, lastname },
-    { models }
-  ) => {
+  newsletterSignup: async (_, { email, firstname, lastname }, { models }) => {
     try {
       await newsletterSignup(models, email, firstname, lastname);
       return { ok: true };
