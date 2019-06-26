@@ -119,7 +119,7 @@ export const queries = `
   me: User
 
   #UserView for Company Admins
-  adminme(unitid: ID!): SemiPublicUser
+  fetchSemiPublicUser(unitid: ID!): SemiPublicUser
 
   #The token the user receives after registration to set his password
   checkAuthToken(token: String!, email: String!): TokenResponse!

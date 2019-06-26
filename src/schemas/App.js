@@ -172,6 +172,7 @@ export const types = `
     id: ID!
     starttime: String!
     endtime: Date
+    options: JSON
     boughtplanid: BoughtPlan!
     unitid: PublicUser
     dashboard: Int
@@ -244,6 +245,7 @@ export const types = `
 
   type AppUsage {
     app: App!
+    options: JSON
     totalminutes: Int
   }
 
@@ -282,13 +284,11 @@ export const queries = `
 
   # The total minutes spend per app, this month, combined for all users of the company
   fetchMonthlyAppUsage: [AppUsage]!
-  fetchTotalAppUsage: [AppUsage]!
+  fetchTotalAppUsage(starttime: Date, endtime: Date): [AppUsage]!
 
   # Total time spend in a specific boughtplan at some time, broken down by user
   fetchBoughtplanUsagePerUser(starttime: Date!, endtime: Date!, boughtplanid: ID!): [BoughtplanUsagePerUser]!
 
-  fetchCompanyServicesOld: [AppOverview]
-  fetchCompanyServiceOld(serviceid: ID!): [AppOverview]!
   fetchServiceLicences(employees: [ID!], serviceid: ID!): [ServiceLicence]
   fetchCompanyServices: [CompanyService]
   fetchCompanyService(serviceid: ID!): CompanyService
@@ -303,7 +303,7 @@ export const mutations = `
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
 
-  createOwnApp(ssoData: SSOInput!): Licence!
+  createOwnApp(ssoData: SSOInput!, userid: ID): Licence!
   giveTemporaryAccess(licences: [LicenceRightInput!]!): TempAccessResponse!
   updateTemporaryAccess(licence: LicenceRightUpdateInput, rightid: ID!): TempLicence!
   removeTemporaryAccess(rightid: ID!): Boolean!
@@ -352,5 +352,5 @@ export const mutations = `
 
   distributeLicence10(licenceid: ID!, userid: ID!): Boolean!
 
-  addExternalAccountLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String): Boolean!
+  addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): Boolean!
   `;

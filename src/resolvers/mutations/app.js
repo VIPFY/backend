@@ -1094,7 +1094,7 @@ export default {
   ),
 
   deleteLicenceAt: requiresRights(["delete-licences"]).createResolver(
-    async (parent, { licenceid, time }, { models, token, ip }) =>
+    async (_, { licenceid, time }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -1498,7 +1498,7 @@ export default {
   //   ta
   // );
   createOwnApp: requiresRights(["create-licences"]).createResolver(
-    async (_, { ssoData }, { models, token }) =>
+    async (_, { ssoData, userid }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -1569,7 +1569,7 @@ export default {
 
           const licence = await models.LicenceData.create(
             {
-              unitid,
+              unitid: userid || unitid,
               disabled: false,
               boughtplanid: boughtPlan.id,
               agreed: true,
@@ -1899,12 +1899,13 @@ export default {
         touser,
         boughtplanid,
         price,
-        appid,
+        appid = 0,
         loginurl,
         password,
         username,
         subdomain,
-        identifier
+        identifier,
+        options
       },
       { models, token, ip }
     ) =>
@@ -1979,7 +1980,7 @@ export default {
               boughtplanid,
               agreed: true,
               key: { loginurl, password, username, subdomain, external: true },
-              options: { identifier }
+              options: { identifier, ...options }
             },
             { transaction: ta }
           );

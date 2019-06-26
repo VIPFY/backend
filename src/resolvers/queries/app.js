@@ -1,5 +1,6 @@
 import { decode, sign } from "jsonwebtoken";
 import uuid from "uuid";
+import moment from "moment";
 // import { getLoginData } from "@vipfy-private/weebly";
 import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
@@ -328,9 +329,9 @@ export default {
               COALESCE(l.used, 0)           AS licencesused,
               COALESCE(l.total, 0)          AS licencestotal
             FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit =
-                                                                  bp.usedby AND r.type = 'canuselicences' AND
-                                                                  r.holder = :departmentid)
-                                                                  OR bp.usedby = :departmentid
+                        bp.usedby AND r.type = 'canuselicences' AND
+                        r.holder = :departmentid)
+                        OR bp.usedby = :departmentid
               INNER JOIN plan_data p
                 on bp.planid = p.id
               INNER JOIN app_data a on p.appid = a.id
@@ -464,7 +465,7 @@ export default {
   },
 
   fetchBoughtplanUsagePerUser: requiresRights(["view-usage"]).createResolver(
-    async (parent, { starttime, endtime, boughtplanid }, { models, token }) => {
+    async (_, { starttime, endtime, boughtplanid }, { models, token }) => {
       try {
         const {
           user: { company }
@@ -475,9 +476,9 @@ export default {
                   tt.unitid unit,
                   sum(minutesspent) totalminutes,
                   array_to_json(array_agg(CASE
-                                            WHEN ld.id IS NULL OR ld.unitid != tt.unitid THEN 'unknown date'
-                                            WHEN ld.endtime < now() THEN to_char(ld.endtime, 'YYYY-MM-DD')
-                                            ELSE NULL END)) licenceenddates
+                      WHEN ld.id IS NULL OR ld.unitid != tt.unitid THEN 'unknown date'
+                      WHEN ld.endtime < now() THEN to_char(ld.endtime, 'YYYY-MM-DD')
+                      ELSE NULL END)) licenceenddates
           FROM timetracking_data tt
                   LEFT OUTER JOIN licence_data ld on tt.licenceid = ld.id
                   JOIN department_employee_view dev ON tt.unitid = dev.employee
@@ -509,14 +510,15 @@ export default {
       try {
         const stats = await models.sequelize.query(
           `
-          SELECT appid app, sum(minutesspent) totalminutes
+          SELECT appid app, lv.options, sum(minutesspent) totalminutes
           FROM timetracking_data tt
                 JOIN boughtplan_data bp on tt.boughtplanid = bp.id
                 JOIN plan_data pd on bp.planid = pd.id
                 JOIN department_employee_view dev ON tt.unitid = dev.employee
-          WHERE day >= date_trunc('month', current_date)
+                JOIN licence_view lv ON tt.licenceid = lv.id
+                WHERE day >= date_trunc('month', current_date)
             AND dev.id = :company
-          GROUP BY appid
+          GROUP BY appid, lv.options
           ORDER BY appid;
         `,
           {
@@ -525,6 +527,7 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
+
         return stats;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -608,146 +611,6 @@ export default {
     }
   ),
 
-  fetchCompanyServicesOld: requiresRights(["view-licences"]).createResolver(
-    async (parent, args, { models, token }) => {
-      const {
-        user: { company }
-      } = decode(token);
-      try {
-        /* const companyServices = await models.sequelize.query(
-          `Select * from app_data where id in (
-            Select appid from plan_data where id in (
-              Select planid from boughtplan_data where id in (
-                Select boughtplanid from licence_data where unitid::text in (
-                  Select json_array_elements(employees)::text from team_view where unitid = :company)
-                and (endtime is null or endtime > now()) and licence_data.disabled = false group by boughtplanid)
-              and (endtime is null or endtime > now()) and boughtplan_data.disabled = false group by planid)
-            and disabled = false and app_data.hidden = false group by appid)`,
-          {
-            replacements: { company },
-            type: models.sequelize.QueryTypes.SELECT
-          }
-        ); */
-        const companyServices = await models.sequelize.query(
-          `Select b.id, b.id as app, b.singles, COALESCE(c.teams, ARRAY[]::bigint[]) as teams
-          from (
-            Select app_data.id, COALESCE(array_agg(unitid), ARRAY[]::bigint[]) as singles
-            from app_data
-              join plan_data
-                join boughtplan_data
-                  join (
-                    Select * from licence_data
-                    where unitid::text in (
-                      Select json_array_elements(employees)::text
-                      from team_view
-                      where unitid = :company)
-                    and (endtime is null or endtime > now())
-                    and licence_data.disabled = false
-                    and options ->> 'teamlicence' is null
-                  ) as a on a.boughtplanid = boughtplan_data.id
-                on plan_data.id = boughtplan_data.planid
-              on app_data.id = plan_data.appid
-              where app_data.disabled = false
-              and boughtplan_data.disabled = false
-              and app_data.hidden = false
-              and (boughtplan_data.endtime is null or boughtplan_data.endtime > now())
-              and (enddate is null or enddate > now())
-            group by app_data.id, app_data.name,
-              app_data.icon, app_data.color
-          ) as b
-          left join (
-            Select appid, array_agg(departmentid) as teams
-            from departmentapps_data
-              join boughtplan_data
-              on departmentapps_data.boughtplanid = boughtplan_data.id
-              join plan_data
-              on boughtplan_data.planid = plan_data.id
-            group by appid
-          ) as c
-          on b.id = c.appid`,
-          {
-            replacements: { company },
-            type: models.sequelize.QueryTypes.SELECT
-          }
-        );
-        console.log(companyServices);
-        return companyServices;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
-  fetchCompanyServiceOld: requiresRights(["view-licences"]).createResolver(
-    async (parent, { serviceid }, { models, token }) => {
-      const {
-        user: { company }
-      } = decode(token);
-      try {
-        /* const companyServices = await models.sequelize.query(
-          `Select * from app_data where id in (
-            Select appid from plan_data where id in (
-              Select planid from boughtplan_data where id in (
-                Select boughtplanid from licence_data where unitid::text in (
-                  Select json_array_elements(employees)::text from team_view where unitid = :company)
-                and (endtime is null or endtime > now()) and licence_data.disabled = false group by boughtplanid)
-              and (endtime is null or endtime > now()) and boughtplan_data.disabled = false group by planid)
-            and disabled = false and app_data.hidden = false group by appid)`,
-          {
-            replacements: { company },
-            type: models.sequelize.QueryTypes.SELECT
-          }
-        ); */
-        const companyService = await models.sequelize.query(
-          `Select b.id, b.id as app, b.singles, COALESCE(c.teams, ARRAY[]::bigint[]) as teams
-          from (
-            Select app_data.id, COALESCE(array_agg(json_build_object('employee', unitid, 'licence', a.id)), ARRAY[]::json[]) as singles
-            from app_data
-              join plan_data
-                join boughtplan_data
-                  join (
-                    Select * from licence_data
-                    where unitid::text in (
-                      Select json_array_elements(employees)::text
-                      from team_view
-                      where unitid = :company)
-                    and (endtime is null or endtime >= now())
-                    and licence_data.disabled = false
-                    and options ->> 'teamlicence' is null
-                  ) as a on a.boughtplanid = boughtplan_data.id
-                on plan_data.id = boughtplan_data.planid
-              on app_data.id = plan_data.appid
-              where app_data.disabled = false
-              and boughtplan_data.disabled = false
-              and app_data.hidden = false
-              and (boughtplan_data.endtime is null or boughtplan_data.endtime >= now())
-              and (enddate is null or enddate >= now())
-            group by app_data.id, app_data.name,
-              app_data.icon, app_data.color
-          ) as b
-          left join (
-            Select appid, array_agg(departmentid) as teams
-            from departmentapps_data
-              join boughtplan_data
-              on departmentapps_data.boughtplanid = boughtplan_data.id
-              join plan_data
-              on boughtplan_data.planid = plan_data.id
-            group by appid
-          ) as c
-          on b.id = c.appid where b.id = :serviceid`,
-          {
-            replacements: { company, serviceid },
-            type: models.sequelize.QueryTypes.SELECT
-          }
-        );
-        console.log(companyService);
-        return companyService;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
   fetchServiceLicences: requiresRights(["view-licences"]).createResolver(
     async (parent, { employees, serviceid }, { models }) => {
       try {
@@ -781,20 +644,28 @@ export default {
   ),
 
   fetchTotalAppUsage: requiresRights(["view-usage"]).createResolver(
-    async (parent, args, { models, token }) => {
+    async (_, { starttime, endtime }, { models, token }) => {
       const {
         user: { company }
       } = decode(token);
       try {
+        let interval = "";
+        if (starttime && endtime) {
+          interval = `day >= '${moment(starttime).format()}' :: date
+          AND day < '${moment(endtime).format()}' :: date
+          AND`;
+        }
+
         const stats = await models.sequelize.query(
           `
-          SELECT appid app, sum(minutesspent) totalminutes
+          SELECT appid app, lv.options, sum(minutesspent) totalminutes
           FROM timetracking_data tt
                 JOIN boughtplan_data bp on tt.boughtplanid = bp.id
                 JOIN plan_data pd on bp.planid = pd.id
                 JOIN department_employee_view dev ON tt.unitid = dev.employee
-          WHERE dev.id = :company
-          GROUP BY appid
+                JOIN licence_view lv ON tt.licenceid = lv.id
+          WHERE ${interval} dev.id = :company
+          GROUP BY appid, lv.options
           ORDER BY appid;
         `,
           {
@@ -803,6 +674,8 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
+
+        console.log("LOG: stats", stats);
         return stats;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -858,39 +731,36 @@ export default {
   ),
 
   bulkUpdateLayout: requiresAuth.createResolver(
-    async (_, { layouts }, { models, token }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(token);
+    async (_, { layouts }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
 
-        const data = layouts.map(layout => {
-          layout.unitid = unitid;
-          layout.licenceid = layout.id;
-          delete layout.id;
+          const data = layouts.map(layout => {
+            return [layout.id, unitid, layout.dashboard];
+          });
 
-          return layout;
-        });
+          const query = `INSERT INTO licencelayout_data (licenceid, unitid, dashboard ) VALUES ${data
+            .map(d => "(?)")
+            .join(
+              ","
+            )} ON CONFLICT (licenceid, unitid) DO UPDATE SET dashboard = excluded.dashboard;`;
 
-        // const promises = [];
+          await models.sequelize.query(
+            query,
+            { replacements: data },
+            { type: models.sequelize.QueryTypes.INSERT }
+          );
 
-        // layouts.forEach(layout => {
-        //   const { id: licenceid, ...data } = layout;
-
-        await models.LicenceLayout.bulkCreate(data);
-
-        //   promises.push(newLayout);
-        // });
-
-        // await Promise.all(promises);
-
-        return true;
-      } catch (err) {
-        throw new NormalError({
-          message: err.message,
-          internalData: { err }
-        });
-      }
-    }
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };

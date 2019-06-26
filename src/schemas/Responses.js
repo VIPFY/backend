@@ -17,6 +17,12 @@ export const types = `
     expired: Boolean
   }
 
+# Changing a user to an admin  
+  type StatusResponse {
+    id: ID!
+    status: Boolean!
+  }
+
 # Contains the changed rating
   type ReviewResponse {
     ok: Boolean!

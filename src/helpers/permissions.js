@@ -109,7 +109,16 @@ export const requiresRights = rights =>
           );
         }
 
-        if (args.userid) {
+        if (args.teamid && args.teamid != "new") {
+          await checkCompanyMembership(
+            models,
+            company,
+            args.teamid,
+            "department"
+          );
+        }
+
+        if (args.userid && args.userid != "new") {
           await checkCompanyMembership(models, company, args.userid, "user");
         }
 
