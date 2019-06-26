@@ -1498,7 +1498,7 @@ export default {
   //   ta
   // );
   createOwnApp: requiresRights(["create-licences"]).createResolver(
-    async (_, { ssoData }, { models, token }) =>
+    async (_, { ssoData, userid }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -1569,7 +1569,7 @@ export default {
 
           const licence = await models.LicenceData.create(
             {
-              unitid,
+              unitid: userid || unitid,
               disabled: false,
               boughtplanid: boughtPlan.id,
               agreed: true,
