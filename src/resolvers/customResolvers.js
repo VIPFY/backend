@@ -112,18 +112,6 @@ const postprocessors = {
     }
     return value;
   },
-  NLicence: async (value, fields) => {
-    console.log("NLicence", value, fields);
-    if (value.options) {
-      if (value.options.teamlicence) {
-        value.teamlicence = value.options.teamlicence;
-      }
-      if (value.options.teamaccount) {
-        value.teamaccount = value.options.teamaccount;
-      }
-    }
-    return value;
-  },
   // Wird das benötigt?
   CompanyService: async (value, fields) => {
     console.log("CompanyService");

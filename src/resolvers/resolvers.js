@@ -112,12 +112,6 @@ export default {
     teamaccount: "Team"
   }),
   LicenceLayout: find({ unitid: "User", licenceid: "Licence" }),
-  NLicence: find({
-    unitid: "User",
-    boughtplanid: "BoughtPlan",
-    teamlicence: "Team",
-    teamaccount: "Team"
-  }),
   Log: find({ user: "User", sudoer: "User" }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
