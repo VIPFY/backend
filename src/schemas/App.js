@@ -131,22 +131,6 @@ export const types = `
     alias: String
   }
 
-  type NLicence{
-    id: ID!
-    options: JSON
-    starttime: String!
-    endtime: Date
-    agreed: Boolean
-    disabled: Boolean
-    key: JSON
-    boughtplanid: BoughtPlan!
-    unitid: SemiPublicUser
-    layouthorizontal: Int
-    layoutvertical: Int
-    teamlicence: Team
-    teamaccount: Team
-  }
-
   type Licence {
     id: ID!
     options: JSON
@@ -274,10 +258,10 @@ export const queries = `
   fetchLicences(licenceid: ID): [Licence]!
 
   # Returns all Licences of a current user that are not department licences
-  fetchUsersOwnLicences(unitid: ID!): [NLicence]
+  fetchUsersOwnLicences(unitid: ID!): [Licence]
 
   # Returns all Licences of a defined user
-  fetchUserLicences(unitid: ID!): [NLicence]
+  fetchUserLicences(unitid: ID!): [Licence]
 
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
 
