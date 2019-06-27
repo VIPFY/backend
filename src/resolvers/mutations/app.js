@@ -1013,7 +1013,7 @@ export default {
   ),
 
   deleteServiceLicenceAt: requiresRights(["delete-licences"]).createResolver(
-    async (parent, { serviceid, licenceid, time }, { models, token, ip }) =>
+    async (_, { serviceid, licenceid, time }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -1062,11 +1062,22 @@ export default {
             transaction: ta
           });
 
+          await models.LicenceRight.update(config, {
+            where: { licenceid: licence[0].id },
+            transaction: ta
+          });
+
           if (updatedLicence[0] == 0) {
             throw new Error("Couldn't update Licence");
           }
 
-          const p1 = createLog(ip, "deleteLicenceAt", { licence }, unitid, ta);
+          const p1 = createLog(
+            ip,
+            "deleteServiceLicenceAt",
+            { licence },
+            unitid,
+            ta
+          );
 
           const p2 = createNotification(
             {
@@ -1139,6 +1150,11 @@ export default {
 
           const updatedLicence = await models.LicenceData.update(config, {
             where: { id: licence[0].id },
+            transaction: ta
+          });
+
+          await models.LicenceRight.update(config, {
+            where: { licenceid: licence[0].id },
             transaction: ta
           });
 
@@ -1798,7 +1814,7 @@ export default {
       })
   ),
   removeLicence: requiresRights(["delete-licences"]).createResolver(
-    async (parent, { licenceid, oldname }, { models, ip, token }) =>
+    async (_, { licenceid, oldname }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid }
@@ -1816,6 +1832,11 @@ export default {
               where: { id: licenceid },
               transaction: ta
             }
+          );
+
+          await models.LicenceRight.update(
+            { endtime: models.sequelize.fn("NOW") },
+            { where: { licenceid }, transaction: ta }
           );
 
           if (remove == 0) {
