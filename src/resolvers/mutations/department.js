@@ -985,6 +985,23 @@ export default {
 
             await Promise.all([p1, p2]);
           } else {
+            const allAdmins = await models.sequelize.query(
+              `
+              SELECT DISTINCT ON (dev.employee) uv.*
+              FROM users_view uv
+                LEFT OUTER JOIN department_employee_view dev ON dev.employee = uv.id
+              WHERE dev.id = :company AND uv.isadmin = true;
+              `,
+              {
+                replacements: { company },
+                type: models.sequelize.QueryTypes.SELECT
+              }
+            );
+
+            if (allAdmins.length < 2) {
+              throw new Error("You can't take the last admins privileges");
+            }
+
             const p1 = models.Right.destroy({ where: data, transaction });
             const p2 = createLog(ip, "adminRemove", {}, requester, transaction);
 
