@@ -220,7 +220,7 @@ SubscriptionServer.create(
           });
         }
       }
-      return {};
+      throw new AuthError("No token received");
     }
   },
   {
