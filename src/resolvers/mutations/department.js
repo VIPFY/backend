@@ -973,6 +973,7 @@ export default {
             forunit: company,
             type: "admin"
           };
+
           if (admin) {
             const p1 = await models.Right.create(data, { transaction });
             const p2 = await createLog(
@@ -1007,6 +1008,19 @@ export default {
 
             await Promise.all([p1, p2]);
           }
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: admin
+                ? "You received admin privileges"
+                : "Your admin privileges were revoked",
+              icon: admin ? "user-tie" : "user-minus",
+              link: "profile",
+              changed: ["me"]
+            },
+            transaction
+          );
 
           return { id: unitid, status: admin };
         } catch (err) {
