@@ -389,7 +389,7 @@ export default {
               }`,
               icon: "th",
               link: "teams",
-              changed: ["foreignLicences"]
+              changed: ["ownLicences"]
             },
             ta
           );
@@ -416,7 +416,7 @@ export default {
               message: "Distribution of App failed",
               icon: "th",
               link: "teams",
-              changed: ["foreignLicences"]
+              changed: ["ownLicences"]
             },
             ta
           );
@@ -480,7 +480,7 @@ export default {
               message: `App revoked from ${licence.unitid}`,
               icon: "th",
               link: "teams",
-              changed: ["foreignLicences"]
+              changed: ["ownLicences"]
             },
             ta
           );
@@ -506,7 +506,7 @@ export default {
               message: "Revokation failed",
               icon: "th",
               link: "teams",
-              changed: ["foreignLicences"]
+              changed: ["ownLicences"]
             },
             ta
           );
@@ -1599,6 +1599,22 @@ export default {
               )
             );
             await Promise.all(licencepromises);
+            const notifypromises = [];
+            userids.forEach(u =>
+              notifypromises.push(
+                createNotification(
+                  {
+                    receiver: u,
+                    message: `You have a new service`,
+                    icon: "business-time",
+                    link: `dashboard`,
+                    changed: ["ownLicences"]
+                  },
+                  ta
+                )
+              )
+            );
+            await Promise.all(notifypromises);
           } else {
             licence = await models.LicenceData.create(
               {
@@ -1663,7 +1679,7 @@ export default {
                   message: `You got vacation access granted for a new Service`,
                   link: "dashboard",
                   icon: "th",
-                  changed: ["foreignLicences"]
+                  changed: ["ownLicences"]
                 },
                 ta
               );
@@ -1799,7 +1815,7 @@ export default {
               message: `The admin updated your vacation licence`,
               link: "teammanager",
               icon: "th",
-              changed: ["foreignLicences"]
+              changed: ["ownLicences"]
             },
             ta
           );
@@ -1821,6 +1837,11 @@ export default {
         } = decode(token);
 
         try {
+          const oldLicence = await models.LicenceData.findOne({
+            where: { id: licenceid },
+            raw: true
+          });
+
           const remove = await models.LicenceData.update(
             {
               unitid: null,
@@ -1842,6 +1863,17 @@ export default {
           if (remove == 0) {
             throw new Error("Licence not found!");
           }
+
+          await createNotification(
+            {
+              receiver: oldLicence.unitid,
+              message: `The admin removed a licence from you`,
+              link: "dashboard",
+              icon: "th",
+              changed: ["ownLicences"]
+            },
+            ta
+          );
 
           await createLog(ip, "removeLicence", { licenceid }, unitid, ta);
 
@@ -1871,6 +1903,17 @@ export default {
               where: { id: licenceid },
               transaction: ta
             }
+          );
+
+          await createNotification(
+            {
+              receiver: userid,
+              message: `You have a new service`,
+              icon: "business-time",
+              link: `dashboard`,
+              changed: ["ownLicences"]
+            },
+            ta
           );
 
           if (distribute == 0) {
@@ -1916,7 +1959,7 @@ export default {
               message: "The admin removed your access to a vacation licence",
               icon: "th",
               link: `teammanager`,
-              changed: ["foreignLicences"]
+              changed: ["ownLicences"]
             },
             ta
           );
