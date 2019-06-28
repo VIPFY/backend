@@ -205,7 +205,7 @@ export default {
   ),
 
   fetchUsersOwnLicences: requiresRights(["view-licences"]).createResolver(
-    async (parent, { unitid }, { models, token }) => {
+    async (_, { unitid }, { models, token }) => {
       try {
         const {
           user: { company }
@@ -244,9 +244,22 @@ export default {
           where: { unitid, boughtplanid: bpIds }
         });
 
+        const issuedLicences = await models.sequelize.query(
+          `SELECT licenceright_data.*, ld.unitid as owner
+          FROM licenceright_data LEFT OUTER JOIN licence_data ld on licenceright_data.licenceid = ld.id
+          WHERE ld.unitid=:unitid AND licenceright_data.endtime > NOW();`,
+          { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
+        );
+
+        const ids = issuedLicences.map(({ licenceid }) => licenceid);
+
+        const filteredLicences = licences.filter(licence =>
+          ids.includes(licence.id)
+        );
+
         const startTime = Date.now();
 
-        licences.forEach(licence => {
+        filteredLicences.forEach(licence => {
           if (licence.disabled) {
             licence.agreed = false;
             licence.key = null;
