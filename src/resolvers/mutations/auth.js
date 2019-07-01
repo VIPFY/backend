@@ -33,7 +33,7 @@ const ZENDESK_TOKEN =
 
 export default {
   signUp: async (
-    parent,
+    _,
     { email, companyname: name, privacy, termsOfService },
     { models, SECRET, ip }
   ) =>
@@ -96,7 +96,7 @@ export default {
           data: JSON.stringify({
             organization: {
               name: `Company-${company.id}-${createRandomToken()}`,
-              notes: name
+              notes: name || "Family account"
             }
           }),
           url: "https://vipfy.zendesk.com/api/v2/organizations.json"
@@ -131,7 +131,7 @@ export default {
           {
             unitid: company.id,
             iscompany: true,
-            name,
+            name: name || "Family",
             legalinformation: {
               privacy: new Date(),
               termsOfService: new Date()
