@@ -1626,6 +1626,16 @@ export default {
               },
               { transaction: ta }
             );
+            await createNotification(
+              {
+                receiver: unitid,
+                message: `You have a new service`,
+                icon: "business-time",
+                link: `dashboard`,
+                changed: ["ownLicences"]
+              },
+              ta
+            );
           }
 
           return licence;
