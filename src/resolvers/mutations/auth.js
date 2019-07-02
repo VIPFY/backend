@@ -75,6 +75,7 @@ export default {
             unitid: unit.id,
             firstlogin: false,
             needspasswordchange: false,
+            consent: null,
             ...pwData
           },
           { transaction: ta }
