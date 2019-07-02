@@ -22,28 +22,32 @@ import {
 import { googleMapsClient } from "../../services/gcloud";
 import { NormalError } from "../../errors";
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "../../constants";
-import { sendEmail } from "../../helpers/email";
+import { sendEmail, emailRegex } from "../../helpers/email";
 import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import logger from "../../loggers";
-import { createToken as createRandomToken } from "../../helpers/token";
 
 const ZENDESK_TOKEN =
   "Basic bnZAdmlwZnkuc3RvcmUvdG9rZW46bndGc3lDVWFpMUg2SWNKOXBpbFk3UGRtOHk0bXVhamZlYzFrbzBHeQ==";
 
 export default {
-  signUp: async (
-    _,
-    { email, companyname: name, privacy, termsOfService },
-    { models, SECRET, ip }
-  ) =>
+  signUp: async (_, { signUpData }, { models, SECRET, ip }) =>
     models.sequelize.transaction(async ta => {
       try {
-        if (!privacy || !termsOfService) {
+        if (!signUpData.privacy || !signUpData.termsOfService) {
           throw new Error(
             "You have to confirm to our privacy agreement and our Terms of Service!"
           );
         }
+
+        const { email } = signUpData;
+
+        const isValid = email.match(emailRegex);
+
+        if (!isValid) {
+          throw new Error("This is not a valid email");
+        }
+
         // Check whether the email is already in use
         const emailInUse = await models.Email.findOne({
           where: { email },
@@ -95,8 +99,8 @@ export default {
           },
           data: JSON.stringify({
             organization: {
-              name: `Company-${company.id}-${createRandomToken()}`,
-              notes: name || "Family account"
+              name: `Company-${company.id}-${createSetupToken()}`,
+              notes: signUpData.companyname || "Family account"
             }
           }),
           url: "https://vipfy.zendesk.com/api/v2/organizations.json"
@@ -116,7 +120,7 @@ export default {
               email, // TODO Mehrere Email-Adressen
               verified: true,
               organization_id: zendeskdata.data.organization.id,
-              external_id: `User-${unit.id}-${createRandomToken()}`
+              external_id: `User-${unit.id}-${createSetupToken()}`
             }
           }),
           url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
@@ -131,7 +135,8 @@ export default {
           {
             unitid: company.id,
             iscompany: true,
-            name: name || "Family",
+            isprivate: signUpData.isPrivate,
+            name: signUpData.companyname || "Family",
             legalinformation: {
               privacy: new Date(),
               termsOfService: new Date()
@@ -257,18 +262,9 @@ export default {
   setupFinished: async (
     parent,
     { country, vatoption, vatnumber, placeId, ownAdress, username },
-    { models, SECRET, ip, token }
+    { models, token }
   ) =>
     models.sequelize.transaction(async ta => {
-      /* console.log(
-        "PROPS",
-        country,
-        vatoption,
-        vatnumber,
-        placeId,
-        ownAdress,
-        username
-      ); */
       try {
         const {
           user: { unitid, company }

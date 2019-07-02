@@ -112,6 +112,14 @@ export const types = `
   type SignUpConfirmResponse {
     download: DownloadLink
   }
+
+  input SignUpData {
+    email: String!
+    companyname: String!
+    privacy: Boolean!
+    termsOfService: Boolean!
+    isPrivate: Boolean!
+  }
 `;
 
 export const queries = `
@@ -134,7 +142,7 @@ export const mutations = `
   updateEmployeePic(file: Upload!, unitid: ID!): SemiPublicUser!
 
   # Only an email is required for the signup
-  signUp(email: String!, companyname: String, privacy: Boolean!, termsOfService: Boolean!): RegisterResponse!
+  signUp(signUpData: SignUpData!): RegisterResponse!
 
   #Setup Finished
   setupFinished(country: String, vatoption: Int, vatnumber: String, placeId: String, ownAdress: String, username: String): Response!

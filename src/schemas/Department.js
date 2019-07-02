@@ -28,6 +28,7 @@ export const types = `
     promocode: String
     setupfinished: Boolean
     iscompany: Boolean
+    isprivate: Boolean
     internaldata: JSON
   }
 
@@ -38,6 +39,7 @@ export const types = `
     promocode: String
     setupfinished: Boolean
     iscompany: Boolean
+    isprivate: Boolean
     statisticdata: JSON
     internaldata: JSON
   }
