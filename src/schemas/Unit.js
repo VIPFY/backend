@@ -134,7 +134,7 @@ export const mutations = `
   updateEmployeePic(file: Upload!, unitid: ID!): SemiPublicUser!
 
   # Only an email is required for the signup
-  signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!): RegisterResponse!
+  signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!, isprivate: Boolean): RegisterResponse!
 
   #Setup Finished
   setupFinished(country: String, vatoption: Int, vatnumber: String, placeId: String, ownAdress: String, username: String): Response!
