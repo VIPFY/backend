@@ -31,16 +31,18 @@ const ZENDESK_TOKEN =
   "Basic bnZAdmlwZnkuc3RvcmUvdG9rZW46bndGc3lDVWFpMUg2SWNKOXBpbFk3UGRtOHk0bXVhamZlYzFrbzBHeQ==";
 
 export default {
-  signUp: async (_, { signUpData }, { models, SECRET, ip }) =>
+  signUp: async (
+    _,
+    { email, companyname: name, privacy, termsOfService, isprivate },
+    { models, SECRET, ip }
+  ) =>
     models.sequelize.transaction(async ta => {
       try {
-        if (!signUpData.privacy || !signUpData.termsOfService) {
+        if (!privacy || !termsOfService) {
           throw new Error(
             "You have to confirm to our privacy agreement and our Terms of Service!"
           );
         }
-
-        const { email } = signUpData;
 
         const isValid = email.match(emailRegex);
 
@@ -101,7 +103,7 @@ export default {
           data: JSON.stringify({
             organization: {
               name: `Company-${company.id}-${createSetupToken()}`,
-              notes: signUpData.companyname || "Family account"
+              notes: name
             }
           }),
           url: "https://vipfy.zendesk.com/api/v2/organizations.json"
@@ -136,8 +138,8 @@ export default {
           {
             unitid: company.id,
             iscompany: true,
-            isprivate: signUpData.isPrivate,
-            name: signUpData.companyname || "Family",
+            isprivate,
+            name,
             legalinformation: {
               privacy: new Date(),
               termsOfService: new Date()
