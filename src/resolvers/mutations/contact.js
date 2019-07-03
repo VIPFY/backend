@@ -489,9 +489,17 @@ export default {
       })
   ),
 
-  newsletterSignup: async (_, { email, firstname, lastname }) => {
+  newsletterSignup: async (_, { email, firstname, lastname }, { models }) => {
     try {
-      await newsletterSignup(email, firstname, lastname);
+      const alreadySignedUp = await models.newsletter.findOne({
+        where: { email },
+        raw: true
+      });
+
+      if (!alreadySignedUp) {
+        await newsletterSignup(email, firstname, lastname);
+      }
+
       return { ok: true };
     } catch (err) {
       logger.error(err);
