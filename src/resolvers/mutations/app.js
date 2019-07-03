@@ -1521,30 +1521,47 @@ export default {
           } = decode(token);
           const { images, loginurl, ...data } = ssoData;
 
-          const [logo, icon] = await Promise.all(
-            images.map(async (upload, index) => {
-              const pic = await upload;
-              const filename = index == 0 ? "logo.png" : "icon.png";
+          let appOwned = null;
 
-              const name = await uploadAppImage(pic, ssoData.name, filename);
-              return name;
-            })
-          );
+          if (images && images.length == 2) {
+            const [logo, icon] = await Promise.all(
+              images.map(async (upload, index) => {
+                const pic = await upload;
+                const filename = index == 0 ? "logo.png" : "icon.png";
 
-          const appOwned = await models.App.create(
-            {
-              ...data,
-              loginurl,
-              logo,
-              icon,
-              options: { universallogin: true },
-              disabled: false,
-              developer: company,
-              supportunit: company,
-              owner: company
-            },
-            { transaction: ta }
-          );
+                const name = await uploadAppImage(pic, ssoData.name, filename);
+                return name;
+              })
+            );
+
+            appOwned = await models.App.create(
+              {
+                ...data,
+                loginurl,
+                logo,
+                icon,
+                options: { universallogin: true },
+                disabled: false,
+                developer: company,
+                supportunit: company,
+                owner: company
+              },
+              { transaction: ta }
+            );
+          } else {
+            appOwned = await models.App.create(
+              {
+                ...data,
+                loginurl,
+                options: { universallogin: true },
+                disabled: false,
+                developer: company,
+                supportunit: company,
+                owner: company
+              },
+              { transaction: ta }
+            );
+          }
 
           const plan = await models.Plan.create(
             {
