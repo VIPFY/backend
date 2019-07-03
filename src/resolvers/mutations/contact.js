@@ -14,7 +14,7 @@ import { sendEmail } from "../../helpers/email";
 
 export default {
   createAddress: requiresRights(["create-address"]).createResolver(
-    (parent, { addressData, department }, { models, token, ip }) =>
+    (_, { addressData, department }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           let {
@@ -27,7 +27,8 @@ export default {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
                 type: { [models.Op.or]: ["admin", "create-addresses"] }
-              }
+              },
+              raw: true
             });
 
             if (!hasRight) {
@@ -519,7 +520,7 @@ export default {
     }
   },
 
-  searchAddress: async (parent, { input, region }) => {
+  searchAddress: async (_, { input, region }) => {
     try {
       const res = await googleMapsClient
         .findPlace({
