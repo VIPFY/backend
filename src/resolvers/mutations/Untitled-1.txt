@@ -1,0 +1,14 @@
+{team:{ name, picture, ...teamdata },
+addemployees: [
+    name,
+    password,
+    wmail1,
+    wmail2
+],
+apps:[
+    id,
+    employees:[
+        id
+    ]
+]
+}

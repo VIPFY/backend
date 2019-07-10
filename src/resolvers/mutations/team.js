@@ -1069,7 +1069,7 @@ export default {
 
           //Nutzer add to team
 
-          const app = await models.Plan.findOne({
+          const app = await models.App.findOne({
             where: { id: serviceid },
             raw: true
           });
