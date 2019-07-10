@@ -53,6 +53,8 @@ export const types = `
   type LoginResponse {
     ok: Boolean!
     token: String
+    twofactor: String
+    unitid: ID
   }
 
 # The user gets the email where the new auth is send back

@@ -453,7 +453,7 @@ export default {
       }
     }),
 
-  signIn: async (parent, { email, password }, { models, SECRET, ip }) => {
+  signIn: async (_, { email, password }, { models, SECRET, ip }) => {
     try {
       if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
@@ -488,11 +488,24 @@ export default {
         null
       );
 
-      // User doesn't have the property unitid, so we have to pass emailExists for
-      // the token creation
-      const token = await createToken(emailExists, SECRET);
+      if (emailExists.twofactor) {
+        const { secret } = await models.TwoFA.findOne({
+          where: { unitid: emailExists.unitid, type: emailExists.twofactor },
+          raw: true
+        });
 
-      return { ok: true, token };
+        return {
+          ok: true,
+          twofactor: secret.otpauth_url,
+          unitid: emailExists.unitid
+        };
+      } else {
+        // User doesn't have the property unitid, so we have to pass emailExists for
+        // the token creation
+        const token = await createToken(emailExists, SECRET);
+
+        return { ok: true, token };
+      }
     } catch (err) {
       logger.log(err);
       throw new NormalError({ message: err.message, internalData: { err } });

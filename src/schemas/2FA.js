@@ -6,7 +6,6 @@ export const types = `
 `;
 
 export const mutations = `
-  generateSecret: Boolean!
-  generateToken(type: TWOFA_TYPE!): String!
-  validateToken(token: String!): Boolean!
+  generateSecret(type: TWOFA_TYPE!): Boolean!
+  validateToken(unitid: ID!, type: String!, token: String!): Boolean!
 `;
