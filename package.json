@@ -13,6 +13,7 @@
     "start-dev": "ENVIRONMENT=development nodemon --exec babel-node src/index.js",
     "start-token": "ENVIRONMENT=development TOKEN_SET=TRUE nodemon --exec babel-node src/index.js",
     "test": "jest --verbose --no-cache --forceExit",
+    "test-jest": "jest --verbose --no-cache --forceExit --detectOpenHandles ./testCreatingTeam.spec.js",
     "test-with-db": "npm run prepare-test-db && ENVIRONMENT=testing jest --verbose --no-cache --forceExit",
     "play": "babel-node src/helpers/play.js",
     "prepare-test-db": "./prepare_vipfy_test_db.sh",
@@ -120,7 +121,9 @@
     "winston": "^3.2.1",
     "zxcvbn": "^4.4.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "graphql-tester": "github:sazzer/graphql-tester"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://gh05d@bitbucket.org/vipfymarketplace/vipfy-backend.git"
