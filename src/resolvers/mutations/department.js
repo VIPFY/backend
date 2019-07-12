@@ -349,20 +349,22 @@ export default {
               )
             );
           }
-          //Create Phones
 
-          phones.forEach(
-            phoneData =>
-              phoneData &&
-              phoneData.number &&
-              phoneData.number != "" &&
-              humanpromises.push(
-                models.Phone.create(
-                  { ...phoneData, unitid: unit.id },
-                  { transaction: ta }
+          // Create Phones
+          if (phones) {
+            phones.forEach(
+              phoneData =>
+                phoneData &&
+                phoneData.number &&
+                phoneData.number != "" &&
+                humanpromises.push(
+                  models.Phone.create(
+                    { ...phoneData, unitid: unit.id },
+                    { transaction: ta }
+                  )
                 )
-              )
-          );
+            );
+          }
 
           humanpromises.push(
             models.ParentUnit.create(
