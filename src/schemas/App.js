@@ -138,6 +138,7 @@ export const types = `
     endtime: Date
     agreed: Boolean
     disabled: Boolean
+    pending: Boolean
     key: JSON
     boughtplanid: BoughtPlan!
     unitid: SemiPublicUser
@@ -161,6 +162,7 @@ export const types = `
     options: JSON
     boughtplanid: BoughtPlan!
     unitid: PublicUser
+    pending: Boolean
     dashboard: Int
     sidebar: Int
     tags: [String]
@@ -240,6 +242,18 @@ export const types = `
     unit: PublicUser!
     totalminutes: Int
     licenceenddates: [String]
+  }
+
+  input SSOResult {
+    loginurl: String!
+    name: String!
+    email: String!
+    password: String!
+    recaptcha: Boolean!
+    tries: Int!
+    unloaded: Boolean!
+    passwordEntered: Boolean!
+    emailEntered: Boolean!
   }
 `;
 
@@ -325,6 +339,8 @@ export const mutations = `
   # Adds the data of an external App
   addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): BoughtPlan!
   addExternalLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID): Response!
+
+  failedIntegration(data: SSOResult!): Boolean!
 
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!

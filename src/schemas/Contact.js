@@ -96,7 +96,7 @@ export const mutations = `
   createPhone(phoneData: PhoneInput!, department: Boolean): Phone!
   updatePhone(id: ID, phone: PhoneInput): Phone!
   deletePhone(id: ID!, department: Boolean): Response!
-
+  
   newsletterSignup(email: String!, firstname: String, lastname: String): Response!
   newsletterSignupConfirm(email: String!, token: String!): Response!
 

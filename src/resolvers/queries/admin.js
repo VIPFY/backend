@@ -343,17 +343,25 @@ export default {
     }
   ),
 
-  fetchServerStats: requiresVipfyAdmin.createResolver(
-    async (parent, args, context) => ({
-      data: {
-        caches: { auth: getAuthStats(), services: serviceStats() },
-        server: {
-          memory: process.memoryUsage(),
-          uptime: process.uptime(),
-          nodeVersion: process.version,
-          version: serverVersion
-        }
+  fetchServerStats: requiresVipfyAdmin.createResolver(async (parent, args) => ({
+    data: {
+      caches: { auth: getAuthStats(), services: serviceStats() },
+      server: {
+        memory: process.memoryUsage(),
+        uptime: process.uptime(),
+        nodeVersion: process.version,
+        version: serverVersion
       }
-    })
+    }
+  })),
+
+  fetchPendingIntegrations: requiresVipfyAdmin.createResolver(
+    async (_, args, { models }) => {
+      try {
+        return models.Licence.findAll({ where: { pending: true } });
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };

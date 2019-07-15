@@ -27,6 +27,7 @@ export const queries = `
 
   # fetch perfomance statistics for this specific server
   fetchServerStats: JsonResponse!
+  fetchPendingIntegrations: [Licence]!
 `;
 
 export const mutations = `
