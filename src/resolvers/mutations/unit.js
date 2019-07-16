@@ -435,7 +435,7 @@ export default {
   ),
 
   impersonate: requiresRights(["impersonate"]).createResolver(
-    async (_, { unitid }, { models, token, SECRET }) => {
+    async (_, { unitid }, { models, token, SECRET, ip }) => {
       try {
         const {
           user: { unitid: id, company }
@@ -458,9 +458,20 @@ export default {
           throw new Error("You can't impersonate another Admin!");
         }
 
+        await createLog(
+          ip,
+          "impersonate",
+          { admin: id, impersonated: unitid },
+          id,
+          null
+        );
+
         return createAdminToken({ unitid, company, admin: id, SECRET });
       } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
       }
     }
   )
