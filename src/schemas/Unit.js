@@ -36,12 +36,6 @@ export const types = `
     consent: Boolean
   }
 
-  input NameInput {
-    firstname: String
-    middlename: String
-    lastname: String
-  }
-
   input UserInput {
     firstname: String
     middlename: String
@@ -126,8 +120,6 @@ export const queries = `
 `;
 
 export const mutations = `
-  createUser(user: UserInput!, file: Upload): Response!
-  updateMyself(user: UserInput!): User!
   updateEmployee(user: EmployeeInput!): SemiPublicUser!
   updateUser(user: UserInput!): Response!
   updateProfilePic(file: Upload!): User!
