@@ -159,5 +159,5 @@ export const mutations = `
 
   resendToken(email: String!): Boolean!
   setConsent(consent: Boolean!): User!
-  updateEmployeePassword(unitid: ID!, password: String!): Boolean!
+  updateEmployeePassword(unitid: ID!, password: String!, logOut: Boolean): UserSecurityOverview!
 `;

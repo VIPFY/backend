@@ -322,7 +322,7 @@ export default {
   ),
 
   updateEmployeePassword: requiresRights(["edit-employee"]).createResolver(
-    async (_, { unitid, password }, { models, token }) => {
+    async (_, { unitid, password, logOut }, { models, token }) => {
       try {
         const {
           user: { unitid: id, company }
@@ -336,10 +336,13 @@ export default {
           throw new Error("Password too long!");
         }
 
-        const isAdmin = await models.User.findOne({
+        const p1 = models.User.findOne({
           where: { id, isadmin: true },
           raw: true
         });
+
+        const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
+        const [isAdmin, employee] = await Promise.all([p1, p2]);
 
         await companyCheck(company, id, unitid);
 
@@ -347,31 +350,45 @@ export default {
           throw new Error("You don't have the necessary rights!");
         }
 
-        const pw = getNewPasswordData(password);
+        // An admin should be able to update his own password
+        if (employee.isadmin && employee.id != isAdmin.id) {
+          throw new Error("You can't change another admins password!");
+        }
+
+        const pw = await getNewPasswordData(password);
 
         if (pw.passwordStrength < 2) {
           throw new Error("Password too weak!");
         }
 
-        const p1 = models.Human.findOne({ where: { unitid }, raw: true });
-
-        const p2 = models.Human.update(
+        await models.Human.update(
           { password: pw.passwordhash },
           { where: { unitid } }
         );
 
-        const employee = await Promise.all([p1, p2]);
-
-        const employeeName = concatName(employee[0]);
+        const employeeName = concatName(employee);
         const adminName = concatName(isAdmin);
 
         await sendEmail({
           templateId: "d-9beb3ea901d64894a8227c295aa8548e",
-          personalizations: { employeeName, adminName, password },
+          personalizations: [
+            {
+              to: [{ email: employee.emails[0] }],
+              dynamic_template_data: { employeeName, adminName, password }
+            }
+          ],
           fromName: "VIPFY GmbH"
         });
 
-        return true;
+        if (logOut) {
+          // TODO: [VIP-409] Invalidate the Token when Sessions are implemented
+        }
+
+        return {
+          id: unitid,
+          passwordlength: pw.passwordlength,
+          passwordstrength: pw.passwordstrength
+        };
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
