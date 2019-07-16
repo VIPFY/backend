@@ -1,14 +1,21 @@
 import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-import { userPicFolder } from "../../constants";
+import {
+  userPicFolder,
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH
+} from "../../constants";
 import { NormalError } from "../../errors";
 import {
   createLog,
   companyCheck,
   parentAdminCheck,
-  createNotification
+  createNotification,
+  concatName
 } from "../../helpers/functions";
 import { uploadUserImage } from "../../services/aws";
+import { getNewPasswordData } from "../../helpers/auth";
+import { sendEmail } from "../../helpers/email";
 /* eslint-disable no-unused-vars, prefer-destructuring */
 
 export default {
@@ -215,7 +222,7 @@ export default {
   ),
 
   updateEmployee: requiresRights(["edit-employee"]).createResolver(
-    async (parent, { user }, { models, token, ip }) => {
+    async (_, { user }, { models, token, ip }) => {
       await models.sequelize.transaction(async ta => {
         try {
           const {
@@ -311,6 +318,63 @@ export default {
       });
 
       return models.User.findOne({ where: { id: user.id } });
+    }
+  ),
+
+  updateEmployeePassword: requiresRights(["edit-employee"]).createResolver(
+    async (_, { unitid, password }, { models, token }) => {
+      try {
+        const {
+          user: { unitid: id, company }
+        } = decode(token);
+
+        if (password.length < MIN_PASSWORD_LENGTH) {
+          throw new Error("Password not long enough!");
+        }
+
+        if (password.length > MAX_PASSWORD_LENGTH) {
+          throw new Error("Password too long!");
+        }
+
+        const isAdmin = await models.User.findOne({
+          where: { id, isadmin: true },
+          raw: true
+        });
+
+        await companyCheck(company, id, unitid);
+
+        if (!isAdmin) {
+          throw new Error("You don't have the necessary rights!");
+        }
+
+        const pw = getNewPasswordData(password);
+
+        if (pw.passwordStrength < 2) {
+          throw new Error("Password too weak!");
+        }
+
+        const p1 = models.Human.findOne({ where: { unitid }, raw: true });
+
+        const p2 = models.Human.update(
+          { password: pw.passwordhash },
+          { where: { unitid } }
+        );
+
+        const employee = await Promise.all([p1, p2]);
+
+        const employeeName = concatName(employee[0]);
+        const adminName = concatName(isAdmin);
+
+        await sendEmail({
+          templateId: "d-9beb3ea901d64894a8227c295aa8548e",
+          personalizations: { employeeName, adminName, password },
+          fromName: "VIPFY GmbH"
+        });
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
   ),
 
