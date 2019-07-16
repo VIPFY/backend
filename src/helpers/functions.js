@@ -347,9 +347,9 @@ export const checkPaymentData = async (unitid, plan, ta) => {
 /**
  * Returns User `unitid` if the provided `employee` is in the `company`,
  * otherwise it throws an Exception
- * @param {ID} company
- * @param {ID} unitid
- * @param {ID} employee
+ * @param {number} company
+ * @param {number} unitid
+ * @param {number} employee
  */
 export const companyCheck = async (company, unitid, employee) => {
   try {
