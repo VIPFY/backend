@@ -458,3 +458,10 @@ export const checkMailPossible = email => {
 
   return true;
 };
+
+/**
+ * Generates a full name out of the properties
+ * @param {object} name
+ */
+export const concatName = ({ firstname, middlename, lastname }) =>
+  `${firstname} ${middlename ? `${middlename} ` : ""}${lastname}`;
