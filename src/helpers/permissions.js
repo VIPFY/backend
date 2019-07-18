@@ -114,13 +114,26 @@ export const requiresRights = rights =>
             models,
             company,
             args.teamid,
-            "department"
+            "team"
           );
         }
 
         if (args.userid && args.userid != "new") {
           await checkCompanyMembership(models, company, args.userid, "user");
         }
+        if (args.employeeid && args.employeeid != "new") {
+          await checkCompanyMembership(models, company, args.employeeid, "user");
+        }
+        if (args.unitid && args.unitid != "new") {
+          await checkCompanyMembership(models, company, args.unitid, "user");
+        }
+        if (args.userids) {
+          await Promise.all(args.userids.filter(id => id != "new").map(id => checkCompanyMembership(models, company, id, "user")));
+        }
+        if (args.unitids) {
+          await Promise.all(args.unitids.filter(id => id != "new").map(id => checkCompanyMembership(models, company, id, "user")));
+        }
+        
 
         const hasRight = await models.Right.findOne({
           where: models.sequelize.and(
