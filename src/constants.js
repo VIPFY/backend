@@ -1,12 +1,24 @@
-import { PubSub } from "graphql-subscriptions";
 import { duration } from "moment";
-
-// Create an instance to pass it into the subscriptionobject
-export const pubsub = new PubSub();
+import { RedisPubSub } from "graphql-redis-subscriptions";
+import Redis from "ioredis";
 
 // Subscription which will listen when an user gets send a new message
 export const NEW_MESSAGE = "NEW_MESSAGE";
 export const NEW_NOTIFICATION = "NEW_NOTIFICATION";
+
+const options = {
+  host: "127.0.0.1",
+  port: 6379,
+  //  password: "FrxPxFCN96Cu6CCtt98WMrsn",
+  db: 0,
+  // reconnect after
+  retryStrategy: times => Math.min(times * 50, 2000)
+};
+
+export const pubsub = new RedisPubSub({
+  publisher: new Redis(options),
+  subscriber: new Redis(options)
+});
 
 // The location for uploaded files to be saved
 export const userPicFolder = "profilepictures";

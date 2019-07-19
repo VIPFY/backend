@@ -4,7 +4,7 @@ import models from "@vipfy-private/sequelize-setup";
 import zxcvbn from "zxcvbn";
 import { createSubscription } from "../services/stripe";
 import { NormalError } from "../errors";
-import { pubsub, NEW_NOTIFICATION } from "../constants";
+import { NEW_NOTIFICATION, pubsub } from "../constants";
 
 /* eslint-disable no-return-assign */
 

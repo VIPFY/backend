@@ -9,7 +9,6 @@ import express from "express";
 import fs from "fs";
 import https from "https";
 import http from "http";
-import jwt from "jsonwebtoken";
 
 // To create the GraphQl functions
 import { ApolloServer, makeExecutableSchema } from "apollo-server-express";
@@ -103,8 +102,6 @@ app.set(
 //     })
 //   })
 // });
-
-// console.log(limiter);
 
 // // apply rate limit to all requests
 // app.use(limiter);
@@ -202,37 +199,10 @@ app.post("/download", async (req, res) => {
   app.use(AWSXRay.express.closeSegment());
 } */
 
-SubscriptionServer.create(
-  {
-    execute,
-    subscribe,
-    schema,
-    onConnect: async ({ token }) => {
-      if (token && token != "null") {
-        try {
-          jwt.verify(token, SECRET);
-
-          return { models, token };
-        } catch (err) {
-          throw new AuthError({
-            message: err.message,
-            internalData: { error: "Subscription Error" }
-          });
-        }
-      }
-      throw new AuthError("No token received");
-    }
-  },
-  {
-    server,
-    path: "/subscriptions"
-  }
-);
-
 if (ENVIRONMENT != "testing") {
   server.listen(PORT, "0.0.0.0", () => {
     if (process.env.LOGGING) {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`Server running on port ${PORT} 🚀`);
     }
   });
 }
