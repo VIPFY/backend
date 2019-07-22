@@ -346,7 +346,7 @@ export default {
     }),
 
   signUpConfirm: async (
-    parent,
+    _,
     { token, password, passwordConfirm, email },
     { models, ip }
   ) =>

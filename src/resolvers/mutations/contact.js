@@ -14,7 +14,7 @@ import { sendEmail } from "../../helpers/email";
 
 export default {
   createAddress: requiresRights(["create-address"]).createResolver(
-    (parent, { addressData, department }, { models, token, ip }) =>
+    (_, { addressData, department }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           let {
@@ -27,7 +27,8 @@ export default {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
                 type: { [models.Op.or]: ["admin", "create-addresses"] }
-              }
+              },
+              raw: true
             });
 
             if (!hasRight) {
@@ -491,7 +492,15 @@ export default {
 
   newsletterSignup: async (_, { email, firstname, lastname }, { models }) => {
     try {
-      await newsletterSignup(models, email, firstname, lastname);
+      const alreadySignedUp = await models.newsletter.findOne({
+        where: { email },
+        raw: true
+      });
+
+      if (!alreadySignedUp) {
+        await newsletterSignup(email, firstname, lastname);
+      }
+
       return { ok: true };
     } catch (err) {
       logger.error(err);
@@ -502,16 +511,16 @@ export default {
     }
   },
 
-  newsletterSignupConfirm: async (parent, { email, token }, { models }) => {
+  newsletterSignupConfirm: async (_, { email, token }) => {
     try {
-      const result = await newsletterConfirmSignup(models, email, token);
+      const result = await newsletterConfirmSignup(email, token);
       return { ok: result };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
 
-  searchAddress: async (parent, { input, region }) => {
+  searchAddress: async (_, { input, region }) => {
     try {
       const res = await googleMapsClient
         .findPlace({
