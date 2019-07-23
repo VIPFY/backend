@@ -88,7 +88,7 @@ export const types = `
   }
 
   input SSOInput {
-    images: [Upload!]!
+    images: [Upload]
     name: String!
     loginurl: String!
     email: String!

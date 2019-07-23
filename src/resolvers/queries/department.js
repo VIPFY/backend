@@ -64,7 +64,7 @@ export default {
   ),
 
   fetchUserSecurityOverview: requiresRights(["view-security"]).createResolver(
-    async (parent, args, { models, token }) => {
+    async (_, args, { models, token }) => {
       try {
         const {
           user: { company }

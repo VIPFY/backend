@@ -101,6 +101,10 @@ export const types = `
     addresses: [Address]
     phones: [Phone]
     company: Department
+    passwordlength: Int
+    passwordstrength: Int
+    twofa: [String]
+    lastactive: Date
   }
 
   type SignUpConfirmResponse {
@@ -151,4 +155,5 @@ export const mutations = `
 
   resendToken(email: String!): Boolean!
   setConsent(consent: Boolean!): User!
+  updateEmployeePassword(unitid: ID!, password: String!, logOut: Boolean): UserSecurityOverview!
 `;

@@ -29,8 +29,18 @@ export default {
   fetchSemiPublicUser: requiresRights(["view-users"]).createResolver(
     async (parent, { unitid }, { models }) => {
       try {
-        const me = await models.User.findById(unitid);
-        const user = await parentAdminCheck(me);
+        //const me = await models.User.findById(unitid);
+
+        const me = await models.sequelize.query(
+          `SELECT * FROM users_view
+         WHERE id = :unitid`,
+          {
+            replacements: { unitid },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+        console.log("ME", me[0], me[0].id);
+        const user = await parentAdminCheck(me[0]);
 
         return user;
       } catch (err) {
