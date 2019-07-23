@@ -4,9 +4,10 @@ import U2F from "u2f";
 import Speakeasy from "speakeasy";
 import QRCode from "qrcode";
 
-import { parentAdminCheck } from "../../helpers/functions";
+import { parentAdminCheck, companyCheck } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
+import { checkCompanyMembership } from "../../helpers/companyMembership";
 
 export default {
   me: requiresAuth.createResolver(async (_, args, { models, token }) => {
@@ -88,16 +89,21 @@ export default {
   },
 
   generateSecret: requiresRights(["create-2FA"]).createResolver(
-    async (_, { type }, { models, token }) => {
+    async (_, { type, userid }, { models, token }) => {
       try {
-        const {
-          user: { unitid }
+        let {
+          user: { unitid, company }
         } = decode(token);
+
+        if (userid && userid != unitid) {
+          await companyCheck(company, unitid, userid);
+          unitid = userid;
+        }
 
         if (type == "totp") {
           // Will generate a secret key of length 32
-          const secret = Speakeasy.generateSecret();
-          await models.TwoFA.create({
+          const secret = Speakeasy.generateSecret({ name: "VIPFY" });
+          const twoFA = await models.TwoFA.create({
             unitid,
             secret,
             type: "totp",
@@ -106,7 +112,7 @@ export default {
 
           const qrCode = await QRCode.toDataURL(secret.otpauth_url);
 
-          return qrCode;
+          return { qrCode, codeId: twoFA.dataValues.id };
         } else {
           U2F.request("https://api.vipfy.store");
 

@@ -3,17 +3,20 @@ import { decode } from "jsonwebtoken";
 import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createToken } from "../../helpers/token";
+import { companyCheck } from "../../helpers/functions";
 
 export default {
   verifyToken: requiresRights(["create-2FA"]).createResolver(
-    async (_, { type, code }, { models, token }) => {
+    async (_, { userid, type, code, codeId }, { models, token }) => {
       try {
         const {
           user: { unitid, company }
         } = decode(token);
 
+        await companyCheck(company, unitid, userid);
+
         const { secret, id } = await models.TwoFA.findOne({
-          where: { unitid, type },
+          where: { unitid: userid, type, verified: false, id: codeId },
           raw: true
         });
 
@@ -23,6 +26,7 @@ export default {
           token: code,
           window: 2
         });
+        console.log("LOG: validToken", validToken);
 
         if (!validToken) {
           throw new Error("The code was not valid!");
@@ -38,10 +42,10 @@ export default {
   ),
 
   validateToken: requiresRights(["create-2FA"]).createResolver(
-    async (_, { unitid, type, token }, { models, SECRET }) => {
+    async (_, { userid, type, token }, { models, SECRET }) => {
       try {
         const { secret, id } = await models.TwoFA.findOne({
-          where: { unitid, type },
+          where: { unitid: userid, type },
           raw: true
         });
 
@@ -54,7 +58,7 @@ export default {
 
         if (validToken) {
           const p1 = models.Login.findOne({
-            where: { unitid },
+            where: { unitid: userid },
             raw: true
           });
 
