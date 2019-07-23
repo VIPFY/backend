@@ -107,6 +107,10 @@ export const types = `
     addresses: [Address]
     phones: [Phone]
     company: Department
+    passwordlength: Int
+    passwordstrength: Int
+    twofa: [String]
+    lastactive: Date
   }
 
   type SignUpConfirmResponse {
