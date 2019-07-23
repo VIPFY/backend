@@ -174,7 +174,7 @@ export default {
    * @returns {object} newEmail The newly generated Email.
    */
   createEmail: requiresRights(["create-email"]).createResolver(
-    async (_, { emailData, forCompany }, { models, ip, token }) =>
+    async (_, { emailData, forCompany, userid }, { models, ip, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -191,6 +191,8 @@ export default {
 
           if (forCompany) {
             id = company;
+          } else if (userid) {
+            id = userid;
           } else {
             id = unitid;
           }
@@ -219,7 +221,7 @@ export default {
   ),
 
   updateEmail: requiresRights(["edit-email"]).createResolver(
-    async (parent, { email, emailData }, { models, token, ip }) =>
+    async (parent, { email, emailData, userid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -259,7 +261,7 @@ export default {
   ),
 
   updateEmail08: requiresRights(["edit-email"]).createResolver(
-    async (parent, { email, emailData }, { models, token, ip }) =>
+    async (parent, { email, emailData, userid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -306,7 +308,7 @@ export default {
    * @returns {object}
    */
   deleteEmail: requiresRights(["delete-email"]).createResolver(
-    async (_, { email, forCompany }, { models, ip, token }) => {
+    async (_, { email, forCompany, userid }, { models, ip, token }) => {
       try {
         const {
           user: { company, unitid }
@@ -316,6 +318,8 @@ export default {
 
         if (forCompany) {
           id = company;
+        } else if (userid) {
+          id = userid;
         } else {
           id = unitid;
         }
@@ -351,7 +355,7 @@ export default {
   ),
 
   createPhone: requiresRights(["create-phone"]).createResolver(
-    (parent, { phoneData, department }, { models, token, ip }) =>
+    (parent, { phoneData, department, userid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           let {
@@ -374,6 +378,10 @@ export default {
             }
           }
 
+          if (userid) {
+            unitid = userid;
+          }
+
           const newPhone = await models.Phone.create(
             { ...phoneData, unitid },
             { transaction: ta }
@@ -392,7 +400,7 @@ export default {
   ),
 
   updatePhone: requiresRights(["edit-phone"]).createResolver(
-    async (parent, { phone, id }, { models, token, ip }) =>
+    async (parent, { phone, id, userid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           let {
@@ -413,6 +421,10 @@ export default {
             } else {
               unitid = company;
             }
+          }
+
+          if (userid) {
+            unitid = userid;
           }
 
           const oldPhone = await models.Phone.findById(id, {
@@ -444,7 +456,7 @@ export default {
   ),
 
   deletePhone: requiresRights(["delete-phone"]).createResolver(
-    async (parent, { id, department }, { models, token, ip }) =>
+    async (parent, { id, department, userid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           let {
@@ -466,6 +478,10 @@ export default {
             } else {
               unitid = company;
             }
+          }
+
+          if (userid) {
+            unitid = userid;
           }
 
           const oldPhone = await models.Phone.findOne({

@@ -93,19 +93,19 @@ export const mutations = `
   deleteAddress(id: ID!, department: Boolean): Response!
   contact(email: String!, company: String!, message: String!, type: String!, name: String!): Boolean!
 
-  createPhone(phoneData: PhoneInput!, department: Boolean): Phone!
-  updatePhone(id: ID, phone: PhoneInput): Phone!
-  deletePhone(id: ID!, department: Boolean): Response!
+  createPhone(phoneData: PhoneInput!, department: Boolean, userid: ID): Phone!
+  updatePhone(id: ID, phone: PhoneInput, userid: ID): Phone!
+  deletePhone(id: ID!, department: Boolean, userid: ID): Response!
 
   newsletterSignup(email: String!, firstname: String, lastname: String): Response!
   newsletterSignupConfirm(email: String!, token: String!): Response!
 
   searchAddress(input: String!, region: String!): JSON!
 
-  createEmail(emailData: EmailInput! forCompany: Boolean): Email!
-  updateEmail(email: String!, emailData: EmailUpdateInput!): Response!
-  updateEmail08(email: String!, emailData: EmailUpdateInput!): Email!
-  deleteEmail(email: String!, forCompany: Boolean): Response!
+  createEmail(emailData: EmailInput!, forCompany: Boolean, userid: ID): Email!
+  updateEmail(email: String!, emailData: EmailUpdateInput!, userid: ID): Response!
+  updateEmail08(email: String!, emailData: EmailUpdateInput!, userid: ID): Email!
+  deleteEmail(email: String!, forCompany: Boolean, userid: ID): Response!
 
   updateTags(model: String!, tags: [String]!): Response!
 `;
