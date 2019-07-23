@@ -1,11 +1,15 @@
 import { decode } from "jsonwebtoken";
+import moment from "moment";
+import U2F from "u2f";
+import Speakeasy from "speakeasy";
+import QRCode from "qrcode";
+
 import { parentAdminCheck } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
-import moment from "moment";
 
 export default {
-  me: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+  me: requiresAuth.createResolver(async (_, args, { models, token }) => {
     // they are logged in
     if (token && token != "null") {
       try {
@@ -27,7 +31,7 @@ export default {
   }),
 
   fetchSemiPublicUser: requiresRights(["view-users"]).createResolver(
-    async (parent, { unitid }, { models }) => {
+    async (_, { unitid }, { models }) => {
       try {
         const me = await models.User.findById(unitid);
         const user = await parentAdminCheck(me);
@@ -42,7 +46,7 @@ export default {
     }
   ),
 
-  checkAuthToken: async (parent, { email, token }, { models }) => {
+  checkAuthToken: async (_, { email, token }, { models }) => {
     try {
       const validToken = await models.Token.findOne({
         where: {
@@ -71,5 +75,36 @@ export default {
     } catch (err) {
       throw new NormalError({ message: err.message });
     }
-  }
+  },
+
+  generateSecret: requiresRights(["create-2FA"]).createResolver(
+    async (_, { type }, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        if (type == "totp") {
+          // Will generate a secret key of length 32
+          const secret = Speakeasy.generateSecret();
+          await models.TwoFA.create({
+            unitid,
+            secret,
+            type: "totp",
+            lastused: models.sequelize.fn("NOW")
+          });
+
+          const qrCode = await QRCode.toDataURL(secret.otpauth_url);
+
+          return qrCode;
+        } else {
+          U2F.request("https://api.vipfy.store");
+
+          return "string";
+        }
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  )
 };

@@ -5,7 +5,11 @@ export const types = `
   }
 `;
 
+export const queries = `
+generateSecret(type: TWOFA_TYPE!): String!
+`;
+
 export const mutations = `
-  generateSecret(type: TWOFA_TYPE!): Boolean!
   validateToken(unitid: ID!, type: String!, token: String!): Boolean!
+  verifyToken(type: String!, code: String!): Boolean!
 `;

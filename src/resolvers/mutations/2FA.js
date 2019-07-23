@@ -1,30 +1,34 @@
-import { decode } from "jsonwebtoken";
 import Speakeasy from "speakeasy";
-import U2F from "u2f";
+import { decode } from "jsonwebtoken";
 import { requiresRights } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createToken } from "../../helpers/token";
 
 export default {
-  generateSecret: requiresRights(["create-2FA"]).createResolver(
-    async (_, { type }, { models, token }) => {
+  verifyToken: requiresRights(["create-2FA"]).createResolver(
+    async (_, { type, code }, { models, token }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid, company }
         } = decode(token);
 
-        if (type == "totp") {
-          // Will generate a secret key of length 32
-          const secret = Speakeasy.generateSecret();
-          await models.TwoFA.create({
-            unitid,
-            secret,
-            type: "totp",
-            lastused: models.sequelize.fn("NOW")
-          });
-        } else {
-          U2F.request("https://api.vipfy.store");
+        const { secret, id } = await models.TwoFA.findOne({
+          where: { unitid, type },
+          raw: true
+        });
+
+        const validToken = Speakeasy.totp.verify({
+          secret: secret.base32,
+          encoding: "base32",
+          token: code,
+          window: 2
+        });
+
+        if (!validToken) {
+          throw new Error("The code was not valid!");
         }
+
+        await models.TwoFA.update({ verified: true }, { where: { id } });
 
         return true;
       } catch (err) {
