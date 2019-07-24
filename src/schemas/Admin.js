@@ -28,4 +28,6 @@ export const mutations = `
   freezeAccount(unitid: Int!): Response!
 
   flushLocalCaches: Response!
+
+  fetchServerStats: JsonResponse!
 `;
