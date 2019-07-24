@@ -7,6 +7,8 @@ export const queries = `
   adminFetchAllApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
   adminFetchAppById(id: ID!): AppDetails!
   allCompanies(limit: Int, offset: Int): [Department]!
+
+  fetchServerStats: JsonResponse!
 `;
 
 export const mutations = `
