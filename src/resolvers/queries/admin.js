@@ -91,5 +91,23 @@ export default {
         throw new Error(err.message);
       }
     }
+  ),
+
+  fetchServerStats: requiresVipfyAdmin.createResolver(
+    async (parent, args, context) => ({
+      data: {
+        caches: { auth: getAuthStats(), services: serviceStats() },
+
+        server: {
+          memory: process.memoryUsage(),
+
+          uptime: process.uptime(),
+
+          nodeVersion: process.version,
+
+          version: serverVersion
+        }
+      }
+    })
   )
 };
