@@ -111,7 +111,6 @@ export default {
     teamlicence: "Team",
     teamaccount: "Team"
   }),
-  LicenceLayout: find({ unitid: "User", licenceid: "Licence" }),
   Log: find({ user: "User", sudoer: "User" }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
@@ -141,15 +140,6 @@ export default {
     employees: "[User]",
     licences: "[Licence]",
     services: "[BoughtPlan]"
-  }),
-  AppOverview: find({
-    app: "App",
-    singles: "[SingleLicence]",
-    teams: "[Team]"
-  }),
-  SingleLicence: find({
-    employee: "User",
-    licence: "Licence"
   }),
   ServiceLicence: find({
     licence: "Licence"
