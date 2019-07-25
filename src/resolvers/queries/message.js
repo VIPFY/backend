@@ -53,7 +53,7 @@ export default {
 
         const user = await models.sequelize.query(
           `SELECT * FROM users_view
-       WHERE id = :unitid and deleted = false`,
+       WHERE id = :userid and deleted = false`,
           {
             replacements: { userid },
             type: models.sequelize.QueryTypes.SELECT
