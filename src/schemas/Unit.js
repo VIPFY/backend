@@ -105,6 +105,7 @@ export const types = `
     passwordstrength: Int
     twofa: [String]
     lastactive: Date
+    deleted: Boolean
   }
 
   type SignUpConfirmResponse {
@@ -117,7 +118,7 @@ export const queries = `
   me: User
 
   #UserView for Company Admins
-  fetchSemiPublicUser(unitid: ID!): SemiPublicUser
+  fetchSemiPublicUser(userid: ID!): SemiPublicUser
 
   #The token the user receives after registration to set his password
   checkAuthToken(token: String!, email: String!): TokenResponse!
