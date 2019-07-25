@@ -458,6 +458,7 @@ export default {
       if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
       }
+
       const message = "Email or Password incorrect!";
 
       const emailExists = await models.Login.findOne({

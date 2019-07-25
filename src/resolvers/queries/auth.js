@@ -1,10 +1,14 @@
 import { decode } from "jsonwebtoken";
+import crypto from "crypto";
 import moment from "moment";
-import U2F from "u2f";
 import Speakeasy from "speakeasy";
 import QRCode from "qrcode";
 
-import { parentAdminCheck, companyCheck } from "../../helpers/functions";
+import {
+  parentAdminCheck,
+  companyCheck,
+  concatName
+} from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
@@ -92,11 +96,10 @@ export default {
     async (_, { type, userid }, { models, token }) => {
       try {
         let {
-          user: { unitid, company }
+          user: { unitid }
         } = decode(token);
 
         if (userid && userid != unitid) {
-          await companyCheck(company, unitid, userid);
           unitid = userid;
         }
 
@@ -114,9 +117,23 @@ export default {
 
           return { qrCode, codeId: twoFA.dataValues.id };
         } else {
-          U2F.request("https://api.vipfy.store");
+          const p1 = models.User.findOne({ where: { id: userid }, raw: true });
 
-          return "string";
+          const p2 = crypto.randomBytes(256);
+
+          const [user, challenge] = await Promise.all([p1, p2]);
+          const name = concatName(user);
+
+          const yubikey = {
+            rp: { name: "VIPFY" },
+            user: { id: userid, name, displayName: name },
+            pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+            attestation: "direct",
+            timeout: 60000,
+            challenge
+          };
+
+          return { yubikey };
         }
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
