@@ -93,21 +93,16 @@ export default {
     }
   ),
 
-  fetchServerStats: requiresVipfyAdmin.createResolver(
-    async (parent, args, context) => ({
-      data: {
-        caches: { auth: getAuthStats(), services: serviceStats() },
+  fetchServerStats: requiresVipfyAdmin.createResolver(async () => ({
+    data: {
+      caches: { auth: getAuthStats(), services: serviceStats() },
 
-        server: {
-          memory: process.memoryUsage(),
-
-          uptime: process.uptime(),
-
-          nodeVersion: process.version,
-
-          version: serverVersion
-        }
+      server: {
+        memory: process.memoryUsage(),
+        uptime: process.uptime(),
+        nodeVersion: process.version,
+        version: serverVersion
       }
-    })
-  )
+    }
+  }))
 };

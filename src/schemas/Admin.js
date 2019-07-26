@@ -9,6 +9,7 @@ export const queries = `
   allCompanies(limit: Int, offset: Int): [Department]!
 
   fetchServerStats: JsonResponse!
+  fetchPendingIntegrations: [Licence]!
 `;
 
 export const mutations = `

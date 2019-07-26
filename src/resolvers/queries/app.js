@@ -6,8 +6,6 @@ import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-
-import logger from "../../loggers";
 import { companyCheck } from "../../helpers/functions";
 
 export default {
@@ -101,7 +99,7 @@ export default {
   ),
 
   fetchLicences: requiresAuth.createResolver(
-    async (parent, { licenceid }, { models, token }, info) => {
+    async (_, { licenceid }, { models, token }, info) => {
       try {
         const {
           user: { unitid }
