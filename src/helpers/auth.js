@@ -95,5 +95,6 @@ export const getNewPasswordData = async password => {
   const passwordhash = await bcrypt.hash(password, 12);
   const passwordstrength = computePasswordScore(password);
   const passwordlength = password.length;
+
   return { passwordhash, passwordstrength, passwordlength };
 };
