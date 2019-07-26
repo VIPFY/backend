@@ -14,7 +14,7 @@ import {
   concatName
 } from "../../helpers/functions";
 import { uploadUserImage } from "../../services/aws";
-import { getNewPasswordData } from "../../helpers/auth";
+import { getNewPasswordData, createAdminToken } from "../../helpers/auth";
 import { sendEmail } from "../../helpers/email";
 /* eslint-disable no-unused-vars, prefer-destructuring */
 
@@ -361,10 +361,7 @@ export default {
           throw new Error("Password too weak!");
         }
 
-        await models.Human.update(
-          { password: pw.passwordhash },
-          { where: { unitid } }
-        );
+        await models.Human.update({ ...pw }, { where: { unitid } });
 
         const employeeName = concatName(employee);
         const adminName = concatName(isAdmin);
@@ -396,7 +393,7 @@ export default {
   ),
 
   setConsent: requiresAuth.createResolver(
-    async (parent, { consent }, { models, token, ip }) =>
+    async (_, { consent }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid }
@@ -435,5 +432,47 @@ export default {
           });
         }
       })
+  ),
+
+  impersonate: requiresRights(["impersonate"]).createResolver(
+    async (_, { unitid }, { models, token, SECRET, ip }) => {
+      try {
+        const {
+          user: { unitid: id, company }
+        } = decode(token);
+
+        if (id == unitid) {
+          throw new Error("You can't impersonate yourself!");
+        }
+        const p1 = models.User.findOne({ where: { id }, raw: true });
+        const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
+
+        const [isAdmin, employee] = await Promise.all([p1, p2]);
+        await companyCheck(company, id, unitid);
+
+        if (!isAdmin) {
+          throw new Error("You don't have the necessary rights!");
+        }
+
+        if (employee.isadmin) {
+          throw new Error("You can't impersonate another Admin!");
+        }
+
+        await createLog(
+          ip,
+          "impersonate",
+          { admin: id, impersonated: unitid },
+          id,
+          null
+        );
+
+        return createAdminToken({ unitid, company, admin: id, SECRET });
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
   )
 };

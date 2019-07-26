@@ -23,6 +23,35 @@ export const createToken = async (user, SECRET, expiresIn = "1w") => {
   }
 };
 
+/**
+ * Create a token which is used to impersonate a user
+ *
+ * @param {number} unitid The user to impersonate
+ * @param {number} company
+ * @param {number} impersonator The admins ID
+ * @param {string} SECRET
+ * @param {string} expiresIn for example 1d for 1 day
+ */
+export const createAdminToken = async ({
+  unitid,
+  company,
+  impersonator,
+  SECRET,
+  expiresIn = "1w"
+}) => {
+  try {
+    const newToken = await jwt.sign(
+      { user: { unitid, company }, impersonator },
+      SECRET,
+      { expiresIn }
+    );
+
+    return newToken;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
 const NodeCache = require("node-cache");
 
 const unitAuthCache = new NodeCache({
