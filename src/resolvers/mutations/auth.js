@@ -458,6 +458,7 @@ export default {
       if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
       }
+
       const message = "Email or Password incorrect!";
 
       const emailExists = await models.Login.findOne({
@@ -465,7 +466,13 @@ export default {
         raw: true
       });
 
-      if (!emailExists) throw new Error(message);
+      const { suspended, deleted, banned } = emailExists;
+
+      if (!emailExists) {
+        throw new Error(message);
+      } else if (suspended || deleted || banned) {
+        throw new Error("Login for this account is currently disabled!");
+      }
 
       const valid = await bcrypt.compare(password, emailExists.passwordhash);
       if (!valid) throw new Error(message);
