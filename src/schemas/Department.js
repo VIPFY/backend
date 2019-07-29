@@ -61,14 +61,6 @@ export const types = `
     employee: PublicUser
   }
 
-  input CompanyInput {
-    name: String
-    user: ID
-    statisticdata: JSON
-    legalinformation: LegalInput
-    placeid: String
-  }
-
   input HumanName {
     title: String!
     firstname: String!
@@ -86,13 +78,6 @@ export const types = `
     promocode: String
   }
 
-  input LegalInput {
-    vatId: String
-    termsOfService: Date!
-    privacy: Date!
-    noVatRequired: Boolean!
-  }
-
   input StatisticInput {
     industry: String
     country: String
@@ -104,15 +89,10 @@ export const types = `
 export const queries = `
   # Returns the users company
   fetchCompany: Department!
-  fetchDepartments: [DepartmentResponse]!
   fetchDepartmentsData: [DepartmentDataResponse]!
 
   # Returns the amount of units in a Department
-  fetchCompanySize: ID!
   fetchEmployees: [DepartmentEmployee]!
-
-  # Returns the address data fetched in sign-up process
-  fetchAddressProposal(placeid: String!): JSON!
 
   fetchUserSecurityOverview: [UserSecurityOverview]!
   fetchVipfyPlan: BoughtPlan
@@ -122,16 +102,11 @@ export const mutations = `
   updateCompanyPic(file: Upload!): String!
   updateStatisticData(data: StatisticInput!): Response!
 
-  addSubDepartment(departmentid: ID!, name: String!): Response!
   editDepartmentName(departmentid: ID!, name: String!): Response!
-  deleteSubDepartment(departmentid: ID!): Response!
 
   addEmployee(unitid: ID!, departmentid: ID!): Response!
-  addCreateEmployee(email: String!, password: String!, name: HumanName!, departmentid: ID!): Response!
   createEmployee(file: Upload, addpersonal:JSON!, addteams:[JSON]!, apps:[JSON]!): Boolean!
   createEmployee09(name: HumanName!, emails: [EmailInput!]!, password: String!, needpasswordchange: Boolean, file: Upload, birthday: Date, hiredate: Date, address: AddressInput, position: String, phones: [PhoneInput]): ID!
-  removeEmployee(unitid: ID!, departmentid: ID!): Response!
-  fireEmployee(unitid: ID!): Response!
   deleteEmployee(employeeid: ID!): Boolean!
 
   # Saves data we fetched in the Business Advisor
@@ -148,3 +123,5 @@ export const mutations = `
   banEmployee(userid: ID!): Response!
   unbanEmployee(userid: ID!): Response!
 `;
+
+//banEmployee, unbanEmployee unused but maybe useful?  createEmployee only used once

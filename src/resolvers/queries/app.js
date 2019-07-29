@@ -6,8 +6,6 @@ import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-
-import logger from "../../loggers";
 import { companyCheck } from "../../helpers/functions";
 
 export default {
@@ -101,7 +99,7 @@ export default {
   ),
 
   fetchLicences: requiresAuth.createResolver(
-    async (parent, { licenceid }, { models, token }, info) => {
+    async (_, { licenceid }, { models, token }, info) => {
       try {
         const {
           user: { unitid }
@@ -441,29 +439,6 @@ export default {
     }
   ),
 
-  fetchAppIcon: async (parent, { licenceid }, { models }) => {
-    try {
-      const app = await models.sequelize.query(
-        `
-      SELECT DISTINCT ad.icon, ad.name as appname, bd.alias, ld.id as licenceid
-      FROM licence_view ld
-        INNER JOIN boughtplan_data bd on ld.boughtplanid = bd.id
-        INNER JOIN plan_data pd on bd.planid = pd.id
-        INNER JOIN app_data ad on pd.appid = ad.id
-      WHERE ld.id = :licenceid
-      `,
-        {
-          replacements: { licenceid },
-          type: models.sequelize.QueryTypes.SELECT
-        }
-      );
-
-      return app[0];
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
-    }
-  },
-
   fetchBoughtplanUsagePerUser: requiresRights(["view-usage"]).createResolver(
     async (_, { starttime, endtime, boughtplanid }, { models, token }) => {
       try {
@@ -502,39 +477,6 @@ export default {
     }
   ),
 
-  fetchMonthlyAppUsage: requiresRights(["view-usage"]).createResolver(
-    async (parent, args, { models, token }) => {
-      const {
-        user: { company }
-      } = decode(token);
-      try {
-        const stats = await models.sequelize.query(
-          `
-          SELECT appid app, lv.options, sum(minutesspent) totalminutes
-          FROM timetracking_data tt
-                JOIN boughtplan_data bp on tt.boughtplanid = bp.id
-                JOIN plan_data pd on bp.planid = pd.id
-                JOIN department_employee_view dev ON tt.unitid = dev.employee
-                JOIN licence_view lv ON tt.licenceid = lv.id
-                WHERE day >= date_trunc('month', current_date)
-            AND dev.id = :company
-          GROUP BY appid, lv.options
-          ORDER BY appid;
-        `,
-          {
-            replacements: { company },
-            raw: true,
-            type: models.sequelize.QueryTypes.SELECT
-          }
-        );
-
-        return stats;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
   fetchCompanyServices: requiresRights(["view-licences"]).createResolver(
     async (parent, args, { models, token }) => {
       const {
@@ -551,7 +493,7 @@ export default {
           on boughtplan_data.planid = plan_data.id 
           where departmentid in (Select childid from department_tree_view where id = :company)
           group by appid) t full outer join (
-      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_view l
+      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_data l
         join boughtplan_data b on l.boughtplanid = b.id
         join plan_data p on b.planid = p.id
         join app_data a on p.appid = a.id
@@ -591,7 +533,7 @@ export default {
           on boughtplan_data.planid = plan_data.id 
           where departmentid in (Select childid from department_tree_view where id = :company)
           group by appid) t full outer join (
-      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_view l
+      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_data l
         join boughtplan_data b on l.boughtplanid = b.id
         join plan_data p on b.planid = p.id
         join app_data a on p.appid = a.id

@@ -20,43 +20,6 @@ export default {
     }
   ),
 
-  fetchCompanySize: requiresRights(["view-employees"]).createResolver(
-    async (parent, args, { models, token }) => {
-      try {
-        const {
-          user: { company }
-        } = decode(token);
-        const size = await models.Department.findOne({
-          where: { unitid: company }
-        });
-
-        return size.employees;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
-  fetchDepartments: requiresRights(["view-departments"]).createResolver(
-    async (parent, args, { models, token }) => {
-      try {
-        const {
-          user: { company }
-        } = decode(token);
-
-        const departments = await models.sequelize
-          .query("Select * from getDepartments(:company)", {
-            replacements: { company }
-          })
-          .spread(res => res);
-
-        return departments;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
   fetchDepartmentsData: requiresRights(["view-departments"]).createResolver(
     async (parent, args, { models, token }) => {
       try {
@@ -126,40 +89,6 @@ export default {
         return employees;
       } catch (err) {
         throw new Error(err.message);
-      }
-    }
-  ),
-
-  fetchAddressProposal: requiresAuth.createResolver(
-    async (parent, { placeid }, { models, token }) => {
-      try {
-        const {
-          user: { company }
-        } = decode(token);
-        const { name } = await models.Department.findOne({
-          where: {
-            unitid: company
-          },
-          attributes: ["name"],
-          raw: true
-        });
-
-        const res = await googleMapsClient
-          .place({
-            placeid,
-            fields: [
-              "formatted_address",
-              "international_phone_number",
-              "website",
-              "address_component"
-            ]
-          })
-          .asPromise();
-
-        res.json.result.name = name;
-        return res.json.result;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   ),

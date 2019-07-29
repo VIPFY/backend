@@ -36,12 +36,6 @@ export const types = `
     consent: Boolean
   }
 
-  input NameInput {
-    firstname: String
-    middlename: String
-    lastname: String
-  }
-
   input UserInput {
     firstname: String
     middlename: String
@@ -107,6 +101,11 @@ export const types = `
     addresses: [Address]
     phones: [Phone]
     company: Department
+    passwordlength: Int
+    passwordstrength: Int
+    twofa: [String]
+    lastactive: Date
+    deleted: Boolean
   }
 
   type SignUpConfirmResponse {
@@ -119,15 +118,13 @@ export const queries = `
   me: User
 
   #UserView for Company Admins
-  fetchSemiPublicUser(unitid: ID!): SemiPublicUser
+  fetchSemiPublicUser(userid: ID!): SemiPublicUser
 
   #The token the user receives after registration to set his password
   checkAuthToken(token: String!, email: String!): TokenResponse!
 `;
 
 export const mutations = `
-  createUser(user: UserInput!, file: Upload): Response!
-  updateMyself(user: UserInput!): User!
   updateEmployee(user: EmployeeInput!): SemiPublicUser!
   updateUser(user: UserInput!): Response!
   updateProfilePic(file: Upload!): User!

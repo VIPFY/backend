@@ -16,32 +16,54 @@ export default {
           user: { unitid }
         } = decode(token);
 
-        return await messaging.fetchDialog(cursor, groupid, limit, models, unitid);
+        return await messaging.fetchDialog(
+          cursor,
+          groupid,
+          limit,
+          models,
+          unitid
+        );
       } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { error: err } });
+        throw new NormalError({
+          message: err.message,
+          internalData: { error: err }
+        });
       }
     }
   ),
 
-  fetchGroups: requiresAuth.createResolver(async (parent, args, { models, token }) => {
-    try {
-      const {
-        user: { unitid }
-      } = decode(token);
+  fetchGroups: requiresAuth.createResolver(
+    async (parent, args, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
 
-      return await messaging.fetchGroups(models, unitid);
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return await messaging.fetchGroups(models, unitid);
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  }),
+  ),
 
-  fetchPublicUser: requiresAuth.createResolver(async (parent, { userid }, { models }) => {
-    try {
-      const user = await models.User.findById(userid);
+  fetchPublicUser: requiresAuth.createResolver(
+    async (parent, { userid }, { models }) => {
+      try {
+        //const user = await models.User.findById(userid);
 
-      return user;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        const user = await models.sequelize.query(
+          `SELECT * FROM users_view
+       WHERE id = :userid and deleted = false`,
+          {
+            replacements: { userid },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+
+        return user;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  })
+  )
 };

@@ -91,7 +91,6 @@ const postprocessors = {
     return value;
   },
   Email: async (value, fields) => {
-    console.log("Email");
     if (fields.includes("verifyuntil") && !value.verified) {
       const verifyuntil = moment(value.createdat).subtract(
         EMAIL_VERIFICATION_TIME
@@ -102,12 +101,14 @@ const postprocessors = {
   },
   Licence: async (value, fields) => {
     console.log("Licence", value, fields);
-    if (value.options) {
-      if (value.options.teamlicence) {
-        value.teamlicence = value.options.teamlicence;
-      }
-      if (value.options.teamaccount) {
-        value.teamaccount = value.options.teamaccount;
+    if (value) {
+      if (value.options) {
+        if (value.options.teamlicence) {
+          value.teamlicence = value.options.teamlicence;
+        }
+        if (value.options.teamaccount) {
+          value.teamaccount = value.options.teamaccount;
+        }
       }
     }
     return value;
@@ -115,24 +116,28 @@ const postprocessors = {
   // Wird das benötigt?
   CompanyService: async (value, fields) => {
     console.log("CompanyService");
-    if (value.options) {
-      if (value.options.teamlicence) {
-        value.teamlicence = value.options.teamlicence;
-      }
-      if (value.options.teamaccount) {
-        value.teamaccount = value.options.teamaccount;
+    if (value) {
+      if (value.options) {
+        if (value.options.teamlicence) {
+          value.teamlicence = value.options.teamlicence;
+        }
+        if (value.options.teamaccount) {
+          value.teamaccount = value.options.teamaccount;
+        }
       }
     }
     return value;
   },
   TeamBoughtPlan: async (value, fields) => {
     console.log("TeamBoughtPlan");
-    if (value.options) {
-      if (value.options.teamlicence) {
-        value.teamlicence = value.options.teamlicence;
-      }
-      if (value.options.teamaccount) {
-        value.teamaccount = value.options.teamaccount;
+    if (value) {
+      if (value.options) {
+        if (value.options.teamlicence) {
+          value.teamlicence = value.options.teamlicence;
+        }
+        if (value.options.teamaccount) {
+          value.teamaccount = value.options.teamaccount;
+        }
       }
     }
     return value;

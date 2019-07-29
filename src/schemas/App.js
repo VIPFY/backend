@@ -22,18 +22,6 @@ export const types = `
     owner: Department
   }
 
-  type AppOverview {
-    id: ID!
-    app: AppDetails!
-    singles: [SingleLicence]
-    teams: [Team]
-  }
-
-  type SingleLicence{
-    employee: SemiPublicUser!
-    licence: Licence!
-  }
-
   type CompanyService{
     id: ID!
     app: AppDetails!
@@ -138,6 +126,7 @@ export const types = `
     endtime: Date
     agreed: Boolean
     disabled: Boolean
+    pending: Boolean
     key: JSON
     boughtplanid: BoughtPlan!
     unitid: SemiPublicUser
@@ -161,6 +150,7 @@ export const types = `
     options: JSON
     boughtplanid: BoughtPlan!
     unitid: PublicUser
+    pending: Boolean
     dashboard: Int
     sidebar: Int
     tags: [String]
@@ -178,19 +168,6 @@ export const types = `
     unitid: SemiPublicUser!
     owner: SemiPublicUser!
     tags: [String]!
-  }
-
-  type LicenceLayout {
-    unitid: User!
-    licenceid: Licence!
-    sidebar: Int
-    dashboard: Int
-  }
-
-  input LicenceInput {
-    id: ID!
-    disabled: Boolean
-    endtime: Date
   }
   
   input LicenceRightInput {
@@ -241,6 +218,18 @@ export const types = `
     totalminutes: Int
     licenceenddates: [String]
   }
+
+  input SSOResult {
+    loginurl: String!
+    name: String!
+    email: String!
+    password: String!
+    recaptcha: Boolean!
+    tries: Int!
+    unloaded: Boolean!
+    passwordEntered: Boolean!
+    emailEntered: Boolean!
+  }
 `;
 
 export const queries = `
@@ -266,10 +255,7 @@ export const queries = `
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
 
   fetchSupportToken: String
-  fetchAppIcon(licenceid: ID!): TabResponse!
 
-  # The total minutes spend per app, this month, combined for all users of the company
-  fetchMonthlyAppUsage: [AppUsage]!
   fetchTotalAppUsage(starttime: Date, endtime: Date): [AppUsage]!
 
   # Total time spend in a specific boughtplan at some time, broken down by user
@@ -297,20 +283,9 @@ export const mutations = `
   # Admin: toogle App between disabled and enabled
   toggleAppStatus(id: ID!): Response!
 
-  # Add the boughtplan as departmentapp and give each empoyee a licence
-  distributeLicenceToDepartment(departmentid: ID!, boughtplanid: ID!, licencetype: String!): DistributeResponse!
-
-  # Revoke licence from everyone in department
-  revokeLicencesFromDepartment(departmentid: ID!, boughtplanid: ID!): Response!
-
   # Give an user a licence from the licence pool of department
   distributeLicence(licenceid: ID!, unitid: ID!, departmentid: ID!): DistributeResponse!
 
-  revokeLicence(licenceid: ID!): Response!
-  # Remove the user from a licence and optionally delete the key
-  suspendLicence(licenceid: ID!, fromuser: ID, clear: Boolean): Response!
-  # Delete the key from a licence
-  clearLicence(licenceid: ID!): Response!
   # Deletes a licence on a set date, if it is after the normal cancel period
   deleteLicenceAt(licenceid: ID!, time: Date!): Date!
   deleteServiceLicenceAt(serviceid: ID!, licenceid: ID!, time: Date!): Date!
@@ -325,6 +300,8 @@ export const mutations = `
   # Adds the data of an external App
   addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): BoughtPlan!
   addExternalLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID): Response!
+
+  failedIntegration(data: SSOResult!): Boolean!
 
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!
