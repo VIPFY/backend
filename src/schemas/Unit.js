@@ -34,6 +34,7 @@ export const types = `
     tutorialprogress: JSON
     isonline: Boolean
     consent: Boolean
+    needstwofa: Boolean
   }
 
   input NameInput {
@@ -110,6 +111,7 @@ export const types = `
     passwordlength: Int
     passwordstrength: Int
     twofa: [String]
+    needstwofa: Boolean
     lastactive: Date
   }
 

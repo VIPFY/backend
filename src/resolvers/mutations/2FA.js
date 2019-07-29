@@ -69,5 +69,20 @@ export default {
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
-  }
+  },
+
+  force2FA: requiresRights(["force-2FA"]).createResolver(
+    async (_, { userid }, { models }) => {
+      try {
+        await models.Human.update(
+          { needstwofa: true },
+          { where: { unitid: userid } }
+        );
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  )
 };

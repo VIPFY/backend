@@ -108,14 +108,25 @@ export default {
         } = decode(token);
 
         const employees = await models.sequelize.query(
-          `SELECT
-            human_data.*,
-            u.*
+          `SELECT human_data.*,
+            u.*,
+            COALESCE(twofa.twofactormethods, ARRAY []::json[]) as twofactormethods
           FROM human_data
             JOIN (SELECT DISTINCT employee
-                  FROM department_employee_view
-                  WHERE id = :company AND employee NOTNULL) t ON (t.employee = human_data.unitid)
+              FROM department_employee_view
+              WHERE id = :company
+                AND employee NOTNULL) t ON (t.employee = human_data.unitid)
             JOIN unit_data u on human_data.unitid = u.id
+            LEFT JOIN (SELECT twofa_data.unitid,
+              COALESCE(array_agg(json_build_object('twofatype', twofa_data.type, 'twofacreated',
+                                                    twofa_data.created, 'twofalastused',
+                                                    twofa_data.lastused, 'twofacount', twofa_data.used,
+                                                    'twofaid', twofa_data.id)),
+              ARRAY []::json[]) as twofactormethods
+            FROM twofa_data
+            WHERE twofa_data.verified = true
+              AND twofa_data.deleted isnull
+            GROUP BY twofa_data.unitid) twofa ON human_data.unitid = twofa.unitid
           WHERE not u.deleted`,
           {
             replacements: { company },

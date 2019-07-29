@@ -3,6 +3,8 @@ import axios from "axios";
 import moment from "moment";
 import { decode } from "jsonwebtoken";
 import { sleep } from "@vipfy-private/service-base";
+import QRCode from "qrcode";
+import Speakeasy from "speakeasy";
 import { parseName } from "humanparser";
 import {
   createToken,

@@ -25,6 +25,7 @@ export const queries = `
 `;
 
 export const mutations = `
+  force2FA(userid: ID!): Boolean!
   validateToken(userid: ID!, type: TWOFA_TYPE!, token: String!): String!
   verifyToken(userid: ID!, type: TWOFA_TYPE!, code: String!, codeId: ID!): Boolean!
 `;

@@ -3,18 +3,12 @@ import crypto from "crypto";
 import moment from "moment";
 import Speakeasy from "speakeasy";
 import QRCode from "qrcode";
-
-import {
-  parentAdminCheck,
-  companyCheck,
-  concatName
-} from "../../helpers/functions";
+import { parentAdminCheck, concatName } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
-import { checkCompanyMembership } from "../../helpers/companyMembership";
 
 export default {
-  me: requiresAuth.createResolver(async (_, args, { models, token }) => {
+  me: requiresAuth.createResolver(async (_, _args, { models, token }) => {
     // they are logged in
     if (token && token != "null") {
       try {
@@ -24,6 +18,20 @@ export default {
 
         const me = await models.User.findById(unitid);
         const user = await parentAdminCheck(me);
+
+        if (me.dataValues.needstwofa) {
+          const hasTwoFa = await models.Login.findOne({
+            where: {
+              unitid: me.dataValues.id,
+              twofactor: { [models.Op.not]: null }
+            },
+            raw: true
+          });
+
+          if (hasTwoFa) {
+            user.dataValues.needstwofa = false;
+          }
+        }
 
         return user;
       } catch (err) {
@@ -38,7 +46,7 @@ export default {
   fetchSemiPublicUser: requiresRights(["view-users"]).createResolver(
     async (_, { unitid }, { models }) => {
       try {
-        //const me = await models.User.findById(unitid);
+        // const me = await models.User.findById(unitid);
 
         const me = await models.sequelize.query(
           `SELECT * FROM users_view

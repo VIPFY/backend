@@ -158,6 +158,14 @@ export const types = `
     error: String
   }
 
+  type TwoFactorDetails {
+    twofaid: ID!
+    twofatype: String!
+    twofacreated: String!
+    twofalastused: String!
+    twofacount: String!
+  }
+
   type UserSecurityOverview {
     id: ID!
     unitid: PublicUser!
@@ -168,5 +176,6 @@ export const types = `
     banned: Boolean!
     suspended: Boolean!
     createdate: String!
+    twofactormethods: [TwoFactorDetails]
   }
 `;
