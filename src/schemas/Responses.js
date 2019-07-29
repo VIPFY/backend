@@ -86,14 +86,6 @@ export const types = `
     parent: ID
   }
 
-  type DepartmentResponse {
-    id: ID
-    childids: [ID]
-    department: Department
-    employees: [emp]
-    level: Int
-  }
-
   type emp {
     employeeid: ID
     firstname: String

@@ -466,103 +466,6 @@ export default {
       })
   ),
 
-  // TODO Remove?
-  updateTeamMembers: requiresRights(["edit-team"]).createResolver(
-    async (parent, { members, teamid, action }, { models, token, ip }) => {
-      try {
-        await models.sequelize.transaction(async ta => {
-          try {
-            const {
-              user: { unitid, company }
-            } = decode(token);
-
-            await teamCheck(company, teamid);
-
-            const promises = [];
-
-            members.forEach(member => {
-              promises.push(companyCheck(company, unitid, member));
-
-              if (action == "ADD") {
-                promises.push(
-                  models.ParentUnit.create(
-                    { parentunit: teamid, childunit: member },
-                    { transaction: ta }
-                  )
-                );
-              } else {
-                promises.push(
-                  models.ParentUnit.destroy(
-                    { where: { parentunit: teamid, childunit: member } },
-                    { transaction: ta }
-                  )
-                );
-              }
-            });
-
-            await Promise.all(promises);
-
-            await createLog(
-              ip,
-              "updateTeamMembers",
-              { members, teamid, action },
-              unitid,
-              ta
-            );
-          } catch (err) {
-            throw new Error(err);
-          }
-        });
-
-        return models.Department.findOne({ where: { unitid: teamid } });
-      } catch (err) {
-        throw new NormalError({
-          message: err.message,
-          internalData: { err }
-        });
-      }
-    }
-  ),
-  // TODO Remove?
-  updateTeamInfos: requiresRights(["edit-team"]).createResolver(
-    async (parent, { teamid, data }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid, company }
-          } = decode(token);
-
-          await teamCheck(company, teamid);
-
-          const team = await models.DepartmentData.findOne({
-            where: { unitid: teamid },
-            transaction: ta,
-            raw: true
-          });
-
-          await models.DepartmentData.update(
-            { internaldata: { ...team.internaldata, ...data } },
-            { where: { unitid: teamid }, transaction: ta }
-          );
-
-          await createLog(
-            ip,
-            "updateTeamInfos",
-            { data, teamid, oldData: team.internaldata },
-            unitid,
-            ta
-          );
-
-          return { ...team, internaldata: { ...team.internaldata, ...data } };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
   updateTeamPic: requiresRights(["edit-team"]).createResolver(
     async (_, { file, teamid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
@@ -615,57 +518,6 @@ export default {
           });
         }
       })
-  ),
-  // TODO implement to work
-  addTeamLicence: requiresRights(["edit-team"]).createResolver(
-    async (parent, { teamid, boughtplanid }, { models, token, ip }) => {
-      try {
-        await models.sequelize.transaction(async ta => {
-          try {
-            const {
-              user: { unitid, company }
-            } = decode(token);
-
-            await teamCheck(company, teamid);
-
-            const licence = models.Licence.findOne({
-              where: { boughtplanid },
-              raw: true,
-              transaction: ta
-            });
-
-            if (!licence) {
-              throw new Error({
-                code: 1,
-                message: "There are no open licences left for this plan."
-              });
-            }
-
-            await models.LicenceData.update(
-              { unitid: teamid },
-              { transaction: ta }
-            );
-
-            await createLog(
-              ip,
-              "addTeamLicence",
-              { teamid, boughtplanid, licence },
-              unitid,
-              ta
-            );
-          } catch (err) {
-            throw new Error(err);
-          }
-        });
-
-        return models.Department.findOne({ where: { unitid: teamid } });
-      } catch (err) {
-        throw new NormalError({
-          message: err.message,
-          internalData: { err }
-        });
-      }
-    }
   ),
 
   removeFromTeam: requiresRights(["edit-team"]).createResolver(
@@ -958,8 +810,6 @@ export default {
           );
 
           await Promise.all(promises);
-
-          //TODO notfiy user
 
           await createLog(
             ip,

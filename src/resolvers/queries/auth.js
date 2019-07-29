@@ -44,15 +44,15 @@ export default {
   }),
 
   fetchSemiPublicUser: requiresRights(["view-users"]).createResolver(
-    async (_, { unitid }, { models }) => {
+    async (_parent, { userid }, { models }) => {
       try {
         // const me = await models.User.findById(unitid);
 
         const me = await models.sequelize.query(
           `SELECT * FROM users_view
-         WHERE id = :unitid`,
+         WHERE id = :userid and deleted = false`,
           {
-            replacements: { unitid },
+            replacements: { userid },
             type: models.sequelize.QueryTypes.SELECT
           }
         );
