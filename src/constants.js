@@ -7,13 +7,16 @@ export const NEW_MESSAGE = "NEW_MESSAGE";
 export const NEW_NOTIFICATION = "NEW_NOTIFICATION";
 
 const options = {
-  host: "127.0.0.1",
-  port: 6379,
-  //  password: "FrxPxFCN96Cu6CCtt98WMrsn",
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
   db: 0,
   // reconnect after
   retryStrategy: times => Math.min(times * 50, 2000)
 };
+
+if (process.env.ENVIRONMENT != "development") {
+  options.password = process.env.REDIS_PW;
+}
 
 export const pubsub = new RedisPubSub({
   publisher: new Redis(options),
