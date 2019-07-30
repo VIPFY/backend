@@ -11,11 +11,11 @@ export const implementDate = {
   parseValue: value => new Date(value), // value from the client
   serialize(value) {
     if (value === Number.POSITIVE_INFINITY) {
-      return new Date(8640000000000000);
+      return new Date(8640000000000000).getTime();
     }
 
     if (value === Number.NEGATIVE_INFINITY) {
-      return new Date(-8640000000000000);
+      return new Date(-8640000000000000).getTime();
     }
 
     return new Date(value).getTime();
