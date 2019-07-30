@@ -1,11 +1,14 @@
 import { decode } from "jsonwebtoken";
-import { parentAdminCheck } from "../../helpers/functions";
+import crypto from "crypto";
+import moment from "moment";
+import Speakeasy from "speakeasy";
+import QRCode from "qrcode";
+import { parentAdminCheck, concatName } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
-import moment from "moment";
 
 export default {
-  me: requiresAuth.createResolver(async (parent, args, { models, token }) => {
+  me: requiresAuth.createResolver(async (_, _args, { models, token }) => {
     // they are logged in
     if (token && token != "null") {
       try {
@@ -15,6 +18,20 @@ export default {
 
         const me = await models.User.findById(unitid);
         const user = await parentAdminCheck(me);
+
+        if (me.dataValues.needstwofa) {
+          const hasTwoFa = await models.Login.findOne({
+            where: {
+              unitid: me.dataValues.id,
+              twofactor: { [models.Op.not]: null }
+            },
+            raw: true
+          });
+
+          if (hasTwoFa) {
+            user.dataValues.needstwofa = false;
+          }
+        }
 
         return user;
       } catch (err) {
@@ -27,9 +44,9 @@ export default {
   }),
 
   fetchSemiPublicUser: requiresRights(["view-users"]).createResolver(
-    async (parent, { userid }, { models }) => {
+    async (_parent, { userid }, { models }) => {
       try {
-        //const me = await models.User.findById(unitid);
+        // const me = await models.User.findById(unitid);
 
         const me = await models.sequelize.query(
           `SELECT * FROM users_view
@@ -52,7 +69,7 @@ export default {
     }
   ),
 
-  checkAuthToken: async (parent, { email, token }, { models }) => {
+  checkAuthToken: async (_, { email, token }, { models }) => {
     try {
       const validToken = await models.Token.findOne({
         where: {
@@ -81,5 +98,54 @@ export default {
     } catch (err) {
       throw new NormalError({ message: err.message });
     }
-  }
+  },
+
+  generateSecret: requiresRights(["create-2FA"]).createResolver(
+    async (_, { type, userid }, { models, token }) => {
+      try {
+        let {
+          user: { unitid }
+        } = decode(token);
+
+        if (userid && userid != unitid) {
+          unitid = userid;
+        }
+
+        if (type == "totp") {
+          // Will generate a secret key of length 32
+          const secret = Speakeasy.generateSecret({ name: "VIPFY" });
+          const twoFA = await models.TwoFA.create({
+            unitid,
+            secret,
+            type: "totp",
+            lastused: models.sequelize.fn("NOW")
+          });
+
+          const qrCode = await QRCode.toDataURL(secret.otpauth_url);
+
+          return { qrCode, codeId: twoFA.dataValues.id };
+        } else {
+          const p1 = models.User.findOne({ where: { id: userid }, raw: true });
+
+          const p2 = crypto.randomBytes(256);
+
+          const [user, challenge] = await Promise.all([p1, p2]);
+          const name = concatName(user);
+
+          const yubikey = {
+            rp: { name: "VIPFY" },
+            user: { id: userid, name, displayName: name },
+            pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+            attestation: "direct",
+            timeout: 60000,
+            challenge
+          };
+
+          return { yubikey };
+        }
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  )
 };

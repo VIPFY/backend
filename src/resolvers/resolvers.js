@@ -13,6 +13,7 @@ import reviewQueries from "./queries/review";
 import tutorialQueries from "./queries/tutorial";
 import teamQueries from "./queries/team";
 
+import twoFA from "./mutations/2FA";
 import adminMutations from "./mutations/admin";
 import authMutations from "./mutations/auth";
 import appMutations from "./mutations/app";
@@ -47,6 +48,7 @@ const Query = Object.assign(
 );
 
 const Mutation = Object.assign(
+  twoFA,
   adminMutations,
   appMutations,
   authMutations,

@@ -50,7 +50,7 @@ export default {
   fetchAllAppsEnhanced: requiresRights([
     "view-apps",
     "view-licences"
-  ]).createResolver(async (parent, args, { models, token }) => {
+  ]).createResolver(async (_parent, _args, { models, token }) => {
     try {
       const {
         user: { company }
@@ -76,7 +76,7 @@ export default {
   }),
 
   fetchAppById: requiresRights(["view-apps"]).createResolver(
-    async (parent, { id }, { models, token }) => {
+    async (_parent, { id }, { models, token }) => {
       try {
         const {
           user: { company }
@@ -277,7 +277,7 @@ export default {
   ),
 
   fetchUserLicences: requiresRights(["view-licences"]).createResolver(
-    async (parent, { unitid }, { models, token }) => {
+    async (_parent, { unitid }, { models }) => {
       try {
         const licences = await models.Licence.findAll({
           where: { unitid },
