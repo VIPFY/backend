@@ -460,10 +460,23 @@ export default {
       }
       const message = "Email or Password incorrect!";
 
-      const emailExists = await models.Login.findOne({
+      /* const emailExists = await models.Login.findOne({
         where: { email },
         raw: true
-      });
+      });*/
+
+      const emailExistsall = await models.sequelize.query(
+        `SELECT * FROM login_view
+       WHERE email = :email`,
+        {
+          replacements: { email },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
+
+      const emailExists = emailExistsall[0];
+
+      console.log("EAMIL", emailExists);
 
       if (!emailExists) throw new Error(message);
 

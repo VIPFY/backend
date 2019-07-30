@@ -49,16 +49,10 @@ export default {
   fetchPublicUser: requiresAuth.createResolver(
     async (parent, { userid }, { models }) => {
       try {
-        //const user = await models.User.findById(userid);
-
-        const user = await models.sequelize.query(
-          `SELECT * FROM users_view
-       WHERE id = :userid and deleted = false`,
-          {
-            replacements: { userid },
-            type: models.sequelize.QueryTypes.SELECT
-          }
-        );
+        const user = await models.User.findOne({
+          where: { id: userid, deleted: false },
+          raw: true
+        });
 
         return user;
       } catch (err) {
