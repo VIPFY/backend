@@ -15,7 +15,7 @@ export const getDate = () => new Date().toUTCString();
  * companyid of the user
  * @exports
  *
- * @param {*} user
+ * @param {object} user
  */
 export const parentAdminCheck = async user => {
   await models.sequelize

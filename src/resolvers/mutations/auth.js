@@ -9,6 +9,7 @@ import {
   checkAuthentification,
   getNewPasswordData
 } from "../../helpers/auth";
+import { createToken as create2FAToken } from "../../helpers/token";
 import { createToken as createSetupToken } from "../../helpers/token";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
@@ -453,11 +454,12 @@ export default {
       }
     }),
 
-  signIn: async (parent, { email, password }, { models, SECRET, ip }) => {
+  signIn: async (_, { email, password }, { models, SECRET, ip }) => {
     try {
       if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
       }
+
       const message = "Email or Password incorrect!";
 
       /* const emailExists = await models.Login.findOne({
@@ -501,11 +503,37 @@ export default {
         null
       );
 
-      // User doesn't have the property unitid, so we have to pass emailExists for
-      // the token creation
-      const token = await createToken(emailExists, SECRET);
+      if (emailExists.twofactor) {
+        const { secret } = await models.TwoFA.findOne({
+          where: { unitid: emailExists.unitid, type: emailExists.twofactor },
+          raw: true
+        });
 
-      return { ok: true, token };
+        const token = await create2FAToken();
+
+        await models.Token.create({
+          email,
+          token,
+          data: { unitid: emailExists.unitid },
+          expiresat: moment()
+            .add(15, "minutes")
+            .toISOString(),
+          type: "2FAToken"
+        });
+
+        return {
+          ok: true,
+          twofactor: secret.otpauth_url,
+          unitid: emailExists.unitid,
+          token
+        };
+      } else {
+        // User doesn't have the property unitid, so we have to pass emailExists for
+        // the token creation
+        const token = await createToken(emailExists, SECRET);
+
+        return { ok: true, token };
+      }
     } catch (err) {
       logger.log(err);
       throw new NormalError({ message: err.message, internalData: { err } });
