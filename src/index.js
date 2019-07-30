@@ -12,8 +12,6 @@ import http from "http";
 
 // To create the GraphQl functions
 import { ApolloServer, makeExecutableSchema } from "apollo-server-express";
-import { execute, subscribe } from "graphql";
-import { SubscriptionServer } from "subscriptions-transport-ws";
 import depthLimit from "graphql-depth-limit";
 import { createContext } from "dataloader-sequelize";
 import models from "@vipfy-private/sequelize-setup";
@@ -23,7 +21,7 @@ import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import { authMiddleware, loggingMiddleWare } from "./middleware";
 import logger from "./loggers";
-import { formatError, AuthError } from "./errors";
+import { formatError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
 
 const RateLimit = require("express-rate-limit");
