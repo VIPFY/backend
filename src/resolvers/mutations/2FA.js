@@ -1,7 +1,8 @@
 import Speakeasy from "speakeasy";
-import { requiresRights } from "../../helpers/permissions";
+import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createToken } from "../../helpers/auth";
+import { checkToken } from "../../helpers/token";
 
 export default {
   verify2FA: requiresRights(["create-2FA"]).createResolver(
@@ -32,12 +33,18 @@ export default {
     }
   ),
 
-  validate2FA: async (_, { userid, type, token }, { models, SECRET }) => {
+  validate2FA: async (
+    _,
+    { userid, type, token, twoFAToken },
+    { models, SECRET }
+  ) => {
     try {
       const { secret, id } = await models.TwoFA.findOne({
         where: { unitid: userid, type },
         raw: true
       });
+
+      await checkToken(twoFAToken, "2FAToken");
 
       const validToken = Speakeasy.totp.verify({
         secret: secret.base32,
@@ -60,9 +67,16 @@ export default {
           { where: { id } }
         );
 
-        const data = await Promise.all([p1, p2]);
+        const p3 = models.Token.update(
+          { usedat: models.sequelize.fn("NOW") },
+          { where: { token: twoFAToken } }
+        );
 
-        return createToken(data[0], SECRET);
+        const data = await Promise.all([p1, p2, p3]);
+
+        const newToken = await createToken(data[0], SECRET);
+
+        return newToken;
       } else {
         throw new Error("Invalid Token or Token expired");
       }

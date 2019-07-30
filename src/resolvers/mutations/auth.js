@@ -3,14 +3,13 @@ import axios from "axios";
 import moment from "moment";
 import { decode } from "jsonwebtoken";
 import { sleep } from "@vipfy-private/service-base";
-import QRCode from "qrcode";
-import Speakeasy from "speakeasy";
 import { parseName } from "humanparser";
 import {
   createToken,
   checkAuthentification,
   getNewPasswordData
 } from "../../helpers/auth";
+import { createToken as create2FAToken } from "../../helpers/token";
 import { createToken as createSetupToken } from "../../helpers/token";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
@@ -497,10 +496,23 @@ export default {
           raw: true
         });
 
+        const token = await create2FAToken();
+
+        await models.Token.create({
+          email,
+          token,
+          data: { unitid: emailExists.unitid },
+          expiresat: moment()
+            .add(15, "minutes")
+            .toISOString(),
+          type: "2FAToken"
+        });
+
         return {
           ok: true,
           twofactor: secret.otpauth_url,
-          unitid: emailExists.unitid
+          unitid: emailExists.unitid,
+          token
         };
       } else {
         // User doesn't have the property unitid, so we have to pass emailExists for

@@ -45,11 +45,13 @@ export const createToken = () => {
  * @returns {boolean}
  */
 export const checkToken = async (token, type) => {
+  console.log("LOG: checkToken -> token, type", token, type);
   try {
     const validToken = await models.Token.findOne({
       where: {
         token,
         type,
+        usedat: null,
         expiresat: {
           [models.Op.gt]: models.sequelize.fn("NOW")
         }
