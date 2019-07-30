@@ -4,7 +4,7 @@ import { NormalError } from "../../errors";
 import { createToken } from "../../helpers/auth";
 
 export default {
-  verifyToken: requiresRights(["create-2FA"]).createResolver(
+  verify2FA: requiresRights(["create-2FA"]).createResolver(
     async (_, { userid, type, code, codeId }, { models }) => {
       try {
         const { secret, id } = await models.TwoFA.findOne({
@@ -32,7 +32,7 @@ export default {
     }
   ),
 
-  validateToken: async (_, { userid, type, token }, { models, SECRET }) => {
+  validate2FA: async (_, { userid, type, token }, { models, SECRET }) => {
     try {
       const { secret, id } = await models.TwoFA.findOne({
         where: { unitid: userid, type },
