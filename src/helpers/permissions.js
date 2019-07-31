@@ -103,7 +103,7 @@ export const requiresDepartmentCheck = requiresAuth.createResolver(
 
 export const requiresRights = rights =>
   requiresDepartmentCheck.createResolver(
-    async (parent, args, { models, token }) => {
+    async (_parent, args, { models, token }) => {
       try {
         const {
           user: { unitid: holder, company }
@@ -125,6 +125,7 @@ export const requiresRights = rights =>
         if (args.userid && args.userid != "new") {
           await checkCompanyMembership(models, company, args.userid, "user");
         }
+
         if (args.employeeid && args.employeeid != "new") {
           await checkCompanyMembership(
             models,
@@ -133,9 +134,11 @@ export const requiresRights = rights =>
             "user"
           );
         }
+
         if (args.unitid && args.unitid != "new") {
           await checkCompanyMembership(models, company, args.unitid, "user");
         }
+
         if (args.userids) {
           await Promise.all(
             args.userids
@@ -143,6 +146,7 @@ export const requiresRights = rights =>
               .map(id => checkCompanyMembership(models, company, id, "user"))
           );
         }
+
         if (args.unitids) {
           await Promise.all(
             args.unitids
