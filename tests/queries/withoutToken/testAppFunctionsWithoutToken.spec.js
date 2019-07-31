@@ -1,7 +1,7 @@
 import { tester } from "graphql-tester";
 
 const testing = tester({
-  url: "http://backend-dev3.eu-central-1.elasticbeanstalk.com/graphql",
+  url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
 });
@@ -32,8 +32,8 @@ var functionsWhichExpectAuthError = new Map([
   ['fetchUnitApps', ['(departmentid:1)', "{id}"]],
   ['fetchUnitAppsSimpleStats', ['(departmentid:1)', "{id}"]],
   ['fetchSupportToken', ['', ""]],
-  //['fetchAppIcon', ['(licenceid:1)', "{icon}"]],
-  //['fetchBoughtplanUsagePerUser', []]
+  //['fetchAppIcon', ['(licenceid:1)', "{icon}"]], // removed
+  //['fetchBoughtplanUsagePerUser', []] -> separate test
   ['fetchMonthlyAppUsage', ['', "{totalminutes}"]],
   ['fetchTotalAppUsage', ['', "{totalminutes}"]]
 ]);
@@ -42,9 +42,7 @@ describe("Testing app queries without token", () => {
   for (let [func, [parameters, subfields]] of functionsWhichExpectAuthError) {
     it("testing " + func + ", expect AuthError", async () => {
       var query = `{${func}${parameters}${subfields}}`;
-      //console.log(query);
       var response = await testing(queryWrapper(query));
-      //console.log(response.data);
       expectAuthError(response, func);
     });
   }
@@ -59,7 +57,15 @@ describe("Testing app queries without token", () => {
   it("testing allApps, expect success and ids of apps", async () => {
     var query = "{allApps{id}}";
     var response = await testing(queryWrapper(query));
+    expect(response).toBeDefined();
+    expect(response.status).toEqual(200);
     expect(response.success).toEqual(true);
-    //TODO: Complete the expected results!
+  });
+
+  it("testing fetchBoughtplanUsagePerUser with random data, expect AuthError", async () => {
+    var query =
+      '{"operationName":"onFetchBoughtplanUsagePerUser","variables":{"starttime":"1533041430", "endtime":"1564577462","boughtplanid": "1"},"query":"query onFetchBoughtplanUsagePerUser($starttime: Date!,$endtime: Date!, $boughtplanid: ID!) {fetchBoughtplanUsagePerUser(starttime: $starttime, endtime: $endtime, boughtplanid: $boughtplanid){boughtplan{id} unit{id} totalminutes}}"}';
+    var response = await testing(query);
+    expectAuthError(response, "fetchBoughtplanUsagePerUser");
   });
 });

@@ -1,7 +1,7 @@
 import { tester } from "graphql-tester";
 
 const testing = tester({
-  url: "http://backend-dev2.eu-central-1.elasticbeanstalk.com/graphql",
+  url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
 });
@@ -23,22 +23,22 @@ const expectAuthError = function(response, queryName) {
 };
 // prettier-ignore
 var functionsWhichExpectAuthError = new Map([
-  ["distributeLicenceToDepartment", ['(departmentid:1, boughtplanid:1, licencetype:\\"Licence\\")', "{ok}"]],
-  ["revokeLicencesFromDepartment", ['(departmentid:1, boughtplanid: 1)', "{ok}"]],
+  //["distributeLicenceToDepartment", ['(departmentid:1, boughtplanid:1, licencetype:\\"Licence\\")', "{ok}"]], // removed
+  //["revokeLicencesFromDepartment", ['(departmentid:1, boughtplanid: 1)', "{ok}"]], // removed
   ["distributeLicence", ['(licenceid:1, unitid:1, departmentid: 1)', "{ok}"]],
-  ["revokeLicence", ['(licenceid:1)', "{ok}"]],
+  //["revokeLicence", ['(licenceid:1)', "{ok}"]], // removed
   ["agreeToLicence", ['(licenceid:1)', "{ok}"]],
   ["trackMinutesSpent", ['(licenceid:1, minutes:10)', "{ok}"]],
   ["addExternalBoughtPlan", ['(appid:1)', "{id}"]],
   ["addExternalLicence", ['(username: \\"someone\\", password: \\"something\\", appid: 1, boughtplanid: 1)', "{ok}"]],
-  ["suspendLicence", ['(licenceid:1)', "{ok}"]],
-  ["clearLicence", ['(licenceid:1)', "{ok}"]],
+  //["suspendLicence", ['(licenceid:1)', "{ok}"]], // removed
+  //["clearLicence", ['(licenceid:1)', "{ok}"]], // removed
   //["deleteLicenceAt", ['', ""]], special mutation with Date variables -> separate test
   //["deleteBoughtPlanAt", ['', ""]], special mutation with Date variables -> separate test
   ["voteForApp", ['(app:\\"TestApp\\")', "{ok}"]],
   ["updateCredentials", ['(licenceid:1)', ""]],
-  ["updateLayout", ['(layouts:{id:1})', ""]],
-  //["createOwnApp", ['', ""]] Upload parameter?
+  ["updateLayout", ['(layout:{id:1})', ""]],
+  ["createOwnApp", ['(ssoData:{name:\\"Test\\", loginurl:\\"asd\\", email:\\"asd\\", password:\\"asd\\",color:\\"asd\\"})', "{id}"]] //Upload parameter?
 ]);
 
 describe("Testing app mutations without token", () => {

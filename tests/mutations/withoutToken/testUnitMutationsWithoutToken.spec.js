@@ -1,7 +1,7 @@
 import { tester } from "graphql-tester";
 
 const testing = tester({
-  url: "http://backend-dev2.eu-central-1.elasticbeanstalk.com/graphql",
+  url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
 });
@@ -25,7 +25,7 @@ const expectAuthError = function(response, queryName) {
 var functionsWhichExpectAuthError = new Map([
   //["updateProfilePic", ['', ""]], //TODO: UPLOAD!!!
   ["updateUser", ['(user:{firstname:\\"John\\"})', "{ok}"]],
-  ["updateMyself", ['(user:{firstname:\\"John\\"})', "{id}"]],
+  //["updateMyself", ['(user:{firstname:\\"John\\"})', "{id}"]], // removed
   ["updateEmployee", ['(user:{id:1211, firstname:\\"John\\"})', "{id}"]],
   ["setConsent", ['(consent:true)', "{id}"]]
 ]);

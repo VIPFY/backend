@@ -1,7 +1,7 @@
 import { tester } from "graphql-tester";
 
 const testing = tester({
-  url: "http://backend-dev2.eu-central-1.elasticbeanstalk.com/graphql",
+  url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
 });
@@ -26,28 +26,28 @@ var functionsWhichExpectAuthError = new Map([
   ["adminCreatePlan", ['(appId:2,plan:{name:\\"Test\\"})', "{ok}"]],
   ["adminUpdatePlan", ['(id:2,plan:{currency: \\"Euro\\"})', "{ok}"]],
   ["adminEndPlan", ['(id:2, enddate: \\"22-2-2022\\")', "{ok}"]],
-  //["adminUpdateLicence", ['', ""]], //arguments?
-  //["adminCreateLicence", ['', ""]],
-  //["uploadAppImages", ['', ""]],
+  //["adminUpdateLicence", ['', ""]], //arguments? // removed
+  //["adminCreateLicence", ['', ""]], // removed
+  //["uploadAppImages", ['', ""]], //Upload!
   ["deleteImage", ['(image:\\"hopefullyNotExistingImage.jpg\\", id: 2, type: \\"jpg\\")', ""]], //type?
   ["createApp", ['(app:{})', ""]],
   ["updateApp", ['(appid:2)', "{name}"]],
   ["deleteApp", ['(id:2)', "{ok}"]],
   ["toggleAppStatus", ['(id:2)', "{ok}"]],
-  ["adminCreateAddress", ['(addressData:{}, unitid:1)', "{ok}"]],
-  ["adminUpdateAddress", ['(addressData:{}, id:1)', "{ok}"]],
-  ["adminDeleteAddress", ['(id:2)', "{ok}"]],
-  ["adminCreateEmail", ['(email:\\"testmail@mail.com\\", unitid:1)', "{ok}"]],
-  ["adminDeleteEmail", ['(email:\\"testmail@mail.com\\", unitid:1)', "{ok}"]],
-  ["createUser", ['(user:{})', "{ok}"]],
+  //["adminCreateAddress", ['(addressData:{}, unitid:1)', "{ok}"]], // removed 
+  //["adminUpdateAddress", ['(addressData:{}, id:1)', "{ok}"]], // removed
+  //["adminDeleteAddress", ['(id:2)', "{ok}"]], // removed
+  //["adminCreateEmail", ['(email:\\"testmail@mail.com\\", unitid:1)', "{ok}"]], // removed
+  //["adminDeleteEmail", ['(email:\\"testmail@mail.com\\", unitid:1)', "{ok}"]], // removed
+  //["createUser", ['(user:{})', "{ok}"]], //removed
   ["adminUpdateUser", ['(unitid:2)', "{ok}"]],
   ["adminDeleteUnit", ['(unitid:2)', "{ok}"]],
   ["freezeAccount", ['(unitid:2)', "{ok}"]],
-  ["adminCreateCompany", ['(company:{})', "{ok}"]],
-  ["adminAddEmployee", ['(unitid:2, company:2)', "{ok}"]],
-  ["adminRemoveEmployee", ['(unitid:2, company:2)', "{ok}"]],
-  ["adminRemoveLicence", ['(licenceid:2)', "{ok}"]],
-  ["adminFetchUser", ['(name: \\"John Smith\\")', "{id}"]],
+  //["adminCreateCompany", ['(company:{})', "{ok}"]], // removed
+  //["adminAddEmployee", ['(unitid:2, company:2)', "{ok}"]], // removed
+  //["adminRemoveEmployee", ['(unitid:2, company:2)', "{ok}"]], //removed
+  //["adminRemoveLicence", ['(licenceid:2)', "{ok}"]], // removed
+  //["adminFetchUser", ['(name: \\"John Smith\\")', "{id}"]], //removed
   ["flushLocalCaches", ['', "{ok}"]]
 ]);
 

@@ -1,7 +1,7 @@
 import { tester } from "graphql-tester";
 
 const testing = tester({
-  url: "http://backend-dev2.eu-central-1.elasticbeanstalk.com/graphql",
+  url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
 });
@@ -24,12 +24,12 @@ const expectAuthError = function(response, queryName) {
 
 var functionsWhichExpectAuthError = new Map([
   ["fetchCompany", ["", "{unitid{id}}"]],
-  ["fetchCompanySize", ["", ""]], //no args?
-  ["fetchDepartments", ["", "{id}"]],
+  //["fetchCompanySize", ["", ""]], // removed
+  //["fetchDepartments", ["", "{id}"]], // removed
   ["fetchDepartmentsData", ["", "{id}"]],
   ["fetchEmployees", ["", "{id{internaldata}}"]],
   ["fetchUserSecurityOverview", ["", "{id}"]],
-  ["fetchAddressProposal", ['(placeid: \\"Berlin\\")', ""]],
+  //["fetchAddressProposal", ['(placeid: \\"Berlin\\")', ""]], // removed
   ["fetchVipfyPlan", ["", "{description}"]]
 ]);
 

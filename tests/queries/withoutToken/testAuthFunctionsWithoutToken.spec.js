@@ -1,7 +1,7 @@
 import { tester } from "graphql-tester";
 
 const testing = tester({
-  url: "http://backend-dev2.eu-central-1.elasticbeanstalk.com/graphql",
+  url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
 });
@@ -24,7 +24,7 @@ const expectAuthError = function(response, queryName) {
 // prettier-ignore
 var functionsWhichExpectAuthError = new Map([
   ['me', ['', "{id}"]],
-  ['adminme', ['(unitid:1)', "{id}"]]
+  //['adminme', ['(unitid:1)', "{id}"]] // removed
 ]);
 
 describe("Testing auth queries without token", () => {

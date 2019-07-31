@@ -16,9 +16,11 @@ function getRandomInt(max) {
   return Math.floor(Math.random() * Math.floor(max));
 }
 
-/*
- *
- */
+function successfulExecution(response){
+  expect(response).toBeDefined();
+  expect(response.status).toEqual(200);
+  expect(response.success).toEqual(true);
+}
 
 describe("Testing creation of a team and employees", () => {
   var token,
@@ -28,15 +30,21 @@ describe("Testing creation of a team and employees", () => {
     numberOfEmployees = 0;
 
   it("signing in, expect success", async () => {
+    /*
+    mutation{
+      signIn(email:"testmail@abv.bg", password: "testPass123"){
+        token
+      }
+    }
+    */
     const query =
       'mutation{signIn(email:\\"testmail147@abv.bg\\", password: \\"testPass123\\"){token}}';
     const response = await testing(queryWrapper(query));
-    token = response.data.signIn.token;
-    expect(response).toBeDefined();
-    expect(response.status).toEqual(200);
-    expect(response.success).toEqual(true);
+    
+    successfulExecution(response); 
     expect(response.errors).not.toBeDefined();
     expect(response.data.signIn.token).toBeDefined();
+    token = response.data.signIn.token;
   });
 
   it("fetchCompany, expect success and name = IntegrationTests", async () => {
@@ -48,9 +56,7 @@ describe("Testing creation of a team and employees", () => {
       }
     });
 
-    expect(response).toBeDefined();
-    expect(response.status).toEqual(200);
-    expect(response.success).toEqual(true);
+    successfulExecution(response);
     expect(response.errors).not.toBeDefined();
     expect(response.data.fetchCompany.name).toEqual("IntegrationTests");
   });
@@ -63,13 +69,18 @@ describe("Testing creation of a team and employees", () => {
         "Content-Type": "application/json"
       }
     });
-    teams = response.data.fetchCompanyTeams;
-    numberOfTeams = teams ? teams.length : 0;
-/*
-    query = `{"operationName":"onCreateTeam","variables":{team:{name: "TeamTest"}},"query": mutation onCreateTeam($team:JSON!){createTeam(team:$team, addemployees:[], apps: [])}}`;
-    teamid = response.data.createTeam;
-    console.log("TCL: query -> response", response)
-  */  
+    teams = response.data.fetchCompanyTeams ? response.data.fetchCompanyTeams.length : 0;
+
+    /* TODO:
+    query = `{"operationName":\\"onCreateTeam\\","variables":{team:{name: \\"TeamTest\\"}},"query": mutation onCreateTeam($team:JSON!){createTeam(team:$team, addemployees:[], apps: [])}}`;
+    response = await testing(query, {
+      headers: {
+        "x-token": token,
+        "Content-Type": "application/json"
+      }
+    });
+    teamid = response.data.createTeam;*/
+    
     query = 'mutation{addTeam(name:\\"TeamTest\\", data: {}){unitid{id}}}';
     response = await testing(queryWrapper(query), {
       headers: {
@@ -79,9 +90,7 @@ describe("Testing creation of a team and employees", () => {
     });
     teamid = response.data.addTeam.unitid.id;
 
-    expect(response).toBeDefined();
-    expect(response.status).toEqual(200);
-    expect(response.success).toEqual(true);
+    successfulExecution(response);
     expect(response.errors).not.toBeDefined();
     expect(response.data.addTeam.unitid.id).toBeDefined();
 
@@ -93,8 +102,7 @@ describe("Testing creation of a team and employees", () => {
       }
     });
 
-    teams = response.data.fetchCompanyTeams;
-    expect(teams.length - numberOfTeams).toEqual(1);
+    expect(response.data.fetchCompanyTeams.length).toEqual(teams + 1);
   });
 
   describe("Test fetching team info:", () => {
@@ -107,9 +115,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       var expected = [{"id": `${teamid}`}];
       expect(response.data.fetchCompanyTeams).toEqual(expect.arrayContaining(expected));
@@ -124,9 +130,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.fetchTeam.name).toEqual("TeamTest");
     });
@@ -140,9 +144,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.fetchTeam).toEqual(null);
     });
@@ -161,9 +163,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.fetchTeam.employees).toHaveLength(0);
 
@@ -180,9 +180,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.addCreateEmployee.ok).toEqual(true);
     });
@@ -196,9 +194,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.fetchTeam.employees).toHaveLength(1);
       expect(response.data.fetchTeam.employees[0].firstname).toEqual("Employee");
@@ -215,9 +211,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.fetchTeams).toHaveLength(1);
       expect(response.data.fetchTeams[0].id).toEqual(teamid);
@@ -232,9 +226,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.removeFromTeam).toEqual(true);
     });
@@ -248,9 +240,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.fetchTeam.employees).toHaveLength(0);
     });
@@ -264,9 +254,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.addToTeam).toEqual(true);
     });
@@ -295,9 +283,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.fetchTeam.employees).toHaveLength(1);
       expect(response.data.fetchTeam.employees[0].firstname).toEqual("Employee");
@@ -314,9 +300,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.forcePasswordChange.ok).toEqual(true);
     });
 
@@ -329,9 +313,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.me.needspasswordchange).toEqual(true);
     });
 
@@ -344,9 +326,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.deleteEmployee).toEqual(true);
     });
   });
@@ -363,9 +343,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.fetchCompanySize).toEqual("1");
     });
@@ -380,9 +358,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.createEmployee09).toBeDefined();
       employeeId = response.data.createEmployee09;
     });
@@ -398,9 +374,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.createEmployee09).toBeDefined();
       employeeId = response.data.createEmployee09;
     });
@@ -414,9 +388,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.fetchSemiPublicUser.firstname).toEqual("Test");
       expect(response.data.fetchSemiPublicUser.lastname).toEqual("Employee");
     });
@@ -430,9 +402,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.fetchCompanySize).toEqual("2");
     });
@@ -446,9 +416,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.addEmployeeToTeam).toEqual(true);
     });
 
@@ -461,9 +429,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.fetchEmployees[0].employee.id).toEqual("1211");
       expect(response.data.fetchEmployees[1].employee.id).toEqual(`${employeeId}`);
     });
@@ -477,9 +443,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.fetchTeam.employees[0].id).toEqual(employeeId);
     });
 
@@ -492,9 +456,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.banEmployee.ok).toEqual(true);
     });
 
@@ -507,9 +469,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.fetchSemiPublicUser.companyban).toEqual(true);
     });
 
@@ -523,9 +483,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.fetchUserSecurityOverview[1].banned).toEqual(true);
     });
 
@@ -539,14 +497,12 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.unbanEmployee.ok).toEqual(true);
     });
 
     // banned != companyban??
-    it("fetchUserSecurityOverview with correct userid, expect success and banned = true", async () => {
+    it("fetchUserSecurityOverview with correct userid, expect success and banned = false", async () => {
       const query = `{fetchUserSecurityOverview{ banned }}`;
       const response = await testing(queryWrapper(query), {
         headers: {
@@ -555,9 +511,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.fetchUserSecurityOverview[1].banned).toEqual(false);
     });
 
@@ -570,9 +524,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.fetchSemiPublicUser.companyban).toEqual(false);
     });
 
@@ -585,10 +537,58 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.updateEmployee.firstname).toEqual("Emp");
+    });
+
+    it("changeAdminStatus - set employee as admin and check whether isadmin has changed to true, expect success", async () => {
+      var query = `mutation{changeAdminStatus(unitid:${employeeId}, admin:true){id status}}`;
+      var response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      successfulExecution(response);
+      expect(response.data.changeAdminStatus.id).toEqual(`${employeeId}`);
+      expect(response.data.changeAdminStatus.status).toEqual(true);
+
+      query = `{fetchSemiPublicUser(unitid:${employeeId}){ isadmin }}`;
+      response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      successfulExecution(response);
+      expect(response.data.fetchSemiPublicUser.isadmin).toEqual(true);
+    });
+
+    it("changeAdminStatus - remove employee admin rights and check whether isadmin has changed to false, expect success", async () => {
+      var query = `mutation{changeAdminStatus(unitid:${employeeId}, admin:false){id status}}`;
+      var response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      successfulExecution(response);
+      expect(response.data.changeAdminStatus.id).toEqual(`${employeeId}`);
+      expect(response.data.changeAdminStatus.status).toEqual(false);
+
+      query = `{fetchSemiPublicUser(unitid:${employeeId}){ isadmin }}`;
+      response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      successfulExecution(response);
+      expect(response.data.fetchSemiPublicUser.isadmin).toEqual(false);
     });
 
     it("removeEmployee with correct id, expect success", async () => {
@@ -600,9 +600,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.removeEmployee.ok).toEqual(true);
     });
 
@@ -615,13 +613,10 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.fetchTeam.employees).toHaveLength(0);
     });
 
-    //TODO: addEmployee
     it("addEmployee with correct id, expect success", async () => {
       const query = `mutation{addEmployee(unitid:${employeeId}, departmentid: ${teamid}){ok}}`;
       const response = await testing(queryWrapper(query), {
@@ -631,9 +626,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.addEmployee.ok).toEqual(true);
     });
 
@@ -646,9 +639,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.errors).not.toBeDefined();
       expect(response.data.fetchTeam.employees[0].id).toEqual(`${employeeId}`);
     });
@@ -662,9 +653,7 @@ describe("Testing creation of a team and employees", () => {
         }
       });
 
-      expect(response).toBeDefined();
-      expect(response.status).toEqual(200);
-      expect(response.success).toEqual(true);
+      successfulExecution(response);
       expect(response.data.deleteEmployee).toBeDefined();
     });
 
@@ -695,9 +684,7 @@ describe("Testing creation of a team and employees", () => {
       }
     });
 
-    expect(response).toBeDefined();
-    expect(response.status).toEqual(200);
-    expect(response.success).toEqual(true);
+    successfulExecution(response);
     expect(response.errors).not.toBeDefined();
     expect(response.data.deleteTeam).toEqual(true);
 
@@ -709,7 +696,6 @@ describe("Testing creation of a team and employees", () => {
       }
     });
 
-    teams = response.data.fetchCompanyTeams;
-    expect(teams.length - numberOfTeams).toEqual(0);
+    expect(response.data.fetchCompanyTeams.length).toEqual(teams);
   });
 });

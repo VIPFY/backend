@@ -1,7 +1,7 @@
 import { tester } from "graphql-tester";
 
 const testing = tester({
-  url: "http://backend-dev2.eu-central-1.elasticbeanstalk.com/graphql",
+  url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
 });
@@ -24,37 +24,33 @@ const expectAuthError = function(response, queryName) {
 // prettier-ignore
 var functions = new Map([
   ['adminFetchAllApps', ['(limit:10, offset: 0, sortOptions: {name: \\"Name\\", order: ASC})',"{name}"]],
-  ['adminFetchListLength', ["", "{allApps}"]],
+  //['adminFetchListLength', ["", "{allApps}"]], // removed
   ['admin', ["", "{id}"]],
-  ['listStripeInvoices', ["", ""]],
-  ['adminFetchBoughtPlans', ['(company: 1, user: 1)', "{id}"]],
-  ['adminFetchLicences', ['(id: 1)', "{id}"]],
-  ['adminFetchLicence', ['(licenceid:1)', "{id}"]],
-  ['adminFetchUserAddresses', ['', "{address}"]],
+  //['listStripeInvoices', ["", ""]], // removed
+  //['adminFetchBoughtPlans', ['(company: 1, user: 1)', "{id}"]], // removed
+  //['adminFetchLicences', ['(id: 1)', "{id}"]], // removed
+  //['adminFetchLicence', ['(licenceid:1)', "{id}"]], // removed
+  //['adminFetchUserAddresses', ['', "{address}"]], // removed
   ['adminFetchAppById', ['(id:1)', "{name}"]],
   ['allUsers', ['', '{id}']],
-  ['fetchUser', ['(id:1)', "{firstname}"]],
+  //['fetchUser', ['(id:1)', "{firstname}"]], // removed
   ['allCompanies', ['', "{unitid{id}}"]],
-  ['allDepartments', ['', "{unitid{id}}"]],
-  ['fetchRecentLogs', ['(user:1)', "{id}"]],
-  ['adminFetchPlans',['(appid:1)', "{id}"]],
-  ['adminFetchPlan', ['(planid:1)', "{name}"]],
-  ['adminFetchEmployees', ['(unitid:1)', "{id{name}}"]],
-  ['freeUsers', ['', "{id}"]],
-  ['adminFetchDepartments', ['(company:1)', "{id}"]],
-  ['adminFetchCompany', ['(id:1)', "{name}"]],
+  //['allDepartments', ['', "{unitid{id}}"]], // removed
+  //['fetchRecentLogs', ['(user:1)', "{id}"]], // removed
+  //['adminFetchPlans',['(appid:1)', "{id}"]], // removed
+  //['adminFetchPlan', ['(planid:1)', "{name}"]], // removed
+  //['adminFetchEmployees', ['(unitid:1)', "{id{name}}"]], // removed
+  //['freeUsers', ['', "{id}"]], // removed
+  //['adminFetchDepartments', ['(company:1)', "{id}"]], // removed
+  //['adminFetchCompany', ['(id:1)', "{name}"]], // removed
   ['fetchServerStats', ['', "{data}"]]
 ]);
 
 describe("Testing admin queries without token", () => {
   for (let [func, [parameters, subfields]] of functions) {
     it("testing " + func + ", expect AuthError", async () => {
-      // prettier-ignore
-      //var query = `{ ${func} ${parameters == "" ? "" : `(${parameters})`} ${subfields == "" ? "" : `{ ${subfields} }`} }`;
       var query = `{${func}${parameters}${subfields}}`
-      //console.log(query);
       var response = await testing(queryWrapper(query));
-      //console.log(response.data);
       expectAuthError(response, func);
     });
   }

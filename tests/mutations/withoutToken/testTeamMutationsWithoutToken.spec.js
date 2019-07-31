@@ -1,7 +1,7 @@
 import { tester } from "graphql-tester";
 
 const testing = tester({
-  url: "http://backend-dev2.eu-central-1.elasticbeanstalk.com/graphql",
+  url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
 });
@@ -25,9 +25,9 @@ const expectAuthError = function(response, queryName) {
 var functionsWhichExpectAuthError = new Map([
   ["addTeam", ['(name:\\"Team One\\", data:{})', "{name}"]],
   ["deleteTeam", ['(teamid:1)', ""]],
-  ["updateTeamMembers", ['(members: 1, teamid: 1, action: ADD)', "{name}"]],
-  ["updateTeamInfos", ['(teamid:1, data:{})', "{name}"]],
-  ["addTeamLicence", ['(teamid:1, boughtplanid: 1)', "{name}"]]
+  //["updateTeamMembers", ['(members: 1, teamid: 1, action: ADD)', "{name}"]], // removed
+  //["updateTeamInfos", ['(teamid:1, data:{})', "{name}"]], // removed
+  //["addTeamLicence", ['(teamid:1, boughtplanid: 1)', "{name}"]] // removed
 ]);
 
 describe("Testing team mutations without token", () => {

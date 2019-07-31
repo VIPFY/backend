@@ -1,7 +1,7 @@
 import { tester } from "graphql-tester";
 
 const testing = tester({
-  url: "http://backend-dev2.eu-central-1.elasticbeanstalk.com/graphql",
+  url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
 });
@@ -25,17 +25,17 @@ const expectAuthError = function(response, queryName) {
 var functionsWhichExpectAuthError = new Map([
   ["updateStatisticData", ['(data:{})', "{ok}"]],
   ["addEmployee", ['(unitid:147, departmentid:147)', "{ok}"]],
-  ["addCreateEmployee", ['(email: \\"\\", password: \\"\\",name:{title: \\"\\", firstname: \\"\\", middlename: \\"\\", lastname: \\"\\", suffix: \\"\\"}, departmentid:147)', "{ok}"]],
-  ["addSubDepartment", ['(departmentid:147, name:\\"\\")', "{ok}"]],
+  //["addCreateEmployee", ['(email: \\"\\", password: \\"\\",name:{title: \\"\\", firstname: \\"\\", middlename: \\"\\", lastname: \\"\\", suffix: \\"\\"}, departmentid:147)', "{ok}"]], // removed
+  //["addSubDepartment", ['(departmentid:147, name:\\"\\")', "{ok}"]], // removed
   ["editDepartmentName", ['(departmentid:147, name:\\"\\")', "{ok}"]],
-  ["deleteSubDepartment", ['(departmentid:147)', "{ok}"]],
-  ["removeEmployee", ['(unitid:147,departmentid:147)', "{ok}"]],
-  ["fireEmployee", ['(unitid:147)', "{ok}"]],
+  //["deleteSubDepartment", ['(departmentid:147)', "{ok}"]], // removed
+  //["removeEmployee", ['(unitid:147,departmentid:147)', "{ok}"]], // removed
+  //["fireEmployee", ['(unitid:147)', "{ok}"]], // removed
   ["banEmployee", ['(userid:1211)', "{ok}"]], 
   ["unbanEmployee", ['(userid:1211)', "{ok}"]], 
   //["updateCompanyPic", ['', ""]], //file:Upload!
   //["saveProposalData", ['(data:{})', "{ok}"]],// Expect NormalError
-  ["changeAdminStatus", ['(unitid:1211,admin: true)', "{ok}"]],
+  ["changeAdminStatus", ['(unitid:1211,admin: true)', "{id status}"]],
   ["applyPromocode", ['(promocode:\\"1234\\")', "{ok}"]],
 ]);
 
