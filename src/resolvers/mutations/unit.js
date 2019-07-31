@@ -1,14 +1,21 @@
 import { decode } from "jsonwebtoken";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-import { userPicFolder } from "../../constants";
+import {
+  userPicFolder,
+  MIN_PASSWORD_LENGTH,
+  MAX_PASSWORD_LENGTH
+} from "../../constants";
 import { NormalError } from "../../errors";
 import {
   createLog,
   companyCheck,
   parentAdminCheck,
-  createNotification
+  createNotification,
+  concatName
 } from "../../helpers/functions";
 import { uploadUserImage } from "../../services/aws";
+import { getNewPasswordData, createAdminToken } from "../../helpers/auth";
+import { sendEmail } from "../../helpers/email";
 /* eslint-disable no-unused-vars, prefer-destructuring */
 
 export default {
@@ -162,60 +169,8 @@ export default {
       })
   ),
 
-  updateMyself: requiresAuth.createResolver(
-    async (parent, { user }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
-
-          const { password, statisticdata, ...human } = user;
-          let updatedHuman;
-          if (password) {
-            throw new Error("You can't update the password this way!");
-          }
-
-          const oldHuman = await models.Human.findOne({
-            where: { unitid },
-            raw: true
-          });
-
-          if (statisticdata) {
-            updatedHuman = await models.Human.update(
-              {
-                statisticdata: { ...oldHuman.statisticdata, ...statisticdata },
-                ...human
-              },
-              { where: { unitid }, returning: true, transaction: ta }
-            );
-          } else {
-            updatedHuman = await models.Human.update(
-              { ...human },
-              { where: { unitid }, returning: true, transaction: ta }
-            );
-          }
-
-          await createLog(
-            ip,
-            "updateMyself",
-            { updateArgs: user, oldHuman, updatedHuman: updatedHuman[1] },
-            unitid,
-            ta
-          );
-
-          return { ...updatedHuman[1], ...human };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
   updateEmployee: requiresRights(["edit-employee"]).createResolver(
-    async (parent, { user }, { models, token, ip }) => {
+    async (_, { user }, { models, token, ip }) => {
       await models.sequelize.transaction(async ta => {
         try {
           const {
@@ -314,8 +269,79 @@ export default {
     }
   ),
 
+  updateEmployeePassword: requiresRights(["edit-employee"]).createResolver(
+    async (_, { unitid, password, logOut }, { models, token }) => {
+      try {
+        const {
+          user: { unitid: id, company }
+        } = decode(token);
+
+        if (password.length < MIN_PASSWORD_LENGTH) {
+          throw new Error("Password not long enough!");
+        }
+
+        if (password.length > MAX_PASSWORD_LENGTH) {
+          throw new Error("Password too long!");
+        }
+
+        const p1 = models.User.findOne({
+          where: { id, isadmin: true },
+          raw: true
+        });
+
+        const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
+        const [isAdmin, employee] = await Promise.all([p1, p2]);
+
+        await companyCheck(company, id, unitid);
+
+        if (!isAdmin) {
+          throw new Error("You don't have the necessary rights!");
+        }
+
+        // An admin should be able to update his own password
+        if (employee.isadmin && employee.id != isAdmin.id) {
+          throw new Error("You can't change another admins password!");
+        }
+
+        const pw = await getNewPasswordData(password);
+
+        if (pw.passwordStrength < 2) {
+          throw new Error("Password too weak!");
+        }
+
+        await models.Human.update({ ...pw }, { where: { unitid } });
+
+        const employeeName = concatName(employee);
+        const adminName = concatName(isAdmin);
+
+        await sendEmail({
+          templateId: "d-9beb3ea901d64894a8227c295aa8548e",
+          personalizations: [
+            {
+              to: [{ email: employee.emails[0] }],
+              dynamic_template_data: { employeeName, adminName, password }
+            }
+          ],
+          fromName: "VIPFY GmbH"
+        });
+
+        if (logOut) {
+          // TODO: [VIP-409] Invalidate the Token when Sessions are implemented
+        }
+
+        return {
+          id: unitid,
+          passwordlength: pw.passwordlength,
+          passwordstrength: pw.passwordstrength
+        };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   setConsent: requiresAuth.createResolver(
-    async (parent, { consent }, { models, token, ip }) =>
+    async (_, { consent }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         const {
           user: { unitid }
@@ -354,5 +380,47 @@ export default {
           });
         }
       })
+  ),
+
+  impersonate: requiresRights(["impersonate"]).createResolver(
+    async (_, { unitid }, { models, token, SECRET, ip }) => {
+      try {
+        const {
+          user: { unitid: id, company }
+        } = decode(token);
+
+        if (id == unitid) {
+          throw new Error("You can't impersonate yourself!");
+        }
+        const p1 = models.User.findOne({ where: { id }, raw: true });
+        const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
+
+        const [isAdmin, employee] = await Promise.all([p1, p2]);
+        await companyCheck(company, id, unitid);
+
+        if (!isAdmin) {
+          throw new Error("You don't have the necessary rights!");
+        }
+
+        if (employee.isadmin) {
+          throw new Error("You can't impersonate another Admin!");
+        }
+
+        await createLog(
+          ip,
+          "impersonate",
+          { admin: id, impersonated: unitid },
+          id,
+          null
+        );
+
+        return createAdminToken({ unitid, company, admin: id, SECRET });
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
   )
 };

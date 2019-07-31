@@ -28,11 +28,6 @@ export const types = `
     internaldata: JSON
   }
 
-  enum TEAMACTION {
-    ADD
-    REMOVE
-  }
-
   input SetupService {
     id: ID!
     setup: JSON
@@ -55,8 +50,5 @@ export const mutations = `
   addToTeam(userid: ID!, teamid: ID!, services: [SetupService]!, newEmployeeInfo: JSON, newTeam: JSON): Boolean!
   addEmployeeToTeam(employeeid: ID!, teamid: ID!): Boolean!
   addAppToTeam(serviceid: ID!, teamid: ID!, employees: [SetupService]!): Boolean!
-  updateTeamMembers(members: [ID!]!, teamid: ID!, action: TEAMACTION!): Department!
-  updateTeamInfos(teamid: ID!, data: TeamInput!): Department!
-  addTeamLicence(teamid: ID!, boughtplanid: [ID!]!): Department!
   updateTeamPic(file: Upload!, teamid: ID!): Team!
 `;

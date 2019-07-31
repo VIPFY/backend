@@ -13,6 +13,7 @@ import reviewQueries from "./queries/review";
 import tutorialQueries from "./queries/tutorial";
 import teamQueries from "./queries/team";
 
+import twoFA from "./mutations/2FA";
 import adminMutations from "./mutations/admin";
 import authMutations from "./mutations/auth";
 import appMutations from "./mutations/app";
@@ -49,6 +50,7 @@ const Query = Object.assign(
 );
 
 const Mutation = Object.assign(
+  twoFA,
   adminMutations,
   appMutations,
   authMutations,
@@ -111,7 +113,6 @@ export default {
     teamlicence: "Team",
     teamaccount: "Team"
   }),
-  LicenceLayout: find({ unitid: "User", licenceid: "Licence" }),
   Log: find({ user: "User", sudoer: "User" }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
@@ -141,15 +142,6 @@ export default {
     employees: "[User]",
     licences: "[Licence]",
     services: "[BoughtPlan]"
-  }),
-  AppOverview: find({
-    app: "App",
-    singles: "[SingleLicence]",
-    teams: "[Team]"
-  }),
-  SingleLicence: find({
-    employee: "User",
-    licence: "Licence"
   }),
   ServiceLicence: find({
     licence: "Licence"

@@ -19,241 +19,11 @@ import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
 import { checkAuthentification } from "../../helpers/auth";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
+import { sendEmail } from "../../helpers/email";
 
 /* eslint-disable no-return-await */
 
 export default {
-  distributeLicenceToDepartment: requiresRights([
-    "create-licences"
-  ]).createResolver(
-    (_, { departmentid, boughtplanid, licencetype }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
-
-          const p1 = models.Licence.findAll({
-            where: {
-              unitid: null,
-              endtime: {
-                [models.Op.or]: {
-                  [models.Op.eq]: null,
-                  [models.Op.gt]: Date.now()
-                }
-              },
-              options: {
-                [models.Op.contains]: {
-                  type: licencetype
-                }
-              },
-              boughtplanid
-            },
-            raw: true
-          });
-
-          const p2 = models.sequelize.query(
-            `SELECT DISTINCT employee FROM department_employee_view WHERE
-            id = :departmentid and employee NOT IN (SELECT DISTINCT ld.unitid FROM licence_data
-            AS ld INNER JOIN department_employee_view dev ON dev.employee = ld.unitid
-            AND boughtplanid = :boughtplanid AND (ld.endtime IS NULL OR ld.endtime > NOW())
-            AND ld.options @> :type AND ld.disabled = false AND dev.id = :departmentid)`,
-            {
-              replacements: {
-                boughtplanid,
-                departmentid,
-                type: JSON.stringify({ type: licencetype })
-              },
-              type: models.sequelize.QueryTypes.SELECT
-            }
-          );
-
-          const p3 = models.Right.findOne({
-            where: {
-              holder: unitid,
-              forunit: departmentid,
-              type: { [models.Op.or]: ["admin", "distributeapps"] }
-            }
-          });
-
-          const p4 = models.BoughtPlan.findOne({
-            where: { id: boughtplanid },
-            raw: true,
-            attributes: ["disabled", "endtime"]
-          });
-
-          const [
-            openLicences,
-            haveNoLicence,
-            hasRight,
-            validPlan
-          ] = await Promise.all([p1, p2, p3, p4]);
-          const employees = haveNoLicence.map(licence => licence.employee);
-
-          if (openLicences.length == 0) {
-            return {
-              ok: false,
-              error: {
-                code: 1,
-                message: "There are no licences to distribute for this plan."
-              }
-            };
-          } else if (!hasRight && openLicences.length < employees.length) {
-            return {
-              ok: false,
-              error: {
-                code: 2,
-                message: `There are ${employees.length -
-                  openLicences.length} Licences missing for this department and you don't have the right to distribute them for this department.`
-              }
-            };
-          } else if (hasRight && openLicences.length < employees.length) {
-            return {
-              ok: false,
-              error: {
-                code: 3,
-                message: `There are ${employees.length -
-                  openLicences.length} Licences missing for this department.`
-              }
-            };
-          } else if (!hasRight) {
-            return {
-              ok: false,
-              error: {
-                code: 4,
-                message: "You don't have the right to distribute licences."
-              }
-            };
-          } else if (!validPlan || (validPlan && validPlan.disabled)) {
-            return {
-              ok: false,
-              error: {
-                code: 5,
-                message: "The plan is disabled."
-              }
-            };
-          } else if (
-            validPlan &&
-            validPlan.endtime &&
-            validPlan.endtime < Date.now()
-          ) {
-            return {
-              ok: false,
-              error: {
-                code: 6,
-                message: "The plan expired."
-              }
-            };
-          }
-
-          const takeLicences = employees.map(
-            async (employee, i) =>
-              await models.LicenceData.update(
-                {
-                  unitid: employee
-                },
-                {
-                  where: { id: openLicences[i].id, unitid: null },
-                  raw: true,
-                  transaction: ta
-                }
-              )
-          );
-
-          const takenLicences = await Promise.all(takeLicences);
-
-          const p5 = models.DepartmentApp.create(
-            { departmentid, boughtplanid },
-            { transaction: ta }
-          );
-
-          const p6 = createLog(
-            ip,
-            "distributeLicenceToDepartment",
-            { departmentid, boughtplanid, licencetype, takenLicences },
-            unitid,
-            ta
-          );
-
-          await Promise.all([p5, p6]);
-
-          return { ok: true, error: null };
-        } catch (err) {
-          return {
-            ok: false,
-            error: {
-              code: 0,
-              message: err.message
-            }
-          };
-        }
-      })
-  ),
-
-  revokeLicencesFromDepartment: requiresRights([
-    "delete-licences"
-  ]).createResolver(
-    (parent, { departmentid, boughtplanid }, { models, ip, token }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
-
-          const p1 = models.sequelize.query(
-            `SELECT * FROM licence_data WHERE unitid IN (SELECT
-             employee FROM department_employee_view WHERE id = :departmentid) AND
-             (endtime > NOW() OR endtime ISNULL) AND boughtplanid = :boughtplanid`,
-            {
-              replacements: { departmentid, boughtplanid },
-              raw: true,
-              transaction: ta
-            }
-          );
-
-          const p2 = models.DepartmentApp.findOne(
-            { where: { departmentid, boughtplanid } },
-            { transaction: ta }
-          );
-
-          const [oldLicences, oldDepartment] = await Promise.all([p1, p2]);
-
-          const p3 = models.DepartmentApp.destroy(
-            { where: { departmentid, boughtplanid } },
-            { transaction: ta }
-          );
-
-          const p4 = models.sequelize.query(
-            `UPDATE licence_data SET unitid = null, agreed = false WHERE unitid IN (SELECT
-             employee FROM department_employee_view WHERE id = :departmentid) AND
-             (endtime > NOW() OR endtime ISNULL) AND boughtplanid = :boughtplanid RETURNING *`,
-            {
-              replacements: { departmentid, boughtplanid },
-              raw: true,
-              transaction: ta
-            }
-          );
-
-          const revokedLicences = await Promise.all([p3, p4]);
-
-          await createLog(
-            ip,
-            "revokeLicencesFromDepartment",
-            { oldDepartment, oldLicences, revokedLicences: revokedLicences[1] },
-            unitid,
-            ta
-          );
-
-          return { ok: true };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
   distributeLicence: requiresRights(["create-licences"]).createResolver(
     (parent, { licenceid, unitid, departmentid }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
@@ -422,95 +192,6 @@ export default {
           );
 
           logger.error(err);
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
-  revokeLicence: requiresRights(["delete-licences"]).createResolver(
-    async (parent, { licenceid: id }, { models, ip, token }) =>
-      models.sequelize.transaction(async ta => {
-        const {
-          user: { unitid }
-        } = decode(token);
-
-        try {
-          const licence = await models.Licence.findOne({
-            where: { id },
-            raw: true
-          });
-
-          if (licence.unitid == null) {
-            throw new Error("This Licence wasn't taken!");
-          }
-
-          const boughtPlan = await models.BoughtPlan.findOne(
-            { where: { id: licence.boughtplanid } },
-            {
-              include: [models.Plan],
-              raw: true
-            }
-          );
-
-          await models.LicenceData.update(
-            { unitid: null },
-            {
-              where: { id, unitid: { [models.Op.not]: null } },
-              returning: true,
-              transaction: ta
-            }
-          );
-
-          await Services.removeUser(
-            models,
-            boughtPlan["plan_datum.appid"],
-            licence.boughtplanid,
-            id,
-            ta
-          );
-
-          const log = createLog(ip, "revokedLicence", { licence }, unitid, ta);
-
-          const notiGiver = createNotification(
-            {
-              receiver: unitid,
-              message: `App revoked from ${licence.unitid}`,
-              icon: "th",
-              link: "teams",
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          const notiReceiver = createNotification(
-            {
-              receiver: licence.unitid,
-              message: `User ${unitid} has revoked an App from you`,
-              icon: "th",
-              link: "teams",
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          await Promise.all([log, notiGiver, notiReceiver]);
-
-          return { ok: true };
-        } catch (err) {
-          await createNotification(
-            {
-              receiver: unitid,
-              message: "Revokation failed",
-              icon: "th",
-              link: "teams",
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
           throw new NormalError({
             message: err.message,
             internalData: { err }
@@ -851,159 +532,6 @@ export default {
             },
             ta
           );
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
-  /**
-   * Removes a licence from an user
-   *
-   * @param {ID} licenceid The id of the licence
-   * @param {ID} fromuser Optional parameter if the licence belongs to an employee
-   * @returns {object}
-   */
-  suspendLicence: requiresRights(["delete-licences"]).createResolver(
-    async (parent, { licenceid: id, fromuser, clear }, { models, ip, token }) =>
-      models.sequelize.transaction(async ta => {
-        const {
-          user: { unitid, company }
-        } = decode(token);
-
-        let admin = null;
-        const config = { unitid: null };
-
-        try {
-          if (fromuser) {
-            admin = await companyCheck(company, unitid, fromuser);
-          } else {
-            admin = await models.User.findOne({
-              where: { id: fromuser },
-              raw: true
-            });
-          }
-
-          if (clear) {
-            config.key = null;
-          }
-
-          const licence = await models.Licence.findOne({
-            where: { id, unitid: fromuser || unitid },
-            raw: true
-          });
-
-          const suspended = await models.LicenceData.update(config, {
-            where: { id, unitid: licence.unitid },
-            transaction: ta
-          });
-
-          if (suspended == 0) {
-            throw new Error("Licence not found!");
-          }
-
-          const p1 = createLog(ip, "suspendLicence", { licence }, unitid, ta);
-
-          const p2 = createNotification(
-            {
-              receiver: unitid,
-              message: `Suspended Licence`,
-              icon: "user-minus",
-              link: `teams`,
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          const promises = [p1, p2];
-
-          if (fromuser) {
-            const p4 = createNotification(
-              {
-                receiver: fromuser,
-                message: `${admin.firstname} ${
-                  admin.lastname
-                } removed a Licence from you.`,
-                icon: "user-plus",
-                link: "teams",
-                changed: ["ownLicences"]
-              },
-              ta
-            );
-
-            promises.push(p4);
-          }
-
-          await Promise.all(promises);
-
-          return { ok: true };
-        } catch (err) {
-          await createNotification(
-            {
-              receiver: unitid,
-              message: "Suspension of Licence failed",
-              icon: "bug",
-              link: `teams`,
-              changed: []
-            },
-            ta
-          );
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
-  clearLicence: requiresRights(["delete-licences"]).createResolver(
-    async (parent, { licenceid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        const {
-          user: { unitid }
-        } = decode(token);
-
-        try {
-          const licence = await models.Licence.findOne({
-            where: { id: licenceid, unitid: null },
-            raw: true
-          });
-
-          if (!licence) {
-            throw new Error("This Licence still belongs to an user!");
-          }
-
-          const suspended = await models.LicenceData.update(
-            { key: null },
-            {
-              where: { id: licence.id },
-              transaction: ta
-            }
-          );
-
-          if (suspended == 0) {
-            throw new Error("Licence not found!");
-          }
-
-          const p1 = createLog(ip, "clearLicence", { licence }, unitid, ta);
-
-          const p2 = createNotification(
-            {
-              receiver: unitid,
-              message: `Logindata of Licence ${licence.id} cleared`,
-              icon: "trash",
-              link: `teams`,
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          await Promise.all([p1, p2]);
-
-          return { ok: true };
-        } catch (err) {
           throw new NormalError({
             message: err.message,
             internalData: { err }
@@ -1402,116 +930,6 @@ export default {
     }
   ),
 
-  // createService: requiresAuth.createResolver(
-  //   async (
-  //     parent,
-  //     { serviceData, addedTeams, addedEmployees },
-  //     { models, token, ip }
-  //   ) =>
-  //     models.sequelize.transaction(async ta => {
-  //       try {
-  //         console.log("Inputs", serviceData, addedTeams, addedEmployees);
-  //         const {
-  //           user: { unitid, company }
-  //         } = decode(token);
-
-  //         //Nutzer add to team
-
-  //         const app = await models.Plan.findOne({
-  //           where: { id: serviceData.id },
-  //           raw: true
-  //         });
-
-  //         const plan = await models.Plan.findOne({
-  //           where: { appid: serviceData.id, options: { external: true } },
-  //           raw: true
-  //         });
-
-  //         if (!plan) {
-  //           throw new Error(
-  //             "This App is not integrated to handle external Accounts yet."
-  //           );
-  //         }
-  //         await checkPlanValidity(plan);
-  // const teamaddpromises = [];
-  // const employeepromises = [];
-  // addedTeams.forEach(team => {
-  //   teamaddpromises.push(
-  //     models.DepartmentApp.create(
-  //       { departmentid: team.unitid.id, boughtplanid: boughtPlan.id },
-  //       { transaction: ta }
-  //     )
-  //   );
-
-  //   team.employees.forEach(employee =>
-  //     employeepromises.push(
-  //       models.Licence.create(
-  //         {
-  //           unitid: employee.id,
-  //           disabled: false,
-  //           boughtplanid: boughtPlan.id,
-  //           agreed: true,
-  //           key: employee.setupfinished
-  //             ? {
-  //                 email: employee.setup.email,
-  //                 password: employee.setup.password,
-  //                 subdomain: employee.setup.subdomain,
-  //                 external: true
-  //               }
-  //             : {},
-  //           options: employee.setupfinished
-  //             ? {
-  //                 teamlicence: team.unitid.id
-  //               }
-  //             : {
-  //                 teamlicence: team.unitid.id,
-  //                 nosetup: true
-  //               }
-  //         },
-  //         { transaction: ta }
-  //       )
-  //     )
-  //   );
-  // });
-
-  // addedEmployees.forEach(employee =>
-  //   employeepromises.push(
-  //     models.Licence.create(
-  //       {
-  //         unitid: employee.id,
-  //         disabled: false,
-  //         boughtplanid: boughtPlan.id,
-  //         agreed: true,
-  //         key: employee.setupfinished
-  //           ? {
-  //               email: employee.setup.email,
-  //               password: employee.setup.password,
-  //               subdomain: employee.setup.subdomain,
-  //               external: true
-  //             }
-  //           : {},
-  //         options: employee.setupfinished
-  //           ? {}
-  //           : {
-  //               nosetup: true
-  //             }
-  //       },
-  //       { transaction: ta }
-  //     )
-  //   )
-  // );
-
-  // await Promise.all(teamaddpromises, employeepromises);
-
-  // //TODO notfiy user
-
-  // await createLog(
-  //   ip,
-  //   "createService",
-  //   { service: serviceData.id },
-  //   unitid,
-  //   ta
-  // );
   createOwnApp: requiresRights(["create-licences"]).createResolver(
     async (_, { ssoData, userids }, { models, token }) =>
       models.sequelize.transaction(async ta => {
@@ -1521,30 +939,47 @@ export default {
           } = decode(token);
           const { images, loginurl, ...data } = ssoData;
 
-          const [logo, icon] = await Promise.all(
-            images.map(async (upload, index) => {
-              const pic = await upload;
-              const filename = index == 0 ? "logo.png" : "icon.png";
+          let appOwned = null;
 
-              const name = await uploadAppImage(pic, ssoData.name, filename);
-              return name;
-            })
-          );
+          if (images && images.length == 2) {
+            const [logo, icon] = await Promise.all(
+              images.map(async (upload, index) => {
+                const pic = await upload;
+                const filename = index == 0 ? "logo.png" : "icon.png";
 
-          const appOwned = await models.App.create(
-            {
-              ...data,
-              loginurl,
-              logo,
-              icon,
-              options: { universallogin: true },
-              disabled: false,
-              developer: company,
-              supportunit: company,
-              owner: company
-            },
-            { transaction: ta }
-          );
+                const name = await uploadAppImage(pic, ssoData.name, filename);
+                return name;
+              })
+            );
+
+            appOwned = await models.App.create(
+              {
+                ...data,
+                loginurl,
+                logo,
+                icon,
+                options: { universallogin: true },
+                disabled: false,
+                developer: company,
+                supportunit: company,
+                owner: company
+              },
+              { transaction: ta }
+            );
+          } else {
+            appOwned = await models.App.create(
+              {
+                ...data,
+                loginurl,
+                options: { universallogin: true },
+                disabled: false,
+                developer: company,
+                supportunit: company,
+                owner: company
+              },
+              { transaction: ta }
+            );
+          }
 
           const plan = await models.Plan.create(
             {
@@ -2132,6 +1567,108 @@ export default {
             },
             ta
           );
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  failedIntegration: requiresAuth.createResolver(
+    async (_, { data }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
+          const appOwned = await models.App.create(
+            {
+              ...data,
+              options: { universallogin: true },
+              disabled: false,
+              color: "#f5f5f5",
+              developer: company,
+              supportunit: company,
+              owner: company
+            },
+            { transaction: ta }
+          );
+
+          const plan = await models.Plan.create(
+            {
+              name: `${data.name} Integrated`,
+              appid: appOwned.dataValues.id,
+              teaserdescription: `Integrated Plan for ${data.name}`,
+              startdate: models.sequelize.fn("NOW"),
+              numlicences: 0,
+              price: 0.0,
+              options: { external: true, integrated: true },
+              payperiod: { years: 1 },
+              cancelperiod: { secs: 1 },
+              hidden: true
+            },
+            { transaction: ta }
+          );
+
+          const boughtPlan = await models.BoughtPlan.create(
+            {
+              planid: plan.id,
+              alias: data.name,
+              disabled: true,
+              buyer: unitid,
+              payer: company,
+              usedby: company,
+              totalprice: 0,
+              key: {
+                integrated: false,
+                external: true,
+                externaltotalprice: 0,
+                loginurl: data.loginurl
+              },
+              stripeplan: null // Maybe we need one later
+            },
+            { transaction: ta }
+          );
+
+          const licence = await models.LicenceData.create(
+            {
+              unitid,
+              disabled: false,
+              boughtplanid: boughtPlan.id,
+              agreed: true,
+              pending: true,
+              key: {
+                ...data,
+                external: true,
+                appid: appOwned.dataValues.id,
+                company
+              }
+            },
+            { transaction: ta }
+          );
+
+          await sendEmail({
+            templateId: "d-58d4a9f85f8c47f88750d379d4fab23a",
+            fromName: "VIPFY",
+            personalizations: [
+              {
+                to: [{ email: "support@vipfy.store" }],
+                dynamic_template_data: {
+                  unitid,
+                  company,
+                  loginurl: data.loginurl,
+                  name: data.name,
+                  appid: appOwned.dataValues.id,
+                  licenceid: licence.dataValues.id
+                }
+              }
+            ]
+          });
+
+          return true;
+        } catch (err) {
           throw new NormalError({
             message: err.message,
             internalData: { err }
