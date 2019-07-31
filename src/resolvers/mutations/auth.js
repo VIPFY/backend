@@ -466,12 +466,8 @@ export default {
         raw: true
       });
 
-      const { suspended, deleted, banned } = emailExists;
-
       if (!emailExists) {
         throw new Error(message);
-      } else if (suspended || deleted || banned) {
-        throw new Error("Login for this account is currently disabled!");
       }
 
       const valid = await bcrypt.compare(password, emailExists.passwordhash);
