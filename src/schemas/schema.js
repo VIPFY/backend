@@ -1,4 +1,5 @@
 import { gql } from "apollo-server-express";
+import * as TwoFA from "./2FA";
 import * as App from "./App";
 import * as Admin from "./Admin";
 import * as Bill from "./Bill";
@@ -35,7 +36,8 @@ const schemas = [
   Responses,
   Unit,
   Tutorial,
-  Team
+  Team,
+  TwoFA
 ];
 
 // Push the value into the corresponding Array to export it

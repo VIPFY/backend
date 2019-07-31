@@ -508,7 +508,7 @@ export default {
 
   newsletterSignup: async (_, { email, firstname, lastname }, { models }) => {
     try {
-      const alreadySignedUp = await models.newsletter.findOne({
+      const alreadySignedUp = await models.NewsletterSignup.findOne({
         where: { email },
         raw: true
       });

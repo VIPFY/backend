@@ -15,7 +15,7 @@ export const getDate = () => new Date().toUTCString();
  * companyid of the user
  * @exports
  *
- * @param {*} user
+ * @param {object} user
  */
 export const parentAdminCheck = async user => {
   await models.sequelize
@@ -347,9 +347,9 @@ export const checkPaymentData = async (unitid, plan, ta) => {
 /**
  * Returns User `unitid` if the provided `employee` is in the `company`,
  * otherwise it throws an Exception
- * @param {ID} company
- * @param {ID} unitid
- * @param {ID} employee
+ * @param {string} company
+ * @param {string} unitid
+ * @param {string} employee
  */
 export const companyCheck = async (company, unitid, employee) => {
   try {
@@ -420,9 +420,8 @@ export const teamCheck = async (parentunit, childunit) => {
 
 export const checkMailExistance = async email => {
   try {
-    console.log("EMAIL", email);
     const emailExists = await models.Email.findOne({ where: { email } });
-    console.log("EMAILEXISTS", emailExists);
+
     if (emailExists) {
       return true;
     }
