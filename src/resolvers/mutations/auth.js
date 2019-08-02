@@ -480,7 +480,9 @@ export default {
 
       console.log("EAMIL", emailExists);
 
-      if (!emailExists) throw new Error(message);
+      if (!emailExists) {
+        throw new Error(message);
+      }
 
       const valid = await bcrypt.compare(password, emailExists.passwordhash);
       if (!valid) throw new Error(message);

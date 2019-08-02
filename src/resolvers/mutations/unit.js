@@ -27,17 +27,17 @@ export default {
             user: { unitid }
           } = decode(token);
 
+          const user = await models.User.findOne({
+            where: { id: unitid },
+            raw: true
+          });
+
           const parsedFile = await file;
 
           const profilepicture = await uploadUserImage(
             parsedFile,
             userPicFolder
           );
-
-          const user = await models.User.findOne({
-            where: { id: unitid },
-            raw: true
-          });
 
           const updatedUnit = await models.Unit.update(
             { profilepicture },

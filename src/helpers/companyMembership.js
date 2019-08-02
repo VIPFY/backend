@@ -9,9 +9,9 @@ const companyMembershipCache = new NodeCache({
 });
 
 /*
-* Check whether the department/user belongs to the company
-* Don't use to test for department membership as that data could be out of date
-*/
+ * Check whether the department/user belongs to the company
+ * Don't use to test for department membership as that data could be out of date
+ */
 export const checkCompanyMembership = async (
   models,
   company,
@@ -38,13 +38,21 @@ export const checkCompanyMembership = async (
     }
   }
 
-  const departments = await models.sequelize.query(
+  const p1 = models.Unit.findone({ where: { id: entityid }, raw: true });
+
+  const p2 = models.sequelize.query(
     "SELECT childid FROM department_tree_view WHERE id = :company AND childid = :child AND level > 1 LIMIT 1",
     {
       replacements: { company, child: entityid },
       raw: true
     }
   );
+
+  const [valid, departments] = await Promise.all([p1, p2]);
+
+  if (!valid || valid.deleted || valid.suspended || valid.banned) {
+    throw new Error("You can only edit valid units!");
+  }
 
   const inDepartment = departments.length > 0;
 
