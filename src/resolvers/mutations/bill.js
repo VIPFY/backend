@@ -39,8 +39,9 @@ export default {
    * @returns any
    */
   addPaymentData: requiresRights(["create-paymentdata"]).createResolver(
-    async (parent, { data, address, email }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { data, address, email }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, token } = ctx;
         const {
           user: { unitid, company }
         } = decode(token);
@@ -109,7 +110,7 @@ export default {
             logArgs.newCard = card;
           }
 
-          const p1 = createLog(ip, "addPaymentData", logArgs, unitid, ta);
+          const p1 = createLog(ctx, "addPaymentData", logArgs, ta);
           const p2 = createNotification(
             {
               receiver: unitid,
@@ -865,9 +866,11 @@ export default {
   ),
 
   addBillingEmail: requiresRights(["edit-billing"]).createResolver(
-    async (parent, { email }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { email }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
             user: { unitid, company }
           } = decode(token);
@@ -894,7 +897,7 @@ export default {
             { where: { email }, transaction: ta, returning: true }
           );
 
-          const p1 = createLog(ip, "addBillingEmail", { oldEmail }, unitid, ta);
+          const p1 = createLog(ctx, "addBillingEmail", { oldEmail }, ta);
 
           const p2 = models.Email.findOne({ where: { email } });
 
@@ -918,13 +921,14 @@ export default {
    * @returns {object}
    */
   removeBillingEmail: requiresRights(["edit-billing"]).createResolver(
-    async (parent, { email }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        const {
-          user: { unitid, company }
-        } = decode(token);
-
+    async (_p, { email }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+          const {
+            user: { unitid, company }
+          } = decode(token);
+
           const billingEmails = await models.DepartmentEmail.findAll({
             where: {
               tags: { [models.sequelize.Op.contains]: ["billing"] },
@@ -955,7 +959,7 @@ export default {
             }
           );
 
-          const p3 = createLog(ip, "createEmail", { removedEmail }, unitid, ta);
+          const p3 = createLog(ctx, "createEmail", { removedEmail }, ta);
 
           const p4 = createNotification(
             {

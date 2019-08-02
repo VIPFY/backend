@@ -74,18 +74,11 @@ export const loggingMiddleWare = (req, res, next) => {
 
       const { variables } = req.body;
       const token = req.headers["x-token"];
-      const impersonatorToken = req.headers["i-token"];
 
       if (token && token != "null") {
         const customer = jwt.decode(token);
 
         user = customer.user;
-
-        if (impersonatorToken && impersonatorToken != "null") {
-          const impersonator = jwt.decode(token);
-
-          user.impersonator = impersonator;
-        }
       }
 
       if (variables && variables.password) {
@@ -148,7 +141,7 @@ export const loggingMiddleWare = (req, res, next) => {
         if (user.impersonator) {
           models.Human.update(
             { lastactive: models.sequelize.fn("NOW") },
-            { where: { unitid: user.impersonator.unitid } }
+            { where: { unitid: user.impersonator } }
           );
         }
       }
