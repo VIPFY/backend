@@ -192,11 +192,12 @@ export default {
   ),
 
   createApp: requiresVipfyAdmin.createResolver(
-    async (parent, { app, options }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_parent, { app, options }, context) =>
+      context.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = context;
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           const nameExists = await models.App.findOne({
@@ -262,7 +263,7 @@ export default {
             );
           }
 
-          await createLog(ip, "updateProfilePic", { newApp, plan }, unitid, ta);
+          await createLog(context, "updateProfilePic", { newApp, plan }, ta);
 
           return newApp.dataValues.id;
         } catch ({ message }) {

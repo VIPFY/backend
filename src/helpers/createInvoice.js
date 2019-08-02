@@ -3,7 +3,7 @@ import moment from "moment";
 import { uniq } from "lodash";
 import { uploadInvoice } from "../services/aws";
 import renderInvoice from "./invoiceGenerator";
-import { groupBy, createLog } from "./functions";
+import { groupBy } from "./functions";
 import { sendEmail } from "./email";
 import { InvoiceError } from "../errors";
 import logger from "../loggers";
@@ -314,18 +314,8 @@ export default async (unitid, throwErr) =>
         );
       }
 
-      await createLog(
-        "127.0.0.1",
-        "createMonthlyInvoice",
-        { billObjects },
-        14,
-        null
-      );
-
       return true;
     } catch (err) {
-      await createLog("127.0.0.1", "createMonthlyInvoice", { err }, 14, null);
-
       await sendEmail({
         templateId: "d-6b1dbe42fb264c6f8056eda5ee2bbb93",
         fromName: "VIPFY",

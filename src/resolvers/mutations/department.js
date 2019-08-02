@@ -105,24 +105,22 @@ export default {
   ),
 
   createEmployee09: requiresRights(["create-employees"]).createResolver(
-    async (
-      _,
-      {
-        name,
-        emails,
-        password,
-        needpasswordchange,
-        file,
-        birthday,
-        hiredate,
-        address,
-        position,
-        phones
-      },
-      { models, token, ip }
-    ) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, args, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+          const {
+            name,
+            emails,
+            password,
+            needpasswordchange,
+            file,
+            birthday,
+            hiredate,
+            address,
+            position,
+            phones
+          } = args;
           const {
             user: { unitid, company }
           } = decode(token);
@@ -272,7 +270,7 @@ export default {
 
           const [requester, companyObj] = await Promise.all([p4, p5]);
 
-          await createLog(ip, "addCreateEmployee", { unit }, unitid, ta);
+          await createLog(ctx, "addCreateEmployee", { unit }, ta);
 
           // brand new person, but better to be too careful
           resetCompanyMembershipCache(company, unit.id);
@@ -583,9 +581,10 @@ export default {
     }),
 
   changeAdminStatus: requiresRights(["edit-rights"]).createResolver(
-    async (_, { unitid, admin }, { models, token, ip }) =>
-      models.sequelize.transaction(async transaction => {
+    async (_p, { unitid, admin }, ctx) =>
+      ctx.models.sequelize.transaction(async transaction => {
         try {
+          const { models, token } = ctx;
           const {
             user: { unitid: requester, company }
           } = decode(token);
@@ -598,13 +597,7 @@ export default {
 
           if (admin) {
             const p1 = await models.Right.create(data, { transaction });
-            const p2 = await createLog(
-              ip,
-              "adminAdd",
-              {},
-              requester,
-              transaction
-            );
+            const p2 = await createLog(ctx, "adminAdd", {}, transaction);
 
             await Promise.all([p1, p2]);
           } else {
@@ -626,7 +619,7 @@ export default {
             }
 
             const p1 = models.Right.destroy({ where: data, transaction });
-            const p2 = createLog(ip, "adminRemove", {}, requester, transaction);
+            const p2 = createLog(ctx, "adminRemove", {}, transaction);
 
             await Promise.all([p1, p2]);
           }

@@ -33,12 +33,13 @@ const ZENDESK_TOKEN =
 
 export default {
   signUp: async (
-    _,
+    _p,
     { email, companyname: name, privacy, termsOfService, isprivate },
-    { models, SECRET, ip }
+    ctx
   ) =>
-    models.sequelize.transaction(async ta => {
+    ctx.models.sequelize.transaction(async ta => {
       try {
+        const { models } = ctx;
         if (!privacy || !termsOfService) {
           throw new Error(
             "You have to confirm to our privacy agreement and our Terms of Service!"
@@ -230,7 +231,7 @@ export default {
         });
 
         await createLog(
-          ip,
+          ctx,
           "signUp",
           {
             human: user,
@@ -241,7 +242,6 @@ export default {
             vipfyPlan,
             company
           },
-          unit.id,
           ta
         );
 
@@ -346,12 +346,10 @@ export default {
       }
     }),
 
-  signUpConfirm: async (
-    _,
-    { token, password, passwordConfirm, email },
-    { models, ip }
-  ) =>
-    models.sequelize.transaction(async ta => {
+  signUpConfirm: async (_, { token, password, passwordConfirm, email }, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      const { models } = ctx;
+
       if (password != passwordConfirm) {
         throw new Error("Passwords don't match!");
       }
@@ -419,7 +417,7 @@ export default {
           { where: { unitid }, transaction: ta }
         );
 
-        const p5 = createLog(ip, "signUpConfirm", { token, email }, unitid, ta);
+        const p5 = createLog(ctx, "signUpConfirm", { token, email }, ta);
         const [signUpToken] = await Promise.all([p1, p2, p3, p4, p5]);
 
         if (

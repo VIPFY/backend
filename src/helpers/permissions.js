@@ -81,7 +81,7 @@ export const requiresAuth = createResolver(
 );
 
 export const requiresDepartmentCheck = requiresAuth.createResolver(
-  async (parent, args, { models, token }) => {
+  async (_parent, args, { models, token }) => {
     try {
       if (args.departmentid) {
         const {
