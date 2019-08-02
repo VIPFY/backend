@@ -38,7 +38,7 @@ export const checkCompanyMembership = async (
     }
   }
 
-  const p1 = models.User.findone({ where: { id: entityid }, raw: true });
+  const p1 = models.Unit.findone({ where: { id: entityid }, raw: true });
 
   const p2 = models.sequelize.query(
     "SELECT childid FROM department_tree_view WHERE id = :company AND childid = :child AND level > 1 LIMIT 1",
@@ -51,7 +51,7 @@ export const checkCompanyMembership = async (
   const [valid, departments] = await Promise.all([p1, p2]);
 
   if (!valid || valid.deleted || valid.suspended || valid.banned) {
-    throw new Error("You can only edit valid users!");
+    throw new Error("You can only edit valid units!");
   }
 
   const inDepartment = departments.length > 0;
