@@ -409,7 +409,7 @@ export default {
         await createLog(
           ip,
           "impersonate",
-          { admin: id, impersonated: unitid },
+          { impersonator: id, user: unitid },
           id,
           null
         );

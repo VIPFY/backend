@@ -23,7 +23,7 @@ const createResolver = resolver => {
 
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(
-  async (parent, args, { token, models }) => {
+  async (_parent, _args, { token, models }) => {
     try {
       if (!token || token == "null") {
         throw new Error("No valid token received!");
@@ -72,7 +72,7 @@ export const requiresAuth = createResolver(
 );
 
 export const requiresDepartmentCheck = requiresAuth.createResolver(
-  async (parent, args, { models, token }) => {
+  async (_parent, args, { models, token }) => {
     try {
       if (args.departmentid) {
         const {
@@ -94,7 +94,7 @@ export const requiresDepartmentCheck = requiresAuth.createResolver(
 
 export const requiresRights = rights =>
   requiresDepartmentCheck.createResolver(
-    async (parent, args, { models, token }) => {
+    async (_parent, args, { models, token }) => {
       try {
         const {
           user: { unitid: holder, company }
@@ -110,30 +110,37 @@ export const requiresRights = rights =>
         }
 
         if (args.teamid && args.teamid != "new") {
-          await checkCompanyMembership(
-            models,
-            company,
-            args.teamid,
-            "team"
-          );
+          await checkCompanyMembership(models, company, args.teamid, "team");
         }
 
         if (args.userid && args.userid != "new") {
           await checkCompanyMembership(models, company, args.userid, "user");
         }
         if (args.employeeid && args.employeeid != "new") {
-          await checkCompanyMembership(models, company, args.employeeid, "user");
+          await checkCompanyMembership(
+            models,
+            company,
+            args.employeeid,
+            "user"
+          );
         }
         if (args.unitid && args.unitid != "new") {
           await checkCompanyMembership(models, company, args.unitid, "user");
         }
         if (args.userids) {
-          await Promise.all(args.userids.filter(id => id != "new").map(id => checkCompanyMembership(models, company, id, "user")));
+          await Promise.all(
+            args.userids
+              .filter(id => id != "new")
+              .map(id => checkCompanyMembership(models, company, id, "user"))
+          );
         }
         if (args.unitids) {
-          await Promise.all(args.unitids.filter(id => id != "new").map(id => checkCompanyMembership(models, company, id, "user")));
+          await Promise.all(
+            args.unitids
+              .filter(id => id != "new")
+              .map(id => checkCompanyMembership(models, company, id, "user"))
+          );
         }
-        
 
         const hasRight = await models.Right.findOne({
           where: models.sequelize.and(

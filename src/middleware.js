@@ -15,17 +15,29 @@ const { SECRET, SECRET_THREE } = process.env;
 /* eslint-disable consistent-return, prefer-destructuring */
 export const authMiddleware = async (req, res, next) => {
   const token = req.headers["x-token"];
+  const impersonatorToken = req.headers["i-token"];
+
   if (token != "null" && token) {
     try {
       const { user } = await jwt.verify(token, SECRET);
-      req.user = user;
-      const { unitid, company } = user;
 
-      await checkAuthentification(unitid, company);
+      await checkAuthentification(user.unitid, user.company);
+
+      // Make sure that the impersonator is in the same company
+      if (impersonatorToken != "null" && impersonatorToken) {
+        const { user: impersonator } = await jwt.verify(token, SECRET);
+
+        if (user.company != impersonator.company) {
+          throw new Error("You can't impersonate a user from another company!");
+        }
+
+        await checkAuthentification(impersonator.unitid, impersonator.company);
+      }
     } catch (err) {
       logger.info(err);
       logger.info(err);
       req.headers["x-token"] = undefined;
+      req.headers["i-token"] = undefined;
     }
   }
   next();
@@ -59,25 +71,35 @@ export const loggingMiddleWare = (req, res, next) => {
       } catch (err) {
         parsedBody = { data: { unparsedBody: body } };
       }
+
       const { variables } = req.body;
       const token = req.headers["x-token"];
+      const impersonatorToken = req.headers["i-token"];
 
       if (token && token != "null") {
-        const {
-          user: { unitid }
-        } = jwt.decode(token);
-        user = unitid;
+        const customer = jwt.decode(token);
+
+        user = customer.user;
+
+        if (impersonatorToken && impersonatorToken != "null") {
+          const impersonator = jwt.decode(token);
+
+          user.impersonator = impersonator;
+        }
       }
 
       if (variables && variables.password) {
         variables.password = await getNewPasswordData(variables.password);
       }
+
       if (variables && variables.pw) {
         variables.pw = await getNewPasswordData(variables.pw);
       }
+
       if (variables && variables.newPw) {
         variables.newPw = await getNewPasswordData(variables.newPw);
       }
+
       if (variables && variables.confirmPw) {
         variables.confirmPw = await getNewPasswordData(variables.confirmPw);
       }
@@ -114,14 +136,21 @@ export const loggingMiddleWare = (req, res, next) => {
       };
 
       if (parsedBody.data) {
-        //logger.log("verbose", eventtype, log);
+        logger.log("verbose", eventtype, log);
       }
 
       if (user) {
         models.Human.update(
-          { lastactive: new Date().toUTCString() },
-          { where: { unitid: user } }
+          { lastactive: models.sequelize.fn("NOW") },
+          { where: { unitid: user.unitid } }
         );
+
+        if (user.impersonator) {
+          models.Human.update(
+            { lastactive: models.sequelize.fn("NOW") },
+            { where: { unitid: user.impersonator.unitid } }
+          );
+        }
       }
     } catch (err) {
       logger.error(err);
