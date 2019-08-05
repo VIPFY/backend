@@ -49,7 +49,7 @@ var functions = new Map([
 describe("Testing admin queries without token", () => {
   for (let [func, [parameters, subfields]] of functions) {
     it("testing " + func + ", expect AuthError", async () => {
-      var query = `{${func}${parameters}${subfields}}`
+      var query = `{${func}${parameters}${subfields}}`;
       var response = await testing(queryWrapper(query));
       expectAuthError(response, func);
     });

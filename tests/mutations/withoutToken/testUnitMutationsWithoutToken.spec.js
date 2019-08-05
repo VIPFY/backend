@@ -24,10 +24,14 @@ const expectAuthError = function(response, queryName) {
 // prettier-ignore
 var functionsWhichExpectAuthError = new Map([
   //["updateProfilePic", ['', ""]], //TODO: UPLOAD!!!
-  ["updateUser", ['(user:{firstname:\\"John\\"})', "{ok}"]],
   //["updateMyself", ['(user:{firstname:\\"John\\"})', "{id}"]], // removed
   ["updateEmployee", ['(user:{id:1211, firstname:\\"John\\"})', "{id}"]],
-  ["setConsent", ['(consent:true)', "{id}"]]
+  ["setConsent", ['(consent:true)', "{id}"]],
+  //NEW:
+  //updateEmployeePic //TODO: UPLOAD!
+  ['updateUser', ['(user:{firstname:\\"John\\"})', '{ok}']],
+  ['updateEmployeePassword', ['(unitid:1211, password:\\"testPass147\\")', '{id}']],
+  ['impersonate', ['(unitid:1211)', ""]]
 ]);
 
 describe("Testing unit mutations without token", () => {

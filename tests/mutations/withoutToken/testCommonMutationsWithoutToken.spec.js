@@ -27,7 +27,7 @@ var functionsWhichExpectAuthError = new Map([
   ["readNotification", ['(id:2)', ""]],
   ["readAllNotifications", ['', ""]],
   // ["ping", ['', ""]], -> test?
-  // ["checkVat", ['', ""]],
+  // ["checkVat", ['', ""]], TODO
   ["logSSOError", ['', ""]]
 ]);
 
@@ -39,4 +39,24 @@ describe("Testing common mutations without token", () => {
       expectAuthError(response, func);
     });
   }
+
+  it("testing checkEmail with already used email, expect NormalError (email used)", async () => {
+    var query = `mutation{checkEmail(email:\\"testmail147@abv.bg\\"){ok}}`;
+    var response = await testing(queryWrapper(query));
+    expect(response).toBeDefined();
+    expect(response.status).toEqual(200);
+    expect(response.success).toEqual(false);
+    expect(response.errors).toHaveLength(1);
+    expect(response.errors[0].name).toEqual("NormalError");
+  });
+
+  it("testing checkEmail with unused email, expect success", async () => {
+    var query = `mutation{checkEmail(email:\\"superrandomnameforeemail@randomdomainforemail.nonexistingtld\\"){ok}}`;
+    var response = await testing(queryWrapper(query));
+    expect(response).toBeDefined();
+    expect(response.status).toEqual(200);
+    expect(response.success).toEqual(true);
+    expect(response.errors).not.toBeDefined();
+    expect(response.data.checkEmail.ok).toEqual(true);
+  });
 });

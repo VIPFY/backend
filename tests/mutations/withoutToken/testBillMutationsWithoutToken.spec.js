@@ -25,9 +25,9 @@ const expectAuthError = function(response, queryName) {
 var functionsWhichExpectAuthError = new Map([
   ["addPaymentData", ['', "{ok}"]],
   ["changeDefaultMethod", ['(card: \\"sth\\")', "{ok}"]],
-  ["buyPlan", ['', ""]], //JSON Objects?
+  //["buyPlan", ['', ""]], //JSON Objects?
   ["cancelPlan", ['(planid: 1)', "{id}"]],
-  ["updatePlan", ['', ""]], //JSON Objects?
+  //["updatePlan", ['', ""]], //JSON Objects?
   ["reactivatePlan", ['(planid: 1)', "{id}"]],
   ["createMonthlyInvoices", ['', ""]],
   ["createInvoice", ['(unitid:1)', ""]],

@@ -1,11 +1,11 @@
 import { tester } from "graphql-tester";
 import { request } from "request";
+import { expression } from "@babel/template";
 
 const testing = tester({
   url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
-  
 });
 
 const queryWrapper = function(query) {
@@ -16,18 +16,43 @@ function getRandomInt(max) {
   return Math.floor(Math.random() * Math.floor(max));
 }
 
-function successfulExecution(response){
+function successfulExecution(response) {
   expect(response).toBeDefined();
   expect(response.status).toEqual(200);
   expect(response.success).toEqual(true);
+  expect(response.errors).not.toBeDefined();
 }
 
+// Implements expect(array).toContainObject(argument), checks whether an array contains the object given as argument
+expect.extend({
+  toContainObject(received, argument) {
+    const pass = this.equals(
+      received,
+      expect.arrayContaining([expect.objectContaining(argument)])
+    );
+
+    if (pass) {
+      return {
+        message: () =>
+          `expected ${this.utils.printReceived(
+            received
+          )} not to contain object ${this.utils.printExpected(argument)}`,
+        pass: true
+      };
+    } else {
+      return {
+        message: () =>
+          `expected ${this.utils.printReceived(
+            received
+          )} to contain object ${this.utils.printExpected(argument)}`,
+        pass: false
+      };
+    }
+  }
+});
+
 describe("Testing creation of a team and employees", () => {
-  var token,
-    teamid,
-    teams,
-    numberOfTeams = 0,
-    numberOfEmployees = 0;
+  var token, team1id, team2id, teams, employeeId;
 
   it("signing in, expect success", async () => {
     /*
@@ -40,8 +65,8 @@ describe("Testing creation of a team and employees", () => {
     const query =
       'mutation{signIn(email:\\"testmail147@abv.bg\\", password: \\"testPass123\\"){token}}';
     const response = await testing(queryWrapper(query));
-    
-    successfulExecution(response); 
+
+    successfulExecution(response);
     expect(response.errors).not.toBeDefined();
     expect(response.data.signIn.token).toBeDefined();
     token = response.data.signIn.token;
@@ -61,53 +86,189 @@ describe("Testing creation of a team and employees", () => {
     expect(response.data.fetchCompany.name).toEqual("IntegrationTests");
   });
 
-  it("addTeam - adding a new team, expect success and increase in number of teams", async () => {
-    var query = "{fetchCompanyTeams{id}}";
+  it("addTeam - adding a new team, expect success", async () => {
+    var query =
+      'mutation{addTeam(name:\\"TeamTest\\", data: {}){name unitid{id}}}';
     var response = await testing(queryWrapper(query), {
       headers: {
         "x-token": token,
         "Content-Type": "application/json"
       }
     });
-    teams = response.data.fetchCompanyTeams ? response.data.fetchCompanyTeams.length : 0;
-
-    /* TODO:
-    query = `{"operationName":\\"onCreateTeam\\","variables":{team:{name: \\"TeamTest\\"}},"query": mutation onCreateTeam($team:JSON!){createTeam(team:$team, addemployees:[], apps: [])}}`;
-    response = await testing(query, {
-      headers: {
-        "x-token": token,
-        "Content-Type": "application/json"
-      }
-    });
-    teamid = response.data.createTeam;*/
-    
-    query = 'mutation{addTeam(name:\\"TeamTest\\", data: {}){unitid{id}}}';
-    response = await testing(queryWrapper(query), {
-      headers: {
-        "x-token": token,
-        "Content-Type": "application/json"
-      }
-    });
-    teamid = response.data.addTeam.unitid.id;
 
     successfulExecution(response);
     expect(response.errors).not.toBeDefined();
     expect(response.data.addTeam.unitid.id).toBeDefined();
+    expect(response.data.addTeam.name).toEqual("TeamTest");
+    team1id = response.data.addTeam.unitid.id;
+  });
 
-    query = "{fetchCompanyTeams{id}}";
-    response = await testing(queryWrapper(query), {
+  it("createTeam - creating a new team, expect success", async () => {
+    var query = `{"operationName":\"onCreateTeam\","variables":{"team":{"name":\"createTeam\"}, "addemployees":[], "apps":[]},"query":"mutation onCreateTeam($team:JSON!, $addemployees: [JSON]!, $apps:[JSON]!){createTeam(team:$team, addemployees: $addemployees, apps:$apps)}"}`;
+    var response = await testing(query, {
       headers: {
         "x-token": token,
         "Content-Type": "application/json"
       }
     });
 
-    expect(response.data.fetchCompanyTeams.length).toEqual(teams + 1);
+    successfulExecution(response);
+    expect(response.errors).not.toBeDefined();
+    team2id = response.data.createTeam;
   });
 
-  describe("Test fetching team info:", () => {
+  it("fetchCompanyTeams - check whether teams were created, expect success", async () => {
+    var query = `{fetchCompanyTeams{id}}`;
+    var response = await testing(queryWrapper(query), {
+      headers: {
+        "x-token": token,
+        "Content-Type": "application/json"
+      }
+    });
+
+    successfulExecution(response);
+    expect(response.data.fetchCompanyTeams).toContainObject({
+      id: `${team1id}`
+    });
+    expect(response.data.fetchCompanyTeams).toContainObject({
+      id: `${team2id}`
+    });
+  });
+
+  it("editDepratmentName - change team name, expect success", async () => {
+    var query = `mutation{editDepartmentName(departmentid: ${team1id}, name: \\"ChangedName\\"){ok}}`;
+    var response = await testing(queryWrapper(query), {
+      headers: {
+        "x-token": token,
+        "Content-Type": "application/json"
+      }
+    });
+
+    successfulExecution(response);
+    expect(response.data.editDepartmentName.ok).toEqual(true);
+  });
+
+  it("fetchTeam - check whether team name was changed, expect success", async () => {
+    var query = `{fetchTeam(teamid: ${team1id}){name}}`;
+    var response = await testing(queryWrapper(query), {
+      headers: {
+        "x-token": token,
+        "Content-Type": "application/json"
+      }
+    });
+
+    successfulExecution(response);
+    expect(response.data.fetchTeam.name).toEqual("ChangedName");
+  });
+
+  //fetch all info
+  describe("Test fetching complete company/team info:", () => {
+    it("fetchCompany, expect success", async () => {
+      const query = `{fetchCompany{name legalinformation unitid{id} banned deleted suspended profilepicture employees employeedata{id} managelicences apps domains{id} createdate promocode setupfinished iscompany isprivate internaldata}}`;
+      const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      successfulExecution(response);
+      var company = response.data.fetchCompany;
+      expect(company.name).toEqual("IntegrationTests");
+      expect(company.legalinformation).toBeDefined();
+      expect(company.unitid.id).toEqual("1212");
+      expect(company.profilepicture).toBeDefined();
+      expect(company.employees).toBeDefined();
+      expect(company.employeedata).toBeDefined();
+      expect(company.managelicences).toBeDefined();
+      expect(company.apps).toBeDefined();
+      expect(company.domains).toBeDefined();
+      expect(company.createdate).toBeDefined();
+      expect(company.promocode).toBeDefined();
+      expect(company.setupfinished).toEqual(true);
+      expect(company.iscompany).toEqual(true);
+      expect(company.isprivate).toEqual(false);
+      expect(company.internaldata).toBeDefined();
+    });
+
+    it("fetchDepartmentsData, expect success", async () => {
+      const query = `{fetchDepartmentsData{id children children_data department{unitid{id} name} employees{id} level parent}}`;
+      const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      successfulExecution(response);
+      var department = response.data.fetchDepartmentsData[0];
+      expect(department.id).toEqual("1212");
+      expect(department.children).toEqual(expect.arrayContaining(["1211"]));
+      expect(department.children_data).toBeDefined();
+      expect(department.department.unitid.id).toEqual("1212");
+      expect(department.department.name).toEqual("IntegrationTests");
+      expect(department.level).toBeDefined();
+      expect(department.parent).toBeDefined();
+    });
+
+    it("fetchEmployees, expect success", async () => {
+      const query = `{fetchEmployees{id{unitid{id} name} childid{id} employee{id firstname lastname}}}`;
+      const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      successfulExecution(response);
+      expect(response.data.fetchEmployees).toEqual(
+        expect.arrayContaining([
+          {
+            id: {
+              unitid: {
+                id: "1212"
+              },
+              name: "IntegrationTests"
+            },
+            childid: null,
+            employee: {
+              id: "1211",
+              firstname: "Test",
+              lastname: "User"
+            }
+          }
+        ])
+      );
+    });
+
+    it("fetchVipfyPlan, expect success", async () => {
+      const query = `{fetchVipfyPlan{id buytime alias endtime description key buyer{id} payer{id} usedby{id} planid{id name} licences{id} totalprice}}`;
+      const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      successfulExecution(response);
+      var vplan = response.data.fetchVipfyPlan;
+      expect(vplan.id).toEqual("2522");
+      expect(vplan.buytime).toEqual("1564389759408");
+      expect(vplan.alias).toBeDefined();
+      expect(vplan.endtime).toBeDefined();
+      expect(vplan.description).toBeDefined();
+      expect(vplan.key).toBeDefined();
+      expect(vplan.buyer.id).toEqual("1211");
+      expect(vplan.payer.id).toEqual("1212");
+      expect(vplan.usedby.id).toEqual("1212");
+      expect(vplan.planid.id).toEqual("125");
+      expect(vplan.planid.name).toEqual("Vipfy Basic");
+      expect(vplan.licences).toBeDefined();
+      expect(vplan.totalprice).toBeDefined();
+    });
+
     it("fetchCompanyTeams, expect success", async () => {
-      const query = `{fetchCompanyTeams{id}}`;
+      const query = `{fetchCompanyTeams{id name legalinformation unitid{id} banned deleted suspended profilepicture employees{id} employeenumber managelicences apps domains{id} licences{id} services{id} createdate promocode setupfinished iscompany internaldata}}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -116,46 +277,15 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      var expected = [{"id": `${teamid}`}];
-      expect(response.data.fetchCompanyTeams).toEqual(expect.arrayContaining(expected));
-    });
-
-    it("fetchTeam with correct id, expect success", async () => {
-      const query = `{fetchTeam(teamid:${teamid}){name}}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      expect(response.data.fetchTeam.name).toEqual("TeamTest");
-    });
-
-    it("fetchTeam with incorrect id, expect null", async () => {
-      const query = `{fetchTeam(teamid:123465798){name}}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      expect(response.data.fetchTeam).toEqual(null);
+      expect(response.data.fetchCompanyTeams).toContainObject({ id: "1453" });
     });
   });
 
-  describe("Test adding/removing employees:", () => {
-
+  describe("Test employee manipulation:", () => {
     var empId;
 
     it("fetchTeam with correct id before adding employee, expect success and 0 employees", async () => {
-      const query = `{fetchTeam(teamid:${teamid}){employees{id}}}`;
+      const query = `{fetchTeam(teamid:${team1id}){employees{id}}}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -164,15 +294,12 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
       expect(response.data.fetchTeam.employees).toHaveLength(0);
-
     });
 
-    it("addCreateEmployee, expect success", async () => {
+    it("createEmployee09, expect success", async () => {
       var random = getRandomInt(999999);
-
-      const query = `mutation{addCreateEmployee(email: \\"empmail${random}@vipfy.store\\", password: \\"empPass123\\", name: {title: \\"\\", firstname: \\"Employee\\", middlename: \\"\\", lastname: \\"Two\\", suffix: \\"\\"}, departmentid: ${teamid} ){ok}}`;
+      const query = `mutation{createEmployee09(name: {title: \\"\\", firstname: \\"Temporary\\", middlename: \\"Test\\", lastname: \\"Employee\\", suffix: \\"\\"}, emails: [{email:\\"epmmail${random}@vipfy.store\\"}], password: \\"empPass123\\")}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -181,13 +308,13 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      expect(response.data.addCreateEmployee.ok).toEqual(true);
+      expect(response.data.createEmployee09).toBeDefined();
+      employeeId = response.data.createEmployee09;
     });
 
-    it("fetchTeam with correct id after adding an employee, expect success and 1 employee", async () => {
-      const query = `{fetchTeam(teamid:${teamid}){employees{id firstname lastname}}}`;
-      const response = await testing(queryWrapper(query), {
+    it("addToTeam - add created employee to Team 1, expect success", async () => {
+      var query = `mutation{addToTeam(userid: ${employeeId}, teamid: ${team1id}, services: [])}`;
+      var response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
           "Content-Type": "application/json"
@@ -195,73 +322,34 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      expect(response.data.fetchTeam.employees).toHaveLength(1);
-      expect(response.data.fetchTeam.employees[0].firstname).toEqual("Employee");
-      expect(response.data.fetchTeam.employees[0].lastname).toEqual("Two");
-      empId = response.data.fetchTeam.employees[0].id;
-    });
-
-    it("fetchTeams by userid, expect success", async () => {
-      const query = `{fetchTeams(userid:${empId}){id}}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      expect(response.data.fetchTeams).toHaveLength(1);
-      expect(response.data.fetchTeams[0].id).toEqual(teamid);
-    });
-
-    it("removeFromTeam, expect success", async () => {
-      const query = `mutation{removeFromTeam(teamid:${teamid}, userid: ${empId}, keepLicences: [])}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      expect(response.data.removeFromTeam).toEqual(true);
-    });
-
-    it("fetchTeam with correct id after removing an employee, expect success and 0 employees", async () => {
-      const query = `{fetchTeam(teamid:${teamid}){employees{id firstname lastname}}}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      expect(response.data.fetchTeam.employees).toHaveLength(0);
-    });
-
-    it("addToTeam with existing employee, expect success", async () => {
-      const query = `mutation{addToTeam(teamid:${teamid}, userid: ${empId}, services: [])}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
       expect(response.data.addToTeam).toEqual(true);
     });
 
-    it("addToTeam with employeeid which is already in the team, expect NormalError", async () => {
-      const query = `mutation{addToTeam(teamid:${teamid}, userid: ${empId}, services: [])}`;
+    it("fetchTeam - fetch Team 1 to check whether employee was added, expect success and correct employee information", async () => {
+      const query = `{fetchTeam(teamid:${team1id}){employees{id firstname middlename lastname}}}`;
       const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      successfulExecution(response);
+      var expectedEmployeeData = {
+        id: `${employeeId}`,
+        firstname: "Temporary",
+        middlename: "Test",
+        lastname: "Employee"
+      };
+      expect(response.data.fetchTeam.employees).toHaveLength(1);
+      expect(response.data.fetchTeam.employees).toContainObject(
+        expectedEmployeeData
+      );
+    });
+
+    it("trying to add the same employee to the same team via addToTeam, expect failure and NormalError", async () => {
+      var query = `mutation{addToTeam(userid: ${employeeId}, teamid: ${team1id}, services: [])}`;
+      var response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
           "Content-Type": "application/json"
@@ -272,10 +360,24 @@ describe("Testing creation of a team and employees", () => {
       expect(response.status).toEqual(200);
       expect(response.success).toEqual(false);
       expect(response.errors).toHaveLength(1);
+      expect(response.errors[0].name).toEqual("NormalError");
     });
 
-    it("fetchTeam with correct id after adding an employee via addToTeam, expect success and 1 employee", async () => {
-      const query = `{fetchTeam(teamid:${teamid}){employees{id firstname lastname}}}`;
+    it("addEmployee - add created employee to Team 2, expect success", async () => {
+      var query = `mutation{addEmployee(unitid: ${employeeId}, departmentid: ${team2id}){ok}}`;
+      var response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      successfulExecution(response);
+      expect(response.data.addEmployee.ok).toEqual(true);
+    });
+
+    it("fetchTeams by userid, expect success and employee being in 2 teams", async () => {
+      const query = `{fetchTeams(userid:${employeeId}){id}}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -284,15 +386,29 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      expect(response.data.fetchTeam.employees).toHaveLength(1);
-      expect(response.data.fetchTeam.employees[0].firstname).toEqual("Employee");
-      expect(response.data.fetchTeam.employees[0].lastname).toEqual("Two");
-      expect(response.data.fetchTeam.employees[0].id).toEqual(empId);
+      expect(response.data.fetchTeams).toHaveLength(2);
+      expect(response.data.fetchTeams).toContainObject({ id: `${team1id}` });
+      expect(response.data.fetchTeams).toContainObject({ id: `${team2id}` });
     });
 
-    it("forcePasswordChange, expect success", async () => {
-      const query = `mutation{forcePasswordChange(userids:[1211]){ok}}`;
+    it("trying to add the same employee to the same team via addEmployee, expect failure and NormalError", async () => {
+      var query = `mutation{addEmployee(unitid: ${employeeId}, departmentid: ${team2id}){ok}}`;
+      var response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      expect(response).toBeDefined();
+      expect(response.status).toEqual(200);
+      expect(response.success).toEqual(false);
+      expect(response.errors).toHaveLength(1);
+      expect(response.errors[0].name).toEqual("NormalError");
+    });
+
+    it("removeFromTeam - remove employee from Team 2, expect success", async () => {
+      const query = `mutation{removeFromTeam(teamid:${team2id}, userid: ${employeeId}, keepLicences: [])}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -301,11 +417,12 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.data.forcePasswordChange.ok).toEqual(true);
+      expect(response.data.removeFromTeam).toEqual(true);
     });
+    //TODO: Maybe try to remove twice, check whether there is a problem.
 
-    it("check whether needspasswordchange was set to true after forcePasswordChange, expect success", async () => {
-      const query = `{me{needspasswordchange}}`;
+    it("fetchTeam - fetch Team 2 after removing an employee, expect success and employee removed", async () => {
+      const query = `{fetchTeam(teamid:${team2id}){employees{id}}}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -314,101 +431,13 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.data.me.needspasswordchange).toEqual(true);
-    });
-
-    it("deleteEmployee, expect success", async () => {
-      const query = `mutation{deleteEmployee(employeeid:${empId})}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
+      expect(response.data.fetchTeam.employees).not.toContainObject({
+        id: `${employeeId}`
       });
-
-      successfulExecution(response);
-      expect(response.data.deleteEmployee).toEqual(true);
-    });
-  });
-
-  describe("Test creating and editing of employees", () => {
-    var employeeId;
-
-    it("fetchCompanySize before adding an employee, expect success and size = 1", async () => {
-      const query = `{fetchCompanySize}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      expect(response.data.fetchCompanySize).toEqual("1");
     });
 
-    it("createEmployee09 without adding phones, expect success", async () => {
-      var random = getRandomInt(999999);
-      const query = `mutation{createEmployee09(name: {title: \\"\\", firstname: \\"Employee\\", middlename: \\"\\", lastname: \\"One\\", suffix: \\"\\"}, emails: [{email:\\"epmmail${random}@vipfy.store\\"}], password: \\"empPass123\\")}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.data.createEmployee09).toBeDefined();
-      employeeId = response.data.createEmployee09;
-    });
-
-
-    it("createEmployee09 with empty array of phones, expect success (remove when fixed)", async () => {
-      var random = getRandomInt(999999);
-      const query = `mutation{createEmployee09(name: {title: \\"\\", firstname: \\"Test\\", middlename: \\"\\", lastname: \\"Employee\\", suffix: \\"\\"}, emails: [{email:\\"epmmail${random}@vipfy.store\\"}], password: \\"empPass123\\", phones:[])}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.data.createEmployee09).toBeDefined();
-      employeeId = response.data.createEmployee09;
-    });
-
-    it("fetchSemiPublicUser with correct userid, expect success and correct info", async () => {
-      const query = `{fetchSemiPublicUser(unitid:${employeeId}){ firstname lastname }}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.data.fetchSemiPublicUser.firstname).toEqual("Test");
-      expect(response.data.fetchSemiPublicUser.lastname).toEqual("Employee");
-    });
-
-    it("fetchCompanySize after adding an employee, expect success and size = 2", async () => {
-      const query = `{fetchCompanySize}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      expect(response.data.fetchCompanySize).toEqual("2");
-    });
-
-    it("addEmployeeToTeam, expect success", async () => {
-      const query = `mutation{addEmployeeToTeam(employeeid:${employeeId}, teamid: ${teamid})}`;
+    it("addEmployeeToTeam - adds the employee to Team 2, expect success", async () => {
+      const query = `mutation{addEmployeeToTeam(employeeid:${employeeId}, teamid: ${team2id})}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -420,8 +449,8 @@ describe("Testing creation of a team and employees", () => {
       expect(response.data.addEmployeeToTeam).toEqual(true);
     });
 
-    it("fetchEmployees to check whether employee is added to team, expect success", async () => {
-      const query = `{fetchEmployees{employee{id}}}`;
+    it("fetchTeams by userid, expect success and employee being in 2 teams", async () => {
+      const query = `{fetchTeams(userid:${employeeId}){id}}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -430,12 +459,29 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.data.fetchEmployees[0].employee.id).toEqual("1211");
-      expect(response.data.fetchEmployees[1].employee.id).toEqual(`${employeeId}`);
+      expect(response.data.fetchTeams).toHaveLength(2);
+      expect(response.data.fetchTeams).toContainObject({ id: `${team1id}` });
+      expect(response.data.fetchTeams).toContainObject({ id: `${team2id}` });
     });
 
-    it("fetchTeam to check whether employee is added to team, expect success", async () => {
-      const query = `{fetchTeam(teamid:${teamid}){employees{id}}}`;
+    it("trying to add the same employee to the same team via addEmployeeToTeam, expect failure and NormalError", async () => {
+      const query = `mutation{addEmployeeToTeam(employeeid:${employeeId}, teamid: ${team2id})}`;
+      const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      expect(response).toBeDefined();
+      expect(response.status).toEqual(200);
+      expect(response.success).toEqual(false);
+      expect(response.errors).toHaveLength(1);
+      expect(response.errors[0].name).toEqual("NormalError");
+    });
+
+    it("forcePasswordChange, expect success", async () => {
+      const query = `mutation{forcePasswordChange(userids:[${employeeId}]){ok}}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -444,7 +490,35 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.data.fetchTeam.employees[0].id).toEqual(employeeId);
+      expect(response.data.forcePasswordChange.ok).toEqual(true);
+    });
+
+    it("fetchUserSecurityOverview - check everything about employee", async () => {
+      const query = `{fetchUserSecurityOverview{id unitid{firstname middlename lastname} needspasswordchange banned suspended passwordlength passwordstrength}}`;
+      const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      successfulExecution(response);
+      var expectedData = {
+        id: `${employeeId}`,
+        unitid: {
+          firstname: "Temporary",
+          middlename: "Test",
+          lastname: "Employee"
+        },
+        needspasswordchange: true,
+        passwordlength: 10,
+        passwordstrength: 2,
+        banned: false,
+        suspended: false
+      };
+      expect(response.data.fetchUserSecurityOverview).toContainObject(
+        expectedData
+      );
     });
 
     it("banEmployee, expect success", async () => {
@@ -460,8 +534,8 @@ describe("Testing creation of a team and employees", () => {
       expect(response.data.banEmployee.ok).toEqual(true);
     });
 
-    it("fetchSemiPublicUser with correct userid, expect success and isbanned = true", async () => {
-      const query = `{fetchSemiPublicUser(unitid:${employeeId}){ companyban }}`;
+    it("fetchSemiPublicUser with employeeid, expect success and companyban = true", async () => {
+      const query = `{fetchSemiPublicUser(userid:${employeeId}){ companyban }}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -472,21 +546,6 @@ describe("Testing creation of a team and employees", () => {
       successfulExecution(response);
       expect(response.data.fetchSemiPublicUser.companyban).toEqual(true);
     });
-
-    // banned != companyban??
-    it("fetchUserSecurityOverview with correct userid, expect success and banned = true", async () => {
-      const query = `{fetchUserSecurityOverview{ banned }}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.data.fetchUserSecurityOverview[1].banned).toEqual(true);
-    });
-
 
     it("unbanEmployee, expect success", async () => {
       const query = `mutation{unbanEmployee(userid: ${employeeId}){ok}}`;
@@ -501,22 +560,8 @@ describe("Testing creation of a team and employees", () => {
       expect(response.data.unbanEmployee.ok).toEqual(true);
     });
 
-    // banned != companyban??
-    it("fetchUserSecurityOverview with correct userid, expect success and banned = false", async () => {
-      const query = `{fetchUserSecurityOverview{ banned }}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.data.fetchUserSecurityOverview[1].banned).toEqual(false);
-    });
-
-    it("fetchSemiPublicUser with correct userid, expect success and isbanned = false", async () => {
-      const query = `{fetchSemiPublicUser(unitid:${employeeId}){ companyban }}`;
+    it("fetchSemiPublicUser with employeeId, expect success and companyban = false", async () => {
+      const query = `{fetchSemiPublicUser(userid:${employeeId}){ companyban }}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -526,19 +571,6 @@ describe("Testing creation of a team and employees", () => {
 
       successfulExecution(response);
       expect(response.data.fetchSemiPublicUser.companyban).toEqual(false);
-    });
-
-    it("updateEmployee - change firstname, expect success", async () => {
-      const query = `mutation{updateEmployee(user: {id: ${employeeId}, firstname: \\"Emp\\"}){firstname}}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.data.updateEmployee.firstname).toEqual("Emp");
     });
 
     it("changeAdminStatus - set employee as admin and check whether isadmin has changed to true, expect success", async () => {
@@ -554,7 +586,7 @@ describe("Testing creation of a team and employees", () => {
       expect(response.data.changeAdminStatus.id).toEqual(`${employeeId}`);
       expect(response.data.changeAdminStatus.status).toEqual(true);
 
-      query = `{fetchSemiPublicUser(unitid:${employeeId}){ isadmin }}`;
+      query = `{fetchSemiPublicUser(userid:${employeeId}){ isadmin }}`;
       response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -579,7 +611,7 @@ describe("Testing creation of a team and employees", () => {
       expect(response.data.changeAdminStatus.id).toEqual(`${employeeId}`);
       expect(response.data.changeAdminStatus.status).toEqual(false);
 
-      query = `{fetchSemiPublicUser(unitid:${employeeId}){ isadmin }}`;
+      query = `{fetchSemiPublicUser(userid:${employeeId}){ isadmin }}`;
       response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -591,8 +623,8 @@ describe("Testing creation of a team and employees", () => {
       expect(response.data.fetchSemiPublicUser.isadmin).toEqual(false);
     });
 
-    it("removeEmployee with correct id, expect success", async () => {
-      const query = `mutation{removeEmployee(unitid:${employeeId}, departmentid: ${teamid}){ok}}`;
+    it("updateEmployee - change firstname of employee, expect success", async () => {
+      const query = `mutation{updateEmployee(user: {id: ${employeeId}, firstname: \\"SoonToBeDeleted\\"}){firstname}}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -601,11 +633,11 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.data.removeEmployee.ok).toEqual(true);
+      expect(response.data.updateEmployee.firstname).toEqual("SoonToBeDeleted");
     });
 
-    it("fetchTeam to check whether employee is removed from team, expect success", async () => {
-      const query = `{fetchTeam(teamid:${teamid}){employees{id}}}`;
+    it("updateEmployeePassword - change password of employee, expect success", async () => {
+      const query = `mutation{updateEmployeePassword(unitid:${employeeId}, password: \\"LongEnoughPassword123\\"){passwordlength passwordstrength}}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -614,11 +646,13 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.data.fetchTeam.employees).toHaveLength(0);
+      expect(response.data.updateEmployeePassword.passwordlength).toEqual(21);
+      expect(response.data.updateEmployeePassword.passwordstrength).toEqual(3);
     });
 
-    it("addEmployee with correct id, expect success", async () => {
-      const query = `mutation{addEmployee(unitid:${employeeId}, departmentid: ${teamid}){ok}}`;
+    var impToken;
+    it("impersonate employee, expect success", async () => {
+      const query = `mutation{impersonate(unitid:${employeeId})}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -627,24 +661,12 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.data.addEmployee.ok).toEqual(true);
+      expect(response.data.impersonate).toBeDefined();
+      impToken = response.data.impersonate;
     });
+    //TODO: checks for impersonate token
 
-    it("fetchTeam with correct id, expect success", async () => {
-      const query = `{fetchTeam(teamid:${teamid}){employees{id}}}`;
-      const response = await testing(queryWrapper(query), {
-        headers: {
-          "x-token": token,
-          "Content-Type": "application/json"
-        }
-      });
-
-      successfulExecution(response);
-      expect(response.errors).not.toBeDefined();
-      expect(response.data.fetchTeam.employees[0].id).toEqual(`${employeeId}`);
-    });
-
-    it("deleteEmployee by id, expect success", async () => {
+    it("deleteEmployee, expect success", async () => {
       const query = `mutation{deleteEmployee(employeeid:${employeeId})}`;
       const response = await testing(queryWrapper(query), {
         headers: {
@@ -654,11 +676,11 @@ describe("Testing creation of a team and employees", () => {
       });
 
       successfulExecution(response);
-      expect(response.data.deleteEmployee).toBeDefined();
+      expect(response.data.deleteEmployee).toEqual(true);
     });
 
     it("fetchSemiPublicUser with userid of deleted employee, expect error and/or no information returned", async () => {
-      const query = `{fetchSemiPublicUser(unitid:${employeeId}){ firstname }}`;
+      const query = `{fetchSemiPublicUser(userid:${employeeId}){ firstname }}`;
       const response = await testing(queryWrapper(query), {
         headers: {
           "x-token": token,
@@ -673,10 +695,97 @@ describe("Testing creation of a team and employees", () => {
       expect(response.errors[0].name).toEqual("NormalError");
       expect(response.data.fetchSemiPublicUser).toEqual(null);
     });
+
+    it("fetchPublicUser with userid of deleted employee, expect error and/or no information returned", async () => {
+      const query = `{fetchPublicUser(userid:${employeeId}){ firstname }}`;
+      const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      expect(response).toBeDefined();
+      expect(response.status).toEqual(200);
+      expect(response.success).toEqual(false);
+      expect(response.errors).toHaveLength(1);
+      expect(response.errors[0].name).toEqual("NormalError");
+      expect(response.data.fetchPublicUser).toEqual(null);
+    });
+
+    it("fetchEmployees to check whether information about deleted employee is revealed, expect success and/or no information about deleted employee returned", async () => {
+      const query = `{fetchEmployees{ employee{id}}}`;
+      const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      expect(response).toBeDefined();
+      expect(response.status).toEqual(200);
+      expect(response.success).toEqual(true);
+      expect(response.errors).not.toBeDefined();
+      var expected = { employee: { id: `${employeeId}` } };
+      expect(response.data.fetchEmployees).not.toContainObject(expected);
+    });
+
+    it("fetchUserSecurityOverview to check whether information about deleted employee is revealed, expect success and/or no information about deleted employee returned", async () => {
+      const query = `{fetchUserSecurityOverview{id}}`;
+      const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      expect(response).toBeDefined();
+      expect(response.status).toEqual(200);
+      expect(response.success).toEqual(true);
+      expect(response.errors).not.toBeDefined();
+      var expected = { id: `${employeeId}` };
+      expect(response.data.fetchUserSecurityOverview).not.toContainObject(
+        expected
+      );
+    });
+
+    it("fetchTeam to check whether information about deleted employee is revealed, expect success and/or no information about deleted employee returned", async () => {
+      const query = `{fetchTeam(teamid:${team1id}){employees{id}}}`;
+      const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      expect(response).toBeDefined();
+      expect(response.status).toEqual(200);
+      expect(response.success).toEqual(true);
+      expect(response.errors).not.toBeDefined();
+      var expected = { id: `${employeeId}` };
+      expect(response.data.fetchTeam.employees).not.toContainObject(expected);
+    });
+
+    it("fetchTeams to check whether information about deleted employee is revealed, expect failure and no information revealed", async () => {
+      const query = `{fetchTeams(userid: ${employeeId}){id}}`;
+      const response = await testing(queryWrapper(query), {
+        headers: {
+          "x-token": token,
+          "Content-Type": "application/json"
+        }
+      });
+
+      expect(response).toBeDefined();
+      expect(response.status).toEqual(200);
+      expect(response.success).toEqual(false);
+      expect(response.errors).toHaveLength(1);
+      expect(response.errors[0].name).toEqual("NormalError");
+    });
   });
 
-  it("deleteTeam - deleting the team, expect success and number of teams reduced", async () => {
-    var query = `mutation{deleteTeam(teamid:${teamid})}`;
+  it("deleteTeam - delete the created teams, expect success", async () => {
+    //delete first team
+    var query = `mutation{deleteTeam(teamid:${team1id})}`;
     var response = await testing(queryWrapper(query), {
       headers: {
         "x-token": token,
@@ -685,10 +794,10 @@ describe("Testing creation of a team and employees", () => {
     });
 
     successfulExecution(response);
-    expect(response.errors).not.toBeDefined();
     expect(response.data.deleteTeam).toEqual(true);
 
-    query = "{fetchCompanyTeams{id}}";
+    //delete second team
+    query = `mutation{deleteTeam(teamid:${team2id})}`;
     response = await testing(queryWrapper(query), {
       headers: {
         "x-token": token,
@@ -696,6 +805,7 @@ describe("Testing creation of a team and employees", () => {
       }
     });
 
-    expect(response.data.fetchCompanyTeams.length).toEqual(teams);
+    successfulExecution(response);
+    expect(response.data.deleteTeam).toEqual(true);
   });
 });

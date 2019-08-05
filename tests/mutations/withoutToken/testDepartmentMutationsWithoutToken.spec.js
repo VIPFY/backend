@@ -33,10 +33,15 @@ var functionsWhichExpectAuthError = new Map([
   //["fireEmployee", ['(unitid:147)', "{ok}"]], // removed
   ["banEmployee", ['(userid:1211)', "{ok}"]], 
   ["unbanEmployee", ['(userid:1211)', "{ok}"]], 
-  //["updateCompanyPic", ['', ""]], //file:Upload!
-  //["saveProposalData", ['(data:{})', "{ok}"]],// Expect NormalError
+  //["updateCompanyPic", ['', ""]], //file:Upload! TODO
+  //["saveProposalData", ['(data:{})', "{ok}"]],// Expect NormalError -> separate test
   ["changeAdminStatus", ['(unitid:1211,admin: true)', "{id status}"]],
   ["applyPromocode", ['(promocode:\\"1234\\")', "{ok}"]],
+  //NEW:
+  ['createEmployee09', ['(name:{title:\\"\\", firstname:\\"First\\", middlename: \\"\\", lastname: \\"Last\\", suffix:\\"\\"}, emails:[{email:\\"empmail1234@vipfy.store\\"}],password:\\"empPass123\\")', ""]],
+  ['addPromocode', ['(promocode: \\"a123b\\")', ""]],
+  //createEmployee -> TODO:Later
+  ['deleteEmployee', ['(employeeid: 1211)', ""]]
 ]);
 
 describe("Testing department mutations without token", () => {

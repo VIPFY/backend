@@ -23,7 +23,7 @@ const expectAuthError = function(response, queryName) {
 };
 // prettier-ignore
 var functionsWhichExpectAuthError = new Map([
-  //['allApps', ['', "{id}"]], //can unauthorized user see the available apps? -> Yes => Don't expect error 
+  ['allApps', ['', "{id}"]],
   ['fetchAllAppsEnhanced', ['', "{id}"]],
   ['fetchAppById', ['(id:1)', "{name}"]],
   ['fetchLicences', ['', "{id}"]],
@@ -34,8 +34,15 @@ var functionsWhichExpectAuthError = new Map([
   ['fetchSupportToken', ['', ""]],
   //['fetchAppIcon', ['(licenceid:1)', "{icon}"]], // removed
   //['fetchBoughtplanUsagePerUser', []] -> separate test
-  ['fetchMonthlyAppUsage', ['', "{totalminutes}"]],
-  ['fetchTotalAppUsage', ['', "{totalminutes}"]]
+  //['fetchMonthlyAppUsage', ['', "{totalminutes}"]], // removed
+  ['fetchTotalAppUsage', ['', "{totalminutes}"]],
+  //NEW:
+  ['fetchCompanyServices', ['', "{id}"]],
+  ['fetchCompanyService', ['(serviceid:1)', "{id}"]],
+  ['fetchServiceLicences', ['(employees:[1211], serviceid:1)', "{id}"]],
+  ['fetchIssuedLicences', ['(unitid:1211)', "{id}"]],
+  ['fetchTempLicences', ['(unitid:1211)', "{id}"]],
+  ['bulkUpdateLayout', ['(layouts:[{id:1}])', ""]]
 ]);
 
 describe("Testing app queries without token", () => {
@@ -52,14 +59,6 @@ describe("Testing app queries without token", () => {
       '{"operationName":"onFetchBoughtplanUsagePerUser","variables":{"starttime":"2018-12-3","endtime":"2019-12-3","boughtplanid":1},"query":"query onFetchBoughtplanUsagePerUser($starttime: Date!, $endtime: Date!, $boughtplanid: ID!) {  fetchBoughtplanUsagePerUser(starttime: $starttime, endtime: $endtime, boughtplanid: $boughtplanid) {    totalminutes  }}"}';
     var response = await testing(query);
     expectAuthError(response, "fetchBoughtplanUsagePerUser");
-  });
-
-  it("testing allApps, expect success and ids of apps", async () => {
-    var query = "{allApps{id}}";
-    var response = await testing(queryWrapper(query));
-    expect(response).toBeDefined();
-    expect(response.status).toEqual(200);
-    expect(response.success).toEqual(true);
   });
 
   it("testing fetchBoughtplanUsagePerUser with random data, expect AuthError", async () => {

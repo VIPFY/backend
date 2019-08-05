@@ -28,6 +28,14 @@ var functionsWhichExpectAuthError = new Map([
   //["updateTeamMembers", ['(members: 1, teamid: 1, action: ADD)', "{name}"]], // removed
   //["updateTeamInfos", ['(teamid:1, data:{})', "{name}"]], // removed
   //["addTeamLicence", ['(teamid:1, boughtplanid: 1)', "{name}"]] // removed
+  //NEW:
+  //createTeam - JSON Objects -> separate test
+  //updateTeamPic - require UPLOAD TODO
+  ['removeFromTeam', ['(teamid: 1895, userid: 1211)',""]],
+  ['removeServiceFromTeam', ['(teamid: 1895, boughtplanid: 1)', ""]],
+  ['addToTeam', ['(userid: 1211, teamid: 1895, services: [])', ""]],
+  ['addEmployeeToTeam', ['(employeeid: 1211, teamid: 1895)', ""]],
+  ['addAppToTeam', ['(serviceid: 1, teamid: 1895, employees: [])', ""]]
 ]);
 
 describe("Testing team mutations without token", () => {
@@ -38,4 +46,10 @@ describe("Testing team mutations without token", () => {
       expectAuthError(response, func);
     });
   }
+
+  it("testing createTeam, expect AuthError", async () => {
+    var query = `{"operationName":\"onCreateTeam\","variables":{"team":{"name":\"IllegalTeam\"}, "addemployees":[], "apps":[]},"query":"mutation onCreateTeam($team:JSON!, $addemployees: [JSON]!, $apps:[JSON]!){createTeam(team:$team, addemployees: $addemployees, apps:$apps)}"}`;
+    var response = await testing(query);
+    expectAuthError(response, "createTeam");
+  });
 });

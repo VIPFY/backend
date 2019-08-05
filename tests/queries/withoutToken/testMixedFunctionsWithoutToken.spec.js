@@ -1,4 +1,5 @@
 import { tester } from "graphql-tester";
+import { ApolloServerBase } from "apollo-server-core";
 
 const testing = tester({
   url: "https://api.dev.vipfy.store/graphql",
@@ -38,6 +39,11 @@ describe("Testing common queries without token", () => {
     var query = "{fetchNotifications{id}}";
     var response = await testing(queryWrapper(query));
     expectAuthError(response, "fetchNotifications");
+  });
+  it("testing checkMailExistance, expect AuthError", async () => {
+    var query = `{checkMailExistance(email:\\"testmail147@abv.bg\\")}`;
+    var response = await testing(queryWrapper(query));
+    expectAuthError(response, "checkMailExistance");
   });
 });
 
@@ -82,6 +88,16 @@ describe("Testing team queries without token", () => {
     var query = "{fetchTeams(userid:1){id}}";
     var response = await testing(queryWrapper(query));
     expectAuthError(response, "fetchTeams");
+  });
+  it("testing fetchCompanyTeams, expect AuthError", async () => {
+    var query = "{fetchCompanyTeams{id}}";
+    var response = await testing(queryWrapper(query));
+    expectAuthError(response, "fetchCompanyTeams");
+  });
+  it("testing fetchTeam, expect AuthError", async () => {
+    var query = "{fetchTeam(teamid:1895){id}}";
+    var response = await testing(queryWrapper(query));
+    expectAuthError(response, "fetchTeam");
   });
 });
 

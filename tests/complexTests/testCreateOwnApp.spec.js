@@ -5,32 +5,35 @@ const testing = tester({
   url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
-  
 });
 
 // Implements expect(array).toContainObject(argument), checks whether an array contains the object given as argument
 expect.extend({
   toContainObject(received, argument) {
-
-    const pass = this.equals(received, 
-      expect.arrayContaining([
-        expect.objectContaining(argument)
-      ])
-    )
+    const pass = this.equals(
+      received,
+      expect.arrayContaining([expect.objectContaining(argument)])
+    );
 
     if (pass) {
       return {
-        message: () => (`expected ${this.utils.printReceived(received)} not to contain object ${this.utils.printExpected(argument)}`),
+        message: () =>
+          `expected ${this.utils.printReceived(
+            received
+          )} not to contain object ${this.utils.printExpected(argument)}`,
         pass: true
-      }
+      };
     } else {
       return {
-        message: () => (`expected ${this.utils.printReceived(received)} to contain object ${this.utils.printExpected(argument)}`),
+        message: () =>
+          `expected ${this.utils.printReceived(
+            received
+          )} to contain object ${this.utils.printExpected(argument)}`,
         pass: false
-      }
+      };
     }
   }
-})
+});
 
 const queryWrapper = function(query) {
   return '{"operationName":null,"variables":{},"query":"' + query + '"}';
@@ -40,7 +43,7 @@ function getRandomInt(max) {
   return Math.floor(Math.random() * Math.floor(max));
 }
 
-function successfulExecution(response){
+function successfulExecution(response) {
   expect(response).toBeDefined();
   expect(response.status).toEqual(200);
   expect(response.success).toEqual(true);
@@ -56,8 +59,8 @@ describe("Testing the creation of an app", () => {
     const query =
       'mutation{signIn(email:\\"testmail147@abv.bg\\", password: \\"testPass123\\"){token}}';
     const response = await testing(queryWrapper(query));
-    
-    successfulExecution(response); 
+
+    successfulExecution(response);
     expect(response.data.signIn.token).toBeDefined();
     token = response.data.signIn.token;
   });
@@ -94,10 +97,11 @@ describe("Testing the creation of an app", () => {
     });
 
     successfulExecution(response);
-    expect(response.data.fetchUserLicences).toEqual(expect.arrayContaining([expect.objectContaining({"id":"2582"})]));
-    expect(response.data.fetchUserLicences).toContainObject({"id":"2583"});
+    expect(response.data.fetchUserLicences).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: "2582" })])
+    );
+    expect(response.data.fetchUserLicences).toContainObject({ id: "2583" });
   });
-
 
   //TODO: Write tests for queries from app.js (queries)
   //allApps
@@ -118,8 +122,6 @@ describe("Testing the creation of an app", () => {
   //fetchIssuedLicences
   //fetchTempLicences
   //bulkUpdateLayout
-  
-
 
   //TODO: Write tests for Licence manipulation from app.js (mutations)
   //distributeLicenceToDepartment
@@ -145,6 +147,4 @@ describe("Testing the creation of an app", () => {
   //distributeLicence10
   //removeTemporaryAccess
   //addExternalAccountLicence
-  
-
 });

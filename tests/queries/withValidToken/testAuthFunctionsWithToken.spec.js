@@ -1,7 +1,7 @@
 import { tester } from "graphql-tester";
 
 const testing = tester({
-  url: "http://backend-dev2.eu-central-1.elasticbeanstalk.com/graphql",
+  url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
 });
@@ -17,7 +17,7 @@ describe("Testing auth queries with valid token", () => {
     var response = await testing(queryWrapper(query), {
       headers: {
         "x-token":
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVuaXRpZCI6IjEyMTEiLCJjb21wYW55IjoiMTIxMiJ9LCJpYXQiOjE1NjIwNjQyMjYsImV4cCI6MTU2MjY2OTAyNn0.O9RclsXMmtAi2U1lgizje_E41PXGRNU-DjLFW-JVMWo",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVuaXRpZCI6IjE4OTEiLCJjb21wYW55IjoiMTg5MiJ9LCJpYXQiOjE1NjQ2NjIwNTEsImV4cCI6MTU2NTI2Njg1MX0.9F6S91Ta37OFVHkBuPU2sk0y66thIX6o1XrJ6XXofEk",
         "Content-Type": "application/json"
       }
     });
@@ -33,7 +33,7 @@ describe("Testing auth queries with valid token", () => {
     var response = await testing(queryWrapper(query), {
       headers: {
         "x-token":
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVuaXRpZCI6IjEyMTEiLCJjb21wYW55IjoiMTIxMiJ9LCJpYXQiOjE1NjIwNjQyMjYsImV4cCI6MTU2MjY2OTAyNn0.O9RclsXMmtAi2U1lgizje_E41PXGRNU-DjLFW-JVMWo",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVuaXRpZCI6IjE4OTEiLCJjb21wYW55IjoiMTg5MiJ9LCJpYXQiOjE1NjQ2NjIwNTEsImV4cCI6MTU2NTI2Njg1MX0.9F6S91Ta37OFVHkBuPU2sk0y66thIX6o1XrJ6XXofEk",
         "Content-Type": "application/json"
       }
     });
@@ -49,7 +49,7 @@ describe("Testing auth queries with valid token", () => {
     var response = await testing(queryWrapper(query), {
       headers: {
         "x-token":
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVuaXRpZCI6IjEyMTEiLCJjb21wYW55IjoiMTIxMiJ9LCJpYXQiOjE1NjIwNjQyMjYsImV4cCI6MTU2MjY2OTAyNn0.O9RclsXMmtAi2U1lgizje_E41PXGRNU-DjLFW-JVMWo",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7InVuaXRpZCI6IjE4OTEiLCJjb21wYW55IjoiMTg5MiJ9LCJpYXQiOjE1NjQ2NjIwNTEsImV4cCI6MTU2NTI2Njg1MX0.9F6S91Ta37OFVHkBuPU2sk0y66thIX6o1XrJ6XXofEk",
         "Content-Type": "application/json"
       }
     });

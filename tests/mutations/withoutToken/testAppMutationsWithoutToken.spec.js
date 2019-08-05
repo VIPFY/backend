@@ -38,7 +38,17 @@ var functionsWhichExpectAuthError = new Map([
   ["voteForApp", ['(app:\\"TestApp\\")', "{ok}"]],
   ["updateCredentials", ['(licenceid:1)', ""]],
   ["updateLayout", ['(layout:{id:1})', ""]],
-  ["createOwnApp", ['(ssoData:{name:\\"Test\\", loginurl:\\"asd\\", email:\\"asd\\", password:\\"asd\\",color:\\"asd\\"})', "{id}"]] //Upload parameter?
+  ["createOwnApp", ['(ssoData:{name:\\"Test\\", loginurl:\\"asd\\", email:\\"asd\\", password:\\"asd\\",color:\\"asd\\"})', "{id}"]], //Upload parameter?
+  //NEW:
+  //deleteServiceLicenceAt -> separate test
+  ['giveTemporaryAccess', ['(licences:[])', "{ok}"]],
+  ['deleteService', ['(serviceid:1)',""]],
+  ['updateTemporaryAccess', ['(licence: {licenceid: 1}, rightid: 1)', "{id}"]],
+  ['removeLicence', ['(licenceid: 1, oldname: \\"rndname\\")', ""]],
+  ['distributeLicence10', ['(licenceid: 1, userid: 1211)', '']],
+  ['removeTemporaryAccess', ['(rightid: 1)', ""]],
+  ['addExternalAccountLicence', ['(username: \\"username\\", password:\\"password\\", boughtplanid: 1)', ""]],
+  ['failedIntegration', ['(data: {loginurl: \\"loginurl\\", name: \\"name\\", email: \\"testmail147@abv.bg\\", password: \\"newPass123\\", recaptcha: true, tries: 2, unloaded: true, passwordEntered: true, emailEntered: true})', ""]]
 ]);
 
 describe("Testing app mutations without token", () => {
@@ -62,5 +72,12 @@ describe("Testing app mutations without token", () => {
       '{"operationName":"onDeleteBoughtPlanAt","variables":{"boughtplanid":"1","time":"20019-12-03T10:15:30Z"},"query":"mutation onDeleteBoughtPlanAt($boughtplanid: ID!, $time: Date!) {deleteBoughtPlanAt(boughtplanid: $boughtplanid, time: $time)}"}';
     var response = await testing(query);
     expectAuthError(response, "deleteBoughtPlan");
+  });
+
+  it("testing deleteServiceLicenceAt with random serviceid, licenceid and date, expect AuthError", async () => {
+    var query =
+      '{"operationName":"onDeleteServiceLicenceAt","variables":{"time":"1564663209"},"query":"mutation onDeleteServiceLicenceAt($time: Date!) {deleteServiceLicenceAt(serviceid: 1, licenceid: 1, time: $time)}"}';
+    var response = await testing(query);
+    expectAuthError(response, "deleteServiceLicenceAt");
   });
 });

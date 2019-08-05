@@ -28,7 +28,7 @@ var functionsWhichExpectAuthError = new Map([
   ["adminEndPlan", ['(id:2, enddate: \\"22-2-2022\\")', "{ok}"]],
   //["adminUpdateLicence", ['', ""]], //arguments? // removed
   //["adminCreateLicence", ['', ""]], // removed
-  //["uploadAppImages", ['', ""]], //Upload!
+  //["uploadAppImages", ['', ""]], //Upload! TODO!
   ["deleteImage", ['(image:\\"hopefullyNotExistingImage.jpg\\", id: 2, type: \\"jpg\\")', ""]], //type?
   ["createApp", ['(app:{})', ""]],
   ["updateApp", ['(appid:2)', "{name}"]],

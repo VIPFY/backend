@@ -23,7 +23,7 @@ const expectAuthError = function(response, queryName) {
 };
 // prettier-ignore
 var functionsWhichExpectAuthError = new Map([
-  ["checkDomain", ['(domain:\\"test.com\\")', ""]],
+  ["checkDomain", ['(domain:\\"test.com\\")', ""]], //TODO: check used and unused domains
   ["registerDomain", ['(domainData:{})', "{id}"]],
   ["registerExternalDomain", ['(domainData:{})', "{id}"]],
   ["deleteExternalDomain", ['(id:147)', "{ok}"]],
