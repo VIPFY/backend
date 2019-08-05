@@ -23,7 +23,7 @@ import {
 import { PartnerError, NormalError } from "../../errors";
 
 export default {
-  checkDomain: async (parent, { domain }) => {
+  checkDomain: async (_p, { domain }) => {
     try {
       const res = await checkDomain(domain);
       console.log(res);
@@ -43,8 +43,10 @@ export default {
    * @returns {object} domain The registered Domain
    */
   registerDomain: requiresRights(["create-domains"]).createResolver(
-    async (parent, { domainData }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { domainData }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, token } = ctx;
+
         const {
           user: { unitid, company }
         } = decode(token);
@@ -143,8 +145,6 @@ export default {
           // }
 
           const domainContact = await createContact(contact);
-          console.log(createContact);
-          throw new Error("DEBUG");
           partnerLogs.domain = register;
 
           if (register.code == "200") {
@@ -214,7 +214,7 @@ export default {
           );
 
           const p4 = createLog(
-            ip,
+            ctx,
             "registerDomain",
             {
               ...partnerLogs,
@@ -222,7 +222,6 @@ export default {
               domain,
               boughtPlan
             },
-            unitid,
             ta
           );
 
@@ -270,8 +269,9 @@ export default {
   ),
 
   registerExternalDomain: requiresRights(["create-domains"]).createResolver(
-    async (parent, { domainData }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { domainData }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, token } = ctx;
         const {
           user: { unitid, company }
         } = decode(token);
@@ -303,10 +303,9 @@ export default {
           );
 
           const p1 = createLog(
-            ip,
+            ctx,
             "registerExternalDomain",
             { domain, boughtPlan },
-            unitid,
             ta
           );
 
@@ -350,8 +349,9 @@ export default {
    *
    * @returns {obj} ok
    */
-  deleteExternalDomain: async (parent, { id }, { models, token, ip }) =>
-    models.sequelize.transaction(async ta => {
+  deleteExternalDomain: async (_p, { id }, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      const { models, token } = ctx;
       const {
         user: { unitid }
       } = decode(token);
@@ -361,15 +361,7 @@ export default {
 
         await models.Domain.destroy({ where: { id } });
 
-        const p1 = createLog(
-          ip,
-          "registerExternalDomain",
-          {
-            domain
-          },
-          unitid,
-          ta
-        );
+        const p1 = createLog(ctx, "registerExternalDomain", { domain }, ta);
 
         const p2 = createNotification(
           {
@@ -416,8 +408,10 @@ export default {
    * @returns {any}
    */
   updateDomain: requiresRights(["edit-domains"]).createResolver(
-    (parent, { domainData, id }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    (_p, { domainData, id }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, token } = ctx;
+
         const {
           user: { unitid, company }
         } = decode(token);
@@ -466,10 +460,9 @@ export default {
               );
 
               const log = await createLog(
-                ip,
+                ctx,
                 "updateDomain",
                 { updatedDNS, domainData, oldDomain, updatedDomain },
-                unitid,
                 ta
               );
 
@@ -601,10 +594,9 @@ export default {
             const [boughtPlan, updatedDomain] = await Promise.all([p1, p2]);
 
             const log = createLog(
-              ip,
+              ctx,
               "updateDomain",
               { boughtPlan, domainData, oldDomain, updatedDomain, ...addLogs },
-              unitid,
               ta
             );
 

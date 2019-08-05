@@ -1,6 +1,9 @@
 import { decode } from "jsonwebtoken";
 import * as messaging from "@vipfy-private/messaging";
-import { requiresAuth, requiresMessageGroupRights } from "../../helpers/permissions";
+import {
+  requiresAuth,
+  requiresMessageGroupRights
+} from "../../helpers/permissions";
 import { parentAdminCheck, superset, createLog } from "../../helpers/functions";
 import { uploadAttachment } from "../../services/gcloud";
 import { NormalError } from "../../errors";
@@ -16,7 +19,14 @@ export default {
     async (parent, { receiver, defaultrights }, { models, token }) => {
       if (
         !superset(
-          ["speak", "upload", "highlight", "modifyown", "deleteown", "deleteother"],
+          [
+            "speak",
+            "upload",
+            "highlight",
+            "modifyown",
+            "deleteown",
+            "deleteother"
+          ],
           defaultrights
         )
       ) {
@@ -46,7 +56,12 @@ export default {
           throw new Error("Sender and receiver are not in the same Company!");
         }
 
-        const groupId = await messaging.startConversation(models, unitid, receiver, defaultrights);
+        const groupId = await messaging.startConversation(
+          models,
+          unitid,
+          receiver,
+          defaultrights
+        );
 
         return {
           ok: true,
@@ -98,7 +113,9 @@ export default {
             );
           }
 
-          pubsub.publish(NEW_MESSAGE, { newMessage: { ...newMessage.dataValues } });
+          pubsub.publish(NEW_MESSAGE, {
+            newMessage: { ...newMessage.dataValues }
+          });
 
           return {
             ok: true,
@@ -106,42 +123,41 @@ export default {
           };
         } catch (err) {
           console.log(err);
-          throw new NormalError({ message: err.message, internalData: { err } });
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
 
   // TODO: update
-  setDeleteStatus: requiresAuth.createResolver(
-    async (parent, { id, type }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
+  setDeleteStatus: requiresAuth.createResolver(async (_p, { id, type }, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      try {
+        const { models } = ctx;
 
-          const oldMessage = await models.MessageData.findById(id, { raw: true });
-          if (!oldMessage) {
-            throw new Error("Message doesn't exist!");
-          }
-
-          const deletedMessage = await models.MessageData.update(
-            { [type]: true },
-            { where: { id }, returning: true, transaction: ta }
-          );
-
-          await createLog(
-            ip,
-            "setDeleteStatus",
-            { oldMessage, deletedMessage: deletedMessage[1] },
-            unitid,
-            ta
-          );
-
-          return { ok: true };
-        } catch (err) {
-          throw new NormalError({ message: err.message, internalData: { err } });
+        const oldMessage = await models.MessageData.findById(id, { raw: true });
+        if (!oldMessage) {
+          throw new Error("Message doesn't exist!");
         }
-      })
+
+        const deletedMessage = await models.MessageData.update(
+          { [type]: true },
+          { where: { id }, returning: true, transaction: ta }
+        );
+
+        await createLog(
+          ctx,
+          "setDeleteStatus",
+          { oldMessage, deletedMessage: deletedMessage[1] },
+          ta
+        );
+
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    })
   )
 };
