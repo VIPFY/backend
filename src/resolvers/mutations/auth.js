@@ -460,22 +460,17 @@ export default {
 
       const message = "Email or Password incorrect!";
 
-      /* const emailExists = await models.Login.findOne({
-        where: { email },
+      const [emailExists] = await ctx.models.Login.findAll({
+        where: {
+          email,
+          deleted: { [ctx.models.Op.or]: [null, false] },
+          banned: { [ctx.models.Op.or]: [null, false] },
+          suspended: { [ctx.models.Op.or]: [null, false] }
+        },
         raw: true
-      });*/
+      });
 
-      const emailExistsall = await ctx.models.sequelize.query(
-        `SELECT * FROM login_view
-       WHERE email = :email`,
-        {
-          replacements: { email },
-          type: ctx.models.sequelize.QueryTypes.SELECT
-        }
-      );
-
-      const emailExists = emailExistsall[0];
-
+      console.log("LOG: emailExists", emailExists);
       if (!emailExists) {
         throw new Error(message);
       }
