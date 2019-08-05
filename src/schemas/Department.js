@@ -58,7 +58,7 @@ export const types = `
   type DepartmentEmployee {
     id: Department!
     childid: Unit
-    employee: PublicUser
+    employee: SemiPublicUser
   }
 
   input HumanName {
