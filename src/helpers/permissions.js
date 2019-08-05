@@ -26,7 +26,6 @@ export const requiresAuth = createResolver(
   async (_parent, _args, ctx) => {
     try {
       const { models, token } = ctx;
-      console.log("LOG: token", token);
 
       if (!token || token == "null") {
         throw new Error("No valid token received!");
