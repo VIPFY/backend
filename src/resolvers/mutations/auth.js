@@ -39,7 +39,7 @@ export default {
   ) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
-        const { models } = ctx;
+        const { models, SECRET } = ctx;
         if (!privacy || !termsOfService) {
           throw new Error(
             "You have to confirm to our privacy agreement and our Terms of Service!"
@@ -264,7 +264,7 @@ export default {
     }),
 
   setupFinished: async (
-    parent,
+    _p,
     { country, vatoption, vatnumber, placeId, ownAdress, username },
     { models, token }
   ) =>
@@ -608,40 +608,35 @@ export default {
       })
   ),
 
-  agreeTos: requiresAuth.createResolver(
-    async (parent, args, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = await decode(token);
+  agreeTos: requiresAuth.createResolver(async (_p, _args, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      try {
+        const { models, token } = ctx;
+        const {
+          user: { unitid }
+        } = await decode(token);
 
-          const updatedUser = await models.Human.update(
-            { firstlogin: false },
-            { where: { unitid }, returning: true, transaction: ta }
-          );
+        const updatedUser = await models.Human.update(
+          { firstlogin: false },
+          { where: { unitid }, returning: true, transaction: ta }
+        );
 
-          await createLog(
-            ip,
-            "agreeTos",
-            { updatedUser: updatedUser[1] },
-            unitid,
-            ta
-          );
+        await createLog(ctx, "agreeTos", { updatedUser: updatedUser[1] }, ta);
 
-          return { ok: true };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    })
   ),
 
-  forgotPassword: async (parent, { email }, { models, ip }) =>
-    models.sequelize.transaction(async ta => {
+  forgotPassword: async (_p, { email }, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
       try {
+        const { models } = ctx;
         const emailExists = await models.Login.findOne({
           where: { email },
           raw: true
@@ -674,11 +669,13 @@ export default {
           { where: { unitid: user.unitid }, returning: true, transaction: ta }
         );
 
+        const token = await createToken(emailExists, ctx.SECRET);
+        ctx.token = token;
+
         await createLog(
-          ip,
+          ctx,
           "forgotPassword",
           { updatedHuman: updatedHuman[1], oldUser: user },
-          emailExists.unitid,
           ta
         );
 
@@ -709,11 +706,12 @@ export default {
     }),
 
   forcePasswordChange: requiresRights(["view-security"]).createResolver(
-    async (parent, { userids }, { models, token, ip }) =>
-      models.sequelize.transaction(async transaction => {
+    async (_p, { userids }, ctx) =>
+      ctx.models.sequelize.transaction(async transaction => {
         try {
+          const { models, token } = ctx;
           const {
-            user: { unitid, company }
+            user: { company }
           } = await decode(token);
 
           // check that user has rights
@@ -736,10 +734,9 @@ export default {
 
           // log (not logging new/old human objects because of GDPR, change is trivial anyway)
           await createLog(
-            ip,
+            ctx,
             "forcePasswordChange",
             { units: userids },
-            unitid,
             transaction
           );
 
@@ -753,8 +750,10 @@ export default {
       })
   ),
 
-  redeemSetupToken: async (parent, { setuptoken }, { models, ip, SECRET }) => {
+  redeemSetupToken: async (_p, { setuptoken }, ctx) => {
     try {
+      const { models, SECRET } = ctx;
+
       const setupTokenEntry = await models.Token.findOne({
         where: {
           token: setuptoken,
@@ -763,6 +762,7 @@ export default {
           usedat: null
         }
       });
+
       if (!setupTokenEntry) {
         throw new Error("token invalid");
       }
@@ -776,26 +776,22 @@ export default {
 
       await checkAuthentification(emailExists.unitid, emailExists.company);
 
-      await createLog(
-        ip,
+      const token = await createToken(emailExists, SECRET, "1d");
+      ctx.token = token;
+
+      const p1 = createLog(
+        ctx,
         "redeemSetupToken",
         { user: emailExists, setuptoken },
-        emailExists.unitid,
         null
       );
 
-      const token = await createToken(emailExists, SECRET, "1d");
-
-      await models.Token.update(
-        {
-          usedat: models.sequelize.fn("NOW")
-        },
-        {
-          where: {
-            id: setupTokenEntry.id
-          }
-        }
+      const p2 = models.Token.update(
+        { usedat: models.sequelize.fn("NOW") },
+        { where: { id: setupTokenEntry.id } }
       );
+
+      await Promise.all([p1, p2]);
 
       return { ok: true, token };
     } catch (err) {
@@ -806,7 +802,7 @@ export default {
     }
   },
 
-  resendToken: async (parent, { email }, { models }) =>
+  resendToken: async (_p, { email }, { models }) =>
     models.sequelize.transaction(async ta => {
       try {
         const userEmail = await models.Email.findOne({
