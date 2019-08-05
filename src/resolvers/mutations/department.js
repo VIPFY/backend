@@ -28,9 +28,10 @@ export default {
    * @returns {object}
    */
   updateStatisticData: requiresRights(["edit-departments"]).createResolver(
-    (parent, { data }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    (_p, { data }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
             user: { unitid: id, company: unitid }
           } = decode(token);
@@ -50,10 +51,9 @@ export default {
           );
 
           await createLog(
-            ip,
+            ctx,
             "updateStatisticData",
             { currentData, newData: newData[1] },
-            id,
             ta
           );
 
@@ -68,11 +68,13 @@ export default {
   ),
 
   addEmployee: requiresRights(["create-employees"]).createResolver(
-    (parent, { unitid, departmentid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    (_p, { unitid, departmentid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
-            user: { unitid: adder, company }
+            user: { company }
           } = decode(token);
 
           let parentUnit = await models.ParentUnit.create(
@@ -83,10 +85,9 @@ export default {
           parentUnit = parentUnit.get();
 
           await createLog(
-            ip,
+            ctx,
             "addEmployee",
             { unitid, departmentid, parentUnit },
-            adder,
             ta
           );
 
@@ -194,7 +195,7 @@ export default {
             )
           );
 
-          //Create Emails
+          // Create Emails
           emails.forEach(
             (email, index) =>
               email &&
@@ -213,7 +214,7 @@ export default {
               )
           );
 
-          //Create Adress
+          // Create Adress
 
           if (address) {
             const { zip, street, city, ...normalData } = address;
@@ -303,9 +304,11 @@ export default {
   ),
 
   editDepartmentName: requiresRights(["edit-department"]).createResolver(
-    (parent, { departmentid, name }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    (_p, { departmentid, name }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
             user: { unitid }
           } = decode(token);
@@ -320,10 +323,9 @@ export default {
           );
 
           await createLog(
-            ip,
+            ctx,
             "editDepartmentName",
             { updatedDepartment: updatedDepartment[1] },
-            unitid,
             ta
           );
 
@@ -338,8 +340,9 @@ export default {
   ),
 
   banEmployee: requiresRights(["edit-employees"]).createResolver(
-    async (_, { userid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { userid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, token } = ctx;
         const {
           user: { unitid, company }
         } = decode(token);
@@ -377,25 +380,15 @@ export default {
 
           const p4 = createNotification({
             receiver: unitid,
-
             message: `You banned ${user.firstname} ${
               user.lastname
             } from the company`,
-
             icon: "user-slash",
-
             link: "team",
-
             changed: ["human"]
           });
 
-          const p5 = createLog(
-            ip,
-            "banEmployee",
-            { bannedUser, admin },
-            unitid,
-            ta
-          );
+          const p5 = createLog(ctx, "banEmployee", { bannedUser, admin }, ta);
 
           await Promise.all([p4, p5]);
 
@@ -418,8 +411,10 @@ export default {
   ),
 
   unbanEmployee: requiresRights(["edit-employees"]).createResolver(
-    async (parent, { userid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { userid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, token } = ctx;
+
         const {
           user: { unitid, company }
         } = decode(token);
@@ -460,13 +455,7 @@ export default {
             changed: ["human"]
           });
 
-          const p5 = createLog(
-            ip,
-            "banEmployee",
-            { unbannedUser, admin },
-            unitid,
-            ta
-          );
+          const p5 = createLog(ctx, "banEmployee", { unbannedUser, admin }, ta);
 
           await Promise.all([p4, p5]);
 
@@ -489,14 +478,16 @@ export default {
   ),
 
   updateCompanyPic: requiresRights(["edit-departments"]).createResolver(
-    async (parent, { file }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { file }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const parsedFile = await file;
           const profilepicture = await uploadUserImage(
             parsedFile,
             userPicFolder
           );
+
+          const { models, token } = ctx;
           const {
             user: { company: id }
           } = decode(token);
@@ -512,10 +503,9 @@ export default {
           );
 
           await createLog(
-            ip,
+            ctx,
             "updateCompanyPic",
             { oldUnit, updatedUnit: updatedUnit[1] },
-            id,
             ta
           );
 
@@ -586,7 +576,7 @@ export default {
         try {
           const { models, token } = ctx;
           const {
-            user: { unitid: requester, company }
+            user: { company }
           } = decode(token);
 
           const data = {
@@ -652,7 +642,7 @@ export default {
    * As this is on
    */
   addPromocode: requiresAuth.createResolver(
-    async (_, { promocode }, { models, token }) =>
+    async (_p, { promocode }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -697,7 +687,7 @@ export default {
             { where: { unitid: company }, returning: true, transaction: ta }
           );
 
-          const [currentPlan, promoPlan, dep] = await Promise.all([p1, p2, p3]);
+          const [currentPlan, promoPlan, _d] = await Promise.all([p1, p2, p3]);
 
           await models.BoughtPlan.create(
             {
@@ -725,7 +715,7 @@ export default {
   ),
 
   applyPromocode: requiresAuth.createResolver(
-    async (_, { promocode }, { models, token, ip }) =>
+    async (_p, { promocode }, { models, token, ip }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -783,10 +773,12 @@ export default {
   ),
 
   createEmployee: requiresRights(["create-employees"]).createResolver(
-    async (_, { file, addpersonal, addteams, apps }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { file, addpersonal, addteams, apps }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const { wmail1, wmail2, password, name } = addpersonal;
+
+          const { models, token } = ctx;
           const {
             user: { unitid, company }
           } = decode(token);
@@ -932,7 +924,7 @@ export default {
 
           await Promise.all(licencepromises);
 
-          //SingleLicences
+          // SingleLicences
 
           const mainapppromise = apps.map(async app => {
             const plan = await models.Plan.findOne({
@@ -964,7 +956,7 @@ export default {
               { transaction: ta }
             );
 
-            const licence = await models.LicenceData.create(
+            await models.LicenceData.create(
               {
                 unitid: unit.id,
                 disabled: false,
@@ -1012,10 +1004,9 @@ export default {
           const newEmailData = newEmail.get();
 
           await createLog(
-            ip,
+            ctx,
             "addCreateEmployee",
             { unit, humanData, newEmailData, rights },
-            unitid,
             ta
           );
 
@@ -1059,10 +1050,13 @@ export default {
         }
       })
   ),
+
   deleteEmployee: requiresRights(["delete-employees"]).createResolver(
-    async (parent, { employeeid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { employeeid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
             user: { unitid, company }
           } = decode(token);
@@ -1072,15 +1066,7 @@ export default {
             { transaction: ta, returning: true }
           );
 
-          await createLog(
-            ip,
-            "fireEmployee",
-            {
-              employeeid
-            },
-            unitid.id,
-            ta
-          );
+          await createLog(ctx, "fireEmployee", { employeeid }, ta);
 
           resetCompanyMembershipCache(company, unitid.id);
 
