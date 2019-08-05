@@ -452,7 +452,7 @@ export default {
       }
     }),
 
-  signIn: async (_, { email, password }, { models, SECRET, ip }) => {
+  signIn: async (_, { email, password }, ctx) => {
     try {
       if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
@@ -465,18 +465,16 @@ export default {
         raw: true
       });*/
 
-      const emailExistsall = await models.sequelize.query(
+      const emailExistsall = await ctx.models.sequelize.query(
         `SELECT * FROM login_view
        WHERE email = :email`,
         {
           replacements: { email },
-          type: models.sequelize.QueryTypes.SELECT
+          type: ctx.models.sequelize.QueryTypes.SELECT
         }
       );
 
       const emailExists = emailExistsall[0];
-
-      console.log("EAMIL", emailExists);
 
       if (!emailExists) {
         throw new Error(message);
@@ -490,28 +488,20 @@ export default {
       // update password length and strength.
       // This is temporary to fill values we didn't catch before implementing these metrics
       const passwordstrength = computePasswordScore(password);
-      await models.Human.update(
+      await ctx.models.Human.update(
         { passwordstrength, passwordlength: password.length },
         { where: { unitid: emailExists.unitid } }
       );
 
-      await createLog(
-        ip,
-        "signIn",
-        { user: emailExists, email },
-        emailExists.unitid,
-        null
-      );
-
       if (emailExists.twofactor) {
-        const { secret } = await models.TwoFA.findOne({
+        const { secret } = await ctx.models.TwoFA.findOne({
           where: { unitid: emailExists.unitid, type: emailExists.twofactor },
           raw: true
         });
 
         const token = await create2FAToken();
 
-        await models.Token.create({
+        await ctx.models.Token.create({
           email,
           token,
           data: { unitid: emailExists.unitid },
@@ -520,6 +510,11 @@ export default {
             .toISOString(),
           type: "2FAToken"
         });
+
+        // One is needed for the logger function to work correctly
+        const fakeToken = await createToken(emailExists, ctx.SECRET);
+        ctx.token = fakeToken;
+        await createLog(ctx, "signIn", { user: emailExists, email }, null);
 
         return {
           ok: true,
@@ -530,7 +525,9 @@ export default {
       } else {
         // User doesn't have the property unitid, so we have to pass emailExists for
         // the token creation
-        const token = await createToken(emailExists, SECRET);
+        const token = await createToken(emailExists, ctx.SECRET);
+        ctx.token = token;
+        await createLog(ctx, "signIn", { user: emailExists, email }, null);
 
         return { ok: true, token };
       }
