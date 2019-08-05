@@ -38,7 +38,7 @@ export const checkCompanyMembership = async (
     }
   }
 
-  const p1 = models.Unit.findone({ where: { id: entityid }, raw: true });
+  const p1 = models.Unit.findOne({ where: { id: entityid }, raw: true });
 
   const p2 = models.sequelize.query(
     "SELECT childid FROM department_tree_view WHERE id = :company AND childid = :child AND level > 1 LIMIT 1",
