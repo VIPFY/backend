@@ -9,8 +9,8 @@ import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { companyCheck } from "../../helpers/functions";
 
 export default {
-  allApps: requiresAuth(
-    async (_, { limit, offset, sortOptions }, { models, token }) => {
+  allApps: requiresAuth.createResolver(
+    async (_P, { limit, offset, sortOptions }, { models, token }) => {
       try {
         const {
           user: { company }
