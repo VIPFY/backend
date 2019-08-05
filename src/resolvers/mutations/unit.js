@@ -410,7 +410,7 @@ export default {
           null
         );
 
-        return createAdminToken({ unitid, company, admin: id, SECRET });
+        return createAdminToken({ unitid, company, impersonator: id, SECRET });
       } catch (err) {
         throw new NormalError({
           message: err.message,
