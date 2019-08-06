@@ -921,12 +921,12 @@ export default {
   removeBillingEmail: requiresRights(["edit-billing"]).createResolver(
     async (_p, { email }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
-        try {
-          const { models, token } = ctx;
-          const {
-            user: { unitid, company }
-          } = decode(token);
+        const { models, token } = ctx;
+        const {
+          user: { unitid, company }
+        } = decode(token);
 
+        try {
           const billingEmails = await models.DepartmentEmail.findAll({
             where: {
               tags: { [models.sequelize.Op.contains]: ["billing"] },
@@ -982,7 +982,7 @@ export default {
               link: "billing",
               changed: ["billingEmails"]
             },
-            ""
+            null
           );
 
           throw new BillingError({
