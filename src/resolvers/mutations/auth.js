@@ -592,23 +592,26 @@ export default {
           const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
 
           const [updatedUser, basicUser] = await Promise.all([p1, p2]);
-          await createLog(
-            ctx,
-            "changePassword",
-            { updatedUser: updatedUser[1], oldUser: findOldPassword },
-            ta
-          );
+          const promises = [
+            createLog(
+              ctx,
+              "changePassword",
+              { updatedUser: updatedUser[1], oldUser: findOldPassword },
+              ta
+            ),
+            createNotification(
+              {
+                receiver: unitid,
+                message: "You successfully updated your password",
+                icon: "lock-alt",
+                link: "profile",
+                changed: [""]
+              },
+              ta
+            )
+          ];
 
-          createNotification(
-            {
-              receiver: unitid,
-              message: "You successfully updated your password",
-              icon: "lock-alt",
-              link: "profile",
-              changed: [""]
-            },
-            ta
-          );
+          await Promise.all(promises);
 
           // todo: simpler way to get company, since we don't return user anymore
           const user = await parentAdminCheck(basicUser);
