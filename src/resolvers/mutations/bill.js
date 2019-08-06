@@ -161,8 +161,9 @@ export default {
   ),
 
   changeDefaultMethod: requiresRights(["edit-paymentdata"]).createResolver(
-    async (parent, { card }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (parent, { card }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, token } = ctx;
         const {
           user: { company, unitid }
         } = decode(token);
@@ -188,10 +189,9 @@ export default {
           );
 
           const p1 = createLog(
-            ip,
+            ctx,
             "changeDefaultMethod",
             { department, updatedDepartment },
-            unitid,
             ta
           );
 
@@ -239,11 +239,8 @@ export default {
    * @return {any} ok
    */
   buyPlan: requiresRights(["create-boughtplan"]).createResolver(
-    async (
-      parent,
-      { planid, features, price, planinputs },
-      { models, token, ip }
-    ) => {
+    async (_p, { planid, features, price, planinputs }, ctx) => {
+      const { models, token } = ctx;
       const {
         user: { unitid, company }
       } = decode(token);
@@ -433,7 +430,7 @@ export default {
           );
 
           const log = createLog(
-            ip,
+            ctx,
             "buyPlan",
             {
               ...partnerLogs,
@@ -445,7 +442,6 @@ export default {
               price,
               planinputs
             },
-            unitid,
             ta
           );
           await Promise.all([log, notification]);
@@ -482,11 +478,12 @@ export default {
   ),
 
   cancelPlan: requiresRights(["delete-boughtplan"]).createResolver(
-    async (parent, { planid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { planid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           const p1 = models.BoughtPlan.findOne({
@@ -556,14 +553,13 @@ export default {
           );
 
           const p6 = createLog(
-            ip,
+            ctx,
             "cancelPlan",
             {
               cancelledBoughtPlan,
               cancelledSubscription,
               licences
             },
-            unitid,
             ta
           );
 
@@ -579,9 +575,11 @@ export default {
   ),
 
   updatePlan: requiresRights(["edit-boughtplan"]).createResolver(
-    async (parent, { planid, features, price }, { ip, models, token }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { planid, features, price }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
             user: { unitid, company }
           } = decode(token);
@@ -708,7 +706,7 @@ export default {
           );
 
           await createLog(
-            ip,
+            ctx,
             "updatePlan",
             {
               oldBoughtPlan,
@@ -717,7 +715,6 @@ export default {
               newLicences,
               updatedSubscription
             },
-            unitid,
             ta
           );
 
@@ -732,11 +729,13 @@ export default {
   ),
 
   reactivatePlan: requiresRights(["edit-boughtplan"]).createResolver(
-    async (parent, { planid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { planid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           const p1 = models.BoughtPlan.findOne({
@@ -796,14 +795,13 @@ export default {
           const newLicences = await Promise.all(createLicences);
 
           await createLog(
-            ip,
+            ctx,
             "reactivatePlan",
             {
               newLicences,
               reactivatedSubscription,
               updatedBoughtPlan: updatedBoughtPlan[1][0]
             },
-            unitid,
             ta
           );
 
@@ -818,7 +816,7 @@ export default {
   ),
 
   createMonthlyInvoices: requiresMachineToken.createResolver(
-    async (parent, args, { models }) => {
+    async (_p, _args, { models }) => {
       try {
         const companies = await models.Department.findAll({
           where: { iscompany: true, deleted: false },
@@ -872,7 +870,7 @@ export default {
           const { models, token } = ctx;
 
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           const oldEmail = await models.DepartmentEmail.findOne({

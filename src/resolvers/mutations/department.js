@@ -714,62 +714,62 @@ export default {
       })
   ),
 
-  applyPromocode: requiresAuth.createResolver(
-    async (_p, { promocode }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid, company }
-          } = decode(token);
+  applyPromocode: requiresAuth.createResolver(async (_p, { promocode }, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      try {
+        const { models, token } = ctx;
 
-          const { credits, currency, creditsexpire } = await selectCredit(
-            promocode,
-            company
-          );
+        const {
+          user: { unitid, company }
+        } = decode(token);
 
-          const p1 = models.Credit.create(
-            {
-              amount: credits,
-              currency,
-              unitid: company,
-              expires: creditsexpire
-            },
-            { transaction: ta }
-          );
+        const { credits, currency, creditsexpire } = await selectCredit(
+          promocode,
+          company
+        );
 
-          const p2 = models.DepartmentData.update(
-            { promocode },
-            { where: { unitid: company }, returning: true, transaction: ta }
-          );
+        const p1 = models.Credit.create(
+          {
+            amount: credits,
+            currency,
+            unitid: company,
+            expires: creditsexpire
+          },
+          { transaction: ta }
+        );
 
-          const [newCredits, updatedDepartment] = await Promise.all([p1, p2]);
+        const p2 = models.DepartmentData.update(
+          { promocode },
+          { where: { unitid: company }, returning: true, transaction: ta }
+        );
 
-          const p3 = createNotification({
-            receiver: unitid,
-            message: `Congrats, you received ${credits} credits`,
-            icon: "money-bill-wave",
-            link: "profile",
-            changed: ["promocode"]
-          });
+        const [newCredits, updatedDepartment] = await Promise.all([p1, p2]);
 
-          const p4 = createLog(
-            ip,
-            "applyPromocode",
-            { promocode, newCredits, updatedDepartment },
-            unitid,
-            ta
-          );
+        const p3 = createNotification({
+          receiver: unitid,
+          message: `Congrats, you received ${credits} credits`,
+          icon: "money-bill-wave",
+          link: "profile",
+          changed: ["promocode"]
+        });
 
-          await Promise.all([p3, p4]);
+        const p4 = createLog(
+          ctx,
+          "applyPromocode",
+          { promocode, newCredits, updatedDepartment },
+          ta
+        );
 
-          return { ok: true };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
+        await Promise.all([p3, p4]);
+
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    })
   ),
 
   createEmployee: requiresRights(["create-employees"]).createResolver(

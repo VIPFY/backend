@@ -536,9 +536,11 @@ export default {
   },
 
   changePassword: requiresAuth.createResolver(
-    async (_, { pw, newPw, confirmPw }, { models, token, SECRET, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_, { pw, newPw, confirmPw }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token, SECRET } = ctx;
+
           if (newPw != confirmPw) throw new Error("New passwords don't match!");
           if (pw == newPw) {
             throw new Error("Current and new password can't be the same one!");
@@ -584,10 +586,9 @@ export default {
 
           const [updatedUser, basicUser] = await Promise.all([p1, p2]);
           await createLog(
-            ip,
+            ctx,
             "changePassword",
             { updatedUser: updatedUser[1], oldUser: findOldPassword },
-            unitid,
             ta
           );
 
