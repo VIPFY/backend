@@ -18,7 +18,8 @@ import {
   computePasswordScore,
   formatHumanName,
   checkVat,
-  parseAddress
+  parseAddress,
+  createNotification
 } from "../../helpers/functions";
 import { googleMapsClient } from "../../services/gcloud";
 import { NormalError } from "../../errors";
@@ -396,6 +397,11 @@ export default {
           throw new Error("No valid email found!");
         }
 
+        const user = await models.User.findOne({
+          where: { id: unitid },
+          raw: true
+        });
+
         const pwData = await getNewPasswordData(password);
 
         const p1 = models.Token.findOne({
@@ -414,12 +420,13 @@ export default {
         );
 
         const p4 = models.Human.update(
-          {
-            ...pwData
-          },
+          { ...pwData },
           { where: { unitid }, transaction: ta }
         );
 
+        const fakeToken = await createToken(user, ctx.SECRET);
+
+        ctx.token = fakeToken;
         const p5 = createLog(ctx, "signUpConfirm", { token, email }, ta);
         const [signUpToken] = await Promise.all([p1, p2, p3, p4, p5]);
 
@@ -729,12 +736,31 @@ export default {
           );
 
           // log (not logging new/old human objects because of GDPR, change is trivial anyway)
-          await createLog(
-            ctx,
-            "forcePasswordChange",
-            { units: userids },
-            transaction
-          );
+          const promises = [
+            createLog(
+              ctx,
+              "forcePasswordChange",
+              { units: userids },
+              transaction
+            )
+          ];
+
+          for (const userid of userids) {
+            promises.push(
+              createNotification(
+                {
+                  receiver: userid,
+                  message: "An admin forces you to update your password",
+                  icon: "lock-alt",
+                  link: "profile",
+                  changed: ["me"]
+                },
+                transaction
+              )
+            );
+          }
+
+          await Promise.all(promises);
 
           return { ok: true };
         } catch (err) {
