@@ -1,4 +1,4 @@
-import { AuthError } from "../errors";
+import { AuthError, RightsError } from "../errors";
 
 const NodeCache = require("node-cache");
 
@@ -44,6 +44,7 @@ export const checkCompanyMembership = async (
     "SELECT childid FROM department_tree_view WHERE id = :company AND childid = :child AND level > 1 LIMIT 1",
     {
       replacements: { company, child: entityid },
+      type: models.sequelize.QueryTypes.SELECT,
       raw: true
     }
   );
@@ -59,7 +60,7 @@ export const checkCompanyMembership = async (
   companyMembershipCache.set(cacheKey, inDepartment);
 
   if (!inDepartment) {
-    throw new AuthError(
+    throw new RightsError(
       `This ${entityname} doesn't belong to the user's company!`
     );
   }
