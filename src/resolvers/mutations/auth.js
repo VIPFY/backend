@@ -230,6 +230,9 @@ export default {
           ]
         });
 
+        const fakeToken = await createToken(unit, SECRET);
+        ctx.token = fakeToken;
+
         await createLog(
           ctx,
           "signUp",
@@ -637,17 +640,14 @@ export default {
           raw: true
         });
 
-        if (!emailExists) throw new Error("Email or Password incorrect!");
-        if (emailExists.verified == false) {
-          throw new Error("Sorry, this email isn't verified yet.");
-        }
-
-        if (emailExists.banned == true) {
-          throw new Error("Sorry, this account is banned!");
-        }
-
-        if (emailExists.suspended == true) {
-          throw new Error("Sorry, this account is suspended!");
+        if (
+          !emailExists ||
+          emailExists.verified ||
+          emailExists.banned ||
+          emailExists.suspended == true
+        ) {
+          // Prevent an attacker from discovering information about our Users
+          return { ok: true };
         }
 
         const user = await models.Human.findOne({
