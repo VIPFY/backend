@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import { parentAdminCheck, concatName } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
+import { checkCompanyMembership } from "../../helpers/companyMembership";
 
 export default {
   me: requiresAuth.createResolver(async (_, _args, { models, token }) => {
@@ -101,14 +102,31 @@ export default {
   },
 
   generateSecret: requiresAuth.createResolver(
-    async (_, { type, userid }, { models, token }) => {
+    async (_p, { type, userid }, { models, token }) => {
       try {
         let {
-          user: { unitid }
+          user: { unitid, company }
         } = decode(token);
 
         if (userid && userid != unitid) {
-          unitid = userid;
+          await checkCompanyMembership(models, company, userid, "user");
+
+          const hasRight = await models.Right.findOne({
+            where: models.sequelize.and(
+              { holder: unitid },
+              { forunit: { [models.Op.or]: [company, null] } },
+              models.sequelize.or(
+                { type: { [models.Op.and]: "create-2FA" } },
+                { type: "admin" }
+              )
+            )
+          });
+
+          if (!hasRight) {
+            throw new Error("You don't have the neccessary rights!");
+          } else {
+            unitid = userid;
+          }
         }
 
         if (type == "totp") {
