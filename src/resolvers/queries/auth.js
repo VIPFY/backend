@@ -3,10 +3,13 @@ import crypto from "crypto";
 import moment from "moment";
 import Speakeasy from "speakeasy";
 import QRCode from "qrcode";
-import { parentAdminCheck, concatName } from "../../helpers/functions";
+import {
+  parentAdminCheck,
+  concatName,
+  check2FARights
+} from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
-import { checkCompanyMembership } from "../../helpers/companyMembership";
 
 export default {
   me: requiresAuth.createResolver(async (_, _args, { models, token }) => {
@@ -109,24 +112,7 @@ export default {
         } = decode(token);
 
         if (userid && userid != unitid) {
-          await checkCompanyMembership(models, company, userid, "user");
-
-          const hasRight = await models.Right.findOne({
-            where: models.sequelize.and(
-              { holder: unitid },
-              { forunit: { [models.Op.or]: [company, null] } },
-              models.sequelize.or(
-                { type: { [models.Op.and]: "create-2FA" } },
-                { type: "admin" }
-              )
-            )
-          });
-
-          if (!hasRight) {
-            throw new Error("You don't have the neccessary rights!");
-          } else {
-            unitid = userid;
-          }
+          unitid = await check2FARights(userid, unitid, company);
         }
 
         if (type == "totp") {

@@ -1,15 +1,25 @@
 import Speakeasy from "speakeasy";
+import { decode } from "jsonwebtoken";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createToken } from "../../helpers/auth";
 import { checkToken } from "../../helpers/token";
+import { check2FARights } from "../../helpers/functions";
 
 export default {
-  verify2FA: requiresRights(["create-2FA"]).createResolver(
-    async (_, { userid, type, code, codeId }, { models }) => {
+  verify2FA: requiresAuth.createResolver(
+    async (_, { userid, type, code, codeId }, { models, token }) => {
       try {
+        let {
+          user: { unitid, company }
+        } = decode(token);
+
+        if (userid && userid != unitid) {
+          unitid = await check2FARights(userid, unitid, company);
+        }
+
         const { secret, id } = await models.TwoFA.findOne({
-          where: { unitid: userid, type, verified: false, id: codeId },
+          where: { unitid, type, verified: false, id: codeId },
           raw: true
         });
 

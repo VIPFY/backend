@@ -6,6 +6,7 @@ import { decode } from "jsonwebtoken";
 import { createSubscription } from "../services/stripe";
 import { NormalError } from "../errors";
 import { pubsub, NEW_NOTIFICATION } from "../constants";
+import { checkCompanyMembership } from "./companyMembership";
 
 /* eslint-disable no-return-assign */
 
@@ -471,3 +472,32 @@ export const checkMailPossible = email => {
  */
 export const concatName = ({ firstname, middlename, lastname }) =>
   `${firstname} ${middlename ? `${middlename} ` : ""}${lastname}`;
+
+/**
+ *  Checks whether an Admin has the neccessary rights to initiate
+ *  2FA for an User
+ *
+ * @param {number} userid ID of the user for which 2FA should be created
+ * @param {number} unitid ID of the admin
+ * @param {number} company The company both should be in
+ */
+export const check2FARights = async (userid, unitid, company) => {
+  await checkCompanyMembership(models, company, userid, "user");
+
+  const hasRight = await models.Right.findOne({
+    where: models.sequelize.and(
+      { holder: unitid },
+      { forunit: { [models.Op.or]: [company, null] } },
+      models.sequelize.or(
+        { type: { [models.Op.and]: "create-2FA" } },
+        { type: "admin" }
+      )
+    )
+  });
+
+  if (!hasRight) {
+    throw new Error("You don't have the neccessary rights!");
+  } else {
+    return userid;
+  }
+};
