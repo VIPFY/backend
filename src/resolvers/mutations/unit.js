@@ -185,6 +185,15 @@ export default {
 
           await companyCheck(company, unitid, id);
 
+          const legitimateUser = models.User.findOne({
+            where: { id, deleted: false, banned: false, suspended: false },
+            raw: true
+          });
+
+          if (!legitimateUser) {
+            throw new Error("This user can't be updated at the moment!");
+          }
+
           const toUpdate = {
             Human: {},
             Phone: [],
