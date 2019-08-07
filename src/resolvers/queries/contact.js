@@ -42,7 +42,7 @@ export default {
         if (forCompany) {
           where.departmentid = company;
         } else {
-          where.emailownerid = unitid;
+          where.departmentid = unitid;
         }
 
         const emails = await models.DepartmentEmail.findAll({
