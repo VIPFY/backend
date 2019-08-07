@@ -70,7 +70,6 @@ export const types = `
   }
 
   input PhoneInput {
-    id: ID
     department: Boolean
     number: String
     description: String
