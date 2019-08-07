@@ -28,7 +28,7 @@ export const checkCompanyMembership = async (
     // found in cache
 
     if (cacheItem === false) {
-      throw new AuthError(
+      throw new RightsError(
         `This ${entityname} doesn't belong to the user's company!`
       );
     } else if (cacheItem === true) {
