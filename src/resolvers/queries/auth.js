@@ -3,7 +3,11 @@ import crypto from "crypto";
 import moment from "moment";
 import Speakeasy from "speakeasy";
 import QRCode from "qrcode";
-import { parentAdminCheck, concatName } from "../../helpers/functions";
+import {
+  parentAdminCheck,
+  concatName,
+  check2FARights
+} from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
 
@@ -100,15 +104,15 @@ export default {
     }
   },
 
-  generateSecret: requiresRights(["create-2FA"]).createResolver(
-    async (_, { type, userid }, { models, token }) => {
+  generateSecret: requiresAuth.createResolver(
+    async (_p, { type, userid }, { models, token }) => {
       try {
         let {
-          user: { unitid }
+          user: { unitid, company }
         } = decode(token);
 
         if (userid && userid != unitid) {
-          unitid = userid;
+          unitid = await check2FARights(userid, unitid, company);
         }
 
         if (type == "totp") {
