@@ -100,7 +100,7 @@ export default {
     }
   },
 
-  generateSecret: requiresRights(["create-2FA"]).createResolver(
+  generateSecret: requiresAuth.createResolver(
     async (_, { type, userid }, { models, token }) => {
       try {
         let {
