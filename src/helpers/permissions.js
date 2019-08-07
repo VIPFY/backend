@@ -128,6 +128,10 @@ export const requiresRights = rights =>
           await checkCompanyMembership(models, company, args.userid, "user");
         }
 
+        if (args.user && args.user.id && args.user.id != "new") {
+          await checkCompanyMembership(models, company, args.user.id, "user");
+        }
+
         if (args.employeeid && args.employeeid != "new") {
           await checkCompanyMembership(
             models,
