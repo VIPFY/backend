@@ -844,7 +844,10 @@ export default {
 
           return true;
         } catch (err) {
-          throw new Error(err);
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
@@ -860,7 +863,7 @@ export default {
 
           await teamCheck(company, teamid);
 
-          //User add to team
+          // User add to team
 
           await models.ParentUnit.create(
             { parentunit: teamid, childunit: employeeid },
@@ -876,7 +879,10 @@ export default {
 
           return true;
         } catch (err) {
-          throw new Error(err);
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
