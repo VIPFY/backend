@@ -17,7 +17,6 @@ import {
 // } from "../../services/stripe";
 import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
-import { checkAuthentification } from "../../helpers/auth";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
 
@@ -240,7 +239,7 @@ export default {
   ),
 
   trackMinutesSpent: requiresAuth.createResolver(
-    async (parent, { licenceid, minutes }, { models, token }) => {
+    async (_p, { licenceid, minutes }, { models, token }) => {
       try {
         if (minutes <= 0) {
           throw new Error("minutes must be positive");
@@ -858,6 +857,7 @@ export default {
         if (!licence) {
           throw new Error("Licence not found");
         }
+
         if (licence.options && licence.options.nosetup) {
           delete licence.options.nosetup;
         }
@@ -1144,89 +1144,84 @@ export default {
       })
   ),
 
-  deleteService: requiresAuth.createResolver(
-    async (_p, { serviceid, time }, context) =>
-      context.models.sequelize.transaction(async ta => {
-        try {
-          const { models, token } = context;
+  deleteService: requiresRights([
+    "delete-licences, delete-boughtplans"
+  ]).createResolver(async (_p, { serviceid, time }, context) =>
+    context.models.sequelize.transaction(async ta => {
+      try {
+        const { models, token } = context;
 
-          const {
-            user: { unitid, company }
-          } = decode(token);
+        const {
+          user: { company }
+        } = decode(token);
 
-          const parsedTime = moment(time).valueOf();
-          const config = { endtime: parsedTime };
+        const parsedTime = moment(time).valueOf();
+        const config = { endtime: parsedTime };
 
-          const boughtPlans = await models.sequelize.query(
-            `
+        const boughtPlans = await models.sequelize.query(
+          `
             SELECT bd.*, pd.cancelperiod
             FROM boughtplan_data bd
                 INNER JOIN plan_data pd on bd.planid = pd.id
             WHERE (bd.endtime IS NULL OR bd.endtime > NOW())
               AND bd.payer = :company
               and appid = :serviceid`,
-            {
-              replacements: { company, serviceid },
-              type: models.sequelize.QueryTypes.SELECT
-            }
-          );
+          {
+            replacements: { company, serviceid },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
 
-          if (boughtPlans.length < 1) {
-            throw new Error(
-              "BoughtPlan doesn't exist or isn't active anymore!"
-            );
+        if (boughtPlans.length < 1) {
+          throw new Error("BoughtPlan doesn't exist or isn't active anymore!");
+        }
+
+        const updatePromises = [];
+        const licencePromises = [];
+        const departmentPromisies = [];
+        boughtPlans.forEach(boughtPlan => {
+          const period = Object.keys(boughtPlan.cancelperiod)[0];
+          const estimatedEndtime = moment()
+            .add(boughtPlan.cancelperiod[period], period)
+            .valueOf();
+
+          if (parsedTime <= estimatedEndtime) {
+            config.endtime = estimatedEndtime;
           }
 
-          const updatePromises = [];
-          const licencePromises = [];
-          const departmentPromisies = [];
-          boughtPlans.forEach(boughtPlan => {
-            const period = Object.keys(boughtPlan.cancelperiod)[0];
-            const estimatedEndtime = moment()
-              .add(boughtPlan.cancelperiod[period], period)
-              .valueOf();
-
-            if (parsedTime <= estimatedEndtime) {
-              config.endtime = estimatedEndtime;
-            }
-
-            updatePromises.push(
-              models.BoughtPlan.update(config, {
-                where: { id: boughtPlan.id },
-                transaction: ta
-              })
-            );
-
-            licencePromises.push(
-              models.LicenceData.update(config, {
-                where: { boughtplanid: boughtPlan.id }
-              })
-            );
-
-            departmentPromisies.push(
-              models.DepartmentApp.destroy(
-                { where: { boughtplanid: boughtPlan.id } },
-                { transaction: ta }
-              )
-            );
-          });
-
-          await Promise.all(
-            updatePromises,
-            licencePromises,
-            departmentPromisies
+          updatePromises.push(
+            models.BoughtPlan.update(config, {
+              where: { id: boughtPlan.id },
+              transaction: ta
+            })
           );
 
-          await createLog(context, "deleteService", { serviceid }, ta);
+          licencePromises.push(
+            models.LicenceData.update(config, {
+              where: { boughtplanid: boughtPlan.id }
+            })
+          );
 
-          return true;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
+          departmentPromisies.push(
+            models.DepartmentApp.destroy(
+              { where: { boughtplanid: boughtPlan.id } },
+              { transaction: ta }
+            )
+          );
+        });
+
+        await Promise.all(updatePromises, licencePromises, departmentPromisies);
+
+        await createLog(context, "deleteService", { serviceid }, ta);
+
+        return true;
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    })
   ),
 
   updateTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
@@ -1332,15 +1327,13 @@ export default {
       })
   ),
 
-  distributeLicence10: requiresAuth.createResolver(
+  distributeLicence10: requiresRights(["edit-licences"]).createResolver(
     async (_p, { licenceid, userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const { models } = ctx;
           const distribute = await models.LicenceData.update(
-            {
-              unitid: userid
-            },
+            { unitid: userid },
             {
               where: { id: licenceid },
               transaction: ta
