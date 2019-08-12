@@ -29,8 +29,6 @@ import userMutations from "./mutations/unit";
 import tutorialMutations from "./mutations/tutorial";
 import teamMutations from "./mutations/team";
 
-import Subscription from "./subscriptions";
-
 import { find, implementDate, implementJSON } from "./customResolvers";
 
 const Query = Object.assign(
@@ -79,7 +77,6 @@ const plans = { appid: "App", gotoplan: "Plan" };
 export default {
   Query,
   Mutation,
-  Subscription,
   Date: implementDate,
   JSON: implementJSON,
   Address: find({}),
