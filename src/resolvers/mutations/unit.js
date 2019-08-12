@@ -19,60 +19,58 @@ import { sendEmail } from "../../helpers/email";
 /* eslint-disable no-unused-vars, prefer-destructuring */
 
 export default {
-  updateProfilePic: requiresAuth.createResolver(
-    async (_, { file }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = decode(token);
+  updateProfilePic: requiresAuth.createResolver(async (_p, { file }, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      try {
+        const { models, token } = ctx;
 
-          const parsedFile = await file;
+        const {
+          user: { unitid }
+        } = decode(token);
 
-          const profilepicture = await uploadUserImage(
-            parsedFile,
-            userPicFolder
-          );
+        const user = await models.User.findOne({
+          where: { id: unitid },
+          raw: true
+        });
 
-          const user = await models.User.findOne({
-            where: { id: unitid },
-            raw: true
-          });
+        const parsedFile = await file;
 
-          const updatedUnit = await models.Unit.update(
-            { profilepicture },
-            { where: { id: unitid }, returning: true, transaction: ta }
-          );
+        const profilepicture = await uploadUserImage(parsedFile, userPicFolder);
 
-          const notificationBody = {
-            receiver: unitid,
-            message: "Your profile picture was updated.",
-            icon: "user-check",
-            link: "profile"
-          };
+        const updatedUnit = await models.Unit.update(
+          { profilepicture },
+          { where: { id: unitid }, returning: true, transaction: ta }
+        );
 
-          await createLog(
-            ip,
-            "updateProfilePic",
-            { user, updatedUnit: updatedUnit[1] },
-            unitid,
-            ta
-          );
+        const notificationBody = {
+          receiver: unitid,
+          message: "Your profile picture was updated.",
+          icon: "user-check",
+          link: "profile"
+        };
 
-          return { ...user, profilepicture };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
+        await createLog(
+          ctx,
+          "updateProfilePic",
+          { user, updatedUnit: updatedUnit[1] },
+          ta
+        );
+
+        return { ...user, profilepicture };
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    })
   ),
 
   updateEmployeePic: requiresRights(["edit-user"]).createResolver(
-    async (_, { file, unitid }, { models, token, ip }) =>
+    async (_p, { file, unitid }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
             user: { unitid: adminid }
           } = decode(token);
@@ -95,10 +93,9 @@ export default {
           );
 
           const p1 = createLog(
-            ip,
+            ctx,
             "updateEmployeePic",
             { oldUnit, updatedUnit: updatedUnit[1] },
-            adminid,
             ta
           );
 
@@ -118,9 +115,11 @@ export default {
   ),
 
   updateUser: requiresRights(["edit-employees"]).createResolver(
-    async (parent, { user }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { user }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
             user: { unitid }
           } = decode(token);
@@ -152,10 +151,9 @@ export default {
           }
 
           await createLog(
-            ip,
+            ctx,
             "updateUser",
             { updateArgs: user, oldHuman, updatedHuman: updatedHuman[1] },
-            unitid,
             ta
           );
 
@@ -170,9 +168,11 @@ export default {
   ),
 
   updateEmployee: requiresRights(["edit-employee"]).createResolver(
-    async (_, { user }, { models, token, ip }) => {
-      await models.sequelize.transaction(async ta => {
+    async (_p, { user }, ctx) => {
+      await ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
             user: { unitid, company }
           } = decode(token);
@@ -184,6 +184,15 @@ export default {
           }
 
           await companyCheck(company, unitid, id);
+
+          const legitimateUser = models.User.findOne({
+            where: { id, deleted: false, banned: false, suspended: false },
+            raw: true
+          });
+
+          if (!legitimateUser) {
+            throw new Error("This user can't be updated at the moment!");
+          }
 
           const toUpdate = {
             Human: {},
@@ -235,7 +244,7 @@ export default {
                   itemKey == "Phone" || itemKey == "Address"
                     ? ["private"]
                     : ["work"];
-                console.log("ITEM KEY", item, itemKey);
+
                 promises.push(
                   models[model].create(
                     { ...item, address: { ...item }, unitid: id },
@@ -248,13 +257,7 @@ export default {
 
           await Promise.all(promises);
 
-          await createLog(
-            ip,
-            "updateEmployee",
-            { updateArgs: user },
-            unitid,
-            ta
-          );
+          await createLog(ctx, "updateEmployee", { updateArgs: user }, ta);
 
           return true;
         } catch (err) {
@@ -265,13 +268,14 @@ export default {
         }
       });
 
-      return models.User.findOne({ where: { id: user.id } });
+      return ctx.models.User.findOne({ where: { id: user.id } });
     }
   ),
 
   updateEmployeePassword: requiresRights(["edit-employee"]).createResolver(
-    async (_, { unitid, password, logOut }, { models, token }) => {
+    async (_p, { unitid, password, logOut }, ctx) => {
       try {
+        const { models, token } = ctx;
         const {
           user: { unitid: id, company }
         } = decode(token);
@@ -340,51 +344,53 @@ export default {
     }
   ),
 
-  setConsent: requiresAuth.createResolver(
-    async (_, { consent }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        const {
-          user: { unitid }
-        } = decode(token);
+  setConsent: requiresAuth.createResolver(async (_p, { consent }, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      const { models, token } = ctx;
+      const {
+        user: { unitid }
+      } = decode(token);
 
-        try {
-          await models.Human.update(
-            { consent },
-            { where: { unitid }, transaction: ta }
-          );
+      try {
+        await models.Human.update(
+          { consent },
+          { where: { unitid }, transaction: ta }
+        );
 
-          const p1 = createLog(ip, "setConsent", { consent }, unitid, ta);
-          const p2 = models.User.findOne({
-            where: { id: unitid },
-            transaction: ta,
-            raw: true
-          });
+        const p1 = createLog(ctx, "setConsent", { consent }, ta);
+        const p2 = models.User.findOne({
+          where: { id: unitid },
+          transaction: ta,
+          raw: true
+        });
 
-          const [, user] = await Promise.all([p1, p2]);
+        const [, user] = await Promise.all([p1, p2]);
 
-          return { ...user, consent };
-        } catch (err) {
-          await createNotification(
-            {
-              receiver: unitid,
-              message: "Saving consent failed",
-              icon: "bug",
-              link: "profile"
-            },
-            ta
-          );
+        return { ...user, consent };
+      } catch (err) {
+        await createNotification(
+          {
+            receiver: unitid,
+            message: "Saving consent failed",
+            icon: "bug",
+            link: "profile"
+          },
+          ta
+        );
 
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    })
   ),
 
   impersonate: requiresRights(["impersonate"]).createResolver(
-    async (_, { unitid }, { models, token, SECRET, ip }) => {
+    async (_p, { unitid }, ctx) => {
       try {
+        const { models, token, SECRET } = ctx;
+
         const {
           user: { unitid: id, company }
         } = decode(token);
@@ -407,14 +413,13 @@ export default {
         }
 
         await createLog(
-          ip,
+          ctx,
           "impersonate",
-          { admin: id, impersonated: unitid },
-          id,
+          { impersonator: id, user: unitid },
           null
         );
 
-        return createAdminToken({ unitid, company, admin: id, SECRET });
+        return createAdminToken({ unitid, company, impersonator: id, SECRET });
       } catch (err) {
         throw new NormalError({
           message: err.message,

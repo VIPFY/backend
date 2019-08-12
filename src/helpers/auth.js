@@ -37,7 +37,7 @@ export const createAdminToken = async ({
   company,
   impersonator,
   SECRET,
-  expiresIn = "1w"
+  expiresIn = "1d"
 }) => {
   try {
     const newToken = await jwt.sign(

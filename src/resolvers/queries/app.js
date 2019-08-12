@@ -9,43 +9,45 @@ import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { companyCheck } from "../../helpers/functions";
 
 export default {
-  allApps: async (_, { limit, offset, sortOptions }, { models, token }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
+  allApps: requiresAuth.createResolver(
+    async (_P, { limit, offset, sortOptions }, { models, token }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(token);
 
-      const allApps = await models.AppDetails.findAll({
-        limit,
-        offset,
-        attributes: [
-          "id",
-          "icon",
-          "logo",
-          "disabled",
-          "name",
-          "teaserdescription",
-          "features",
-          "cheapestprice",
-          "avgstars",
-          "cheapestpromo",
-          "needssubdomain",
-          "options"
-        ],
-        where: {
-          disabled: false,
-          deprecated: false,
-          hidden: false,
-          owner: { [models.Op.or]: [null, company] }
-        },
-        order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
-      });
+        const allApps = await models.AppDetails.findAll({
+          limit,
+          offset,
+          attributes: [
+            "id",
+            "icon",
+            "logo",
+            "disabled",
+            "name",
+            "teaserdescription",
+            "features",
+            "cheapestprice",
+            "avgstars",
+            "cheapestpromo",
+            "needssubdomain",
+            "options"
+          ],
+          where: {
+            disabled: false,
+            deprecated: false,
+            hidden: false,
+            owner: { [models.Op.or]: [null, company] }
+          },
+          order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
+        });
 
-      return allApps;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return allApps;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  },
+  ),
 
   fetchAllAppsEnhanced: requiresRights([
     "view-apps",

@@ -18,7 +18,8 @@ import {
   computePasswordScore,
   formatHumanName,
   checkVat,
-  parseAddress
+  parseAddress,
+  createNotification
 } from "../../helpers/functions";
 import { googleMapsClient } from "../../services/gcloud";
 import { NormalError } from "../../errors";
@@ -33,12 +34,13 @@ const ZENDESK_TOKEN =
 
 export default {
   signUp: async (
-    _,
+    _p,
     { email, companyname: name, privacy, termsOfService, isprivate },
-    { models, SECRET, ip }
+    ctx
   ) =>
-    models.sequelize.transaction(async ta => {
+    ctx.models.sequelize.transaction(async ta => {
       try {
+        const { models, SECRET } = ctx;
         if (!privacy || !termsOfService) {
           throw new Error(
             "You have to confirm to our privacy agreement and our Terms of Service!"
@@ -229,8 +231,11 @@ export default {
           ]
         });
 
+        const fakeToken = await createToken(unit, SECRET);
+        ctx.token = fakeToken;
+
         await createLog(
-          ip,
+          ctx,
           "signUp",
           {
             human: user,
@@ -241,7 +246,6 @@ export default {
             vipfyPlan,
             company
           },
-          unit.id,
           ta
         );
 
@@ -264,7 +268,7 @@ export default {
     }),
 
   setupFinished: async (
-    parent,
+    _p,
     { country, vatoption, vatnumber, placeId, ownAdress, username },
     { models, token }
   ) =>
@@ -346,12 +350,10 @@ export default {
       }
     }),
 
-  signUpConfirm: async (
-    _,
-    { token, password, passwordConfirm, email },
-    { models, ip }
-  ) =>
-    models.sequelize.transaction(async ta => {
+  signUpConfirm: async (_, { token, password, passwordConfirm, email }, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      const { models } = ctx;
+
       if (password != passwordConfirm) {
         throw new Error("Passwords don't match!");
       }
@@ -395,6 +397,11 @@ export default {
           throw new Error("No valid email found!");
         }
 
+        const user = await models.User.findOne({
+          where: { id: unitid },
+          raw: true
+        });
+
         const pwData = await getNewPasswordData(password);
 
         const p1 = models.Token.findOne({
@@ -413,13 +420,14 @@ export default {
         );
 
         const p4 = models.Human.update(
-          {
-            ...pwData
-          },
+          { ...pwData },
           { where: { unitid }, transaction: ta }
         );
 
-        const p5 = createLog(ip, "signUpConfirm", { token, email }, unitid, ta);
+        const fakeToken = await createToken(user, ctx.SECRET);
+
+        ctx.token = fakeToken;
+        const p5 = createLog(ctx, "signUpConfirm", { token, email }, ta);
         const [signUpToken] = await Promise.all([p1, p2, p3, p4, p5]);
 
         if (
@@ -454,7 +462,7 @@ export default {
       }
     }),
 
-  signIn: async (_, { email, password }, { models, SECRET, ip }) => {
+  signIn: async (_, { email, password }, ctx) => {
     try {
       if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
@@ -462,25 +470,20 @@ export default {
 
       const message = "Email or Password incorrect!";
 
-      /* const emailExists = await models.Login.findOne({
-        where: { email },
+      const [emailExists] = await ctx.models.Login.findAll({
+        where: {
+          email,
+          deleted: { [ctx.models.Op.or]: [null, false] },
+          banned: { [ctx.models.Op.or]: [null, false] },
+          suspended: { [ctx.models.Op.or]: [null, false] }
+        },
         raw: true
-      });*/
+      });
 
-      const emailExistsall = await models.sequelize.query(
-        `SELECT * FROM login_view
-       WHERE email = :email`,
-        {
-          replacements: { email },
-          type: models.sequelize.QueryTypes.SELECT
-        }
-      );
-
-      const emailExists = emailExistsall[0];
-
-      console.log("EAMIL", emailExists);
-
-      if (!emailExists) throw new Error(message);
+      console.log("LOG: emailExists", emailExists);
+      if (!emailExists) {
+        throw new Error(message);
+      }
 
       const valid = await bcrypt.compare(password, emailExists.passwordhash);
       if (!valid) throw new Error(message);
@@ -490,28 +493,20 @@ export default {
       // update password length and strength.
       // This is temporary to fill values we didn't catch before implementing these metrics
       const passwordstrength = computePasswordScore(password);
-      await models.Human.update(
+      await ctx.models.Human.update(
         { passwordstrength, passwordlength: password.length },
         { where: { unitid: emailExists.unitid } }
       );
 
-      await createLog(
-        ip,
-        "signIn",
-        { user: emailExists, email },
-        emailExists.unitid,
-        null
-      );
-
       if (emailExists.twofactor) {
-        const { secret } = await models.TwoFA.findOne({
+        const { secret } = await ctx.models.TwoFA.findOne({
           where: { unitid: emailExists.unitid, type: emailExists.twofactor },
           raw: true
         });
 
         const token = await create2FAToken();
 
-        await models.Token.create({
+        await ctx.models.Token.create({
           email,
           token,
           data: { unitid: emailExists.unitid },
@@ -520,6 +515,11 @@ export default {
             .toISOString(),
           type: "2FAToken"
         });
+
+        // One is needed for the logger function to work correctly
+        const fakeToken = await createToken(emailExists, ctx.SECRET);
+        ctx.token = fakeToken;
+        await createLog(ctx, "signIn", { user: emailExists, email }, null);
 
         return {
           ok: true,
@@ -530,7 +530,9 @@ export default {
       } else {
         // User doesn't have the property unitid, so we have to pass emailExists for
         // the token creation
-        const token = await createToken(emailExists, SECRET);
+        const token = await createToken(emailExists, ctx.SECRET);
+        ctx.token = token;
+        await createLog(ctx, "signIn", { user: emailExists, email }, null);
 
         return { ok: true, token };
       }
@@ -541,9 +543,11 @@ export default {
   },
 
   changePassword: requiresAuth.createResolver(
-    async (_, { pw, newPw, confirmPw }, { models, token, SECRET, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_, { pw, newPw, confirmPw }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token, SECRET } = ctx;
+
           if (newPw != confirmPw) throw new Error("New passwords don't match!");
           if (pw == newPw) {
             throw new Error("Current and new password can't be the same one!");
@@ -588,13 +592,26 @@ export default {
           const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
 
           const [updatedUser, basicUser] = await Promise.all([p1, p2]);
-          await createLog(
-            ip,
-            "changePassword",
-            { updatedUser: updatedUser[1], oldUser: findOldPassword },
-            unitid,
-            ta
-          );
+          const promises = [
+            createLog(
+              ctx,
+              "changePassword",
+              { updatedUser: updatedUser[1], oldUser: findOldPassword },
+              ta
+            ),
+            createNotification(
+              {
+                receiver: unitid,
+                message: "You successfully updated your password",
+                icon: "lock-alt",
+                link: "profile",
+                changed: [""]
+              },
+              ta
+            )
+          ];
+
+          await Promise.all(promises);
 
           // todo: simpler way to get company, since we don't return user anymore
           const user = await parentAdminCheck(basicUser);
@@ -611,56 +628,48 @@ export default {
       })
   ),
 
-  agreeTos: requiresAuth.createResolver(
-    async (parent, args, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid }
-          } = await decode(token);
+  agreeTos: requiresAuth.createResolver(async (_p, _args, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      try {
+        const { models, token } = ctx;
+        const {
+          user: { unitid }
+        } = await decode(token);
 
-          const updatedUser = await models.Human.update(
-            { firstlogin: false },
-            { where: { unitid }, returning: true, transaction: ta }
-          );
+        const updatedUser = await models.Human.update(
+          { firstlogin: false },
+          { where: { unitid }, returning: true, transaction: ta }
+        );
 
-          await createLog(
-            ip,
-            "agreeTos",
-            { updatedUser: updatedUser[1] },
-            unitid,
-            ta
-          );
+        await createLog(ctx, "agreeTos", { updatedUser: updatedUser[1] }, ta);
 
-          return { ok: true };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
+        return { ok: true };
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    })
   ),
 
-  forgotPassword: async (parent, { email }, { models, ip }) =>
-    models.sequelize.transaction(async ta => {
+  forgotPassword: async (_p, { email }, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
       try {
+        const { models } = ctx;
         const emailExists = await models.Login.findOne({
           where: { email },
           raw: true
         });
 
-        if (!emailExists) throw new Error("Email or Password incorrect!");
-        if (emailExists.verified == false) {
-          throw new Error("Sorry, this email isn't verified yet.");
-        }
-
-        if (emailExists.banned == true) {
-          throw new Error("Sorry, this account is banned!");
-        }
-
-        if (emailExists.suspended == true) {
-          throw new Error("Sorry, this account is suspended!");
+        if (
+          !emailExists ||
+          emailExists.verified ||
+          emailExists.banned ||
+          emailExists.suspended == true
+        ) {
+          // Prevent an attacker from discovering information about our Users
+          return { ok: true };
         }
 
         const user = await models.Human.findOne({
@@ -677,11 +686,13 @@ export default {
           { where: { unitid: user.unitid }, returning: true, transaction: ta }
         );
 
+        const token = await createToken(emailExists, ctx.SECRET);
+        ctx.token = token;
+
         await createLog(
-          ip,
+          ctx,
           "forgotPassword",
           { updatedHuman: updatedHuman[1], oldUser: user },
-          emailExists.unitid,
           ta
         );
 
@@ -712,11 +723,12 @@ export default {
     }),
 
   forcePasswordChange: requiresRights(["view-security"]).createResolver(
-    async (parent, { userids }, { models, token, ip }) =>
-      models.sequelize.transaction(async transaction => {
+    async (_p, { userids }, ctx) =>
+      ctx.models.sequelize.transaction(async transaction => {
         try {
+          const { models, token } = ctx;
           const {
-            user: { unitid, company }
+            user: { company }
           } = await decode(token);
 
           // check that user has rights
@@ -738,13 +750,31 @@ export default {
           );
 
           // log (not logging new/old human objects because of GDPR, change is trivial anyway)
-          await createLog(
-            ip,
-            "forcePasswordChange",
-            { units: userids },
-            unitid,
-            transaction
-          );
+          const promises = [
+            createLog(
+              ctx,
+              "forcePasswordChange",
+              { units: userids },
+              transaction
+            )
+          ];
+
+          for (const userid of userids) {
+            promises.push(
+              createNotification(
+                {
+                  receiver: userid,
+                  message: "An admin forces you to update your password",
+                  icon: "lock-alt",
+                  link: "profile",
+                  changed: ["me"]
+                },
+                transaction
+              )
+            );
+          }
+
+          await Promise.all(promises);
 
           return { ok: true };
         } catch (err) {
@@ -756,8 +786,10 @@ export default {
       })
   ),
 
-  redeemSetupToken: async (parent, { setuptoken }, { models, ip, SECRET }) => {
+  redeemSetupToken: async (_p, { setuptoken }, ctx) => {
     try {
+      const { models, SECRET } = ctx;
+
       const setupTokenEntry = await models.Token.findOne({
         where: {
           token: setuptoken,
@@ -766,6 +798,7 @@ export default {
           usedat: null
         }
       });
+
       if (!setupTokenEntry) {
         throw new Error("token invalid");
       }
@@ -779,26 +812,22 @@ export default {
 
       await checkAuthentification(emailExists.unitid, emailExists.company);
 
-      await createLog(
-        ip,
+      const token = await createToken(emailExists, SECRET, "1d");
+      ctx.token = token;
+
+      const p1 = createLog(
+        ctx,
         "redeemSetupToken",
         { user: emailExists, setuptoken },
-        emailExists.unitid,
         null
       );
 
-      const token = await createToken(emailExists, SECRET, "1d");
-
-      await models.Token.update(
-        {
-          usedat: models.sequelize.fn("NOW")
-        },
-        {
-          where: {
-            id: setupTokenEntry.id
-          }
-        }
+      const p2 = models.Token.update(
+        { usedat: models.sequelize.fn("NOW") },
+        { where: { id: setupTokenEntry.id } }
       );
+
+      await Promise.all([p1, p2]);
 
       return { ok: true, token };
     } catch (err) {
@@ -809,7 +838,7 @@ export default {
     }
   },
 
-  resendToken: async (parent, { email }, { models }) =>
+  resendToken: async (_p, { email }, { models }) =>
     models.sequelize.transaction(async ta => {
       try {
         const userEmail = await models.Email.findOne({

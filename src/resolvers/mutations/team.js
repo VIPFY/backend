@@ -17,11 +17,12 @@ import { sendEmail } from "../../helpers/email";
 
 export default {
   addTeam: requiresRights(["create-team"]).createResolver(
-    async (parent, { name, data }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { name, data }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           const unit = await models.Unit.create({}, { transaction: ta });
@@ -42,13 +43,7 @@ export default {
 
           const [department, parentUnit] = await Promise.all([p1, p2]);
 
-          await createLog(
-            ip,
-            "addTeam",
-            { unit, department, parentUnit },
-            unitid,
-            ta
-          );
+          await createLog(ctx, "addTeam", { unit, department, parentUnit }, ta);
 
           return department;
         } catch (err) {
@@ -61,9 +56,11 @@ export default {
   ),
 
   createTeam: requiresRights(["create-team"]).createResolver(
-    async (parent, { team, addemployees, apps }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { team, addemployees, apps }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
             user: { unitid, company }
           } = decode(token);
@@ -117,8 +114,6 @@ export default {
                 employee.wmail1,
                 employee.wmail2
               );
-
-              console.log("Created Human", userid);
 
               employee.id = userid;
               newemployees.push({ email: employee.wmail1, id: userid });
@@ -178,8 +173,6 @@ export default {
 
           await Promise.all(employeepromises);
 
-          console.log("after", addemployees);
-
           //services aufsetzen
 
           for await (const service of apps) {
@@ -226,7 +219,6 @@ export default {
             );
 
             service.employees.forEach(employee => {
-              console.log("CREATE LICENCE", employee, service);
               const empid = newemployees.find(e => e.email == employee.wmail1)
                 ? newemployees.find(e => e.email == employee.wmail1).id
                 : employee.id;
@@ -260,13 +252,7 @@ export default {
             await Promise.all(servicepromises);
           }
 
-          await createLog(
-            ip,
-            "addTeam",
-            { unit, department, parentUnit },
-            unitid,
-            ta
-          );
+          await createLog(ctx, "addTeam", { unit, department, parentUnit }, ta);
 
           const employeeNotifypromises = [];
           addemployees.forEach(employee =>
@@ -294,11 +280,12 @@ export default {
   ),
 
   deleteTeam: requiresRights(["delete-team"]).createResolver(
-    async (_, { teamid, keepLicences }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_, { teamid, keepLicences }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           await teamCheck(company, teamid);
@@ -413,10 +400,9 @@ export default {
             await deleteUserImage(oldUnit.profilepicture);
           } catch (err) {
             await createLog(
-              ip,
+              ctx,
               "deleteTeam - Image",
               { pic: oldUnit.profilepicture },
-              unitid,
               ta
             );
           }
@@ -424,7 +410,7 @@ export default {
           await Promise.all([p7, p8, p9, p10, p11, p12, p13]);
 
           await createLog(
-            ip,
+            ctx,
             "deleteTeam",
             {
               oldUnit,
@@ -435,7 +421,6 @@ export default {
               oldParentUnit,
               oldDepartmentApps
             },
-            unitid,
             ta
           );
 
@@ -467,11 +452,12 @@ export default {
   ),
 
   updateTeamPic: requiresRights(["edit-team"]).createResolver(
-    async (_, { file, teamid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { file, teamid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           const oldUnit = await models.Unit.findOne({
@@ -501,10 +487,9 @@ export default {
           });
 
           const p2 = createLog(
-            ip,
+            ctx,
             "updateTeamPic",
             { oldUnit, updatedUnit: updatedUnit[1] },
-            unitid,
             ta
           );
 
@@ -521,11 +506,12 @@ export default {
   ),
 
   removeFromTeam: requiresRights(["edit-team"]).createResolver(
-    async (parent, { teamid, userid, keepLicences }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { teamid, userid, keepLicences }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           await teamCheck(company, teamid);
@@ -583,10 +569,9 @@ export default {
           );
 
           await createLog(
-            ip,
+            ctx,
             "removeEmployeeFromTeam",
             { teamid, userid },
-            unitid,
             ta
           );
 
@@ -609,15 +594,12 @@ export default {
   ),
 
   removeServiceFromTeam: requiresRights(["edit-team"]).createResolver(
-    async (
-      parent,
-      { teamid, boughtplanid, keepLicences },
-      { models, token, ip }
-    ) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { teamid, boughtplanid, keepLicences }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           await teamCheck(company, teamid);
@@ -675,10 +657,9 @@ export default {
           );
 
           await createLog(
-            ip,
+            ctx,
             "removeServiceFromTeam",
             { teamid, boughtplanid },
-            unitid,
             ta
           );
 
@@ -710,10 +691,11 @@ export default {
   ),
 
   addToTeam: requiresRights(["edit-team"]).createResolver(
-    async (parent, addInformation, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, addInformation, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
-          console.log("addInformation", addInformation);
+          const { models, token } = ctx;
+
           const {
             user: { unitid, company }
           } = decode(token);
@@ -811,13 +793,7 @@ export default {
 
           await Promise.all(promises);
 
-          await createLog(
-            ip,
-            "addEmployeeFromTeam",
-            { teamid, userid },
-            unitid,
-            ta
-          );
+          await createLog(ctx, "addEmployeeFromTeam", { teamid, userid }, ta);
 
           await createNotification({
             receiver: userid,
@@ -868,22 +844,26 @@ export default {
 
           return true;
         } catch (err) {
-          throw new Error(err);
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
 
   addEmployeeToTeam: requiresRights(["edit-team"]).createResolver(
-    async (parent, { teamid, employeeid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { teamid, employeeid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           await teamCheck(company, teamid);
 
-          //User add to team
+          // User add to team
 
           await models.ParentUnit.create(
             { parentunit: teamid, childunit: employeeid },
@@ -891,24 +871,27 @@ export default {
           );
 
           await createLog(
-            ip,
+            ctx,
             "addEmployeeFromTeam",
             { teamid, employeeid },
-            unitid,
             ta
           );
 
           return true;
         } catch (err) {
-          throw new Error(err);
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
       })
   ),
 
   addAppToTeam: requiresRights(["edit-team"]).createResolver(
-    async (parent, addInformation, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, addInformation, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
             user: { unitid, company }
           } = decode(token);
@@ -934,9 +917,7 @@ export default {
               "This App is not integrated to handle external Accounts yet."
             );
           }
-          console.log("BEFORE CHECK", plan);
           await checkPlanValidity(plan);
-          console.log("AFTER CHECK", plan);
 
           const boughtPlan = await models.BoughtPlan.create(
             {
@@ -1008,13 +989,7 @@ export default {
 
           await Promise.all(employeeNotifypromises);
 
-          await createLog(
-            ip,
-            "addServiceToTeam",
-            { teamid, serviceid },
-            unitid,
-            ta
-          );
+          await createLog(ctx, "addServiceToTeam", { teamid, serviceid }, ta);
 
           return true;
         } catch (err) {
