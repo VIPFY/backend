@@ -11,7 +11,8 @@ const options = {
   port: process.env.REDIS_PORT,
   db: 0,
   // reconnect after
-  retryStrategy: times => Math.min(times * 50, 2000)
+  retryStrategy: times => Math.min(times * 50, 2000),
+  tls: {}
 };
 
 if (process.env.ENVIRONMENT != "development") {
