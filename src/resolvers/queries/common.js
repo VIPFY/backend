@@ -28,5 +28,6 @@ export default {
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
-  })
+  }),
+  pingServer: async (parent, args, context) => ({ ok: true })
 };
