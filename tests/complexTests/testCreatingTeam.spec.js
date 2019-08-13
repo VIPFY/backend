@@ -52,12 +52,12 @@ expect.extend({
 });
 
 describe("Testing creation of a team and employees", () => {
-  var token, team1id, team2id, teams, employeeId;
+  var token, team1id, team2id, teams, employeeId, empemail, rnd;
 
   it("signing in, expect success", async () => {
     /*
     mutation{
-      signIn(email:"testmail@abv.bg", password: "testPass123"){
+      signIn(email:"testmail147@abv.bg", password: "testPass123"){
         token
       }
     }
@@ -65,7 +65,6 @@ describe("Testing creation of a team and employees", () => {
     const query =
       'mutation{signIn(email:\\"testmail147@abv.bg\\", password: \\"testPass123\\"){token}}';
     const response = await testing(queryWrapper(query));
-
     successfulExecution(response);
     expect(response.errors).not.toBeDefined();
     expect(response.data.signIn.token).toBeDefined();
@@ -297,6 +296,21 @@ describe("Testing creation of a team and employees", () => {
       expect(response.data.fetchTeam.employees).toHaveLength(0);
     });
 
+    //createEmployee - old?
+    /*
+    it("createEmployee - trying to create and add employee to a team which is not in my company, expect failure - RightsError", async () => {
+      const query = `{"operationName":\"onCreateEmployee\","variables":{"addpersonal":{"name":{"title": \"\", "firstname":\"Employee\", "middlename": \"Creation\", "lastname":\"Test\", "suffix":\"\"}, "password": \"empPass123\", "wmail1":\"empmail34567@vipfy.store\"}, "addteams":[${team1Id}], "apps":[]},"query":"mutation onCreateEmployee($addpersonal:JSON!, $addteams: [JSON]!, $apps:[JSON]!){createEmployee(addpersonal:$addpersonal, addteams: $addteams, apps:$apps)}"}`;
+      const response = await testing(query, {
+        headers: {
+          "x-token": token2,
+          "Content-Type": "application/json"
+        }
+      });
+
+      expectRightsError(response, "createEmployee");
+    });
+    */
+
     it("createEmployee09, expect success", async () => {
       var random = getRandomInt(999999);
       const query = `mutation{createEmployee09(name: {title: \\"\\", firstname: \\"Temporary\\", middlename: \\"Test\\", lastname: \\"Employee\\", suffix: \\"\\"}, emails: [{email:\\"epmmail${random}@vipfy.store\\"}], password: \\"empPass123\\")}`;
@@ -306,7 +320,8 @@ describe("Testing creation of a team and employees", () => {
           "Content-Type": "application/json"
         }
       });
-
+      empemail = `epmmail${random}@vipfy.store`;
+      rnd = random;
       successfulExecution(response);
       expect(response.data.createEmployee09).toBeDefined();
       employeeId = response.data.createEmployee09;
@@ -781,6 +796,18 @@ describe("Testing creation of a team and employees", () => {
       expect(response.errors).toHaveLength(1);
       expect(response.errors[0].name).toEqual("NormalError");
     });
+    /* TODO: Something strange
+    it("signIn as deleted employee, expect failure", async () => {
+      const query = `mutation{signIn(email:\\"empmail${rnd}@vipfy.store\\", password: \\"empPass123\\"){ok}}`;
+      const response = await testing(queryWrapper(query));
+      console.log("TCL: query -> response", response);
+      console.log("TCL: query:", query);
+      expect(response).toBeDefined();
+      expect(response.status).toEqual(200);
+      expect(response.success).toEqual(false);
+      expect(response.errors).toHaveLength(1);
+      expect(response.errors[0].name).toEqual("NormalError");
+    });*/
   });
 
   it("deleteTeam - delete the created teams, expect success", async () => {

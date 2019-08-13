@@ -5,7 +5,6 @@ const testing = tester({
   url: "https://api.dev.vipfy.store/graphql",
   method: "POST",
   contentType: "application/json"
-  
 });
 
 const queryWrapper = function(query) {
@@ -27,7 +26,7 @@ describe("Testing creation of a team and employees", () => {
     const query =
       'mutation{signIn(email:\\"testmail147@abv.bg\\", password: \\"testPass123\\"){token}}';
     const response = await testing(queryWrapper(query));
-    
+
     expect(response).toBeDefined();
     expect(response.status).toEqual(200);
     expect(response.success).toEqual(true);
@@ -36,7 +35,7 @@ describe("Testing creation of a team and employees", () => {
     token = response.data.signIn.token;
   });
 
-  it("fetchDepartments, expect success and info about depatments", async () => {
+  /*it("fetchDepartments, expect success and info about depatments", async () => {
     const query = `{fetchDepartments{id department{name}}}`;
     const response = await testing(queryWrapper(query), {
       headers: {
@@ -66,5 +65,32 @@ describe("Testing creation of a team and employees", () => {
     expect(response.status).toEqual(200);
     expect(response.data.fetchDepartments[0].id).toEqual("1212");
     expect(response.data.fetchDepartments[0].department.name).toEqual("IntegrationTests");
+  });*/
+
+  it("editDepartmentName, expect success", async () => {
+    var numOfEntries, numOfErrors;
+    var query = `{allApps{id}}`;
+    var response = await testing(queryWrapper(query), {
+      headers: {
+        "x-token": token,
+        "Content-Type": "application/json"
+      }
+    });
+
+    numOfEntries = response.data.allApps.length;
+    console.log("TCL: numOfEntries", numOfEntries);
+
+    query = `{allApps{developername}}`;
+    response = await testing(queryWrapper(query), {
+      headers: {
+        "x-token": token,
+        "Content-Type": "application/json"
+      }
+    });
+    console.log("sth sth");
+    numOfErrors = response.errors.length;
+    console.log("TCL: numofErrors", numOfErrors);
+
+    expect(response.data.allApps).toHaveLength(numOfEntries);
   });
 });

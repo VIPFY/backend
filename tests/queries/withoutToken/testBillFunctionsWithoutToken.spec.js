@@ -26,7 +26,7 @@ var functionsWhichExpectAuthError = new Map([
   ['boughtPlans', ['', "{id}"]],
   ['fetchBills', ['', "{id}"]],
   ['fetchPaymentData', ['', "{id}"]],
-  //['fetchPlans', ['(appid:123)', "{id}"]], //allows unauthorized access
+  //['fetchPlans', ['(appid:123)', "{id}"]], //allows unauthorized access - OK
   ['fetchPlanInputs', ['(planid:1)', ""]],
   ['fetchBillingEmails', ['', "{email}"]],
   ['fetchCredits', ['',"{id}"]],

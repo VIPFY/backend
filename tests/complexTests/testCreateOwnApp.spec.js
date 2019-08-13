@@ -54,7 +54,7 @@ describe("Testing the creation of an app", () => {
   var token;
   var appName, appId, companyId, companyName, loginUrl;
 
-  //Sign in and set the token to the test user named Test User from Company IntegrationTests
+  //Sign in and set the token to the test user named Test User from company IntegrationTests
   it("signing in, expect success", async () => {
     const query =
       'mutation{signIn(email:\\"testmail147@abv.bg\\", password: \\"testPass123\\"){token}}';
