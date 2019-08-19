@@ -22,6 +22,11 @@ export const checkCompanyMembership = async (
   if (`${company}`.indexOf("-") !== -1) {
     throw new Error("company must be a number");
   }
+
+  if (entityid == company) {
+    return true;
+  }
+
   const cacheKey = `${company}-${entityid}`;
   const cacheItem = companyMembershipCache.get(cacheKey);
   if (cacheItem !== undefined) {
@@ -56,7 +61,6 @@ export const checkCompanyMembership = async (
   }
 
   const inDepartment = departments.length > 0;
-
   companyMembershipCache.set(cacheKey, inDepartment);
 
   if (!inDepartment) {
