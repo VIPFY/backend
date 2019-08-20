@@ -81,7 +81,7 @@ export const types = `
 export const queries = `
   fetchAddresses(forCompany: Boolean, tag: String): [Address]!
   fetchPhones(forCompany: Boolean): [Phone]!
-  fetchEmails(forCompany: Boolean, tag: String): [Email]!
+  fetchEmails(forCompany: Boolean, tag: String): [DepartmentEmail]!
   searchAddressByCompanyName: JSON!
 `;
 
