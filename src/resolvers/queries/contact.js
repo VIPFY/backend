@@ -31,7 +31,7 @@ export default {
   ),
 
   fetchEmails: requiresRights(["view-emails"]).createResolver(
-    async (parent, { forCompany, tag }, { models, token }) => {
+    async (_, { forCompany, tag }, { models, token }) => {
       try {
         const {
           user: { unitid, company }
@@ -42,7 +42,7 @@ export default {
         if (forCompany) {
           where.departmentid = company;
         } else {
-          where.emailownerid = unitid;
+          where.departmentid = unitid;
         }
 
         const emails = await models.DepartmentEmail.findAll({

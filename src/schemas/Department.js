@@ -21,13 +21,15 @@ export const types = `
     profilepicture: String
     employees: Int
     employeedata: [PublicUser]!
-    manageemployees: Boolean
     managelicences: Boolean
     apps: JSON
     domains: [Domain]
     createdate: String!
     promocode: String
     setupfinished: Boolean
+    iscompany: Boolean
+    isprivate: Boolean
+    internaldata: JSON
   }
 
   type DepartmentData {
@@ -35,6 +37,11 @@ export const types = `
     legalinformation: JSON
     unitid: Unit!
     promocode: String
+    setupfinished: Boolean
+    iscompany: Boolean
+    isprivate: Boolean
+    statisticdata: JSON
+    internaldata: JSON
   }
 
   type DepartmentEmail {
@@ -51,15 +58,7 @@ export const types = `
   type DepartmentEmployee {
     id: Department!
     childid: Unit
-    employee: PublicUser
-  }
-
-  input CompanyInput {
-    name: String
-    user: ID
-    statisticdata: JSON
-    legalinformation: LegalInput
-    placeid: String
+    employee: SemiPublicUser
   }
 
   input HumanName {
@@ -79,13 +78,6 @@ export const types = `
     promocode: String
   }
 
-  input LegalInput {
-    vatId: String
-    termsOfService: Date!
-    privacy: Date!
-    noVatRequired: Boolean!
-  }
-
   input StatisticInput {
     industry: String
     country: String
@@ -97,15 +89,10 @@ export const types = `
 export const queries = `
   # Returns the users company
   fetchCompany: Department!
-  fetchDepartments: [DepartmentResponse]!
   fetchDepartmentsData: [DepartmentDataResponse]!
 
   # Returns the amount of units in a Department
-  fetchCompanySize: ID!
   fetchEmployees: [DepartmentEmployee]!
-
-  # Returns the address data fetched in sign-up process
-  fetchAddressProposal(placeid: String!): JSON!
 
   fetchUserSecurityOverview: [UserSecurityOverview]!
   fetchVipfyPlan: BoughtPlan
@@ -115,25 +102,26 @@ export const mutations = `
   updateCompanyPic(file: Upload!): String!
   updateStatisticData(data: StatisticInput!): Response!
 
-  addSubDepartment(departmentid: ID! ,name: String!): Response!
   editDepartmentName(departmentid: ID!, name: String!): Response!
-  deleteSubDepartment(departmentid: ID!): Response!
 
   addEmployee(unitid: ID!, departmentid: ID!): Response!
-  addCreateEmployee(email: String!, password: String!, name: HumanName!, departmentid: ID!): Response!
-  removeEmployee(unitid: ID!, departmentid: ID!): Response!
-  fireEmployee(unitid: ID!): Response!
+  createEmployee(file: Upload, addpersonal:JSON!, addteams:[JSON]!, apps:[JSON]!): Boolean!
+  createEmployee09(name: HumanName!, emails: [EmailInput!]!, password: String!, needpasswordchange: Boolean, file: Upload, birthday: Date, hiredate: Date, address: AddressInput, position: String, phones: [PhoneInput]): ID!
+  deleteEmployee(employeeid: ID!): Boolean!
 
   # Saves data we fetched in the Business Advisor
   saveProposalData(data: ProposalInput!): Response!
 
   # (un)makes user an admin of their company
-  changeAdminStatus(unitid: ID!, admin: Boolean!): Response!
+  changeAdminStatus(unitid: ID!, admin: Boolean!): StatusResponse!
 
   # force the given users to change their password on next login
   forcePasswordChange(userids: [ID]!): Response!
 
+  addPromocode(promocode: String!): Boolean!
   applyPromocode(promocode: String!): Response!
   banEmployee(userid: ID!): Response!
   unbanEmployee(userid: ID!): Response!
 `;
+
+//banEmployee, unbanEmployee unused but maybe useful?  createEmployee only used once

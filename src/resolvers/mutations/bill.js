@@ -39,8 +39,9 @@ export default {
    * @returns any
    */
   addPaymentData: requiresRights(["create-paymentdata"]).createResolver(
-    async (parent, { data, address, email }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { data, address, email }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, token } = ctx;
         const {
           user: { unitid, company }
         } = decode(token);
@@ -109,7 +110,7 @@ export default {
             logArgs.newCard = card;
           }
 
-          const p1 = createLog(ip, "addPaymentData", logArgs, unitid, ta);
+          const p1 = createLog(ctx, "addPaymentData", logArgs, ta);
           const p2 = createNotification(
             {
               receiver: unitid,
@@ -160,8 +161,9 @@ export default {
   ),
 
   changeDefaultMethod: requiresRights(["edit-paymentdata"]).createResolver(
-    async (parent, { card }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (parent, { card }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, token } = ctx;
         const {
           user: { company, unitid }
         } = decode(token);
@@ -187,10 +189,9 @@ export default {
           );
 
           const p1 = createLog(
-            ip,
+            ctx,
             "changeDefaultMethod",
             { department, updatedDepartment },
-            unitid,
             ta
           );
 
@@ -238,11 +239,8 @@ export default {
    * @return {any} ok
    */
   buyPlan: requiresRights(["create-boughtplan"]).createResolver(
-    async (
-      parent,
-      { planid, features, price, planinputs },
-      { models, token, ip }
-    ) => {
+    async (_p, { planid, features, price, planinputs }, ctx) => {
+      const { models, token } = ctx;
       const {
         user: { unitid, company }
       } = decode(token);
@@ -264,7 +262,7 @@ export default {
             raw: true
           });
 
-          console.log("PLAN", plan);
+          //console.log("PLAN", plan);
 
           if (!plan) {
             throw new Error("Couldn't find the Plan!");
@@ -286,7 +284,7 @@ export default {
             transaction: ta
           });
 
-          console.log("department", department);
+          //console.log("department", department);
 
           const calculatedPrice = calculatePlanPrice(
             plan.price,
@@ -294,7 +292,7 @@ export default {
             JSON.parse(JSON.stringify(features)) // hacky deep copy
           );
 
-          console.log("calculatedPrice", calculatedPrice);
+          //console.log("calculatedPrice", calculatedPrice);
 
           logger.debug(
             `calulated price: ${calculatedPrice}, supplied price: ${price}`
@@ -342,7 +340,7 @@ export default {
             }
           );
 
-          console.log("BOUGHTPLAN");
+          //console.log("BOUGHTPLAN");
           const boughtPlan = createBoughtPlan.get();
 
           logger.debug("createdBoughtPlan", { boughtPlan });
@@ -351,11 +349,11 @@ export default {
 
           const numLicences = mergedFeatures.users || 0;
 
-          console.log("BUY PLAN LICENCES", numLicences, mergedFeatures);
+          //console.log("BUY PLAN LICENCES", numLicences, mergedFeatures);
           if (numLicences > 0) {
             for (let i = 0; i < numLicences; i++) {
               createLicences.push(
-                models.Licence.create(
+                models.LicenceData.create(
                   {
                     unitid: null,
                     boughtplanid: boughtPlan.id,
@@ -386,7 +384,7 @@ export default {
 
           // await sleep(500);
 
-          console.log(
+          /* console.log(
             "CREATEACCOUNT START",
             plan,
             planinputs,
@@ -402,7 +400,7 @@ export default {
             mergedFeatures,
             boughtPlan.id,
             ta
-          );
+          ); */
 
           // if (dns && dns.length > 0) {
           //   throw new Error("setting dns settings not implemented yet");
@@ -432,7 +430,7 @@ export default {
           );
 
           const log = createLog(
-            ip,
+            ctx,
             "buyPlan",
             {
               ...partnerLogs,
@@ -444,7 +442,6 @@ export default {
               price,
               planinputs
             },
-            unitid,
             ta
           );
           await Promise.all([log, notification]);
@@ -481,11 +478,12 @@ export default {
   ),
 
   cancelPlan: requiresRights(["delete-boughtplan"]).createResolver(
-    async (parent, { planid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { planid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           const p1 = models.BoughtPlan.findOne({
@@ -549,20 +547,19 @@ export default {
             }
           );
 
-          const p5 = models.Licence.update(
+          const p5 = models.LicenceData.update(
             { endtime: cancelledBoughtPlan.endtime },
             { where: { id: cancelledBoughtPlan.id }, transaction: ta }
           );
 
           const p6 = createLog(
-            ip,
+            ctx,
             "cancelPlan",
             {
               cancelledBoughtPlan,
               cancelledSubscription,
               licences
             },
-            unitid,
             ta
           );
 
@@ -578,9 +575,11 @@ export default {
   ),
 
   updatePlan: requiresRights(["edit-boughtplan"]).createResolver(
-    async (parent, { planid, features, price }, { ip, models, token }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { planid, features, price }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
             user: { unitid, company }
           } = decode(token);
@@ -677,7 +676,7 @@ export default {
 
           for (let i = 0; i < mergedFeatures.users; i++) {
             createLicences.push(
-              models.Licence.create(
+              models.LicenceData.create(
                 {
                   unitid: null,
                   boughtplanid: newBoughtPlan.id,
@@ -707,7 +706,7 @@ export default {
           );
 
           await createLog(
-            ip,
+            ctx,
             "updatePlan",
             {
               oldBoughtPlan,
@@ -716,7 +715,6 @@ export default {
               newLicences,
               updatedSubscription
             },
-            unitid,
             ta
           );
 
@@ -731,11 +729,13 @@ export default {
   ),
 
   reactivatePlan: requiresRights(["edit-boughtplan"]).createResolver(
-    async (parent, { planid }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { planid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           const p1 = models.BoughtPlan.findOne({
@@ -760,7 +760,7 @@ export default {
 
           for (let i = 0; i < boughtPlan.totalfeatures.users; i++) {
             createLicences.push(
-              models.Licence.create(
+              models.LicenceData.create(
                 {
                   unitid: null,
                   boughtplanid: boughtPlan.id,
@@ -795,14 +795,13 @@ export default {
           const newLicences = await Promise.all(createLicences);
 
           await createLog(
-            ip,
+            ctx,
             "reactivatePlan",
             {
               newLicences,
               reactivatedSubscription,
               updatedBoughtPlan: updatedBoughtPlan[1][0]
             },
-            unitid,
             ta
           );
 
@@ -817,7 +816,7 @@ export default {
   ),
 
   createMonthlyInvoices: requiresMachineToken.createResolver(
-    async (parent, args, { models }) => {
+    async (_p, _args, { models }) => {
       try {
         const companies = await models.Department.findAll({
           where: { iscompany: true, deleted: false },
@@ -862,6 +861,136 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  addBillingEmail: requiresRights(["edit-billing"]).createResolver(
+    async (_p, { email }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        try {
+          const { models, token } = ctx;
+
+          const {
+            user: { company }
+          } = decode(token);
+
+          const oldEmail = await models.DepartmentEmail.findOne({
+            where: { email, departmentid: company },
+            raw: true
+          });
+
+          if (!oldEmail) {
+            throw new Error("This email doesn't belong to this company");
+          }
+
+          let tags;
+          if (oldEmail.tags) {
+            tags = oldEmail.tags;
+            tags.push("billing");
+          } else {
+            tags = ["billing"];
+          }
+
+          await models.Email.update(
+            { tags },
+            { where: { email }, transaction: ta, returning: true }
+          );
+
+          const p1 = createLog(ctx, "addBillingEmail", { oldEmail }, ta);
+
+          const p2 = models.Email.findOne({ where: { email } });
+
+          const promises = await Promise.all([p1, p2]);
+
+          return promises[1];
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  /**
+   * Removes the tag billing from an email
+   *
+   * @param {string} email
+   *
+   * @returns {object}
+   */
+  removeBillingEmail: requiresRights(["edit-billing"]).createResolver(
+    async (_p, { email }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, token } = ctx;
+        const {
+          user: { unitid, company }
+        } = decode(token);
+
+        try {
+          const billingEmails = await models.DepartmentEmail.findAll({
+            where: {
+              tags: { [models.sequelize.Op.contains]: ["billing"] },
+              departmentid: company
+            },
+            raw: true
+          });
+
+          if (billingEmails.length < 2) {
+            throw new Error("You need at least one billing Email");
+          }
+          const oldEmail = billingEmails.find(bill => bill.email == email);
+
+          if (!oldEmail) {
+            throw new Error(
+              "Couldn't find email in database or email is not a billing email"
+            );
+          }
+
+          const tags = oldEmail.tags.filter(tag => tag != "billing");
+
+          const removedEmail = await models.Email.update(
+            { tags },
+            {
+              where: { email },
+              returning: true,
+              transaction: ta
+            }
+          );
+
+          const p3 = createLog(ctx, "createEmail", { removedEmail }, ta);
+
+          const p4 = createNotification(
+            {
+              receiver: unitid,
+              message: "Removed Billing Email",
+              icon: "envelope",
+              link: "billing",
+              changed: ["billingEmails"]
+            },
+            ta
+          );
+
+          await Promise.all([p3, p4]);
+
+          return { ok: true };
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Removing of Billing Email failed",
+              icon: "bug",
+              link: "billing",
+              changed: ["billingEmails"]
+            },
+            null
+          );
+
+          throw new BillingError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   ),
 
   downloadBill: requiresAuth.createResolver(

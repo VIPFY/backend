@@ -11,7 +11,9 @@ import departmentQueries from "./queries/department";
 import messageQueries from "./queries/message";
 import reviewQueries from "./queries/review";
 import tutorialQueries from "./queries/tutorial";
+import teamQueries from "./queries/team";
 
+import twoFA from "./mutations/2FA";
 import adminMutations from "./mutations/admin";
 import authMutations from "./mutations/auth";
 import appMutations from "./mutations/app";
@@ -25,8 +27,7 @@ import messageMutations from "./mutations/message";
 import reviewMutations from "./mutations/review";
 import userMutations from "./mutations/unit";
 import tutorialMutations from "./mutations/tutorial";
-
-import Subscription from "./subscriptions";
+import teamMutations from "./mutations/team";
 
 import { find, implementDate, implementJSON } from "./customResolvers";
 
@@ -42,10 +43,12 @@ const Query = Object.assign(
   domainQueries,
   messageQueries,
   reviewQueries,
-  tutorialQueries
+  tutorialQueries,
+  teamQueries
 );
 
 const Mutation = Object.assign(
+  twoFA,
   adminMutations,
   appMutations,
   authMutations,
@@ -58,18 +61,22 @@ const Mutation = Object.assign(
   billMutations,
   contactMutations,
   demoMutations,
-  tutorialMutations
+  tutorialMutations,
+  teamMutations
 );
 
 const unit = { unitid: "Unit" };
 const unitAndPlan = { sponsor: "Unit", planid: "Plan" };
-const developerAndSupport = { developer: "Unit", supportunit: "Unit" };
+const developerAndSupport = {
+  developer: "Unit",
+  supportunit: "Unit",
+  owner: "Unit"
+};
 const plans = { appid: "App", gotoplan: "Plan" };
 
 export default {
   Query,
   Mutation,
-  Subscription,
   Date: implementDate,
   JSON: implementJSON,
   Address: find({}),
@@ -94,11 +101,15 @@ export default {
     childid: "Unit",
     employee: "User"
   }),
-  Domain: find({
-    boughtplanid: "BoughtPlan"
-  }),
+  Domain: find({ boughtplanid: "BoughtPlan" }),
   Email: find(unit),
-  Licence: find({ unitid: "User", boughtplanid: "BoughtPlan" }),
+  TempLicence: find({ licenceid: "Licence", unitid: "User", owner: "User" }),
+  Licence: find({
+    unitid: "User",
+    boughtplanid: "BoughtPlan",
+    teamlicence: "Team",
+    teamaccount: "Team"
+  }),
   Log: find({ user: "User", sudoer: "User" }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
@@ -117,11 +128,29 @@ export default {
   PlansRunning: find({ appid: "App" }),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
+  PublicLicence: find({ unitid: "SemiPublicUser", boughtplanid: "BoughtPlan" }),
   Review: find({ unitid: "User", appid: "App", answerto: "Review" }),
   ReviewHelpful: find({ unitid: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),
   SimpleStats: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
+  Team: find({
+    unitid: "Unit",
+    employees: "[User]",
+    licences: "[Licence]",
+    services: "[BoughtPlan]"
+  }),
+  ServiceLicence: find({
+    licence: "Licence"
+  }),
+  CompanyService: find({
+    app: "App",
+    licences: "[Licence]"
+  }),
+  TeamBoughtPlan: find({
+    departmentid: "Team",
+    boughtplanid: "BoughtPlan"
+  }),
   Upload: GraphQLUpload,
   User: find({ company: "Department", emails: "[Email]" }),
   SemiPublicUser: find({

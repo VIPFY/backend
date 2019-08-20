@@ -8,12 +8,16 @@ import { EMAIL_VERIFICATION_TIME } from "../constants";
 export const implementDate = {
   name: "Date",
   description: "Date custom scalar type. Returns a large integer",
-  parseValue(value) {
-    return new Date(value); // value from the client
-  },
+  parseValue: value => new Date(value), // value from the client
   serialize(value) {
-    //console.log("VALUE Time", value.getTime());
-    //return value.getTime(); // value sent to the client
+    if (value === Number.POSITIVE_INFINITY) {
+      return new Date(8640000000000000).getTime();
+    }
+
+    if (value === Number.NEGATIVE_INFINITY) {
+      return new Date(-8640000000000000).getTime();
+    }
+
     return new Date(value).getTime();
   },
   parseLiteral(ast) {
@@ -70,6 +74,7 @@ const specialKeys = {
 
 const postprocessors = {
   Department: async (value, fields, models) => {
+    console.log("Departments");
     //logger.debug("postprocessing department", { value, fields, models });
     if (fields.includes("domains")) {
       value.domains = await models.sequelize.query(
@@ -86,12 +91,54 @@ const postprocessors = {
     return value;
   },
   Email: async (value, fields) => {
-    //logger.debug("postprocessing Email", { value, fields });
     if (fields.includes("verifyuntil") && !value.verified) {
       const verifyuntil = moment(value.createdat).subtract(
         EMAIL_VERIFICATION_TIME
       );
       value.verifyuntil = new Date(verifyuntil.format());
+    }
+    return value;
+  },
+  Licence: async (value, fields) => {
+    console.log("Licence", value, fields);
+    if (value) {
+      if (value.options) {
+        if (value.options.teamlicence) {
+          value.teamlicence = value.options.teamlicence;
+        }
+        if (value.options.teamaccount) {
+          value.teamaccount = value.options.teamaccount;
+        }
+      }
+    }
+    return value;
+  },
+  // Wird das benötigt?
+  CompanyService: async (value, fields) => {
+    console.log("CompanyService");
+    if (value) {
+      if (value.options) {
+        if (value.options.teamlicence) {
+          value.teamlicence = value.options.teamlicence;
+        }
+        if (value.options.teamaccount) {
+          value.teamaccount = value.options.teamaccount;
+        }
+      }
+    }
+    return value;
+  },
+  TeamBoughtPlan: async (value, fields) => {
+    console.log("TeamBoughtPlan");
+    if (value) {
+      if (value.options) {
+        if (value.options.teamlicence) {
+          value.teamlicence = value.options.teamlicence;
+        }
+        if (value.options.teamaccount) {
+          value.teamaccount = value.options.teamaccount;
+        }
+      }
     }
     return value;
   }
@@ -121,7 +168,12 @@ const getDataLoader = (datatype, key, ctx) => {
         type: ctx.models.sequelize.QueryTypes.SELECT,
         plain: true
       });
-      return keys.map(id => data.find(r => r[key] == id) || null);
+
+      if (data) {
+        return keys.map(id => data.find(r => r[key] == id));
+      }
+
+      return keys.map(() => null);
     });
   }
   return ctx.dataloaders[datatype];
@@ -154,15 +206,25 @@ export const find = data => {
         if (loadMultiple) {
           let result;
 
-          if (value === null || value === undefined) {
+          if (value == null || value == undefined) {
             return [];
           }
 
+          if (
+            typeof value === "object" &&
+            value.length === 1 &&
+            value[0] === null
+          ) {
+            return [null];
+          }
+
           // load data if it's not trivial
-          if (fields == [key]) {
+          if (fields.length == 1 && fields[0] == key) {
             result = value.map(v =>
               v === null || v === undefined ? null : { [key]: v }
             );
+          } else if (value == null) {
+            result = null;
           } else {
             const dataloader = getDataLoader(datatype, key, ctx);
             result = await dataloader.loadMany(value);
@@ -179,9 +241,11 @@ export const find = data => {
           let result;
 
           // load data if it's not trivial
-          if (fields == [key]) {
+          if (fields.length == 1 && fields[0] == key) {
             result =
               value === null || value === undefined ? null : { [key]: value };
+          } else if (value == null) {
+            result = null;
           } else {
             const dataloader = getDataLoader(datatype, key, ctx);
             result = await dataloader.load(value);

@@ -2,9 +2,11 @@ import moment from "moment";
 import soap from "soap";
 import models from "@vipfy-private/sequelize-setup";
 import zxcvbn from "zxcvbn";
+import { decode } from "jsonwebtoken";
 import { createSubscription } from "../services/stripe";
 import { NormalError } from "../errors";
 import { pubsub, NEW_NOTIFICATION } from "../constants";
+import { checkCompanyMembership } from "./companyMembership";
 
 /* eslint-disable no-return-assign */
 
@@ -15,7 +17,7 @@ export const getDate = () => new Date().toUTCString();
  * companyid of the user
  * @exports
  *
- * @param {*} user
+ * @param {object} user
  */
 export const parentAdminCheck = async user => {
   await models.sequelize
@@ -88,22 +90,28 @@ export const recursiveAddressCheck = (accountData, iterator = 0) => {
 
 /**
  * Add an entry in our Log table
- * @param {string} ip
+ * @param {object} context Has the ip and the token of the user
  * @param {string} eventtype
  * @param {object} eventdata
- * @param {integer} user
  * @param {object} transaction
  */
-export const createLog = (ip, eventtype, eventdata, user, transaction) =>
-  models.Log.create(
+export const createLog = async (context, eventtype, eventdata, transaction) => {
+  const {
+    user: { unitid },
+    impersonator
+  } = decode(context.token);
+
+  await models.Log.create(
     {
-      ip,
+      ip: context.ip,
       eventtype,
       eventdata,
-      user
+      user: unitid,
+      sudoer: impersonator
     },
     { transaction }
   );
+};
 
 export const formatHumanName = human =>
   `${human.firstname} ${human.lastname} ${human.suffix}`;
@@ -200,7 +208,6 @@ export const checkVat = async (cc, vatNumber) => {
     );
 
     if (res.valid == false) {
-      console.log(res);
       throw new Error(res);
     } else {
       return res;
@@ -346,17 +353,32 @@ export const checkPaymentData = async (unitid, plan, ta) => {
 };
 
 /**
- * Fetches User `unitid` if `employee` is in `company`, else throw exception
- * @param {ID} company
- * @param {ID} unitid
- * @param {ID} employee
+ * Returns User `unitid` if the provided `employee` is in the `company`,
+ * otherwise it throws an Exception
+ * @param {string} company
+ * @param {string} unitid
+ * @param {string} employee
  */
 export const companyCheck = async (company, unitid, employee) => {
   try {
-    const findCompany = models.DepartmentEmployee.findOne({
+    // Do not use DepartmentEmployee any longer use departmentEmployeeTreeView instead
+    /* const findCompany = models.DepartmentEmployee.findOne({
       where: { id: company, employee },
       raw: true
-    });
+    }); */
+
+    const findCompany = await models.sequelize.query(
+      `
+      SELECT level
+      FROM department_tree_view
+      WHERE id = :company and childid = :employee
+    `,
+      {
+        replacements: { company, employee },
+        raw: true,
+        type: models.sequelize.QueryTypes.SELECT
+      }
+    );
 
     const findAdmin = models.User.findOne({ where: { id: unitid }, raw: true });
 
@@ -368,7 +390,7 @@ export const companyCheck = async (company, unitid, employee) => {
 
     return admin;
   } catch (err) {
-    throw new Error({ message: err.message });
+    throw new Error(err);
   }
 };
 
@@ -403,3 +425,96 @@ export const normalizeDomainContact = o => ({
   verificationRequested: o["property[verification requested][0]"] == "1",
   verified: o["property[verified][0]"] == "1"
 });
+
+/**
+ * Checks whether a Team belongs to a Company. Throws an Error if not.
+ *
+ * @param {number} parentunit The company the Team belongs to
+ * @param {number} childunit The Team
+ */
+export const teamCheck = async (parentunit, childunit) => {
+  const team = await models.ParentUnit.findOne({
+    where: { parentunit, childunit },
+    raw: true
+  });
+
+  if (!team) {
+    throw new Error("Team does not belong to company!");
+  }
+};
+
+export const checkMailExistance = async email => {
+  try {
+    const emailExists = await models.Email.findOne({ where: { email } });
+
+    if (emailExists) {
+      return true;
+    }
+
+    return false;
+  } catch (err) {
+    throw new NormalError({ message: err.message, internalData: { err } });
+  }
+};
+
+export const checkMailPossible = email => {
+  const tester = /^[-!#$%&'*+\/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
+  // Thanks to:
+  // http://fightingforalostcause.net/misc/2006/compare-email-regex.php
+  // http://thedailywtf.com/Articles/Validating_Email_Addresses.aspx
+  // http://stackoverflow.com/questions/201323/what-is-the-best-regular-expression-for-validating-email-addresses/201378#201378
+
+  if (!email) return false;
+
+  if (email.length > 254) return false;
+
+  const valid = tester.test(email);
+  if (!valid) return false;
+
+  // Further checking of some things regex can't handle
+  const parts = email.split("@");
+  if (parts[0].length > 64) return false;
+
+  const domainParts = parts[1].split(".");
+  if (domainParts.some(part => part.length > 63)) {
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Generates a full name out of the properties
+ * @param {object} name
+ */
+export const concatName = ({ firstname, middlename, lastname }) =>
+  `${firstname} ${middlename ? `${middlename} ` : ""}${lastname}`;
+
+/**
+ *  Checks whether an Admin has the neccessary rights to initiate
+ *  2FA for an User
+ *
+ * @param {number} userid ID of the user for which 2FA should be created
+ * @param {number} unitid ID of the admin
+ * @param {number} company The company both should be in
+ */
+export const check2FARights = async (userid, unitid, company) => {
+  await checkCompanyMembership(models, company, userid, "user");
+
+  const hasRight = await models.Right.findOne({
+    where: models.sequelize.and(
+      { holder: unitid },
+      { forunit: { [models.Op.or]: [company, null] } },
+      models.sequelize.or(
+        { type: { [models.Op.and]: "create-2FA" } },
+        { type: "admin" }
+      )
+    )
+  });
+
+  if (!hasRight) {
+    throw new Error("You don't have the neccessary rights!");
+  } else {
+    return userid;
+  }
+};

@@ -19,6 +19,14 @@ export const types = `
     deprecated: Boolean!
     hidden: Boolean!
     hasboughtplan: Boolean
+    owner: Department
+  }
+
+  type CompanyService{
+    id: ID!
+    app: AppDetails!
+    licences: [Licence]
+    teams: [TeamBoughtPlan]
   }
 
   type AppDetails {
@@ -46,6 +54,12 @@ export const types = `
     supportunit: Unit!
     color: String!
     hidden: Boolean!
+    owner: Unit
+  }
+
+  type TeamBoughtPlan {
+    departmentid: Team
+    boughtplanid: BoughtPlan
   }
 
   input AppInput {
@@ -73,6 +87,15 @@ export const types = `
     image: Upload
   }
 
+  input SSOInput {
+    images: [Upload]
+    name: String!
+    loginurl: String!
+    email: String!
+    password: String!
+    color: String!
+  }
+
   input AppOptions {
     type: String!
     emailobject: String!
@@ -87,6 +110,15 @@ export const types = `
     afterdomain: String
   }
 
+  type ServiceLicence{
+    id: ID!
+    licence: Licence!
+    starttime: Date!
+    endtime: Date
+    agreed: Boolean
+    alias: String
+  }
+
   type Licence {
     id: ID!
     options: JSON
@@ -94,23 +126,73 @@ export const types = `
     endtime: Date
     agreed: Boolean
     disabled: Boolean
+    pending: Boolean
     key: JSON
     boughtplanid: BoughtPlan!
-    unitid: User
-    layouthorizontal: Int
-    layoutvertical: Int
+    unitid: SemiPublicUser
+    dashboard: Int
+    sidebar: Int
+    view: Boolean!
+    edit: Boolean!
+    delete: Boolean!
+    use: Boolean!
+    vacationstart: Date
+    vacationend: Date
+    tags: [String]
+    teamlicence: Team
+    teamaccount: Team
   }
 
-  input LicenceInput {
+  type PublicLicence {
     id: ID!
-    disabled: Boolean
+    starttime: String!
     endtime: Date
+    options: JSON
+    boughtplanid: BoughtPlan!
+    unitid: PublicUser
+    pending: Boolean
+    dashboard: Int
+    sidebar: Int
+    tags: [String]
+  }
+
+  type TempLicence {
+    id: ID!
+    licenceid: PublicLicence!
+    view: Boolean!
+    edit: Boolean!
+    delete: Boolean!
+    use: Boolean!
+    starttime: Date!
+    endtime: Date!
+    unitid: SemiPublicUser!
+    owner: SemiPublicUser!
+    tags: [String]!
+  }
+  
+  input LicenceRightInput {
+    id: ID!
+    impersonator: ID!
+    view: Boolean
+    edit: Boolean
+    delete: Boolean
+    use: Boolean
+    tags: [String]
+    starttime: Date
+    endtime: Date
+  }
+
+  input LicenceRightUpdateInput {
+    licenceid: ID!
+    starttime: Date
+    endtime: Date
+    user: ID
   }
 
   input LayoutInput {
     id: ID!
-    layouthorizontal: Int
-    layoutvertical: Int
+    dashboard: Int
+    sidebar: Int
   }
 
   type SimpleStats {
@@ -126,6 +208,7 @@ export const types = `
 
   type AppUsage {
     app: App!
+    options: JSON
     totalminutes: Int
   }
 
@@ -134,6 +217,18 @@ export const types = `
     unit: PublicUser!
     totalminutes: Int
     licenceenddates: [String]
+  }
+
+  input SSOResult {
+    loginurl: String!
+    name: String!
+    email: String!
+    password: String!
+    recaptcha: Boolean!
+    tries: Int!
+    unloaded: Boolean!
+    passwordEntered: Boolean!
+    emailEntered: Boolean!
   }
 `;
 
@@ -160,39 +255,40 @@ export const queries = `
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
 
   fetchSupportToken: String
-  fetchAppIcon(licenceid: ID!): TabResponse!
 
-  # The total minutes spend per app, this month, combined for all users of the company
-  fetchTotalAppUsage: [AppUsage]!
+  fetchTotalAppUsage(starttime: Date, endtime: Date): [AppUsage]!
 
   # Total time spend in a specific boughtplan at some time, broken down by user
   fetchBoughtplanUsagePerUser(starttime: Date!, endtime: Date!, boughtplanid: ID!): [BoughtplanUsagePerUser]!
+
+  fetchServiceLicences(employees: [ID!], serviceid: ID!): [ServiceLicence]
+  fetchCompanyServices: [CompanyService]
+  fetchCompanyService(serviceid: ID!): CompanyService
+
+  fetchIssuedLicences(unitid: ID!): [TempLicence!]
+  fetchTempLicences(unitid: ID!): [TempLicence!]
+  bulkUpdateLayout(layouts: [LayoutInput!]!): Boolean!
 `;
 
 export const mutations = `
-  updateLayout(layouts: [LayoutInput]!): Boolean!
+  updateLayout(layout: LayoutInput!): Boolean!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
+
+  createOwnApp(ssoData: SSOInput!, userids: [ID]): Licence
+  giveTemporaryAccess(licences: [LicenceRightInput!]!): TempAccessResponse!
+  updateTemporaryAccess(licence: LicenceRightUpdateInput, rightid: ID!): TempLicence!
+  removeTemporaryAccess(rightid: ID!): Boolean!
 
   # Admin: toogle App between disabled and enabled
   toggleAppStatus(id: ID!): Response!
 
-  # Add the boughtplan as departmentapp and give each empoyee a licence
-  distributeLicenceToDepartment(departmentid: ID!, boughtplanid: ID!, licencetype: String!): DistributeResponse!
-
-  # Revoke licence from everyone in department
-  revokeLicencesFromDepartment(departmentid: ID!, boughtplanid: ID!): Response!
-
   # Give an user a licence from the licence pool of department
   distributeLicence(licenceid: ID!, unitid: ID!, departmentid: ID!): DistributeResponse!
 
-  revokeLicence(licenceid: ID!): Response!
-  # Remove the user from a licence and optionally delete the key
-  suspendLicence(licenceid: ID!, fromuser: ID, clear: Boolean): Response!
-  # Delete the key from a licence
-  clearLicence(licenceid: ID!): Response!
   # Deletes a licence on a set date, if it is after the normal cancel period
   deleteLicenceAt(licenceid: ID!, time: Date!): Date!
+  deleteServiceLicenceAt(serviceid: ID!, licenceid: ID!, time: Date!): Date!
   # Deletes a boughtPlan on a set date, if it is after the normal cancel period
   deleteBoughtPlanAt(boughtplanid: ID!, time: Date!): Date!
 
@@ -205,9 +301,19 @@ export const mutations = `
   addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): BoughtPlan!
   addExternalLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID): Response!
 
+  failedIntegration(data: SSOResult!): Boolean!
+
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!
 
   # Updates the login data of an external app
-  updateCredentials(licenceid: ID!, username: String, password: String): Boolean!
+  updateCredentials(licenceid: ID!, username: String, password: String, loginurl: String): Boolean!
+
+  createService(serviceData: JSON!, addedTeams: [JSON]!, addedEmployees: [JSON]!):Boolean!
+  deleteService(serviceid: ID!): Boolean!
+  removeLicence(licenceid: ID!, oldname: String!): Boolean!
+
+  distributeLicence10(licenceid: ID!, userid: ID!): Boolean!
+
+  addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): Boolean!
   `;

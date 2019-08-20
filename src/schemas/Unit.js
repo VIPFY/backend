@@ -10,6 +10,8 @@ export const types = `
     firstname: String
     middlename: String
     lastname: String
+    hiredate: Date
+    position: String
     title: String
     sex: SEX
     birthday: String
@@ -31,12 +33,8 @@ export const types = `
     config: JSON
     tutorialprogress: JSON
     isonline: Boolean
-  }
-
-  input NameInput {
-    firstname: String
-    middlename: String
-    lastname: String
+    consent: Boolean
+    needstwofa: Boolean
   }
 
   input UserInput {
@@ -51,6 +49,23 @@ export const types = `
     birthday: Date
     language: String
     statisticdata: JSON
+  }
+
+  input EmployeeInput {
+    id: ID!
+    firstname: String
+    middlename: String
+    lastname: String
+    hiredate: Date
+    position: String
+    birthday: Date
+    email: EmailInput
+    email2: EmailInput
+    address: AddressInput
+    phone: PhoneInput
+    phone2: PhoneInput
+    workPhone: PhoneInput
+    workPhone2: PhoneInput
   }
 
   type PublicUser {
@@ -73,6 +88,8 @@ export const types = `
     firstname: String
     middlename: String
     lastname: String
+    hiredate: Date
+    position: String
     title: String
     sex: SEX
     birthday: Date
@@ -85,6 +102,12 @@ export const types = `
     addresses: [Address]
     phones: [Phone]
     company: Department
+    passwordlength: Int
+    passwordstrength: Int
+    twofa: [String]
+    needstwofa: Boolean
+    lastactive: Date
+    deleted: Boolean
   }
 
   type SignUpConfirmResponse {
@@ -97,19 +120,20 @@ export const queries = `
   me: User
 
   #UserView for Company Admins
-  adminme(unitid: ID!): SemiPublicUser
+  fetchSemiPublicUser(userid: ID!): SemiPublicUser
 
   #The token the user receives after registration to set his password
   checkAuthToken(token: String!, email: String!): TokenResponse!
 `;
 
 export const mutations = `
-  createUser(user: UserInput!, file: Upload): Response!
+  updateEmployee(user: EmployeeInput!): SemiPublicUser!
   updateUser(user: UserInput!): Response!
-  updateProfilePic(file: Upload!): String!
+  updateProfilePic(file: Upload!): User!
+  updateEmployeePic(file: Upload!, unitid: ID!): SemiPublicUser!
 
   # Only an email is required for the signup
-  signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!): RegisterResponse!
+  signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!, isprivate: Boolean): RegisterResponse!
 
   #Setup Finished
   setupFinished(country: String, vatoption: Int, vatnumber: String, placeId: String, ownAdress: String, username: String): Response!
@@ -133,4 +157,7 @@ export const mutations = `
   redeemSetupToken(setuptoken: String!): LoginResponse!
 
   resendToken(email: String!): Boolean!
-`;
+  setConsent(consent: Boolean!): User!
+  updateEmployeePassword(unitid: ID!, password: String!, logOut: Boolean): UserSecurityOverview!
+  impersonate(unitid: ID!): String!
+  `;

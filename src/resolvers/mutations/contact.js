@@ -14,9 +14,10 @@ import { sendEmail } from "../../helpers/email";
 
 export default {
   createAddress: requiresRights(["create-address"]).createResolver(
-    (parent, { addressData, department }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    (_p, { addressData, department }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           let {
             user: { unitid, company }
           } = decode(token);
@@ -27,7 +28,8 @@ export default {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
                 type: { [models.Op.or]: ["admin", "create-addresses"] }
-              }
+              },
+              raw: true
             });
 
             if (!hasRight) {
@@ -45,7 +47,7 @@ export default {
             { transaction: ta }
           );
 
-          await createLog(ip, "createAddress", { newAddress }, unitid, ta);
+          await createLog(ctx, "createAddress", { newAddress }, ta);
 
           return newAddress;
         } catch (err) {
@@ -58,9 +60,11 @@ export default {
   ),
 
   updateAddress: requiresRights(["edit-address"]).createResolver(
-    async (parent, { address, id }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { address, id }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           let {
             user: { unitid, company }
           } = decode(token);
@@ -102,10 +106,9 @@ export default {
           }
 
           await createLog(
-            ip,
+            ctx,
             "updateAddress",
             { oldAddress, updatedAddress: updatedAddress[1][0] },
-            unitid,
             ta
           );
 
@@ -120,9 +123,10 @@ export default {
   ),
 
   deleteAddress: requiresRights(["delete-address"]).createResolver(
-    async (parent, { id, department }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (parent, { id, department }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           let {
             user: { unitid, company }
           } = decode(token);
@@ -153,7 +157,7 @@ export default {
             transaction: ta
           });
 
-          const p2 = createLog(ip, "deleteAddress", { oldAddress }, unitid, ta);
+          const p2 = createLog(ctx, "deleteAddress", { oldAddress }, ta);
 
           await Promise.all([p1, p2]);
 
@@ -177,18 +181,27 @@ export default {
    * @returns {object} newEmail The newly generated Email.
    */
   createEmail: requiresRights(["create-email"]).createResolver(
-    async (parent, { emailData, forCompany }, { models, ip, token }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { emailData, forCompany, userid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           const {
             user: { company, unitid }
           } = decode(token);
+
+          const emailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+
+          if (!emailData.email.match(emailRegex)) {
+            throw new Error("This is not a valid email!");
+          }
 
           // Necessary for correct logs
           let id;
 
           if (forCompany) {
             id = company;
+          } else if (userid) {
+            id = userid;
           } else {
             id = unitid;
           }
@@ -207,7 +220,7 @@ export default {
             { transaction: ta }
           );
 
-          await createLog(ip, "createEmail", { newEmail }, unitid, ta);
+          await createLog(ctx, "createEmail", { newEmail }, ta);
 
           return newEmail;
         } catch (err) {
@@ -217,11 +230,13 @@ export default {
   ),
 
   updateEmail: requiresRights(["edit-email"]).createResolver(
-    async (parent, { email, emailData }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { email, emailData, userid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           const oldEmail = await models.DepartmentEmail.findOne({
@@ -238,13 +253,7 @@ export default {
             { where: { email }, transaction: ta, returning: true }
           );
 
-          await createLog(
-            ip,
-            "createEmail",
-            { oldEmail, updatedEmail },
-            unitid,
-            ta
-          );
+          await createLog(ctx, "createEmail", { oldEmail, updatedEmail }, ta);
 
           return { ok: true };
         } catch (err) {
@@ -257,9 +266,11 @@ export default {
   ),
 
   updateEmail08: requiresRights(["edit-email"]).createResolver(
-    async (parent, { email, emailData }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { email, emailData, userid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           const {
             user: { unitid, company }
           } = decode(token);
@@ -278,13 +289,7 @@ export default {
             { where: { email }, transaction: ta, returning: true }
           );
 
-          await createLog(
-            ip,
-            "createEmail",
-            { oldEmail, updatedEmail },
-            unitid,
-            ta
-          );
+          await createLog(ctx, "createEmail", { oldEmail, updatedEmail }, ta);
 
           return updatedEmail[1][0];
         } catch (err) {
@@ -304,8 +309,9 @@ export default {
    * @returns {object}
    */
   deleteEmail: requiresRights(["delete-email"]).createResolver(
-    async (parent, { email, forCompany }, { models, ip, token }) => {
+    async (_p, { email, forCompany, userid }, ctx) => {
       try {
+        const { models, token } = ctx;
         const {
           user: { company, unitid }
         } = decode(token);
@@ -314,6 +320,8 @@ export default {
 
         if (forCompany) {
           id = company;
+        } else if (userid) {
+          id = userid;
         } else {
           id = unitid;
         }
@@ -329,14 +337,17 @@ export default {
           throw new Error("The email doesn't belong to this user!");
         }
 
-        if (!userHasAnotherEmail || userHasAnotherEmail.length < 2) {
+        if (
+          !forCompany &&
+          (!userHasAnotherEmail || userHasAnotherEmail.length < 2)
+        ) {
           throw new Error(
             "This is the users last email address. He needs at least one!"
           );
         }
 
         await models.Email.destroy({ where: { email, unitid: id } });
-        await createLog(ip, "deleteEmail", { belongsToUser }, unitid, "");
+        await createLog(ctx, "deleteEmail", { belongsToUser }, unitid, "");
 
         return { ok: true };
       } catch (err) {
@@ -346,9 +357,10 @@ export default {
   ),
 
   createPhone: requiresRights(["create-phone"]).createResolver(
-    (parent, { phoneData, department }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    (_p, { phoneData, department, userid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           let {
             user: { unitid, company }
           } = decode(token);
@@ -369,12 +381,16 @@ export default {
             }
           }
 
+          if (userid) {
+            unitid = userid;
+          }
+
           const newPhone = await models.Phone.create(
             { ...phoneData, unitid },
             { transaction: ta }
           );
 
-          await createLog(ip, "createPhone", { newPhone }, unitid, ta);
+          await createLog(ctx, "createPhone", { newPhone }, ta);
 
           return newPhone;
         } catch (err) {
@@ -387,9 +403,11 @@ export default {
   ),
 
   updatePhone: requiresRights(["edit-phone"]).createResolver(
-    async (parent, { phone, id }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { phone, id, userid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
+
           let {
             user: { unitid, company }
           } = decode(token);
@@ -410,6 +428,10 @@ export default {
             }
           }
 
+          if (userid) {
+            unitid = userid;
+          }
+
           const oldPhone = await models.Phone.findById(id, {
             raw: true,
             transaction: ta
@@ -421,10 +443,9 @@ export default {
           );
 
           await createLog(
-            ip,
+            ctx,
             "updatePhone",
             { oldPhone, updatedPhone: updatedPhone[1][0] },
-            unitid,
             ta
           );
 
@@ -439,9 +460,10 @@ export default {
   ),
 
   deletePhone: requiresRights(["delete-phone"]).createResolver(
-    async (parent, { id, department }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { id, department, userid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = ctx;
           let {
             user: { unitid, company }
           } = decode(token);
@@ -463,6 +485,10 @@ export default {
             }
           }
 
+          if (userid) {
+            unitid = userid;
+          }
+
           const oldPhone = await models.Phone.findOne({
             where: { id, unitid }
           });
@@ -471,7 +497,7 @@ export default {
             where: { id, unitid },
             transaction: ta
           });
-          const p2 = createLog(ip, "deletePhone", { oldPhone }, unitid, ta);
+          const p2 = createLog(ctx, "deletePhone", { oldPhone }, ta);
 
           await Promise.all([p1, p2]);
 
@@ -485,13 +511,17 @@ export default {
       })
   ),
 
-  newsletterSignup: async (
-    parent,
-    { email, firstname, lastname },
-    { models }
-  ) => {
+  newsletterSignup: async (_, { email, firstname, lastname }, { models }) => {
     try {
-      await newsletterSignup(models, email, firstname, lastname);
+      const alreadySignedUp = await models.NewsletterSignup.findOne({
+        where: { email },
+        raw: true
+      });
+
+      if (!alreadySignedUp) {
+        await newsletterSignup(email, firstname, lastname);
+      }
+
       return { ok: true };
     } catch (err) {
       logger.error(err);
@@ -502,16 +532,16 @@ export default {
     }
   },
 
-  newsletterSignupConfirm: async (parent, { email, token }, { models }) => {
+  newsletterSignupConfirm: async (_, { email, token }) => {
     try {
-      const result = await newsletterConfirmSignup(models, email, token);
+      const result = await newsletterConfirmSignup(email, token);
       return { ok: result };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
 
-  searchAddress: async (parent, { input, region }) => {
+  searchAddress: async (_, { input, region }) => {
     try {
       const res = await googleMapsClient
         .findPlace({

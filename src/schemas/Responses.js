@@ -1,62 +1,76 @@
 // eslint-disable-next-line
 export const types = `
-  # The basic Response
-    type Response {
-      ok: Boolean!
-    }
+# The basic Response
+  type Response {
+    ok: Boolean!
+  }
 
-    type TokenResponse {
-      ok: Boolean!
-      used: Boolean
-      expired: Boolean
-    }
+  type TempAccessResponse {
+    ok: Boolean!
+    licences: [TempLicence!]
+    errors: [ID!]
+  }
 
-  # Contains the changed rating
-    type ReviewResponse {
-      ok: Boolean!
-      balance: Int
-      id: ID
-    }
+  type TokenResponse {
+    ok: Boolean!
+    used: Boolean
+    expired: Boolean
+  }
 
-  # Contains the amount of the respective Unit
-    type ListCountResponse {
-      allUsers: Int!
-      allApps: Int!
-      allCompanies: Int!
-    }
+# Changing a user to an admin  
+  type StatusResponse {
+    id: ID!
+    status: Boolean!
+  }
 
-  # If the registration was successful, a boolean will be given back
-    type RegisterResponse {
-      ok: Boolean!
-      token: String
-      downloads: DownloadLink
-    }
+# Contains the changed rating
+  type ReviewResponse {
+    ok: Boolean!
+    balance: Int
+    id: ID
+  }
 
-    type DownloadLink {
-      win64: String
-      macOS: String
-    }
+# Contains the amount of the respective Unit
+  type ListCountResponse {
+    allUsers: Int!
+    allApps: Int!
+    allCompanies: Int!
+  }
 
-  # The user receives tokens upon a successful login
-    type LoginResponse {
-      ok: Boolean!
-      token: String
-    }
+# If the registration was successful, a boolean will be given back
+  type RegisterResponse {
+    ok: Boolean!
+    token: String
+    downloads: DownloadLink
+  }
 
-  # The user gets the email where the new auth is send back
-   type ForgotPwResponse {
-     ok: Boolean!
-     email: String
-   }
+  type DownloadLink {
+    win64: String
+    macOS: String
+  }
 
-   type TabResponse {
-     icon: String!
-     appname: String!
-     alias: String
-     licenceid: ID!
-   }
+# The user receives tokens upon a successful login
+  type LoginResponse {
+    ok: Boolean!
+    token: String
+    twofactor: String
+    unitid: ID
+  }
 
-  # Response from with a link to login to an app
+# The user gets the email where the new auth is send back
+  type ForgotPwResponse {
+    ok: Boolean!
+    email: String
+  }
+
+  type TabResponse {
+    icon: String!
+    appname: String!
+    alias: String
+    licenceid: ID!
+  }
+
+# Response from with a link to login to an app
   type ProductResponse {
     ok: Boolean!
     loginLink: String
@@ -72,14 +86,6 @@ export const types = `
     parent: ID
   }
 
-  type DepartmentResponse {
-    id: ID
-    childids: [ID]
-    department: Department
-    employees: [emp]
-    level: Int
-  }
-
   type emp {
     employeeid: ID
     firstname: String
@@ -93,8 +99,8 @@ export const types = `
   }
 
   type JsonResponse {
-      data: JSON!
-    }
+    data: JSON!
+  }
 
   type Error {
     code: Int!
@@ -156,6 +162,14 @@ export const types = `
     domains: [DomainResponse!]!
     suggestions: [DomainResponse!]!
   }
+  
+  type TwoFactorDetails {
+    twofaid: ID!
+    twofatype: String!
+    twofacreated: String!
+    twofalastused: String!
+    twofacount: String!
+  }
 
   type UserSecurityOverview {
     id: ID!
@@ -167,5 +181,6 @@ export const types = `
     banned: Boolean!
     suspended: Boolean!
     createdate: String!
+    twofactormethods: [TwoFactorDetails]
   }
 `;

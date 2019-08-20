@@ -1,6 +1,7 @@
 import { decode } from "jsonwebtoken";
 import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
+import { checkMailExistance } from "../../helpers/functions";
 
 export default {
   fetchNotifications: requiresAuth.createResolver(
@@ -20,5 +21,13 @@ export default {
         throw new NormalError({ message: err.message });
       }
     }
-  )
+  ),
+  checkMailExistance: requiresAuth.createResolver(async (parent, { email }) => {
+    try {
+      return checkMailExistance(email);
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }),
+  pingServer: async (parent, args, context) => ({ ok: true })
 };

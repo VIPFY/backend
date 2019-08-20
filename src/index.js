@@ -9,12 +9,9 @@ import express from "express";
 import fs from "fs";
 import https from "https";
 import http from "http";
-import jwt from "jsonwebtoken";
 
 // To create the GraphQl functions
 import { ApolloServer, makeExecutableSchema } from "apollo-server-express";
-import { execute, subscribe } from "graphql";
-import { SubscriptionServer } from "subscriptions-transport-ws";
 import depthLimit from "graphql-depth-limit";
 import { createContext } from "dataloader-sequelize";
 import models from "@vipfy-private/sequelize-setup";
@@ -24,7 +21,7 @@ import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
 import { authMiddleware, loggingMiddleWare } from "./middleware";
 import logger from "./loggers";
-import { formatError, AuthError } from "./errors";
+import { formatError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
 
 const RateLimit = require("express-rate-limit");
@@ -48,11 +45,11 @@ const {
 
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
-const USE_XRAY =
+/* const USE_XRAY =
   !!process.env.USE_XRAY &&
   process.env.USE_XRAY != "false" &&
   process.env.USE_XRAY != "FALSE";
-
+*/
 const trustProxy = PROXY_LEVELS === undefined ? false : PROXY_LEVELS;
 let server;
 
@@ -60,12 +57,12 @@ if (!SECRET) {
   throw new Error("No secret set!");
 }
 
-const AWSXRay = USE_XRAY ? require("aws-xray-sdk") : null;
+// const AWSXRay = USE_XRAY ? require("aws-xray-sdk") : null;
 
-if (USE_XRAY) {
+/* if (USE_XRAY) {
   AWSXRay.setLogger(logger);
   AWSXRay.middleware.enableDynamicNaming("*.vipfy.store");
-}
+} */
 
 // We don't need certificates and https for development
 if (USE_SSH) {
@@ -104,18 +101,16 @@ app.set(
 //   })
 // });
 
-// console.log(limiter);
-
 // // apply rate limit to all requests
 // app.use(limiter);
 
 // eslint-disable-next-line
 export const schema = makeExecutableSchema({ typeDefs, resolvers });
 
-if (USE_XRAY) {
+/* if (USE_XRAY) {
   const traceResolvers = require("@lifeomic/graphql-resolvers-xray-tracing");
   traceResolvers(schema);
-}
+} */
 
 // Enable our Frontend running on localhost:3000 to access the Backend
 const corsOptions = {
@@ -139,9 +134,9 @@ app.use(authMiddleware);
 app.use(cors(corsOptions));
 app.use(loggingMiddleWare);
 
-if (USE_XRAY) {
+/* if (USE_XRAY) {
   app.use(AWSXRay.express.openSegment("backend"));
-}
+} */
 
 let engine = undefined;
 if (ENVIRONMENT == "production") {
@@ -197,42 +192,15 @@ app.post("/download", async (req, res) => {
   }
 });
 
-if (USE_XRAY) {
+/* if (USE_XRAY) {
   // Required at the end of your routes / first in error handling routes
   app.use(AWSXRay.express.closeSegment());
-}
-
-SubscriptionServer.create(
-  {
-    execute,
-    subscribe,
-    schema,
-    onConnect: async ({ token }) => {
-      if (token && token != "null") {
-        try {
-          jwt.verify(token, SECRET);
-
-          return { models, token };
-        } catch (err) {
-          throw new AuthError({
-            message: err.message,
-            internalData: { error: "Subscription Error" }
-          });
-        }
-      }
-      return {};
-    }
-  },
-  {
-    server,
-    path: "/subscriptions"
-  }
-);
+} */
 
 if (ENVIRONMENT != "testing") {
   server.listen(PORT, "0.0.0.0", () => {
     if (process.env.LOGGING) {
-      console.log(`Server running on port ${PORT}`);
+      console.log(`Server running on port ${PORT} 🚀`);
     }
   });
 }

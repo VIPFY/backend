@@ -23,11 +23,11 @@ const processMultipleFiles = async (upload, folder) => {
 
 export default {
   adminCreatePlan: requiresVipfyAdmin.createResolver(
-    async (parent, { plan, appId }, { models }) =>
+    async (_, { plan, appId }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
           const app = await models.App.findOne({
-            where: { id: appId },
+            where: { id: appId, owner: null },
             raw: true,
             attributes: ["internaldata", "name"]
           });
@@ -143,38 +143,11 @@ export default {
     }
   ),
 
-  adminUpdateLicence: requiresVipfyAdmin.createResolver(
-    async (parent, { unitid, boughtplanid, licenceData }, { models }) => {
-      try {
-        await models.Licence.update(
-          { ...licenceData },
-          { where: { unitid, boughtplanid } }
-        );
-
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
-  ),
-
-  adminCreateLicence: requiresVipfyAdmin.createResolver(
-    async (parent, { licenceData }, { models }) => {
-      try {
-        await models.Licence.create({ ...licenceData });
-
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
-  ),
-
   uploadAppImages: requiresVipfyAdmin.createResolver(
     async (parent, { images, appid }, { models }) => {
       try {
         const app = await models.App.findOne({
-          where: { id: appid },
+          where: { id: appid, owner: null },
           raw: true
         });
 
@@ -182,7 +155,10 @@ export default {
           images.map(image => processMultipleFiles(image, app.name))
         );
 
-        await models.App.update({ images: names }, { where: { id: appid } });
+        await models.App.update(
+          { images: names },
+          { where: { id: appid, owner: null } }
+        );
         return true;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -195,7 +171,7 @@ export default {
       try {
         if (type == "app") {
           const { name, images } = await models.App.findOne({
-            where: { id },
+            where: { id, owner: null },
             raw: true,
             attributes: ["images", "name"]
           });
@@ -205,7 +181,7 @@ export default {
 
           await models.App.update(
             { images: filteredImages },
-            { where: { id }, returning: true }
+            { where: { id, owner: null }, returning: true }
           );
         }
 
@@ -217,15 +193,16 @@ export default {
   ),
 
   createApp: requiresVipfyAdmin.createResolver(
-    async (parent, { app, options }, { models, token, ip }) =>
-      models.sequelize.transaction(async ta => {
+    async (_parent, { app, options }, context) =>
+      context.models.sequelize.transaction(async ta => {
         try {
+          const { models, token } = context;
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(token);
 
           const nameExists = await models.App.findOne({
-            where: { name: app.name },
+            where: { name: app.name, owner: null },
             raw: true
           });
 
@@ -287,7 +264,7 @@ export default {
             );
           }
 
-          await createLog(ip, "updateProfilePic", { newApp, plan }, unitid, ta);
+          await createLog(context, "updateProfilePic", { newApp, plan }, ta);
 
           return newApp.dataValues.id;
         } catch ({ message }) {
@@ -309,7 +286,7 @@ export default {
           if (app.image) {
             // eslint-disable-next-line prefer-const
             let { name, images } = await models.App.findOne({
-              where: { id: appid },
+              where: { id: appid, owner: null },
               attributes: ["name", "images"],
               raw: true
             });
@@ -325,13 +302,17 @@ export default {
 
             return await models.App.update(
               { images },
-              { where: { id: appid }, transaction: ta, returning: true }
+              {
+                where: { id: appid, owner: null },
+                transaction: ta,
+                returning: true
+              }
             );
           }
 
           if (app.logo) {
             const { name, logo: oldLogo } = await models.App.findOne({
-              where: { id: appid },
+              where: { id: appid, owner: null },
               attributes: ["name", "logo"],
               raw: true
             });
@@ -348,7 +329,7 @@ export default {
 
           if (app.icon) {
             const { name, icon: oldIcon } = await models.App.findOne({
-              where: { id: appid },
+              where: { id: appid, owner: null },
               attributes: ["name", "icon"],
               raw: true
             });
@@ -418,19 +399,27 @@ export default {
 
           if (options) {
             const { options: oldOptions } = await models.App.findOne({
-              where: { id: appid },
+              where: { id: appid, owner: null },
               raw: true
             });
 
             await models.App.update(
               { options: { ...oldOptions, ...options } },
-              { where: { id: appid }, transaction: ta, returning: true }
+              {
+                where: { id: appid, owner: null },
+                transaction: ta,
+                returning: true
+              }
             );
           } else {
             console.log("SHIT!");
             await models.App.update(
               { ...app },
-              { where: { id: appid }, transaction: ta, returning: true }
+              {
+                where: { id: appid, owner: null },
+                transaction: ta,
+                returning: true
+              }
             );
           }
         } catch ({ message }) {
@@ -438,7 +427,7 @@ export default {
         }
       });
 
-      return models.AppDetails.findOne({ where: { id: appid } });
+      return models.AppDetails.findOne({ where: { id: appid, owner: null } });
     }
   ),
 
@@ -446,7 +435,7 @@ export default {
     async (parent, { id }, { models }) => {
       try {
         const app = await models.App.findById(id);
-        await models.App.destroy({ where: { id } });
+        await models.App.destroy({ where: { id, owner: null } });
 
         if (app.logo) {
           await deleteAppImage(app.logo, app.name);
@@ -464,145 +453,14 @@ export default {
     async (parent, { id }, { models }) => {
       try {
         const { disabled } = await models.App.findById(id);
-        await models.App.update({ disabled: !disabled }, { where: { id } });
+        await models.App.update(
+          { disabled: !disabled },
+          { where: { id, owner: null } }
+        );
         return { ok: true };
       } catch ({ message }) {
         throw new Error(message);
       }
-    }
-  ),
-
-  adminCreateAddress: requiresVipfyAdmin.createResolver(
-    async (parent, { addressData, unitid }, { models }) => {
-      try {
-        const { zip, street, city, ...normalData } = addressData;
-        const address = { street, zip, city };
-
-        await models.Address.create({ ...normalData, address, unitid });
-
-        return { ok: true };
-      } catch ({ message }) {
-        throw new Error(message);
-      }
-    }
-  ),
-
-  adminUpdateAddress: requiresVipfyAdmin.createResolver(
-    async (parent, { addressData, id }, { models }) => {
-      const { zip, city, street } = addressData;
-      const options = { where: { id }, raw: true };
-
-      try {
-        if (zip || city || street) {
-          const old = await models.Address.findOne(options);
-          const newAddress = { ...old.address, ...addressData };
-
-          await models.Address.update({ address: { ...newAddress } }, options);
-        } else await models.Address.update({ ...addressData }, options);
-
-        return { ok: true };
-      } catch ({ message }) {
-        throw new Error(message);
-      }
-    }
-  ),
-
-  adminDeleteAddress: requiresVipfyAdmin.createResolver(
-    async (parent, { id }, { models }) => {
-      try {
-        await models.Address.destroy({ where: { id } });
-
-        return { ok: true };
-      } catch ({ message }) {
-        throw new Error(message);
-      }
-    }
-  ),
-
-  adminCreateEmail: requiresVipfyAdmin.createResolver(
-    async (parent, { email, unitid }, { models }) => {
-      try {
-        const emailExists = await models.Email.findOne({ where: { email } });
-        if (emailExists) {
-          throw new Error("Email already exists!");
-        }
-
-        await models.Email.create({ email, unitid });
-
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
-  ),
-
-  adminDeleteEmail: requiresVipfyAdmin.createResolver(
-    async (parent, { email, unitid }, { models }) => {
-      try {
-        const p1 = models.Email.findOne({ where: { email, unitid } });
-        const p2 = models.Email.findAll({ where: { unitid } });
-        const [belongsToUser, userHasAnotherEmail] = await Promise.all([
-          p1,
-          p2
-        ]);
-
-        if (!belongsToUser) {
-          throw new Error("The emails doesn't belong to this user!");
-        }
-
-        if (!userHasAnotherEmail || userHasAnotherEmail.length < 2) {
-          throw new Error(
-            "This is the users last email address. He needs at least one!"
-          );
-        }
-
-        await models.Email.destroy({ where: { email } });
-
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
-  ),
-
-  createUser: requiresVipfyAdmin.createResolver(
-    async (parent, { user, file }, { models }) => {
-      const { email, ...userData } = user;
-      const unitData = {};
-
-      // used by admin interface
-      throw new Error("not implemented");
-      /*
-      if (file) {
-        const profilepicture = await uploadUserImage(file, userPicFolder);
-        unitData.profilepicture = profilepicture;
-      }
-
-      return models.sequelize.transaction(async ta => {
-        try {
-          const password = await createPassword(email);
-          const pwdata = await getNewPasswordData(password);
-          const unit = await models.Unit.create(
-            { ...unitData },
-            { transaction: ta }
-          );
-          const p1 = models.Human.create(
-            { unitid: unit.id, ...userData, ...pwdata },
-            { transaction: ta }
-          );
-          const p2 = models.Email.create(
-            { unitid: unit.id, email },
-            { transaction: ta }
-          );
-          await Promise.all([p1, p2]);
-          // sendRegistrationEmail(email, passwordhash);
-
-          return { ok: true };
-        } catch ({ message }) {
-          throw new Error(message);
-        }
-      });
-      */
     }
   ),
 
@@ -744,127 +602,6 @@ export default {
         return { ok: true };
       } catch ({ message }) {
         throw new Error(message);
-      }
-    }
-  ),
-
-  adminCreateCompany: requiresVipfyAdmin.createResolver(
-    async (parent, { company, profilepic }, { models }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          let unit;
-          const { user, ...data } = company;
-
-          if (profilepic) {
-            const profilepicture = await uploadUserImage(
-              profilepic,
-              userPicFolder
-            );
-            unit = await models.Unit.create(
-              { profilepicture },
-              { transaction: ta }
-            );
-          } else {
-            unit = await models.Unit.create({}, { transaction: ta });
-          }
-
-          const p1 = models.DepartmentData.create(
-            { unitid: unit.id, ...data },
-            { transaction: ta }
-          );
-          const p2 = models.ParentUnit.create(
-            { parentunit: unit.id, childunit: user },
-            { transaction: ta }
-          );
-          await Promise.all([p1, p2]);
-
-          return { ok: true };
-        } catch (err) {
-          throw new Error(err);
-        }
-      })
-  ),
-
-  adminAddEmployee: requiresVipfyAdmin.createResolver(
-    async (parent, { unitid, company }, { models }) => {
-      try {
-        await models.ParentUnit.create({
-          parentunit: company,
-          childunit: unitid
-        });
-
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
-  ),
-
-  adminRemoveEmployee: requiresVipfyAdmin.createResolver(
-    async (parent, { unitid, company }, { models }) => {
-      try {
-        await models.ParentUnit.destroy({
-          where: { parentunit: company, childunit: unitid }
-        });
-
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
-  ),
-
-  adminRemoveLicence: requiresVipfyAdmin.createResolver(
-    async (parent, { licenceid }, { models }) => {
-      try {
-        await models.Licence.update(
-          { unitid: null },
-          { where: { id: licenceid } }
-        );
-
-        return { ok: true };
-      } catch (err) {
-        throw new Error(err.message);
-      }
-    }
-  ),
-
-  adminFetchUser: requiresVipfyAdmin.createResolver(
-    async (parent, { name }, { models }) => {
-      try {
-        const nameForSearch = split(name, " ");
-        let searchParams;
-
-        switch (nameForSearch.length) {
-          case 1:
-            searchParams = {
-              [models.Op.or]: [
-                { firstname: { [models.Op.iLike]: `%${nameForSearch[0]}%` } },
-                { lastname: { [models.Op.iLike]: `%${nameForSearch[0]}%` } }
-              ]
-            };
-            break;
-
-          case 2:
-            searchParams = {
-              firstname: { [models.Op.iLike]: `%${nameForSearch[0]}%` },
-              lastname: { [models.Op.iLike]: `%${nameForSearch[1]}%` }
-            };
-            break;
-
-          default:
-            searchParams = {
-              firstname: { [models.Op.iLike]: `%${nameForSearch[0]}%` },
-              middlename: { [models.Op.iLike]: `%${nameForSearch[1]}%` },
-              lastname: { [models.Op.iLike]: `%${nameForSearch[2]}%` }
-            };
-        }
-
-        const user = await models.User.findAll({ where: searchParams });
-
-        return user;
-      } catch (err) {
-        throw new Error(err);
       }
     }
   ),

@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import { pick } from "lodash";
 import bcrypt from "bcrypt";
+import models from "@vipfy-private/sequelize-setup";
 import { AuthError } from "../errors";
 import {
   getCompanyMembershipCacheStats,
@@ -13,9 +14,36 @@ export const createToken = async (user, SECRET, expiresIn = "1w") => {
     const newToken = await jwt.sign(
       { user: pick(user, ["unitid", "company"]) },
       SECRET,
-      {
-        expiresIn
-      }
+      { expiresIn }
+    );
+
+    return newToken;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
+ * Create a token which is used to impersonate a user
+ *
+ * @param {number} unitid The user to impersonate
+ * @param {number} company
+ * @param {number} impersonator The admins ID
+ * @param {string} SECRET
+ * @param {string} expiresIn for example 1d for 1 day
+ */
+export const createAdminToken = async ({
+  unitid,
+  company,
+  impersonator,
+  SECRET,
+  expiresIn = "1d"
+}) => {
+  try {
+    const newToken = await jwt.sign(
+      { user: { unitid, company }, impersonator },
+      SECRET,
+      { expiresIn }
     );
 
     return newToken;
@@ -32,7 +60,7 @@ const unitAuthCache = new NodeCache({
   deleteOnExpire: true
 });
 
-const getAuthentificationObject = async (models, unitid) => {
+const getAuthentificationObject = async unitid => {
   try {
     let permissions = unitAuthCache.get(unitid);
     if (permissions != undefined) return permissions;
@@ -64,7 +92,7 @@ const checkAuthentificationObject = (permissions, name) => {
   }
 };
 
-export const checkAuthentification = async (models, unitid, company) => {
+export const checkAuthentification = async (unitid, company) => {
   if (unitid === undefined || unitid === null || unitid === "null") {
     throw new AuthError();
   }
@@ -74,8 +102,8 @@ export const checkAuthentification = async (models, unitid, company) => {
   }
 
   const [userPerm, companyPerm] = await Promise.all([
-    getAuthentificationObject(models, unitid),
-    getAuthentificationObject(models, company)
+    getAuthentificationObject(unitid),
+    getAuthentificationObject(company)
   ]);
 
   checkAuthentificationObject(userPerm, "User");
@@ -96,5 +124,6 @@ export const getNewPasswordData = async password => {
   const passwordhash = await bcrypt.hash(password, 12);
   const passwordstrength = computePasswordScore(password);
   const passwordlength = password.length;
+
   return { passwordhash, passwordstrength, passwordlength };
 };

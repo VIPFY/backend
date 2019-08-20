@@ -20,8 +20,6 @@ export default {
           }
         );
 
-        console.log("TUTORIALS", tutorial);
-
         return tutorial;
       } catch (err) {
         throw new Error(err.message);

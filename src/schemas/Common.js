@@ -92,6 +92,8 @@ input Options {
 
 export const queries = `
   fetchNotifications: [Notification]!
+  checkMailExistance(email: String): Boolean!
+  pingServer: Response!
 `;
 
 export const mutations = `

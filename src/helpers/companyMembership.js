@@ -1,4 +1,4 @@
-import { AuthError } from "../errors";
+import { AuthError, RightsError } from "../errors";
 
 const NodeCache = require("node-cache");
 
@@ -9,9 +9,9 @@ const companyMembershipCache = new NodeCache({
 });
 
 /*
-* Check whether the department/user belongs to the company
-* Don't use to test for department membership as that data could be out of date
-*/
+ * Check whether the department/user belongs to the company
+ * Don't use to test for department membership as that data could be out of date
+ */
 export const checkCompanyMembership = async (
   models,
   company,
@@ -22,13 +22,18 @@ export const checkCompanyMembership = async (
   if (`${company}`.indexOf("-") !== -1) {
     throw new Error("company must be a number");
   }
+
+  if (entityid == company) {
+    return true;
+  }
+
   const cacheKey = `${company}-${entityid}`;
   const cacheItem = companyMembershipCache.get(cacheKey);
   if (cacheItem !== undefined) {
     // found in cache
 
     if (cacheItem === false) {
-      throw new AuthError(
+      throw new RightsError(
         `This ${entityname} doesn't belong to the user's company!`
       );
     } else if (cacheItem === true) {
@@ -38,20 +43,28 @@ export const checkCompanyMembership = async (
     }
   }
 
-  const departments = await models.sequelize.query(
+  const p1 = models.Unit.findOne({ where: { id: entityid }, raw: true });
+
+  const p2 = models.sequelize.query(
     "SELECT childid FROM department_tree_view WHERE id = :company AND childid = :child AND level > 1 LIMIT 1",
     {
       replacements: { company, child: entityid },
+      type: models.sequelize.QueryTypes.SELECT,
       raw: true
     }
   );
 
-  const inDepartment = departments.length > 0;
+  const [valid, departments] = await Promise.all([p1, p2]);
 
+  if (!valid || valid.deleted || valid.suspended || valid.banned) {
+    throw new Error("You can only edit valid units!");
+  }
+
+  const inDepartment = departments.length > 0;
   companyMembershipCache.set(cacheKey, inDepartment);
 
   if (!inDepartment) {
-    throw new AuthError(
+    throw new RightsError(
       `This ${entityname} doesn't belong to the user's company!`
     );
   }
