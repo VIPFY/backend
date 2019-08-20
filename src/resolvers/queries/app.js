@@ -44,7 +44,6 @@ export default {
             hidden: false,
             owner: { [models.Op.or]: [null, company] }
           },
-          raw: true,
           order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
         });
 
