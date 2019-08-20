@@ -31,7 +31,12 @@ export default {
             "avgstars",
             "cheapestpromo",
             "needssubdomain",
-            "options"
+            "options",
+            "developer",
+            "developername",
+            "supportunit",
+            "color",
+            "hidden"
           ],
           where: {
             disabled: false,
@@ -39,6 +44,7 @@ export default {
             hidden: false,
             owner: { [models.Op.or]: [null, company] }
           },
+          raw: true,
           order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
         });
 
