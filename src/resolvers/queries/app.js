@@ -31,7 +31,12 @@ export default {
             "avgstars",
             "cheapestpromo",
             "needssubdomain",
-            "options"
+            "options",
+            "developer",
+            "developername",
+            "supportunit",
+            "color",
+            "hidden"
           ],
           where: {
             disabled: false,
