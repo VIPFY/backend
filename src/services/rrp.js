@@ -44,7 +44,7 @@ const parseResponse = res => {
     jsonRes[key.trim()] = value.trim();
   });
 
-  if (jsonRes.code <= 200 || jsonRes.code >= 300) {
+  if (jsonRes.code < 200 || jsonRes.code >= 300) {
     throw new Error(jsonRes.description);
   }
 
