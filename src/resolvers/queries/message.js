@@ -10,11 +10,11 @@ export default {
    * of the user for that group), sorted by sendtime.
    */
   fetchDialog: requiresAuth.createResolver(
-    async (parent, { groupid, limit, cursor }, { models, token }) => {
+    async (parent, { groupid, limit, cursor }, { models, session }) => {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         return await messaging.fetchDialog(
           cursor,
@@ -37,7 +37,7 @@ export default {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         return await messaging.fetchGroups(models, unitid);
       } catch (err) {
@@ -47,7 +47,7 @@ export default {
   ),
 
   fetchPublicUser: requiresAuth.createResolver(
-    async (parent, { userid }, { models }) => {
+    async (_p, { userid }, { models }) => {
       try {
         const user = await models.User.findOne({
           where: { id: userid, deleted: false },

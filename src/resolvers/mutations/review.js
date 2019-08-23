@@ -6,11 +6,11 @@ import { NormalError } from "../../errors";
 
 export default {
   writeReview: requiresRights(["view-apps"]).createResolver(
-    async (parent, { appid, stars, text }, { models, token }) => {
+    async (_p, { appid, stars, text }, { models, session }) => {
       try {
         const {
           user: { unitid }
-        } = jwt.decode(token);
+        } = jwt.decode(session.token);
         const p1 = models.App.findOne({ where: { id: appid, owner: null } });
         const p2 = models.User.findById(unitid);
         const [app, user] = await Promise.all([p1, p2]);
@@ -39,11 +39,11 @@ export default {
   ),
 
   rateReview: requiresRights(["view-apps"]).createResolver(
-    async (parent, { reviewid, balance }, { models, token }) => {
+    async (_parent, { reviewid, balance }, { models, session }) => {
       try {
         const {
           user: { unitid }
-        } = jwt.decode(token);
+        } = jwt.decode(session.token);
 
         const p1 = models.User.findById(unitid);
         const p2 = models.Review.findById(reviewid);

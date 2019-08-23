@@ -20,10 +20,10 @@ export default {
     async (_p, { name, data }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           const unit = await models.Unit.create({}, { transaction: ta });
 
@@ -59,11 +59,11 @@ export default {
     async (_p, { team, addemployees, apps }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const { name, picture, ...teamdata } = team;
           const unitArgs = {};
@@ -283,10 +283,10 @@ export default {
     async (_, { teamid, keepLicences }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           await teamCheck(company, teamid);
 
@@ -455,10 +455,10 @@ export default {
     async (_p, { file, teamid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           const oldUnit = await models.Unit.findOne({
             where: { id: teamid },
@@ -509,10 +509,10 @@ export default {
     async (_p, { teamid, userid, keepLicences }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           await teamCheck(company, teamid);
 
@@ -597,10 +597,10 @@ export default {
     async (_p, { teamid, boughtplanid, keepLicences }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           await teamCheck(company, teamid);
 
@@ -694,11 +694,11 @@ export default {
     async (_p, addInformation, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           let newEmployee = false;
           const { services, newEmployeeInfo, newteam } = addInformation;
@@ -856,10 +856,10 @@ export default {
     async (_p, { teamid, employeeid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           await teamCheck(company, teamid);
 
@@ -891,10 +891,10 @@ export default {
     async (_p, addInformation, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const { teamid, employees, serviceid } = addInformation;
 

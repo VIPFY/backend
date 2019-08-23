@@ -5,29 +5,29 @@ import { checkMailExistance } from "../../helpers/functions";
 
 export default {
   fetchNotifications: requiresAuth.createResolver(
-    async (parent, args, { models, token }) => {
+    async (_p, _args, { models, session }) => {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
-        const notifications = await models.Notification.findAll({
+        return models.Notification.findAll({
           where: { readtime: { [models.Op.eq]: null }, receiver: unitid },
           order: [["id", "DESC"]]
         });
-
-        return notifications;
       } catch (err) {
         throw new NormalError({ message: err.message });
       }
     }
   ),
-  checkMailExistance: requiresAuth.createResolver(async (parent, { email }) => {
+
+  checkMailExistance: requiresAuth.createResolver(async (_p, { email }) => {
     try {
       return checkMailExistance(email);
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
   }),
-  pingServer: async (parent, args, context) => ({ ok: true })
+
+  pingServer: async () => ({ ok: true })
 };

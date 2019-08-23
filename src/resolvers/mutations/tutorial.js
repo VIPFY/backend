@@ -3,13 +3,11 @@ import { requiresAuth } from "../../helpers/permissions";
 
 export default {
   updateTutorialProgress: requiresAuth.createResolver(
-    async (parent, { tutorialprogress }, { models, token }) => {
+    async (_p, { tutorialprogress }, { models, session }) => {
       try {
         const {
           user: { unitid }
-        } = decode(token);
-
-        console.log("JSONINPUT", tutorialprogress);
+        } = decode(session.token);
 
         const a = await models.sequelize.query(
           `Update human_data set tutorialprogress = :tutorialprogress where unitid = :unitid`,
@@ -21,8 +19,6 @@ export default {
             raw: true
           }
         );
-
-        console.log("UPDATE TutorialProgress", a);
 
         return { ok: true };
       } catch (err) {

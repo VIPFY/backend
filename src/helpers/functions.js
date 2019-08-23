@@ -90,7 +90,7 @@ export const recursiveAddressCheck = (accountData, iterator = 0) => {
 
 /**
  * Add an entry in our Log table
- * @param {object} context Has the ip and the token of the user
+ * @param {object} context Has the ip and the session of the user
  * @param {string} eventtype
  * @param {object} eventdata
  * @param {object} transaction
@@ -99,7 +99,7 @@ export const createLog = async (context, eventtype, eventdata, transaction) => {
   const {
     user: { unitid },
     impersonator
-  } = decode(context.token);
+  } = decode(context.session.token);
 
   await models.Log.create(
     {

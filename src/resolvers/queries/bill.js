@@ -6,11 +6,11 @@ import { NormalError } from "../../errors";
 
 export default {
   boughtPlans: requiresRights(["view-boughtplans"]).createResolver(
-    async (parent, args, { models, token }) => {
+    async (parent, args, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const boughtPlans = await models.BoughtPlan.findAll({
           where: { usedby: company }
@@ -46,11 +46,11 @@ export default {
   fetchBills: requiresRights([
     "view-paymentdata",
     "view-addresses"
-  ]).createResolver(async (parent, args, { models, token }) => {
+  ]).createResolver(async (parent, args, { models, session }) => {
     try {
       const {
         user: { company: unitid }
-      } = decode(token);
+      } = decode(session.token);
 
       const bills = await models.Bill.findAll({
         where: { unitid },
@@ -64,11 +64,11 @@ export default {
   }),
 
   fetchPaymentData: requiresRights(["view-paymentdata"]).createResolver(
-    async (parent, args, { models, token }) => {
+    async (parent, args, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const paymentData = await models.Unit.findOne({
           where: { id: company },
@@ -129,11 +129,11 @@ export default {
   ),
 
   fetchBillingEmails: requiresAuth.createResolver(
-    async (parent, args, { models, token }) => {
+    async (parent, args, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const emails = models.DepartmentEmail.findAll({
           where: {
@@ -152,11 +152,11 @@ export default {
   ),
 
   fetchCredits: requiresAuth.createResolver(
-    async (parent, args, { models, token }) => {
+    async (parent, args, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const credits = await models.Credit.findOne({
           where: {
@@ -181,21 +181,20 @@ export default {
     "view-licences",
     "view-apps",
     "view-boughtplans"
-  ]).createResolver(async (parent, { appid, external }, { models, token }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(token);
+  ]).createResolver(
+    async (parent, { appid, external }, { models, session }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
 
-      let externalFilter = "";
-      if (external) {
-        externalFilter = "AND boughtplan_data.key ->> 'external' = 'true'";
-      }
+        let externalFilter = "";
+        if (external) {
+          externalFilter = "AND boughtplan_data.key ->> 'external' = 'true'";
+        }
 
-      console.log("BOUGHTPLAN", company, appid);
-
-      const data = await models.sequelize.query(
-        `SELECT boughtplan_data.*,
+        const data = await models.sequelize.query(
+          `SELECT boughtplan_data.*,
                 COALESCE(JSONB_AGG(to_jsonb(ld) - 'key' - 'options') FILTER (WHERE ld.id IS NOT NULL), '[]') as licences
         FROM boughtplan_data
                 JOIN plan_data pd on boughtplan_data.planid = pd.id
@@ -205,17 +204,17 @@ export default {
           ${externalFilter}
         GROUP BY boughtplan_data.id
       `,
-        {
-          replacements: { company, appid },
-          type: models.sequelize.QueryTypes.SELECT
-        }
-      );
+          {
+            replacements: { company, appid },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
 
-      console.log("Data", data);
-      return data;
-    } catch (err) {
-      console.log("ERROR", err);
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return data;
+      } catch (err) {
+        console.log("ERROR", err);
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  })
+  )
 };

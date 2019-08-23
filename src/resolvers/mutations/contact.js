@@ -17,10 +17,10 @@ export default {
     (_p, { addressData, department }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           let {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           if (department) {
             const hasRight = await models.Right.findOne({
@@ -63,11 +63,11 @@ export default {
     async (_p, { address, id }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           let {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           if (address.department) {
             const hasRight = await models.Right.findOne({
@@ -122,10 +122,10 @@ export default {
     async (parent, { id, department }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           let {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           if (department) {
             const hasRight = await models.Right.findOne({
@@ -180,10 +180,10 @@ export default {
     async (_p, { emailData, forCompany, userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company, unitid }
-          } = decode(token);
+          } = decode(session.token);
 
           const emailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 
@@ -229,11 +229,11 @@ export default {
     async (_p, { email, emailData, userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           const oldEmail = await models.DepartmentEmail.findOne({
             where: { email, departmentid: company },
@@ -265,11 +265,11 @@ export default {
     async (_p, { email, emailData, userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const oldEmail = await models.DepartmentEmail.findOne({
             where: { email, departmentid: company },
@@ -307,10 +307,10 @@ export default {
   deleteEmail: requiresRights(["delete-email"]).createResolver(
     async (_p, { email, forCompany, userid }, ctx) => {
       try {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
         const {
           user: { company, unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         let id;
 
@@ -356,10 +356,10 @@ export default {
     (_p, { phoneData, department, userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           let {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           if (department) {
             const hasRight = await models.Right.findOne({
@@ -402,11 +402,11 @@ export default {
     async (_p, { phone, id, userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           let {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           if (phone.department) {
             const hasRight = await models.Right.findOne({
@@ -459,10 +459,10 @@ export default {
     async (_p, { id, department, userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           let {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           if (department) {
             const hasRight = await models.Right.findOne({
@@ -528,9 +528,9 @@ export default {
     }
   },
 
-  newsletterSignupConfirm: async (_, { email, token }) => {
+  newsletterSignupConfirm: async (_, { email, session }) => {
     try {
-      const result = await newsletterConfirmSignup(email, token);
+      const result = await newsletterConfirmSignup(email, session.token);
       return { ok: result };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });

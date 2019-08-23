@@ -138,9 +138,8 @@ export const mutations = `
   #Setup Finished
   setupFinished(country: String, vatoption: Int, vatnumber: String, placeId: String, ownAdress: String, username: String): Response!
 
-  # The user will be passed back a JSON Web token for authentication
   signIn(email: String!, password: String!): LoginResponse!
-
+  signOut: Boolean!
   # After confirming the email, an user has to set a password
   signUpConfirm(email: String!, password: String!, passwordConfirm: String!, token: String!): SignUpConfirmResponse!
 

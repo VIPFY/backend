@@ -16,7 +16,7 @@ export default {
    * the receiver are in the same company. Return an error otherwise
    */
   startConversation: requiresAuth.createResolver(
-    async (parent, { receiver, defaultrights }, { models, token }) => {
+    async (_p, { receiver, defaultrights }, { models, session }) => {
       if (
         !superset(
           [
@@ -36,7 +36,7 @@ export default {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         const p1 = models.User.findById(unitid);
         const p2 = models.User.findById(receiver);
@@ -81,12 +81,12 @@ export default {
    * @param {string} message
    */
   sendMessage: requiresMessageGroupRights(["speak"]).createResolver(
-    (parent, { groupid, message, file }, { models, token }) =>
+    (parent, { groupid, message, file }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid }
-          } = decode(token);
+          } = decode(session.token);
           let newMessage;
 
           if (file) {
@@ -135,14 +135,15 @@ export default {
   setDeleteStatus: requiresAuth.createResolver(async (_p, { id, type }, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
-        const { models } = ctx;
+        const oldMessage = await ctx.models.MessageData.findById(id, {
+          raw: true
+        });
 
-        const oldMessage = await models.MessageData.findById(id, { raw: true });
         if (!oldMessage) {
           throw new Error("Message doesn't exist!");
         }
 
-        const deletedMessage = await models.MessageData.update(
+        const deletedMessage = await ctx.models.MessageData.update(
           { [type]: true },
           { where: { id }, returning: true, transaction: ta }
         );

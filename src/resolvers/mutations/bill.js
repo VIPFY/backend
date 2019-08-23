@@ -41,10 +41,10 @@ export default {
   addPaymentData: requiresRights(["create-paymentdata"]).createResolver(
     async (_p, { data, address, email }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
         const {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         try {
           const department = await models.Department.findOne(
@@ -163,10 +163,10 @@ export default {
   changeDefaultMethod: requiresRights(["edit-paymentdata"]).createResolver(
     async (parent, { card }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
         const {
           user: { company, unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         try {
           const department = await models.Unit.findById(company, {
@@ -240,10 +240,10 @@ export default {
    */
   buyPlan: requiresRights(["create-boughtplan"]).createResolver(
     async (_p, { planid, features, price, planinputs }, ctx) => {
-      const { models, token } = ctx;
+      const { models, session } = ctx;
       const {
         user: { unitid, company }
-      } = decode(token);
+      } = decode(session.token);
 
       let subscription = null;
       let stripeplan = null;
@@ -481,10 +481,10 @@ export default {
     async (_p, { planid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           const p1 = models.BoughtPlan.findOne({
             where: { id: planid, payer: company },
@@ -578,11 +578,11 @@ export default {
     async (_p, { planid, features, price }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const oldBoughtPlan = await models.BoughtPlan.findOne(
             { where: { id: planid, payer: company } },
@@ -732,11 +732,11 @@ export default {
     async (_p, { planid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           const p1 = models.BoughtPlan.findOne({
             where: { id: planid, payer: company },
@@ -867,11 +867,11 @@ export default {
     async (_p, { email }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           const oldEmail = await models.DepartmentEmail.findOne({
             where: { email, departmentid: company },
@@ -921,10 +921,10 @@ export default {
   removeBillingEmail: requiresRights(["edit-billing"]).createResolver(
     async (_p, { email }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
         const {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         try {
           const billingEmails = await models.DepartmentEmail.findAll({
@@ -994,11 +994,11 @@ export default {
   ),
 
   downloadBill: requiresAuth.createResolver(
-    async (parent, { billid }, { models, token }) => {
+    async (parent, { billid }, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const { billname } = await models.Bill.findOne({
           where: { id: billid, unitid: company },

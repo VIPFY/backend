@@ -12,13 +12,13 @@ import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
 
 export default {
-  me: requiresAuth.createResolver(async (_, _args, { models, token }) => {
+  me: requiresAuth.createResolver(async (_p, _args, { models, session }) => {
     // they are logged in
-    if (token && token != "null") {
+    if (session && session.token) {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         const me = await models.User.findById(unitid);
         const user = await parentAdminCheck(me);
@@ -60,7 +60,7 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-        console.log("ME", me[0], me[0].id);
+
         const user = await parentAdminCheck(me[0]);
 
         return user;
@@ -105,11 +105,11 @@ export default {
   },
 
   generateSecret: requiresAuth.createResolver(
-    async (_p, { type, userid }, { models, token }) => {
+    async (_p, { type, userid }, { models, session }) => {
       try {
         let {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         if (userid && userid != unitid) {
           unitid = await check2FARights(userid, unitid, company);

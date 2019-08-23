@@ -26,10 +26,10 @@ export default {
   distributeLicence: requiresRights(["create-licences"]).createResolver(
     (_parent, { licenceid, unitid, departmentid }, context) =>
       context.models.sequelize.transaction(async ta => {
-        const { models, token } = context;
+        const { models, session } = context;
         const {
           user: { unitid: giver }
-        } = decode(token);
+        } = decode(session.token);
 
         try {
           const p1 = models.Licence.findOne({
@@ -202,12 +202,12 @@ export default {
   agreeToLicence: requiresAuth.createResolver(
     (_parent, { licenceid }, context) =>
       context.models.sequelize.transaction(async ta => {
-        const { models, token } = context;
+        const { models, session } = context;
 
         try {
           const {
             user: { unitid }
-          } = decode(token);
+          } = decode(session.token);
 
           const updatedLicence = await models.LicenceData.update(
             { agreed: true },
@@ -239,7 +239,7 @@ export default {
   ),
 
   trackMinutesSpent: requiresAuth.createResolver(
-    async (_p, { licenceid, minutes }, { models, token }) => {
+    async (_p, { licenceid, minutes }, { models, session }) => {
       try {
         if (minutes <= 0) {
           throw new Error("minutes must be positive");
@@ -247,7 +247,7 @@ export default {
 
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
         const licence = await models.Licence.findOne({
           where: { id: licenceid, unitid },
           raw: true
@@ -294,11 +294,11 @@ export default {
   addExternalBoughtPlan: requiresAuth.createResolver(
     (_p, { alias, appid, price, loginurl }, context) =>
       context.models.sequelize.transaction(async ta => {
-        const { models, token } = context;
+        const { models, session } = context;
 
         const {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         // let subscription = null;
         // eslint-disable-next-line
@@ -402,11 +402,11 @@ export default {
    */
   addExternalLicence: requiresAuth.createResolver((_p, args, context) =>
     context.models.sequelize.transaction(async ta => {
-      const { models, token } = context;
+      const { models, session } = context;
 
       const {
         user: { unitid, company }
-      } = decode(token);
+      } = decode(session.token);
 
       try {
         let admin = null;
@@ -544,12 +544,12 @@ export default {
   deleteServiceLicenceAt: requiresRights(["delete-licences"]).createResolver(
     async (_p, { serviceid, licenceid, time }, context) =>
       context.models.sequelize.transaction(async ta => {
-        const { models, token } = context;
+        const { models, session } = context;
 
         try {
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const parsedTime = moment(time).valueOf();
           const config = { endtime: parsedTime };
@@ -636,7 +636,7 @@ export default {
 
   deleteLicenceAt: requiresRights(["delete-licences"]).createResolver(
     async (_, { licenceid, time }, context) => {
-      const { models, token } = context;
+      const { models, session } = context;
 
       const parsedTime = moment(time).valueOf();
       const config = { endtime: parsedTime };
@@ -644,7 +644,7 @@ export default {
         try {
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const licence = await models.sequelize.query(
             `
@@ -725,10 +725,10 @@ export default {
     async (_p, { boughtplanid, time }, context) =>
       context.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = context;
+          const { models, session } = context;
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const parsedTime = moment(time).valueOf();
           const config = { endtime: parsedTime };
@@ -817,10 +817,10 @@ export default {
   ),
 
   voteForApp: requiresAuth.createResolver(
-    async (parent, { app }, { models, token }) => {
+    async (parent, { app }, { models, session }) => {
       const {
         user: { unitid }
-      } = decode(token);
+      } = decode(session.token);
       try {
         await models.AppVote.create({ unitid, app });
         return { ok: true };
@@ -832,12 +832,12 @@ export default {
 
   updateCredentials: requiresAuth.createResolver(async (_p, args, context) =>
     context.models.sequelize.transaction(async ta => {
-      const { models, token } = context;
+      const { models, session } = context;
 
       try {
         const {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
         const { licenceid, ...credentials } = args;
 
         const [licence] = await models.sequelize.query(
@@ -899,11 +899,11 @@ export default {
   ),
 
   updateLayout: requiresAuth.createResolver(
-    async (_, { layout }, { models, token }) => {
+    async (_, { layout }, { models, session }) => {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         const { id: licenceid, ...data } = layout;
 
@@ -931,12 +931,12 @@ export default {
   ),
 
   createOwnApp: requiresRights(["create-licences"]).createResolver(
-    async (_, { ssoData, userids }, { models, token }) =>
+    async (_, { ssoData, userids }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
           const { images, loginurl, ...data } = ssoData;
 
           let appOwned = null;
@@ -1084,12 +1084,12 @@ export default {
   ),
 
   giveTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
-    async (_, { licences }, { models, token }) =>
+    async (_, { licences }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           const errors = [];
           const newLicences = [];
@@ -1149,11 +1149,11 @@ export default {
   ]).createResolver(async (_p, { serviceid, time }, context) =>
     context.models.sequelize.transaction(async ta => {
       try {
-        const { models, token } = context;
+        const { models, session } = context;
 
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const parsedTime = moment(time).valueOf();
         const config = { endtime: parsedTime };
@@ -1418,10 +1418,10 @@ export default {
           identifier,
           options
         } = args;
-        const { models, token } = ctx;
+        const { models, session } = ctx;
         const {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
         let admin = null;
 
         if (touser) {
@@ -1555,12 +1555,12 @@ export default {
   ),
 
   failedIntegration: requiresAuth.createResolver(
-    async (_, { data }, { models, token }) =>
+    async (_, { data }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const appOwned = await models.App.create(
             {

@@ -1,4 +1,3 @@
-import { split } from "lodash";
 import { decode } from "jsonwebtoken";
 import { flushAll as flushServices } from "@vipfy-private/services";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
@@ -195,10 +194,10 @@ export default {
     async (_parent, { app, options }, context) =>
       context.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = context;
+          const { models, session } = context;
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           const nameExists = await models.App.findOne({
             where: { name: app.name, owner: null },

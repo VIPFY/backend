@@ -5,11 +5,16 @@ import { decode } from "jsonwebtoken";
 import { sleep } from "@vipfy-private/service-base";
 import { parseName } from "humanparser";
 import {
+  USER_SESSION_ID_PREFIX,
+  REDIS_SESSION_PREFIX,
+  MAX_PASSWORD_LENGTH,
+  MIN_PASSWORD_LENGTH
+} from "../../constants";
+import {
   createToken,
   checkAuthentification,
   getNewPasswordData
 } from "../../helpers/auth";
-import { createToken as create2FAToken } from "../../helpers/token";
 import { createToken as createSetupToken } from "../../helpers/token";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
@@ -17,13 +22,11 @@ import {
   createLog,
   computePasswordScore,
   formatHumanName,
-  checkVat,
   parseAddress,
   createNotification
 } from "../../helpers/functions";
 import { googleMapsClient } from "../../services/gcloud";
 import { NormalError } from "../../errors";
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "../../constants";
 import { sendEmail, emailRegex } from "../../helpers/email";
 import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
@@ -232,7 +235,7 @@ export default {
         });
 
         const fakeToken = await createToken(unit, SECRET);
-        ctx.token = fakeToken;
+        ctx.session.token = fakeToken;
 
         await createLog(
           ctx,
@@ -270,13 +273,13 @@ export default {
   setupFinished: async (
     _p,
     { country, vatoption, vatnumber, placeId, ownAdress, username },
-    { models, token }
+    { models, session }
   ) =>
     models.sequelize.transaction(async ta => {
       try {
         const {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         let p1;
         if (username) {
@@ -353,7 +356,6 @@ export default {
   signUpConfirm: async (_, { token, password, passwordConfirm, email }, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       const { models } = ctx;
-
       if (password != passwordConfirm) {
         throw new Error("Passwords don't match!");
       }
@@ -426,7 +428,7 @@ export default {
 
         const fakeToken = await createToken(user, ctx.SECRET);
 
-        ctx.token = fakeToken;
+        ctx.session.token = fakeToken;
         const p5 = createLog(ctx, "signUpConfirm", { token, email }, ta);
         const [signUpToken] = await Promise.all([p1, p2, p3, p4, p5]);
 
@@ -480,7 +482,6 @@ export default {
         raw: true
       });
 
-      console.log("LOG: emailExists", emailExists);
       if (!emailExists) {
         throw new Error(message);
       }
@@ -504,7 +505,7 @@ export default {
           raw: true
         });
 
-        const token = await create2FAToken();
+        const token = await createSetupToken();
 
         await ctx.models.Token.create({
           email,
@@ -518,8 +519,10 @@ export default {
 
         // One is needed for the logger function to work correctly
         const fakeToken = await createToken(emailExists, ctx.SECRET);
-        ctx.token = fakeToken;
-        await createLog(ctx, "signIn", { user: emailExists, email }, null);
+        // Does this work with 2FA?
+
+        ctx.session.token = fakeToken;
+        await createLog(ctx, "signIn-2FA", { user: emailExists, email }, null);
 
         return {
           ok: true,
@@ -531,7 +534,21 @@ export default {
         // User doesn't have the property unitid, so we have to pass emailExists for
         // the token creation
         const token = await createToken(emailExists, ctx.SECRET);
-        ctx.token = token;
+        ctx.session.token = token;
+
+        await ctx.redis.lpush(
+          `${USER_SESSION_ID_PREFIX}${emailExists.unitid}`,
+          ctx.sessionID
+        );
+        // Should normally not be needed, but somehow it takes too long to
+        // update the session and it creates an Auth Error in the next step
+        // without it.
+        ctx.session.save(err => {
+          if (err) {
+            console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+          }
+        });
+
         await createLog(ctx, "signIn", { user: emailExists, email }, null);
 
         return { ok: true, token };
@@ -542,11 +559,40 @@ export default {
     }
   },
 
+  signOut: requiresAuth.createResolver(
+    async (_p, _args, { session, redis }) => {
+      try {
+        if (session.token) {
+          const {
+            user: { unitid }
+          } = decode(session.token);
+
+          const sessionIDs = await redis.lrange(
+            `${USER_SESSION_ID_PREFIX}${unitid}`,
+            0,
+            -1
+          );
+
+          const promises = [];
+
+          sessionIDs.forEach(sessionID => {
+            promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`));
+          });
+          await Promise.all(promises);
+        }
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   changePassword: requiresAuth.createResolver(
     async (_, { pw, newPw, confirmPw }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token, SECRET } = ctx;
+          const { models, session, SECRET } = ctx;
 
           if (newPw != confirmPw) throw new Error("New passwords don't match!");
           if (pw == newPw) {
@@ -568,7 +614,7 @@ export default {
 
           const {
             user: { unitid }
-          } = await decode(token);
+          } = await decode(session.token);
 
           const findOldPassword = await models.Login.findOne({
             where: { unitid },
@@ -617,6 +663,7 @@ export default {
           const user = await parentAdminCheck(basicUser);
           findOldPassword.company = user.company;
           const newToken = await createToken(findOldPassword, SECRET);
+          session.token = newToken;
 
           return { ok: true, token: newToken };
         } catch (err) {
@@ -631,10 +678,10 @@ export default {
   agreeTos: requiresAuth.createResolver(async (_p, _args, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
         const {
           user: { unitid }
-        } = await decode(token);
+        } = await decode(session.token);
 
         const updatedUser = await models.Human.update(
           { firstlogin: false },
@@ -686,8 +733,7 @@ export default {
           { where: { unitid: user.unitid }, returning: true, transaction: ta }
         );
 
-        const token = await createToken(emailExists, ctx.SECRET);
-        ctx.token = token;
+        ctx.session.token = await createToken(emailExists, ctx.SECRET);
 
         await createLog(
           ctx,
@@ -701,12 +747,7 @@ export default {
           fromName: "VIPFY",
           personalizations: [
             {
-              to: [
-                {
-                  email,
-                  name: formatHumanName(user)
-                }
-              ],
+              to: [{ email, name: formatHumanName(user) }],
               dynamic_template_data: {
                 name: formatHumanName(user),
                 password: newPw,
@@ -726,10 +767,10 @@ export default {
     async (_p, { userids }, ctx) =>
       ctx.models.sequelize.transaction(async transaction => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company }
-          } = await decode(token);
+          } = await decode(session.token);
 
           // check that user has rights
           const checks = [];
@@ -813,7 +854,7 @@ export default {
       await checkAuthentification(emailExists.unitid, emailExists.company);
 
       const token = await createToken(emailExists, SECRET, "1d");
-      ctx.token = token;
+      ctx.session.token = token;
 
       const p1 = createLog(
         ctx,

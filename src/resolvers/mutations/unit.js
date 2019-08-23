@@ -22,11 +22,11 @@ export default {
   updateProfilePic: requiresAuth.createResolver(async (_p, { file }, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
 
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         const user = await models.User.findOne({
           where: { id: unitid },
@@ -70,10 +70,10 @@ export default {
     async (_p, { file, unitid }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { unitid: adminid }
-          } = decode(token);
+          } = decode(session.token);
 
           const parsedFile = await file;
 
@@ -118,11 +118,11 @@ export default {
     async (_p, { user }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { unitid }
-          } = decode(token);
+          } = decode(session.token);
 
           const { password, statisticdata, ...human } = user;
           let updatedHuman;
@@ -171,11 +171,11 @@ export default {
     async (_p, { user }, ctx) => {
       await ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const { id, password, ...userData } = user;
 
@@ -275,10 +275,10 @@ export default {
   updateEmployeePassword: requiresRights(["edit-employee"]).createResolver(
     async (_p, { unitid, password, logOut }, ctx) => {
       try {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
         const {
           user: { unitid: id, company }
-        } = decode(token);
+        } = decode(session.token);
 
         if (password.length < MIN_PASSWORD_LENGTH) {
           throw new Error("Password not long enough!");
@@ -346,10 +346,10 @@ export default {
 
   setConsent: requiresAuth.createResolver(async (_p, { consent }, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
-      const { models, token } = ctx;
+      const { models, session } = ctx;
       const {
         user: { unitid }
-      } = decode(token);
+      } = decode(session.token);
 
       try {
         await models.Human.update(
@@ -389,11 +389,11 @@ export default {
   impersonate: requiresRights(["impersonate"]).createResolver(
     async (_p, { unitid }, ctx) => {
       try {
-        const { models, token, SECRET } = ctx;
+        const { models, session, SECRET } = ctx;
 
         const {
           user: { unitid: id, company }
-        } = decode(token);
+        } = decode(session.token);
 
         if (id == unitid) {
           throw new Error("You can't impersonate yourself!");

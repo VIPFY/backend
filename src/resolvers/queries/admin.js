@@ -9,7 +9,7 @@ import { version as serverVersion } from "../../../package.json";
 
 export default {
   adminFetchAllApps: requiresVipfyAdmin.createResolver(
-    async (parent, { limit, offset, sortOptions }, { models }) => {
+    async (_parent, { limit, offset, sortOptions }, { models }) => {
       try {
         return await models.AppDetails.findAll({
           limit,
@@ -24,9 +24,9 @@ export default {
   ),
 
   admin: requiresVipfyAdmin.createResolver(
-    async (parent, args, { models, token }) => {
+    async (_parent, _args, { models, session }) => {
       // they are logged in
-      if (token && token != "null") {
+      if (session && session.token) {
         try {
           const {
             user: { unitid }

@@ -15,14 +15,15 @@ const options = {
   tls: {}
 };
 
-if (process.env.ENVIRONMENT != "development") {
+if (process.env.ENVIRONMENT == "production") {
   options.password = process.env.REDIS_PW;
 }
 
-export const pubsub = new RedisPubSub({
-  publisher: new Redis(options),
-  subscriber: new Redis(options)
-});
+export const redis = Redis.createClient([options]);
+export const REDIS_SESSION_PREFIX = "session:";
+export const USER_SESSION_ID_PREFIX = "userID-";
+const subscriber = Redis.createClient([options]);
+export const pubsub = new RedisPubSub({ publisher: redis, subscriber });
 
 // The location for uploaded files to be saved
 export const userPicFolder = "profilepictures";

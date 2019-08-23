@@ -8,11 +8,11 @@ import { check2FARights } from "../../helpers/functions";
 
 export default {
   verify2FA: requiresAuth.createResolver(
-    async (_, { userid, type, code, codeId }, { models, token }) => {
+    async (_p, { userid, type, code, codeId }, { models, session }) => {
       try {
         let {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         if (userid && userid != unitid) {
           unitid = await check2FARights(userid, unitid, company);
@@ -43,12 +43,9 @@ export default {
     }
   ),
 
-  validate2FA: async (
-    _,
-    { userid, type, token, twoFAToken },
-    { models, SECRET }
-  ) => {
+  validate2FA: async (_p, { userid, type, session, twoFAToken }, ctx) => {
     try {
+      const { models, SECRET } = ctx;
       const { secret, id } = await models.TwoFA.findOne({
         where: { unitid: userid, type },
         raw: true
@@ -59,7 +56,7 @@ export default {
       const validToken = Speakeasy.totp.verify({
         secret: secret.base32,
         encoding: "base32",
-        token,
+        token: session.token,
         window: 2
       });
 
@@ -96,7 +93,7 @@ export default {
   },
 
   force2FA: requiresRights(["force-2FA"]).createResolver(
-    async (_, { userid }, { models }) => {
+    async (_p, { userid }, { models }) => {
       try {
         await models.Human.update(
           { needstwofa: true },
