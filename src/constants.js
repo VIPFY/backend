@@ -22,6 +22,7 @@ if (process.env.ENVIRONMENT == "production") {
 export const redis = Redis.createClient([options]);
 export const REDIS_SESSION_PREFIX = "session:";
 export const USER_SESSION_ID_PREFIX = "userID-";
+export const IMPERSONATE_PREFIX = "impersonations-";
 const subscriber = Redis.createClient([options]);
 export const pubsub = new RedisPubSub({ publisher: redis, subscriber });
 

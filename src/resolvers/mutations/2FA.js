@@ -43,20 +43,19 @@ export default {
     }
   ),
 
-  validate2FA: async (_p, { userid, type, session, twoFAToken }, ctx) => {
+  validate2FA: async (_p, { userid, type, token, twoFAToken }, ctx) => {
     try {
       const { models, SECRET } = ctx;
       const { secret, id } = await models.TwoFA.findOne({
-        where: { unitid: userid, type },
+        where: { unitid: userid, type, verified: true, deleted: false },
         raw: true
       });
-
       await checkToken(twoFAToken, "2FAToken");
 
       const validToken = Speakeasy.totp.verify({
         secret: secret.base32,
         encoding: "base32",
-        token: session.token,
+        token,
         window: 2
       });
 
@@ -80,6 +79,7 @@ export default {
         );
 
         const data = await Promise.all([p1, p2, p3]);
+        console.log("LOG: validToken", data);
 
         const newToken = await createToken(data[0], SECRET);
 

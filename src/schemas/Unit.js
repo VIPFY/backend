@@ -158,5 +158,6 @@ export const mutations = `
   resendToken(email: String!): Boolean!
   setConsent(consent: Boolean!): User!
   updateEmployeePassword(unitid: ID!, password: String!, logOut: Boolean): UserSecurityOverview!
-  impersonate(unitid: ID!): String!
-  `;
+  impersonate(userid: ID!): String!
+  endImpersonation(token: String!): String!
+`;

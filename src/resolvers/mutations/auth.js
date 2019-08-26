@@ -234,8 +234,15 @@ export default {
           ]
         });
 
-        const fakeToken = await createToken(unit, SECRET);
-        ctx.session.token = fakeToken;
+        user.company = company.id;
+
+        const token = await createToken(user, SECRET);
+        ctx.session.token = token;
+        ctx.session.save(err => {
+          if (err) {
+            console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+          }
+        });
 
         await createLog(
           ctx,
@@ -251,10 +258,6 @@ export default {
           },
           ta
         );
-
-        user.company = company.id;
-
-        const token = await createToken(user, SECRET);
 
         return {
           ok: true,

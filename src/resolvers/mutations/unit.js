@@ -3,7 +3,8 @@ import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
   userPicFolder,
   MIN_PASSWORD_LENGTH,
-  MAX_PASSWORD_LENGTH
+  MAX_PASSWORD_LENGTH,
+  IMPERSONATE_PREFIX
 } from "../../constants";
 import { NormalError } from "../../errors";
 import {
@@ -387,39 +388,43 @@ export default {
   ),
 
   impersonate: requiresRights(["impersonate"]).createResolver(
-    async (_p, { unitid }, ctx) => {
+    async (_p, { userid }, ctx) => {
       try {
-        const { models, session, SECRET } = ctx;
-
         const {
           user: { unitid: id, company }
-        } = decode(session.token);
+        } = decode(ctx.session.token);
 
-        if (id == unitid) {
+        if (id == userid) {
           throw new Error("You can't impersonate yourself!");
         }
-        const p1 = models.User.findOne({ where: { id }, raw: true });
-        const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
 
-        const [isAdmin, employee] = await Promise.all([p1, p2]);
-        await companyCheck(company, id, unitid);
+        const token = await createAdminToken({
+          unitid: userid,
+          company,
+          impersonator: id,
+          SECRET: ctx.SECRET
+        });
 
-        if (!isAdmin) {
-          throw new Error("You don't have the necessary rights!");
-        }
+        // Append the oldToken to the Session to set it back when the Admin
+        // ends the Impersonation
+        ctx.session.oldToken = ctx.session.token;
+        ctx.session.token = token;
+        await ctx.redis.lpush(`${IMPERSONATE_PREFIX}${id}`, ctx.sessionID);
 
-        if (employee.isadmin) {
-          throw new Error("You can't impersonate another Admin!");
-        }
+        ctx.session.save(err => {
+          if (err) {
+            console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+          }
+        });
 
         await createLog(
           ctx,
           "impersonate",
-          { impersonator: id, user: unitid },
+          { impersonator: id, user: userid },
           null
         );
 
-        return createAdminToken({ unitid, company, impersonator: id, SECRET });
+        return token;
       } catch (err) {
         throw new NormalError({
           message: err.message,
@@ -427,5 +432,33 @@ export default {
         });
       }
     }
-  )
+  ),
+
+  endImpersonation: async (_p, _args, ctx) => {
+    try {
+      const { user, impersonator } = decode(ctx.session.token);
+
+      await companyCheck(user.company, impersonator, user.unitid);
+      const listName = `${IMPERSONATE_PREFIX}${impersonator}`;
+      const sessionIDs = await ctx.redis.lrange(listName, 0, -1);
+
+      const sessionID = sessionIDs.find(el => el == ctx.sessionID);
+
+      await ctx.redis.lrem(listName, 0, sessionID);
+      ctx.session.token = ctx.session.oldToken;
+      delete ctx.session.oldToken;
+
+      ctx.session.save(err => {
+        if (err) {
+          console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+        }
+      });
+
+      await createLog(ctx, "endImpersonation", { impersonator, user }, null);
+
+      return ctx.session.token;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };
