@@ -8,7 +8,8 @@ import {
   USER_SESSION_ID_PREFIX,
   REDIS_SESSION_PREFIX,
   MAX_PASSWORD_LENGTH,
-  MIN_PASSWORD_LENGTH
+  MIN_PASSWORD_LENGTH,
+  IMPERSONATE_PREFIX
 } from "../../constants";
 import {
   createToken,
@@ -563,26 +564,63 @@ export default {
   },
 
   signOut: requiresAuth.createResolver(
+    async (_p, _args, { session, redis, sessionID }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+
+        if (session.token) {
+          await redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`);
+          await redis.lrem(`${USER_SESSION_ID_PREFIX}${unitid}`, 0, sessionID);
+        }
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  signOutEverywhere: requiresAuth.createResolver(
     async (_p, _args, { session, redis }) => {
       try {
-        if (session.token) {
-          const {
-            user: { unitid }
-          } = decode(session.token);
+        const {
+          user: { unitid }
+        } = decode(session.token);
 
-          const sessionIDs = await redis.lrange(
-            `${USER_SESSION_ID_PREFIX}${unitid}`,
-            0,
-            -1
-          );
+        const sessionIDs = await redis.lrange(
+          `${USER_SESSION_ID_PREFIX}${unitid}`,
+          0,
+          -1
+        );
 
-          const promises = [];
+        const promises = [];
 
-          sessionIDs.forEach(sessionID => {
-            promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`));
-          });
-          await Promise.all(promises);
-        }
+        sessionIDs.forEach(sessionID => {
+          promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`));
+        });
+        await Promise.all(promises);
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  signOutUser: requiresRights(["sign-out-user"]).createResolver(
+    async (_p, { userid }, { redis }) => {
+      try {
+        const listName = `${USER_SESSION_ID_PREFIX}${userid}`;
+        const sessionIDs = await redis.lrange(listName, 0, -1);
+
+        const promises = [];
+
+        sessionIDs.forEach(sessionID => {
+          promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`));
+        });
+        await Promise.all(promises);
 
         return true;
       } catch (err) {

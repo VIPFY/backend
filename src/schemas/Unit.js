@@ -140,6 +140,8 @@ export const mutations = `
 
   signIn(email: String!, password: String!): LoginResponse!
   signOut: Boolean!
+  signOutEverywhere: Boolean!
+  signOutUser(userid: ID!): Boolean!
   # After confirming the email, an user has to set a password
   signUpConfirm(email: String!, password: String!, passwordConfirm: String!, token: String!): SignUpConfirmResponse!
 
