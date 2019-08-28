@@ -272,6 +272,7 @@ export const queries = `
 
 export const mutations = `
   updateLayout(layout: LayoutInput!): Boolean!
+  switchAppsLayout(app1: LayoutInput!, app2: LayoutInput!): Boolean!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
 

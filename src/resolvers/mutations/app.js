@@ -153,9 +153,7 @@ export default {
           const notiGiver = createNotification(
             {
               receiver: giver,
-              message: `Licence distributed to ${user.firstname} ${
-                user.lastname
-              }`,
+              message: `Licence distributed to ${user.firstname} ${user.lastname}`,
               icon: "th",
               link: "teams",
               changed: ["ownLicences"]
@@ -506,9 +504,7 @@ export default {
           const p3 = createNotification(
             {
               receiver: args.touser,
-              message: `${admin.firstname} ${
-                admin.lastname
-              } integrated an external Account for you.`,
+              message: `${admin.firstname} ${admin.lastname} integrated an external Account for you.`,
               icon: "user-plus",
               link: `marketplace/${args.appid}`,
               changed: ["ownLicences"]
@@ -919,6 +915,68 @@ export default {
         } else {
           await models.LicenceLayout.create({ ...data, licenceid, unitid });
         }
+
+        return true;
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
+  ),
+
+  switchAppsLayout: requiresAuth.createResolver(
+    async (_p, { app1, app2 }, { models, token }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(token);
+
+        let layoutExistsApp1 = await models.LicenceLayout.findOne({
+          where: {
+            licenceid: app1.id,
+            unitid
+          },
+          raw: true
+        });
+
+        let layoutExistsApp2 = await models.LicenceLayout.findOne({
+          where: {
+            licenceid: app2.id,
+            unitid
+          },
+          raw: true
+        });
+        const { id: id1, ...data1 } = app1;
+        const { id: id2, ...data2 } = app1;
+
+        if (!layoutExistsApp1) {
+          const res = await models.LicenceLayout.create({
+            ...data1,
+            licenceid: id1,
+            unitid
+          });
+          layoutExistsApp1 = res.get();
+        }
+
+        if (!layoutExistsApp2) {
+          const res = await models.LicenceLayout.create({
+            ...data2,
+            licenceid: id2,
+            unitid
+          });
+          layoutExistsApp2 = res.get();
+        }
+
+        await Promise.all([
+          models.LicenceLayout.update(data1, {
+            where: { licenceid: id1, unitid }
+          }),
+          models.LicenceLayout.update(data2, {
+            where: { licenceid: id2, unitid }
+          })
+        ]);
 
         return true;
       } catch (err) {
@@ -1519,9 +1577,7 @@ export default {
           const p3 = createNotification(
             {
               receiver: touser,
-              message: `${admin.firstname} ${
-                admin.lastname
-              } integrated an external Account for you.`,
+              message: `${admin.firstname} ${admin.lastname} integrated an external Account for you.`,
               icon: "user-plus",
               link: `marketplace/${appid}`,
               changed: ["ownLicences"]
