@@ -507,7 +507,7 @@ export default {
       })
   ),
 
-  newsletterSignup: async (_, { email, firstname, lastname }, { models }) => {
+  newsletterSignup: async (_p, { email, firstname, lastname }, { models }) => {
     try {
       const alreadySignedUp = await models.NewsletterSignup.findOne({
         where: { email },
@@ -528,7 +528,7 @@ export default {
     }
   },
 
-  newsletterSignupConfirm: async (_, { email, session }) => {
+  newsletterSignupConfirm: async (_P, { email, session }) => {
     try {
       const result = await newsletterConfirmSignup(email, session.token);
       return { ok: result };
@@ -537,7 +537,7 @@ export default {
     }
   },
 
-  searchAddress: async (_, { input, region }) => {
+  searchAddress: async (_p, { input, region }) => {
     try {
       const res = await googleMapsClient
         .findPlace({
@@ -554,7 +554,7 @@ export default {
     }
   },
 
-  contact: async (parent, args) => {
+  contact: async (_p, args) => {
     try {
       let replyId = "d-8f7a72b8b3b4409ebd02e12dbe6f9599";
 

@@ -1,10 +1,12 @@
 import Speakeasy from "speakeasy";
 import { decode } from "jsonwebtoken";
+import iplocate from "node-iplocate";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createToken } from "../../helpers/auth";
 import { checkToken } from "../../helpers/token";
 import { check2FARights } from "../../helpers/functions";
+import { USER_SESSION_ID_PREFIX } from "../../constants";
 
 export default {
   verify2FA: requiresAuth.createResolver(
@@ -79,9 +81,32 @@ export default {
         );
 
         const data = await Promise.all([p1, p2, p3]);
-        console.log("LOG: validToken", data);
 
         const newToken = await createToken(data[0], SECRET);
+
+        const location = await iplocate(
+          // In development using the ip is not possible
+          process.env.ENVIRONMENT == "production" ? ctx.ip : "192.76.145.3"
+        );
+
+        await ctx.redis.lpush(
+          `${USER_SESSION_ID_PREFIX}${userid}`,
+          JSON.stringify({
+            session: ctx.sessionID,
+            ...ctx.userData,
+            ...location,
+            loggedInAt: Date.now()
+          })
+        );
+
+        // Should normally not be needed, but somehow it takes too long to
+        // update the session and it creates an Auth Error in the next step
+        // without it.
+        ctx.session.save(err => {
+          if (err) {
+            console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+          }
+        });
 
         return newToken;
       } else {

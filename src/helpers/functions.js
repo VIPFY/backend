@@ -5,7 +5,12 @@ import zxcvbn from "zxcvbn";
 import { decode } from "jsonwebtoken";
 import { createSubscription } from "../services/stripe";
 import { NormalError } from "../errors";
-import { pubsub, NEW_NOTIFICATION } from "../constants";
+import {
+  pubsub,
+  NEW_NOTIFICATION,
+  USER_SESSION_ID_PREFIX,
+  REDIS_SESSION_PREFIX
+} from "../constants";
 import { checkCompanyMembership } from "./companyMembership";
 
 /* eslint-disable no-return-assign */
@@ -499,5 +504,83 @@ export const check2FARights = async (userid, unitid, company) => {
     throw new Error("You don't have the neccessary rights!");
   } else {
     return userid;
+  }
+};
+
+/**
+ * Fetches all Sessions of a given User
+ * @exports
+ *
+ * @param {any} redis
+ * @param {number} userid
+ */
+export const fetchSessions = async (redis, userid) => {
+  try {
+    const listName = `${USER_SESSION_ID_PREFIX}${userid}`;
+    const sessions = await redis.lrange(listName, 0, -1);
+
+    return sessions;
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+/**
+ * Parses the Sessions back to a JSON object
+ * @exports
+ *
+ * @param {string[]} sessions
+ */
+export const parseSessions = async sessions => {
+  try {
+    const parsedSessions = sessions.map(item => {
+      const parsedSession = JSON.parse(item);
+
+      return {
+        id: parsedSession.session,
+        system: parsedSession.browser,
+        loggedInAt: parsedSession.loggedInAt,
+        location: {
+          city: parsedSession.city,
+          country: parsedSession.country
+        }
+      };
+    });
+
+    return parsedSessions;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
+ * Destroys a specific Session, removes it from the Users list and returns
+ * the remaining ones
+ * @exports
+ *
+ * @param {any} redis
+ * @param {number} userid
+ * @param {string} sessionID
+ */
+export const endSession = async (redis, userid, sessionID) => {
+  try {
+    const sessions = await fetchSessions(redis, userid);
+    const signOutSession = sessions.find(item => {
+      const parsedSession = JSON.parse(item);
+      return parsedSession.session == sessionID;
+    });
+
+    await Promise.all([
+      redis.lrem(`${USER_SESSION_ID_PREFIX}${userid}`, 0, signOutSession),
+      redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`)
+    ]);
+
+    return sessions.filter(item => {
+      const parsedSession = JSON.parse(item);
+
+      return parsedSession.session != sessionID;
+    });
+  } catch (err) {
+    throw new Error(err);
   }
 };

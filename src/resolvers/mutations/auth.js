@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import axios from "axios";
 import moment from "moment";
+import iplocate from "node-iplocate";
 import { decode } from "jsonwebtoken";
 import { sleep } from "@vipfy-private/service-base";
 import { parseName } from "humanparser";
@@ -8,8 +9,7 @@ import {
   USER_SESSION_ID_PREFIX,
   REDIS_SESSION_PREFIX,
   MAX_PASSWORD_LENGTH,
-  MIN_PASSWORD_LENGTH,
-  IMPERSONATE_PREFIX
+  MIN_PASSWORD_LENGTH
 } from "../../constants";
 import {
   createToken,
@@ -24,7 +24,10 @@ import {
   computePasswordScore,
   formatHumanName,
   parseAddress,
-  createNotification
+  createNotification,
+  fetchSessions,
+  parseSessions,
+  endSession
 } from "../../helpers/functions";
 import { googleMapsClient } from "../../services/gcloud";
 import { NormalError } from "../../errors";
@@ -442,12 +445,8 @@ export default {
         ) {
           return {
             download: {
-              win64: `https://download.vipfy.store/latest/win32/x64/VIPFY-${
-                signUpToken.token
-              }.exe`,
-              macOS: `https://download.vipfy.store/latest/darwin/x64/VIPFY-${
-                signUpToken.token
-              }.dmg`
+              win64: `https://download.vipfy.store/latest/win32/x64/VIPFY-${signUpToken.token}.exe`,
+              macOS: `https://download.vipfy.store/latest/darwin/x64/VIPFY-${signUpToken.token}.dmg`
             }
           };
         } else if (signUpToken.usedat) {
@@ -468,7 +467,7 @@ export default {
       }
     }),
 
-  signIn: async (_, { email, password }, ctx) => {
+  signIn: async (_p, { email, password }, ctx) => {
     try {
       if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
@@ -535,15 +534,27 @@ export default {
           token
         };
       } else {
-        // User doesn't have the property unitid, so we have to pass emailExists for
-        // the token creation
+        // User doesn't have the property unitid, so we have to pass emailExists
+        // for the token creation
+        emailExists.sessionID = ctx.sessionID;
         const token = await createToken(emailExists, ctx.SECRET);
         ctx.session.token = token;
 
+        const location = await iplocate(
+          // In development using the ip is not possible
+          process.env.ENVIRONMENT == "production" ? ctx.ip : "192.76.145.3"
+        );
+
         await ctx.redis.lpush(
           `${USER_SESSION_ID_PREFIX}${emailExists.unitid}`,
-          ctx.sessionID
+          JSON.stringify({
+            session: ctx.sessionID,
+            ...ctx.userData,
+            ...location,
+            loggedInAt: Date.now()
+          })
         );
+
         // Should normally not be needed, but somehow it takes too long to
         // update the session and it creates an Auth Error in the next step
         // without it.
@@ -571,11 +582,52 @@ export default {
         } = decode(session.token);
 
         if (session.token) {
-          await redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`);
-          await redis.lrem(`${USER_SESSION_ID_PREFIX}${unitid}`, 0, sessionID);
+          const sessions = await fetchSessions(redis, unitid);
+          const signOutSession = sessions.find(item => {
+            const parsedSession = JSON.parse(item);
+            return parsedSession.session == sessionID;
+          });
+
+          await redis.lrem(
+            `${USER_SESSION_ID_PREFIX}${unitid}`,
+            0,
+            signOutSession
+          );
+          await session.destroy(err => {
+            if (err) {
+              console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+            }
+          });
         }
 
         return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  signOutSession: requiresAuth.createResolver(
+    async (_p, { sessionID }, { session, redis }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+        const remainingSessions = await endSession(redis, unitid, sessionID);
+
+        return parseSessions(remainingSessions);
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  signOutUser: requiresRights(["delete-session"]).createResolver(
+    async (_p, { sessionID, userid }, { redis }) => {
+      try {
+        const remainingSessions = await endSession(redis, userid, sessionID);
+
+        return parseSessions(remainingSessions);
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
@@ -589,17 +641,14 @@ export default {
           user: { unitid }
         } = decode(session.token);
 
-        const sessionIDs = await redis.lrange(
-          `${USER_SESSION_ID_PREFIX}${unitid}`,
-          0,
-          -1
-        );
+        const sessions = await fetchSessions(redis, unitid);
 
         const promises = [];
 
-        sessionIDs.forEach(sessionID => {
+        sessions.forEach(sessionID => {
           promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`));
         });
+        promises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
         await Promise.all(promises);
 
         return true;
@@ -609,17 +658,17 @@ export default {
     }
   ),
 
-  signOutUser: requiresRights(["sign-out-user"]).createResolver(
+  signOutUserEverywhere: requiresRights(["delete-session"]).createResolver(
     async (_p, { userid }, { redis }) => {
       try {
-        const listName = `${USER_SESSION_ID_PREFIX}${userid}`;
-        const sessionIDs = await redis.lrange(listName, 0, -1);
+        const sessions = await fetchSessions(redis, userid);
 
         const promises = [];
 
-        sessionIDs.forEach(sessionID => {
-          promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`));
+        sessions.forEach(session => {
+          promises.push(redis.del(`${REDIS_SESSION_PREFIX}${session}`));
         });
+        promises.push(redis.del(`${USER_SESSION_ID_PREFIX}${userid}`));
         await Promise.all(promises);
 
         return true;

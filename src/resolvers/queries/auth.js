@@ -6,10 +6,13 @@ import QRCode from "qrcode";
 import {
   parentAdminCheck,
   concatName,
-  check2FARights
+  check2FARights,
+  fetchSessions,
+  parseSessions
 } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
+import { USER_SESSION_ID_PREFIX } from "../../constants";
 
 export default {
   me: requiresAuth.createResolver(async (_p, _args, { models, session }) => {
@@ -147,6 +150,18 @@ export default {
 
           return { yubikey };
         }
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchUsersSessions: requiresRights(["show-sessions"]).createResolver(
+    async (_p, { userid }, { redis }) => {
+      try {
+        const sessions = await fetchSessions(redis, userid);
+
+        return parseSessions(sessions);
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

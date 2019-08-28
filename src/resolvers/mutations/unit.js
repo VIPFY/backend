@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import iplocate from "node-iplocate";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
   userPicFolder,
@@ -402,6 +403,7 @@ export default {
           unitid: userid,
           company,
           impersonator: id,
+          sessionID: ctx.sessionID,
           SECRET: ctx.SECRET
         });
 
@@ -409,7 +411,20 @@ export default {
         // ends the Impersonation
         ctx.session.oldToken = ctx.session.token;
         ctx.session.token = token;
-        await ctx.redis.lpush(`${IMPERSONATE_PREFIX}${id}`, ctx.sessionID);
+        const location = await iplocate(
+          // In development using the ip is not possible
+          process.env.ENVIRONMENT == "production" ? ctx.ip : "192.76.145.3"
+        );
+
+        await ctx.redis.lpush(
+          `${IMPERSONATE_PREFIX}${id}`,
+          ctx.JSON.stringify({
+            session: ctx.sessionID,
+            ...ctx.userData,
+            ...location,
+            loggedInAt: Date.now()
+          })
+        );
 
         ctx.session.save(err => {
           if (err) {

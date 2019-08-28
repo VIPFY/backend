@@ -12,7 +12,7 @@ import { computePasswordScore } from "./functions";
 export const createToken = async (user, SECRET, expiresIn = "1w") => {
   try {
     const newToken = await jwt.sign(
-      { user: pick(user, ["unitid", "company"]) },
+      { user: pick(user, ["unitid", "company", "sessionID"]) },
       SECRET,
       { expiresIn }
     );
@@ -29,6 +29,7 @@ export const createToken = async (user, SECRET, expiresIn = "1w") => {
  * @param {number} unitid The user to impersonate
  * @param {number} company
  * @param {number} impersonator The admins ID
+ * @param {string} session The current session
  * @param {string} SECRET
  * @param {string} expiresIn for example 1d for 1 day
  */
@@ -36,12 +37,13 @@ export const createAdminToken = async ({
   unitid,
   company,
   impersonator,
+  sessionID,
   SECRET,
   expiresIn = "1d"
 }) => {
   try {
     const newToken = await jwt.sign(
-      { user: { unitid, company }, impersonator },
+      { user: { unitid, company, sessionID }, impersonator },
       SECRET,
       { expiresIn }
     );

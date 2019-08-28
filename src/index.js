@@ -171,6 +171,10 @@ const gqlserver = new ApolloServer({
   context: ({ req }) => ({
     models,
     redis,
+    userData: {
+      browser: req.headers["user-agent"],
+      language: req.headers["accept-language"]
+    },
     session: req.session,
     sessionID: req.sessionID,
     logger,
