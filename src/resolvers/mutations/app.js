@@ -153,9 +153,7 @@ export default {
           const notiGiver = createNotification(
             {
               receiver: giver,
-              message: `Licence distributed to ${user.firstname} ${
-                user.lastname
-              }`,
+              message: `Licence distributed to ${user.firstname} ${user.lastname}`,
               icon: "th",
               link: "teams",
               changed: ["ownLicences"]
@@ -506,9 +504,7 @@ export default {
           const p3 = createNotification(
             {
               receiver: args.touser,
-              message: `${admin.firstname} ${
-                admin.lastname
-              } integrated an external Account for you.`,
+              message: `${admin.firstname} ${admin.lastname} integrated an external Account for you.`,
               icon: "user-plus",
               link: `marketplace/${args.appid}`,
               changed: ["ownLicences"]
@@ -1519,9 +1515,7 @@ export default {
           const p3 = createNotification(
             {
               receiver: touser,
-              message: `${admin.firstname} ${
-                admin.lastname
-              } integrated an external Account for you.`,
+              message: `${admin.firstname} ${admin.lastname} integrated an external Account for you.`,
               icon: "user-plus",
               link: `marketplace/${appid}`,
               changed: ["ownLicences"]
