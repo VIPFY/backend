@@ -20,7 +20,6 @@ export const types = `
     suspended: Boolean!
     profilepicture: String
     employees: Int
-    employeedata: [PublicUser]!
     managelicences: Boolean
     apps: JSON
     domains: [Domain]
