@@ -490,7 +490,7 @@ export default {
         user: { company }
       } = decode(token);
       try {
-        const companyServices = await models.sequelize.query(
+        /* const companyServices = await models.sequelize.query(
           `Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
           COALESCE(li.licences, ARRAY[]::bigint[]) as licences,
           COALESCE(t.teams, ARRAY[]::json[]) as teams from
@@ -515,6 +515,34 @@ export default {
             replacements: { company },
             type: models.sequelize.QueryTypes.SELECT
           }
+        ); */
+        const companyServices = await models.sequelize.query(
+          `Select id, COALESCE(a.app, b.app) as app,  COALESCE(a.licences, ARRAY[]::bigint[]) as licences,
+          COALESCE(a.teams, ARRAY[]::jsonb[]) as teams
+        from (Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
+          COALESCE(li.licences, ARRAY[]::bigint[]) as licences,
+          COALESCE(t.teams, ARRAY[]::jsonb[]) as teams from
+          (Select appid, COALESCE(array_agg(jsonb_build_object('departmentid', departmentid, 'boughtplanid', departmentapps_data.boughtplanid)), ARRAY[]::jsonb[]) as teams
+            from departmentapps_data join boughtplan_data
+          on departmentapps_data.boughtplanid = boughtplan_data.id join plan_data
+          on boughtplan_data.planid = plan_data.id
+          where departmentid in (Select childid from department_tree_view where id = :company)
+          group by appid) t full outer join (
+      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_data l
+        join boughtplan_data b on l.boughtplanid = b.id
+        join plan_data p on b.planid = p.id
+        join app_data a on p.appid = a.id
+        where (l.endtime is null or l.endtime > now())
+        and (b.endtime is null or b.endtime > now())
+        and l.disabled = false and b.disabled = false and a.disabled = false
+        and (payer = :company
+      or payer in (Select unitid from department_data
+        join parentunit_data on unitid = childunit where parentunit = :company))
+      group by a.id) li on li.id = t.appid) a FULL OUTER JOIN (Select id, id as app from app_data where owner = :company) b USING (id);`,
+          {
+            replacements: { company },
+            type: models.sequelize.QueryTypes.SELECT
+          }
         );
         console.log(companyServices);
         return companyServices;
@@ -531,13 +559,16 @@ export default {
       } = decode(token);
       try {
         const companyServices = await models.sequelize.query(
-          `Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
+          `Select id, COALESCE(a.app, b.app) as app,  COALESCE(a.licences, ARRAY[]::bigint[]) as licences,
+          COALESCE(a.teams, ARRAY[]::jsonb[]) as teams
+
+from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
           COALESCE(li.licences, ARRAY[]::bigint[]) as licences,
-          COALESCE(t.teams, ARRAY[]::json[]) as teams from
-          (Select appid, COALESCE(array_agg(json_build_object('departmentid', departmentid, 'boughtplanid', departmentapps_data.boughtplanid)), ARRAY[]::json[]) as teams
+          COALESCE(t.teams, ARRAY[]::jsonb[]) as teams from
+          (Select appid, COALESCE(array_agg(jsonb_build_object('departmentid', departmentid, 'boughtplanid', departmentapps_data.boughtplanid)), ARRAY[]::jsonb[]) as teams
             from departmentapps_data join boughtplan_data
-            on departmentapps_data.boughtplanid = boughtplan_data.id join plan_data
-          on boughtplan_data.planid = plan_data.id 
+          on departmentapps_data.boughtplanid = boughtplan_data.id join plan_data
+          on boughtplan_data.planid = plan_data.id
           where departmentid in (Select childid from department_tree_view where id = :company)
           group by appid) t full outer join (
       Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_data l
@@ -550,7 +581,7 @@ export default {
         and (payer = :company
       or payer in (Select unitid from department_data
         join parentunit_data on unitid = childunit where parentunit = :company))
-      group by a.id) li on li.id = t.appid where li.id = :serviceid;`,
+      group by a.id) li on li.id = t.appid) a FULL OUTER JOIN (Select id, id as app from app_data where owner = :company) b USING (id)) where id = :serviceid;`,
           {
             replacements: { company, serviceid },
             type: models.sequelize.QueryTypes.SELECT
