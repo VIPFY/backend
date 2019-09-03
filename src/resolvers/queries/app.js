@@ -210,7 +210,7 @@ export default {
   ),
 
   fetchUsersOwnLicences: requiresRights(["view-licences"]).createResolver(
-    async (parent, { unitid }, { models, token }) => {
+    async (_p, { unitid }, { models, token }) => {
       try {
         const {
           user: { company }
@@ -286,10 +286,14 @@ export default {
   fetchUserLicences: requiresRights(["view-licences"]).createResolver(
     async (_parent, { unitid }, { models }) => {
       try {
-        const licences = await models.Licence.findAll({
-          where: { unitid },
-          raw: true
-        });
+        const licences = await models.sequelize.query(
+          `SELECT licence_view.*, plan_data.appid FROM licence_view JOIN
+        boughtplan_data ON licence_view.boughtplanid = boughtplan_data.id
+        JOIN plan_data ON boughtplan_data.planid = plan_data.id
+        JOIN app_data ON plan_data.appid = app_data.id
+        WHERE licence_view.unitid = :unitid AND not app_data.disabled`,
+          { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
+        );
 
         const startTime = Date.now();
 
@@ -306,6 +310,16 @@ export default {
           if (licence.endtime) {
             if (Date.parse(licence.endtime) < startTime) {
               licence.key = null;
+            }
+          }
+
+          if (licence.options) {
+            if (licence.options.teamlicence) {
+              licence.teamlicence = licence.options.teamlicence;
+            }
+
+            if (licence.options.teamlicence) {
+              licence.teamaccount = licence.options.teamaccount;
             }
           }
         });

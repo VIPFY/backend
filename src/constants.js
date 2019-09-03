@@ -26,10 +26,10 @@ if (process.env.ENVIRONMENT == "development") {
   };
 }
 
-export const pubsub = new RedisPubSub({
-  publisher: new Redis(options),
-  subscriber: new Redis(options)
-});
+export const redis = Redis.createClient([options]);
+
+const subscriber = Redis.createClient([options]);
+export const pubsub = new RedisPubSub({ publisher: redis, subscriber });
 
 // The location for uploaded files to be saved
 export const userPicFolder = "profilepictures";
