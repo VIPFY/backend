@@ -9,8 +9,6 @@ export default {
           user: { unitid }
         } = decode(token);
 
-        console.log("JSONINPUT", tutorialprogress);
-
         const a = await models.sequelize.query(
           `Update human_data set tutorialprogress = :tutorialprogress where unitid = :unitid`,
           {
@@ -21,8 +19,6 @@ export default {
             raw: true
           }
         );
-
-        console.log("UPDATE TutorialProgress", a);
 
         return { ok: true };
       } catch (err) {

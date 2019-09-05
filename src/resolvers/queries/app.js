@@ -558,7 +558,6 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-        console.log(companyServices);
         return companyServices;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -601,7 +600,6 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-        console.log(companyServices);
         return companyServices[0];
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -612,7 +610,6 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
   fetchServiceLicences: requiresRights(["view-licences"]).createResolver(
     async (parent, { employees, serviceid }, { models }) => {
       try {
-        console.log("EMPLOYEES", employees);
         const emp = employees.map(e => parseInt(e));
         const companyService = await models.sequelize.query(
           `Select licence_data.unitid as id, licence_data.id as licence, licence_data.starttime,
@@ -633,7 +630,6 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-        console.log(companyService);
         return companyService;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -672,8 +668,6 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-
-        console.log("LOG: stats", stats);
         return stats;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });

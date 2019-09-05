@@ -411,7 +411,6 @@ export default {
               }
             );
           } else {
-            console.log("SHIT!");
             await models.App.update(
               { ...app },
               {

@@ -74,7 +74,6 @@ const specialKeys = {
 
 const postprocessors = {
   Department: async (value, fields, models) => {
-    console.log("Departments");
     //logger.debug("postprocessing department", { value, fields, models });
     if (fields.includes("domains")) {
       value.domains = await models.sequelize.query(
@@ -100,7 +99,6 @@ const postprocessors = {
     return value;
   },
   Licence: async (value, fields) => {
-    console.log("Licence", value, fields);
     if (value) {
       if (value.options) {
         if (value.options.teamlicence) {
@@ -115,7 +113,6 @@ const postprocessors = {
   },
   // Wird das benötigt?
   CompanyService: async (value, fields) => {
-    console.log("CompanyService");
     if (value) {
       if (value.options) {
         if (value.options.teamlicence) {
@@ -129,7 +126,6 @@ const postprocessors = {
     return value;
   },
   TeamBoughtPlan: async (value, fields) => {
-    console.log("TeamBoughtPlan");
     if (value) {
       if (value.options) {
         if (value.options.teamlicence) {
