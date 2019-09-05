@@ -26,7 +26,6 @@ export const createHuman = async (
   mail2
 ) => {
   try {
-    console.log("CREATE HUMAN", company, name, password, mail1, mail2);
     // Check Mails
     if (!mail1) {
       throw new Error("No Email-Adress given!");

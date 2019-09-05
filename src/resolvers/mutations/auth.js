@@ -436,12 +436,8 @@ export default {
         ) {
           return {
             download: {
-              win64: `https://download.vipfy.store/latest/win32/x64/VIPFY-${
-                signUpToken.token
-              }.exe`,
-              macOS: `https://download.vipfy.store/latest/darwin/x64/VIPFY-${
-                signUpToken.token
-              }.dmg`
+              win64: `https://download.vipfy.store/latest/win32/x64/VIPFY-${signUpToken.token}.exe`,
+              macOS: `https://download.vipfy.store/latest/darwin/x64/VIPFY-${signUpToken.token}.dmg`
             }
           };
         } else if (signUpToken.usedat) {
@@ -480,7 +476,6 @@ export default {
         raw: true
       });
 
-      console.log("LOG: emailExists", emailExists);
       if (!emailExists) {
         throw new Error(message);
       }

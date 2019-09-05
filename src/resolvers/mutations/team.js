@@ -98,8 +98,6 @@ export default {
 
           //add employees
 
-          console.log("before", addemployees);
-
           const employeepromises = [];
           let counter = 0;
           const newemployees = [];
@@ -530,21 +528,6 @@ export default {
           if (team[0] && team[0].services) {
             team[0].services.forEach(serviceid => {
               if (keepLicences && !keepLicences.find(l => l == serviceid)) {
-                console.log("TEST TEAM DELETE", serviceid, userid, teamid);
-                /* promises.push(
-                  models.LicenceData.update(
-                    { endtime: moment().valueOf() },
-                    {
-                      where: {
-                        boughtplanid: serviceid,
-                        endtime: null,
-                        unitid: userid,
-                        options: { teamlicence: teamid }
-                      },
-                      transaction: ta
-                    }
-                  )
-                ); */
                 promises.push(
                   models.sequelize.query(
                     `Update licence_data l set endtime = now()
@@ -642,11 +625,6 @@ export default {
           const promises = [];
           if (team[0] && team[0].employees) {
             team[0].employees.forEach(employeeid => {
-              console.log(
-                "TESTING DELETEING",
-                employeeid,
-                keepLicencesSAVE.find(l => l == employeeid)
-              );
               if (!keepLicencesSAVE.find(l => l == employeeid)) {
                 promises.push(
                   models.LicenceData.update(
