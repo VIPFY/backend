@@ -10,20 +10,18 @@ const options = {
   host: process.env.REDIS_HOST,
   port: process.env.REDIS_PORT,
   db: 0,
+  password: process.env.REDIS_PW,
   // reconnect after
   retryStrategy: times => Math.min(times * 50, 2000),
   tls: {}
 };
 
-//if (process.env.ENVIRONMENT != "development") {
-options.password = process.env.REDIS_PW;
-console.error(options);
-//}
-
 if (process.env.ENVIRONMENT == "development") {
   options.tls = {
     checkServerIdentity: () => undefined
   };
+
+  delete options.password;
 }
 
 export const redis = Redis.createClient([options]);
