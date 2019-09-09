@@ -309,7 +309,7 @@ export const mutations = `
   addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): BoughtPlan!
   addExternalLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID): Response!
 
-  failedIntegration(data: SSOResult!): ID!
+  failedIntegration(data: SSOResult!): Boolean!
 
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!
