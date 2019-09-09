@@ -41,5 +41,5 @@ export const EMAIL_VERIFICATION_TIME = duration(7, "months");
 export const MAX_PASSWORD_LENGTH = 500;
 export const MIN_PASSWORD_LENGTH = 10;
 
-//ssh -N -L 6379:master.prod1.n21sml.euc1.cache.amazonaws.com:6379 nv@bastion.internal.vipfy.store
-//ssh -N -L 5431:dev1.c1mg5mgfkmoa.eu-central-1.rds.amazonaws.com:5432 nv@bastion.internal.vipfy.store
+// ssh -N -L 6379:master.prod1.n21sml.euc1.cache.amazonaws.com:6379 nv@bastion.internal.vipfy.store
+// ssh -N -L 5431:dev1.c1mg5mgfkmoa.eu-central-1.rds.amazonaws.com:5432 nv@bastion.internal.vipfy.store
