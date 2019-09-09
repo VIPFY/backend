@@ -1236,7 +1236,23 @@ export default {
 
         const updatePromises = [];
         const licencePromises = [];
-        const departmentPromisies = [];
+        const departmentPromises = [];
+
+        const app = await models.App.findOne({
+          where: { id: serviceid },
+          raw: true,
+          transaction: ta
+        });
+
+        if (app.owner == company) {
+          updatePromises.push(
+            models.App.update(
+              { disabled: true },
+              { where: { id: serviceid }, transaction: ta }
+            )
+          );
+        }
+
         boughtPlans.forEach(boughtPlan => {
           const period = Object.keys(boughtPlan.cancelperiod)[0];
           const estimatedEndtime = moment()
@@ -1260,7 +1276,7 @@ export default {
             })
           );
 
-          departmentPromisies.push(
+          departmentPromises.push(
             models.DepartmentApp.destroy(
               { where: { boughtplanid: boughtPlan.id } },
               { transaction: ta }
@@ -1268,7 +1284,7 @@ export default {
           );
         });
 
-        await Promise.all(updatePromises, licencePromises, departmentPromisies);
+        await Promise.all(updatePromises, licencePromises, departmentPromises);
 
         await createLog(context, "deleteService", { serviceid }, ta);
 
