@@ -895,7 +895,7 @@ export default {
   ),
 
   updateLayout: requiresAuth.createResolver(
-    async (_, { layout }, { models, token }) => {
+    async (_p, { layout }, { models, token }) => {
       try {
         const {
           user: { unitid }
@@ -949,7 +949,7 @@ export default {
           raw: true
         });
         const { id: id1, ...data1 } = app1;
-        const { id: id2, ...data2 } = app1;
+        const { id: id2, ...data2 } = app2;
 
         if (!layoutExistsApp1) {
           const res = await models.LicenceLayout.create({
