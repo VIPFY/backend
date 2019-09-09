@@ -1611,7 +1611,7 @@ export default {
   ),
 
   failedIntegration: requiresAuth.createResolver(
-    async (_, { data }, { models, token }) =>
+    async (_p, { data }, { models, token }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
