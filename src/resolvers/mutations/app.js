@@ -916,7 +916,12 @@ export default {
           await models.LicenceLayout.create({ ...data, licenceid, unitid });
         }
 
-        return true;
+        const licence = await models.Licence.findOne({
+          where: { id: licenceid },
+          raw: true
+        });
+
+        return { ...licence, dashboard: data.dashboard };
       } catch (err) {
         throw new NormalError({
           message: err.message,
@@ -927,65 +932,87 @@ export default {
   ),
 
   switchAppsLayout: requiresAuth.createResolver(
-    async (_p, { app1, app2 }, { models, token }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(token);
+    async (_p, { app1, app2 }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
 
-        let layoutExistsApp1 = await models.LicenceLayout.findOne({
-          where: {
-            licenceid: app1.id,
-            unitid
-          },
-          raw: true
-        });
-
-        let layoutExistsApp2 = await models.LicenceLayout.findOne({
-          where: {
-            licenceid: app2.id,
-            unitid
-          },
-          raw: true
-        });
-        const { id: id1, ...data1 } = app1;
-        const { id: id2, ...data2 } = app2;
-
-        if (!layoutExistsApp1) {
-          const res = await models.LicenceLayout.create({
-            ...data1,
-            licenceid: id1,
-            unitid
+          let layoutExistsApp1 = await models.LicenceLayout.findOne({
+            where: { licenceid: app1.id, unitid },
+            transaction: ta,
+            raw: true
           });
-          layoutExistsApp1 = res.get();
-        }
 
-        if (!layoutExistsApp2) {
-          const res = await models.LicenceLayout.create({
-            ...data2,
-            licenceid: id2,
-            unitid
+          let layoutExistsApp2 = await models.LicenceLayout.findOne({
+            where: { licenceid: app2.id, unitid },
+            raw: true,
+            transaction: ta
           });
-          layoutExistsApp2 = res.get();
+
+          if (!layoutExistsApp1) {
+            const res = await models.LicenceLayout.create(
+              {
+                dashboard: app1.dashboard,
+                licenceid: app1.id,
+                unitid
+              },
+              { transaction: ta }
+            );
+            layoutExistsApp1 = res.get();
+          }
+
+          if (!layoutExistsApp2) {
+            const res = await models.LicenceLayout.create(
+              {
+                dashboard: app2.dashboard,
+                licenceid: app2.id,
+                unitid
+              },
+              { transaction: ta }
+            );
+            layoutExistsApp2 = res.get();
+          }
+
+          const res = await Promise.all([
+            models.LicenceLayout.update(
+              { dashboard: app2.dashboard },
+              {
+                where: { licenceid: app1.id, unitid },
+                transaction: ta
+              }
+            ),
+            models.LicenceLayout.update(
+              { dashboard: app1.dashboard },
+              {
+                where: { licenceid: app2.id, unitid },
+                transaction: ta
+              }
+            ),
+            models.Licence.findOne({
+              where: { id: app1.id, unitid },
+              transaction: ta,
+              raw: true
+            }),
+            models.Licence.findOne({
+              where: { id: app2.id, unitid },
+              transaction: ta,
+              raw: true
+            })
+          ]);
+
+          return [
+            { ...res[2], dashboard: app2.dashboard },
+            { ...res[3], dashboard: app1.dashboard }
+          ];
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
-
-        await Promise.all([
-          models.LicenceLayout.update(data1, {
-            where: { licenceid: id1, unitid }
-          }),
-          models.LicenceLayout.update(data2, {
-            where: { licenceid: id2, unitid }
-          })
-        ]);
-
-        return true;
-      } catch (err) {
-        throw new NormalError({
-          message: err.message,
-          internalData: { err }
-        });
-      }
-    }
+      })
   ),
 
   createOwnApp: requiresRights(["create-licences"]).createResolver(

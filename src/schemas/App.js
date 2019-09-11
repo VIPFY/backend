@@ -193,7 +193,6 @@ export const types = `
   input LayoutInput {
     id: ID!
     dashboard: Int
-    sidebar: Int
   }
 
   type SimpleStats {
@@ -274,12 +273,11 @@ export const queries = `
 
   fetchIssuedLicences(unitid: ID!): [TempLicence!]
   fetchTempLicences(unitid: ID!): [TempLicence!]
-  bulkUpdateLayout(layouts: [LayoutInput!]!): Boolean!
 `;
 
 export const mutations = `
-  updateLayout(layout: LayoutInput!): Boolean!
-  switchAppsLayout(app1: LayoutInput!, app2: LayoutInput!): Boolean!
+  updateLayout(layout: LayoutInput!): Licence!
+  switchAppsLayout(app1: LayoutInput!, app2: LayoutInput!): [Licence!]!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
 
