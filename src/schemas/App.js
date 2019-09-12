@@ -273,10 +273,10 @@ export const queries = `
 
   fetchIssuedLicences(unitid: ID!): [TempLicence!]
   fetchTempLicences(unitid: ID!): [TempLicence!]
+  bulkUpdateLayout(layouts: [LayoutInput!]!): Boolean!
 `;
 
 export const mutations = `
-  bulkUpdateLayout(layouts: [LayoutInput!]!): Boolean!
   updateLayout(layout: LayoutInput!): Licence!
   switchAppsLayout(app1: LayoutInput!, app2: LayoutInput!): [Licence!]!
   # Admin: delete App from database
