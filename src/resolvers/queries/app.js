@@ -720,5 +720,71 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
+  
+  bulkUpdateLayout: requiresAuth.createResolver(
+
+    async (_, { layouts }, { models, token }) =>
+
+      models.sequelize.transaction(async ta => {
+
+        try {
+
+          const {
+
+            user: { unitid }
+
+          } = decode(token);
+
+
+
+          const data = layouts.map(layout => {
+
+            return [layout.id, unitid, layout.dashboard];
+
+          });
+
+
+
+          const query = `INSERT INTO licencelayout_data (licenceid, unitid, dashboard ) VALUES ${data
+
+            .map(d => "(?)")
+
+            .join(
+
+              ","
+
+            )} ON CONFLICT (licenceid, unitid) DO UPDATE SET dashboard = excluded.dashboard;`;
+
+
+
+          await models.sequelize.query(
+
+            query,
+
+            { replacements: data },
+
+            { type: models.sequelize.QueryTypes.INSERT }
+
+          );
+
+
+
+          return true;
+
+        } catch (err) {
+
+          throw new NormalError({
+
+            message: err.message,
+
+            internalData: { err }
+
+          });
+
+        }
+
+      })
+
+   )
 };
