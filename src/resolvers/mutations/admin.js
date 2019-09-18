@@ -3,9 +3,9 @@ import { flushAll as flushServices } from "@vipfy-private/services";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { createProduct, createPlan, deletePlan } from "../../services/stripe";
 import { userPicFolder, MAX_PASSWORD_LENGTH } from "../../constants";
-import { flushAuthCaches, getNewPasswordData } from "../../helpers/auth";
+import { flushAuthCaches } from "../../helpers/auth";
 import { NormalError } from "../../errors";
-import { createLog } from "../../helpers/functions";
+import { createLog, getNewPasswordData } from "../../helpers/functions";
 import {
   uploadUserImage,
   uploadAppImage,

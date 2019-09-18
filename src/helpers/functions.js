@@ -2,6 +2,8 @@ import moment from "moment";
 import soap from "soap";
 import models from "@vipfy-private/sequelize-setup";
 import zxcvbn from "zxcvbn";
+import iplocate from "node-iplocate";
+import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { createSubscription } from "../services/stripe";
 import { NormalError } from "../errors";
@@ -12,6 +14,7 @@ import {
   REDIS_SESSION_PREFIX
 } from "../constants";
 import { checkCompanyMembership } from "./companyMembership";
+import { createToken } from "./auth";
 
 /* eslint-disable no-return-assign */
 
@@ -166,6 +169,14 @@ export const createNotification = async (notificationBody, transaction) => {
  */
 export const computePasswordScore = password =>
   zxcvbn(password.substring(0, 50)).score;
+
+export const getNewPasswordData = async password => {
+  const passwordhash = await bcrypt.hash(password, 12);
+  const passwordstrength = computePasswordScore(password);
+  const passwordlength = password.length;
+
+  return { passwordhash, passwordstrength, passwordlength };
+};
 
 /**
  * Checks whether a Plan and an App are still valid
@@ -504,6 +515,48 @@ export const check2FARights = async (userid, unitid, company) => {
     throw new Error("You don't have the neccessary rights!");
   } else {
     return userid;
+  }
+};
+
+/**
+ * Creates and returns a token for the session and saves the current session
+ *
+ * @param {object} user The User which should be saved in the token
+ * @param {object} ctx The context which includes the current session
+ */
+export const createSession = async (user, ctx) => {
+  try {
+    const token = await createToken(user, process.env.SECRET);
+
+    ctx.session.token = token;
+
+    // Should normally not be needed, but somehow it takes too long to
+    // update the session and it creates an Auth Error in the next step
+    // without it.
+    await ctx.session.save(err => {
+      if (err) {
+        console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+      }
+    });
+
+    const location = await iplocate(
+      // In development using the ip is not possible
+      process.env.ENVIRONMENT == "production" ? ctx.ip : "82.192.202.122"
+    );
+
+    await ctx.redis.lpush(
+      `${USER_SESSION_ID_PREFIX}${user.unitid}`,
+      JSON.stringify({
+        session: ctx.sessionID,
+        ...ctx.userData,
+        ...location,
+        loggedInAt: Date.now()
+      })
+    );
+
+    return token;
+  } catch (error) {
+    throw new Error(error);
   }
 };
 

@@ -8,7 +8,7 @@ import jwt from "jsonwebtoken";
 import models from "@vipfy-private/sequelize-setup";
 import session from "express-session";
 import connectRedis from "connect-redis";
-import { getNewPasswordData } from "./helpers/auth";
+import { getNewPasswordData } from "./helpers/functions";
 import Utility from "./helpers/createHmac";
 import logger from "./loggers";
 import { redis, REDIS_SESSION_PREFIX } from "./constants";

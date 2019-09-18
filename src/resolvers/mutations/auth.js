@@ -1,7 +1,6 @@
 import bcrypt from "bcrypt";
 import axios from "axios";
 import moment from "moment";
-import iplocate from "node-iplocate";
 import { decode } from "jsonwebtoken";
 import { sleep } from "@vipfy-private/service-base";
 import { parseName } from "humanparser";
@@ -11,11 +10,7 @@ import {
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH
 } from "../../constants";
-import {
-  createToken,
-  checkAuthentification,
-  getNewPasswordData
-} from "../../helpers/auth";
+import { createToken, checkAuthentification } from "../../helpers/auth";
 import { createToken as createSetupToken } from "../../helpers/token";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
@@ -27,7 +22,9 @@ import {
   createNotification,
   fetchSessions,
   parseSessions,
-  endSession
+  endSession,
+  createSession,
+  getNewPasswordData
 } from "../../helpers/functions";
 import { googleMapsClient } from "../../services/gcloud";
 import { NormalError } from "../../errors";
@@ -239,14 +236,7 @@ export default {
         });
 
         user.company = company.id;
-
-        const token = await createToken(user, SECRET);
-        ctx.session.token = token;
-        ctx.session.save(err => {
-          if (err) {
-            console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
-          }
-        });
+        const token = await createSession(user, ctx);
 
         await createLog(
           ctx,
@@ -537,32 +527,7 @@ export default {
         // User doesn't have the property unitid, so we have to pass emailExists
         // for the token creation
         emailExists.sessionID = ctx.sessionID;
-        const token = await createToken(emailExists, ctx.SECRET);
-        ctx.session.token = token;
-
-        const location = await iplocate(
-          // In development using the ip is not possible
-          process.env.ENVIRONMENT == "production" ? ctx.ip : "192.76.145.3"
-        );
-
-        await ctx.redis.lpush(
-          `${USER_SESSION_ID_PREFIX}${emailExists.unitid}`,
-          JSON.stringify({
-            session: ctx.sessionID,
-            ...ctx.userData,
-            ...location,
-            loggedInAt: Date.now()
-          })
-        );
-
-        // Should normally not be needed, but somehow it takes too long to
-        // update the session and it creates an Auth Error in the next step
-        // without it.
-        ctx.session.save(err => {
-          if (err) {
-            console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
-          }
-        });
+        const token = await createSession(emailExists, ctx);
 
         await createLog(ctx, "signIn", { user: emailExists, email }, null);
 
@@ -590,9 +555,10 @@ export default {
 
           await redis.lrem(
             `${USER_SESSION_ID_PREFIX}${unitid}`,
-            0,
-            signOutSession
+            0, // Remove all elements equal to value
+            signOutSession // This is the value
           );
+
           await session.destroy(err => {
             if (err) {
               console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
@@ -679,10 +645,10 @@ export default {
   ),
 
   changePassword: requiresAuth.createResolver(
-    async (_, { pw, newPw, confirmPw }, ctx) =>
+    async (_p, { pw, newPw, confirmPw }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, session, SECRET } = ctx;
+          const { models, session, redis } = ctx;
 
           if (newPw != confirmPw) throw new Error("New passwords don't match!");
           if (pw == newPw) {
@@ -719,10 +685,7 @@ export default {
           const pwData = await getNewPasswordData(newPw);
 
           const p1 = models.Human.update(
-            {
-              needspasswordchange: false,
-              ...pwData
-            },
+            { needspasswordchange: false, ...pwData },
             { where: { unitid }, returning: true, transaction: ta }
           );
           const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
@@ -752,8 +715,17 @@ export default {
           // todo: simpler way to get company, since we don't return user anymore
           const user = await parentAdminCheck(basicUser);
           findOldPassword.company = user.company;
-          const newToken = await createToken(findOldPassword, SECRET);
-          session.token = newToken;
+
+          const sessions = await fetchSessions(redis, unitid);
+
+          const sessionPromises = sessions.map(sessionString =>
+            redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
+          );
+
+          sessionPromises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
+          await Promise.all(sessionPromises);
+
+          const newToken = await createSession(findOldPassword, ctx);
 
           return { ok: true, token: newToken };
         } catch (err) {

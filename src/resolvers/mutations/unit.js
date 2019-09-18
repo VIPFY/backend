@@ -5,18 +5,22 @@ import {
   userPicFolder,
   MIN_PASSWORD_LENGTH,
   MAX_PASSWORD_LENGTH,
-  IMPERSONATE_PREFIX
+  IMPERSONATE_PREFIX,
+  USER_SESSION_ID_PREFIX,
+  REDIS_SESSION_PREFIX
 } from "../../constants";
 import { NormalError } from "../../errors";
 import {
   createLog,
   companyCheck,
+  getNewPasswordData,
   parentAdminCheck,
   createNotification,
-  concatName
+  concatName,
+  fetchSessions
 } from "../../helpers/functions";
 import { uploadUserImage } from "../../services/aws";
-import { getNewPasswordData, createAdminToken } from "../../helpers/auth";
+import { createAdminToken } from "../../helpers/auth";
 import { sendEmail } from "../../helpers/email";
 /* eslint-disable no-unused-vars, prefer-destructuring */
 
@@ -332,7 +336,20 @@ export default {
         });
 
         if (logOut) {
-          // TODO: [VIP-409] Invalidate the Token when Sessions are implemented
+          const sessions = await fetchSessions(ctx.redis, unitid);
+
+          const sessionPromises = [];
+
+          sessions.forEach(sessionString => {
+            sessionPromises.push(
+              ctx.redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
+            );
+          });
+
+          sessionPromises.push(
+            ctx.redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`)
+          );
+          await Promise.all(sessionPromises);
         }
 
         return {

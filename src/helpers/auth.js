@@ -1,13 +1,11 @@
 import jwt from "jsonwebtoken";
 import { pick } from "lodash";
-import bcrypt from "bcrypt";
 import models from "@vipfy-private/sequelize-setup";
 import { AuthError } from "../errors";
 import {
   getCompanyMembershipCacheStats,
   flushCompanyMembershipCache
 } from "./companyMembership";
-import { computePasswordScore } from "./functions";
 
 export const createToken = async (user, SECRET, expiresIn = "1w") => {
   try {
@@ -120,12 +118,4 @@ export const getAuthStats = () => ({
 export const flushAuthCaches = () => {
   unitAuthCache.flushAll();
   flushCompanyMembershipCache();
-};
-
-export const getNewPasswordData = async password => {
-  const passwordhash = await bcrypt.hash(password, 12);
-  const passwordstrength = computePasswordScore(password);
-  const passwordlength = password.length;
-
-  return { passwordhash, passwordstrength, passwordlength };
 };

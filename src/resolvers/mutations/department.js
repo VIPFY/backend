@@ -6,13 +6,13 @@ import {
   MIN_PASSWORD_LENGTH
 } from "../../constants";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-import { getNewPasswordData } from "../../helpers/auth";
 import { NormalError } from "../../errors";
 import {
   createLog,
   createNotification,
   formatHumanName,
   selectCredit,
+  getNewPasswordData,
   checkPlanValidity
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";

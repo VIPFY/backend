@@ -1,7 +1,6 @@
 import { parseName } from "humanparser";
-import { getNewPasswordData } from "./auth";
+import { getNewPasswordData, checkMailExistance } from "./functions";
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "../constants";
-import { checkMailExistance } from "./functions";
 
 /**
  * Creates a Human and add him to the company. Returns new unitid
