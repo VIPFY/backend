@@ -16,6 +16,10 @@ const options = {
   tls: {}
 };
 
+export const REDIS_SESSION_PREFIX = "session:";
+export const USER_SESSION_ID_PREFIX = "userID-";
+export const IMPERSONATE_PREFIX = "impersonations-";
+
 if (process.env.ENVIRONMENT == "development") {
   options.tls = {
     checkServerIdentity: () => undefined

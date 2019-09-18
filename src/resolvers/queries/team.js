@@ -26,11 +26,11 @@ export default {
   fetchCompanyTeams: requiresRights([
     "view-teams",
     "view-licences"
-  ]).createResolver(async (parent, args, { models, token }) => {
+  ]).createResolver(async (_parent, _args, { models, session }) => {
     try {
       const {
         user: { company }
-      } = decode(token);
+      } = decode(session.token);
 
       const teams = await models.sequelize.query(
         `SELECT * FROM team_view

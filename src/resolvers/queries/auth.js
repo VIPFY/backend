@@ -6,19 +6,22 @@ import QRCode from "qrcode";
 import {
   parentAdminCheck,
   concatName,
-  check2FARights
+  check2FARights,
+  fetchSessions,
+  parseSessions
 } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
+import { USER_SESSION_ID_PREFIX } from "../../constants";
 
 export default {
-  me: requiresAuth.createResolver(async (_, _args, { models, token }) => {
+  me: requiresAuth.createResolver(async (_p, _args, { models, session }) => {
     // they are logged in
-    if (token && token != "null") {
+    if (session && session.token) {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         const me = await models.User.findById(unitid);
         const user = await parentAdminCheck(me);
@@ -104,11 +107,11 @@ export default {
   },
 
   generateSecret: requiresAuth.createResolver(
-    async (_p, { type, userid }, { models, token }) => {
+    async (_p, { type, userid }, { models, session }) => {
       try {
         let {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         if (userid && userid != unitid) {
           unitid = await check2FARights(userid, unitid, company);
@@ -146,6 +149,18 @@ export default {
 
           return { yubikey };
         }
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchUsersSessions: requiresRights(["show-sessions"]).createResolver(
+    async (_p, { userid }, { redis }) => {
+      try {
+        const sessions = await fetchSessions(redis, userid);
+
+        return parseSessions(sessions);
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

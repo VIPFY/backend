@@ -1,20 +1,26 @@
 import { decode } from "jsonwebtoken";
+import iplocate from "node-iplocate";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
   userPicFolder,
   MIN_PASSWORD_LENGTH,
-  MAX_PASSWORD_LENGTH
+  MAX_PASSWORD_LENGTH,
+  IMPERSONATE_PREFIX,
+  USER_SESSION_ID_PREFIX,
+  REDIS_SESSION_PREFIX
 } from "../../constants";
 import { NormalError } from "../../errors";
 import {
   createLog,
   companyCheck,
+  getNewPasswordData,
   parentAdminCheck,
   createNotification,
-  concatName
+  concatName,
+  fetchSessions
 } from "../../helpers/functions";
 import { uploadUserImage } from "../../services/aws";
-import { getNewPasswordData, createAdminToken } from "../../helpers/auth";
+import { createAdminToken } from "../../helpers/auth";
 import { sendEmail } from "../../helpers/email";
 /* eslint-disable no-unused-vars, prefer-destructuring */
 
@@ -22,11 +28,11 @@ export default {
   updateProfilePic: requiresAuth.createResolver(async (_p, { file }, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
 
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         const user = await models.User.findOne({
           where: { id: unitid },
@@ -70,10 +76,10 @@ export default {
     async (_p, { file, unitid }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { unitid: adminid }
-          } = decode(token);
+          } = decode(session.token);
 
           const parsedFile = await file;
 
@@ -118,11 +124,11 @@ export default {
     async (_p, { user }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { unitid }
-          } = decode(token);
+          } = decode(session.token);
 
           const { password, statisticdata, ...human } = user;
           let updatedHuman;
@@ -171,11 +177,11 @@ export default {
     async (_p, { user }, ctx) => {
       await ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const { id, password, ...userData } = user;
 
@@ -275,10 +281,10 @@ export default {
   updateEmployeePassword: requiresRights(["edit-employee"]).createResolver(
     async (_p, { unitid, password, logOut }, ctx) => {
       try {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
         const {
           user: { unitid: id, company }
-        } = decode(token);
+        } = decode(session.token);
 
         if (password.length < MIN_PASSWORD_LENGTH) {
           throw new Error("Password not long enough!");
@@ -330,7 +336,20 @@ export default {
         });
 
         if (logOut) {
-          // TODO: [VIP-409] Invalidate the Token when Sessions are implemented
+          const sessions = await fetchSessions(ctx.redis, unitid);
+
+          const sessionPromises = [];
+
+          sessions.forEach(sessionString => {
+            sessionPromises.push(
+              ctx.redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
+            );
+          });
+
+          sessionPromises.push(
+            ctx.redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`)
+          );
+          await Promise.all(sessionPromises);
         }
 
         return {
@@ -346,10 +365,10 @@ export default {
 
   setConsent: requiresAuth.createResolver(async (_p, { consent }, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
-      const { models, token } = ctx;
+      const { models, session } = ctx;
       const {
         user: { unitid }
-      } = decode(token);
+      } = decode(session.token);
 
       try {
         await models.Human.update(
@@ -387,39 +406,57 @@ export default {
   ),
 
   impersonate: requiresRights(["impersonate"]).createResolver(
-    async (_p, { unitid }, ctx) => {
+    async (_p, { userid }, ctx) => {
       try {
-        const { models, token, SECRET } = ctx;
-
         const {
           user: { unitid: id, company }
-        } = decode(token);
+        } = decode(ctx.session.token);
 
-        if (id == unitid) {
+        if (id == userid) {
           throw new Error("You can't impersonate yourself!");
         }
-        const p1 = models.User.findOne({ where: { id }, raw: true });
-        const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
 
-        const [isAdmin, employee] = await Promise.all([p1, p2]);
-        await companyCheck(company, id, unitid);
+        const token = await createAdminToken({
+          unitid: userid,
+          company,
+          impersonator: id,
+          sessionID: ctx.sessionID,
+          SECRET: ctx.SECRET
+        });
 
-        if (!isAdmin) {
-          throw new Error("You don't have the necessary rights!");
-        }
+        // Append the oldToken to the Session to set it back when the Admin
+        // ends the Impersonation
+        ctx.session.oldToken = ctx.session.token;
+        ctx.session.token = token;
+        const location = await iplocate(
+          // In development using the ip is not possible
+          process.env.ENVIRONMENT == "production" ? ctx.ip : "192.76.145.3"
+        );
 
-        if (employee.isadmin) {
-          throw new Error("You can't impersonate another Admin!");
-        }
+        await ctx.redis.lpush(
+          `${IMPERSONATE_PREFIX}${id}`,
+          ctx.JSON.stringify({
+            session: ctx.sessionID,
+            ...ctx.userData,
+            ...location,
+            loggedInAt: Date.now()
+          })
+        );
+
+        ctx.session.save(err => {
+          if (err) {
+            console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+          }
+        });
 
         await createLog(
           ctx,
           "impersonate",
-          { impersonator: id, user: unitid },
+          { impersonator: id, user: userid },
           null
         );
 
-        return createAdminToken({ unitid, company, impersonator: id, SECRET });
+        return token;
       } catch (err) {
         throw new NormalError({
           message: err.message,
@@ -427,5 +464,33 @@ export default {
         });
       }
     }
-  )
+  ),
+
+  endImpersonation: async (_p, _args, ctx) => {
+    try {
+      const { user, impersonator } = decode(ctx.session.token);
+
+      await companyCheck(user.company, impersonator, user.unitid);
+      const listName = `${IMPERSONATE_PREFIX}${impersonator}`;
+      const sessionIDs = await ctx.redis.lrange(listName, 0, -1);
+
+      const sessionID = sessionIDs.find(el => el == ctx.sessionID);
+
+      await ctx.redis.lrem(listName, 0, sessionID);
+      ctx.session.token = ctx.session.oldToken;
+      delete ctx.session.oldToken;
+
+      ctx.session.save(err => {
+        if (err) {
+          console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+        }
+      });
+
+      await createLog(ctx, "endImpersonation", { impersonator, user }, null);
+
+      return ctx.session.token;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };

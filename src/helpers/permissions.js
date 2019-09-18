@@ -23,17 +23,16 @@ const createResolver = resolver => {
 
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(
-  async (_parent, _args, ctx) => {
+  async (_parent, _args, { models, session }) => {
     try {
-      const { models, token } = ctx;
-
-      if (!token || token == "null") {
+      console.log("\x1b[1m%s\x1b[0m", "LOG req.session.token", session);
+      if (!session || !session.token) {
         throw new Error("No valid token received!");
       }
 
       const {
         user: { company, unitid }
-      } = decode(token);
+      } = decode(session.token);
 
       const valid = models.User.findOne({
         where: { id: unitid },
@@ -76,6 +75,11 @@ export const requiresAuth = createResolver(
         });
       }
     } catch (error) {
+      session.destroy(err => {
+        if (err) {
+          console.error(err);
+        }
+      });
       throw new AuthError(error.message);
     }
   }
@@ -83,12 +87,12 @@ export const requiresAuth = createResolver(
 );
 
 export const requiresDepartmentCheck = requiresAuth.createResolver(
-  async (_parent, args, { models, token }) => {
+  async (_parent, args, { models, session }) => {
     try {
       if (args.departmentid) {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         await checkCompanyMembership(
           models,
@@ -98,6 +102,11 @@ export const requiresDepartmentCheck = requiresAuth.createResolver(
         );
       }
     } catch (err) {
+      session.destroy(error => {
+        if (error) {
+          console.error(error);
+        }
+      });
       throw new AuthError(err);
     }
   }
@@ -105,11 +114,11 @@ export const requiresDepartmentCheck = requiresAuth.createResolver(
 
 export const requiresRights = rights =>
   requiresDepartmentCheck.createResolver(
-    async (_parent, args, { models, token }) => {
+    async (_parent, args, { models, session }) => {
       try {
         const {
           user: { unitid: holder, company }
-        } = await decode(token);
+        } = await decode(session.token);
 
         if (args.departmentid) {
           await checkCompanyMembership(
@@ -178,21 +187,27 @@ export const requiresRights = rights =>
       } catch (err) {
         if (err instanceof RightsError) {
           throw err;
+        } else {
+          session.destroy(error => {
+            if (error) {
+              console.error(error);
+            }
+          });
+          throw new AuthError({
+            message:
+              "Opps, something went wrong. Please report this error with id auth_1"
+          });
         }
-        throw new AuthError({
-          message:
-            "Opps, something went wrong. Please report this error with id auth_1"
-        });
       }
     }
   );
 
 export const requiresMessageGroupRights = rights =>
-  requiresAuth.createResolver(async (parent, args, { models, token }) => {
+  requiresAuth.createResolver(async (_p, args, { models, session }) => {
     try {
       const {
         user: { unitid }
-      } = await decode(token);
+      } = await decode(session.token);
 
       const hasRights = await checkRights(models, rights, unitid, args);
       if (!hasRights) {
@@ -201,20 +216,26 @@ export const requiresMessageGroupRights = rights =>
     } catch (err) {
       if (err instanceof RightsError) {
         throw err;
+      } else {
+        session.destroy(error => {
+          if (error) {
+            console.error(error);
+          }
+        });
+        throw new AuthError({
+          message:
+            "Oops, something went wrong. Please report this error with id auth_2"
+        });
       }
-      throw new AuthError({
-        message:
-          "Oops, something went wrong. Please report this error with id auth_2"
-      });
     }
   });
 
 export const requiresVipfyAdmin = requiresAuth.createResolver(
-  async (parent, args, { token }) => {
+  async (_parent, _args, { session }) => {
     try {
       const {
         user: { unitid }
-      } = decode(token);
+      } = decode(session.token);
 
       if (unitid != 7 && unitid != 22 && unitid != 67) {
         throw new AdminError();
@@ -226,7 +247,7 @@ export const requiresVipfyAdmin = requiresAuth.createResolver(
 );
 
 export const requiresMachineToken = createResolver(
-  async (parent, args, { token }) => {
+  async (_parent, _args, { token }) => {
     try {
       const { cronjob } = decode(token);
 

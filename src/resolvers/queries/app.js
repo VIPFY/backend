@@ -10,11 +10,11 @@ import { companyCheck } from "../../helpers/functions";
 
 export default {
   allApps: requiresAuth.createResolver(
-    async (_P, { limit, offset, sortOptions }, { models, token }) => {
+    async (_P, { limit, offset, sortOptions }, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const allApps = await models.AppDetails.findAll({
           limit,
@@ -57,11 +57,11 @@ export default {
   fetchAllAppsEnhanced: requiresRights([
     "view-apps",
     "view-licences"
-  ]).createResolver(async (_parent, _args, { models, token }) => {
+  ]).createResolver(async (_parent, _args, { models, session }) => {
     try {
       const {
         user: { company }
-      } = decode(token);
+      } = decode(session.token);
 
       const data = models.sequelize.query(
         `SELECT app_data.*,
@@ -83,11 +83,11 @@ export default {
   }),
 
   fetchAppById: requiresRights(["view-apps"]).createResolver(
-    async (_parent, { id }, { models, token }) => {
+    async (_parent, { id }, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const app = await models.AppDetails.findOne({
           where: {
@@ -106,11 +106,11 @@ export default {
   ),
 
   fetchLicences: requiresAuth.createResolver(
-    async (_, { licenceid }, { models, token }, info) => {
+    async (_, { licenceid }, { models, session }, info) => {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         let query = `SELECT licence_view.*, plan_data.appid FROM licence_view JOIN
            boughtplan_data ON licence_view.boughtplanid = boughtplan_data.id
@@ -210,11 +210,11 @@ export default {
   ),
 
   fetchUsersOwnLicences: requiresRights(["view-licences"]).createResolver(
-    async (_p, { unitid }, { models, token }) => {
+    async (_p, { unitid }, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const departments = await models.sequelize.query(
           "Select id from getDepartments(:company)",
@@ -332,7 +332,7 @@ export default {
   ),
 
   fetchUnitApps: requiresRights(["view-licences"]).createResolver(
-    async (parent, { departmentid }, { models }) => {
+    async (_p, { departmentid }, { models }) => {
       try {
         const userApps = await models.sequelize.query(
           `SELECT DISTINCT
@@ -377,7 +377,7 @@ export default {
   ),
 
   fetchUnitAppsSimpleStats: requiresRights(["view-licences"]).createResolver(
-    async (parent, { departmentid }, { models }) => {
+    async (_p, { departmentid }, { models }) => {
       try {
         const userApps = await models.sequelize.query(
           `SELECT DISTINCT
@@ -418,11 +418,11 @@ export default {
   ),
 
   fetchSupportToken: requiresAuth.createResolver(
-    async (parent, { licenceid }, { models, token }) => {
+    async (_parent, { licenceid }, { models, session }) => {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         const puserdata = models.User.findOne({
           where: { id: unitid },
@@ -461,11 +461,11 @@ export default {
   ),
 
   fetchBoughtplanUsagePerUser: requiresRights(["view-usage"]).createResolver(
-    async (_, { starttime, endtime, boughtplanid }, { models, token }) => {
+    async (_, { starttime, endtime, boughtplanid }, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
         const stats = await models.sequelize.query(
           `
           SELECT  tt.boughtplanid boughtplan,
@@ -497,10 +497,10 @@ export default {
   ),
 
   fetchCompanyServices: requiresRights(["view-licences"]).createResolver(
-    async (parent, args, { models, token }) => {
+    async (_parent, _args, { models, session }) => {
       const {
         user: { company }
-      } = decode(token);
+      } = decode(session.token);
       try {
         /* const companyServices = await models.sequelize.query(
           `Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
@@ -556,6 +556,7 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
+
         return companyServices;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -564,10 +565,10 @@ export default {
   ),
 
   fetchCompanyService: requiresRights(["view-licences"]).createResolver(
-    async (parent, { serviceid }, { models, token }) => {
+    async (_parent, { serviceid }, { models, session }) => {
       const {
         user: { company }
-      } = decode(token);
+      } = decode(session.token);
       try {
         const companyServices = await models.sequelize.query(
           `Select id, COALESCE(a.app, b.app) as app,  COALESCE(a.licences, ARRAY[]::bigint[]) as licences,
@@ -598,6 +599,7 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
             type: models.sequelize.QueryTypes.SELECT
           }
         );
+
         return companyServices[0];
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -606,7 +608,7 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
   ),
 
   fetchServiceLicences: requiresRights(["view-licences"]).createResolver(
-    async (parent, { employees, serviceid }, { models }) => {
+    async (_p, { employees, serviceid }, { models }) => {
       try {
         const emp = employees.map(e => parseInt(e));
         const companyService = await models.sequelize.query(
@@ -628,6 +630,7 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
             type: models.sequelize.QueryTypes.SELECT
           }
         );
+
         return companyService;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -636,10 +639,10 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
   ),
 
   fetchTotalAppUsage: requiresRights(["view-usage"]).createResolver(
-    async (_, { starttime, endtime }, { models, token }) => {
+    async (_p, { starttime, endtime }, { models, session }) => {
       const {
         user: { company }
-      } = decode(token);
+      } = decode(session.token);
       try {
         let interval = "";
         if (starttime && endtime) {
@@ -666,6 +669,7 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
             type: models.sequelize.QueryTypes.SELECT
           }
         );
+
         return stats;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -674,11 +678,11 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
   ),
 
   fetchIssuedLicences: requiresRights(["view-licences"]).createResolver(
-    async (_, { unitid: userId }, { models, token }) => {
+    async (_, { unitid: userId }, { models, session }) => {
       try {
         const {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         await companyCheck(company, unitid, userId);
 
@@ -697,11 +701,11 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
   ),
 
   fetchTempLicences: requiresRights(["view-licences"]).createResolver(
-    async (_, { unitid: userId }, { models, token }) => {
+    async (_p, { unitid: userId }, { models, session }) => {
       try {
         const {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         await companyCheck(company, unitid, userId);
 
@@ -721,12 +725,12 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
   ),
 
   bulkUpdateLayout: requiresAuth.createResolver(
-    async (_, { layouts }, { models, token }) =>
+    async (_, { layouts }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid }
-          } = decode(token);
+          } = decode(session.token);
 
           const data = layouts.map(layout => {
             return [layout.id, unitid, layout.dashboard];

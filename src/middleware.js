@@ -6,43 +6,35 @@
 
 import jwt from "jsonwebtoken";
 import models from "@vipfy-private/sequelize-setup";
-import { checkAuthentification, getNewPasswordData } from "./helpers/auth";
+import session from "express-session";
+import connectRedis from "connect-redis";
+import { getNewPasswordData } from "./helpers/functions";
 import Utility from "./helpers/createHmac";
 import logger from "./loggers";
+import { redis, REDIS_SESSION_PREFIX } from "./constants";
 
-const { SECRET, SECRET_THREE } = process.env;
+const RedisStore = connectRedis(session);
+const {
+  SECRET,
+  SECRET_THREE,
+  ENVIRONMENT,
+  SESSION_LIFETIME = 1000 * 60 * 60 * 9 // One work day with breaks
+} = process.env;
 
-/* eslint-disable consistent-return, prefer-destructuring */
-export const authMiddleware = async (req, res, next) => {
-  const token = req.headers["x-token"];
-  const impersonatorToken = req.headers["i-token"];
-
-  if (token != "null" && token) {
-    try {
-      const { user } = await jwt.verify(token, SECRET);
-
-      await checkAuthentification(user.unitid, user.company);
-
-      // Make sure that the impersonator is in the same company
-      if (impersonatorToken != "null" && impersonatorToken) {
-        const { user: impersonator } = await jwt.verify(token, SECRET);
-
-        if (user.company != impersonator.company) {
-          throw new Error("You can't impersonate a user from another company!");
-        }
-
-        await checkAuthentification(impersonator.unitid, impersonator.company);
-      }
-    } catch (err) {
-      logger.info(err);
-      logger.info(err);
-      req.headers["x-token"] = undefined;
-      req.headers["i-token"] = undefined;
-    }
+export const sessionMiddleware = session({
+  store: new RedisStore({ client: redis, prefix: REDIS_SESSION_PREFIX }),
+  name: "vipfy-session",
+  resave: false, // prevents the session from being saved every time
+  saveUninitialized: false, // could create Race conditions when true
+  secret: SECRET,
+  cookie: {
+    httpOnly: true,
+    maxAge: SESSION_LIFETIME,
+    secure: ENVIRONMENT == "production"
   }
-  next();
-};
+});
 
+// eslint-disable-next-line
 export const loggingMiddleWare = (req, res, next) => {
   const oldWrite = res.write;
   const oldEnd = res.end;
@@ -73,10 +65,9 @@ export const loggingMiddleWare = (req, res, next) => {
       }
 
       const { variables } = req.body;
-      const token = req.headers["x-token"];
 
-      if (token && token != "null") {
-        const customer = jwt.decode(token);
+      if (req.session && req.session.token && req.session.token != "null") {
+        const customer = jwt.decode(req.session.token);
 
         user = customer.user;
       }

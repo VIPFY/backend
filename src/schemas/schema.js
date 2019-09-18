@@ -1,7 +1,7 @@
 import { gql } from "apollo-server-express";
-import * as TwoFA from "./2FA";
 import * as App from "./App";
 import * as Admin from "./Admin";
+import * as Auth from "./Auth";
 import * as Bill from "./Bill";
 import * as Common from "./Common";
 import * as Contact from "./Contact";
@@ -14,6 +14,7 @@ import * as Responses from "./Responses";
 import * as Demo from "./Demo";
 import * as Tutorial from "./Tutorial";
 import * as Team from "./Team";
+import * as TwoFA from "./2FA";
 
 // Create Arrays to store the data from every schema
 const types = [];
@@ -25,6 +26,7 @@ const subscriptions = [];
 const schemas = [
   App,
   Admin,
+  Auth,
   Bill,
   Common,
   Contact,

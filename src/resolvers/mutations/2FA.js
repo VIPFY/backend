@@ -1,18 +1,20 @@
 import Speakeasy from "speakeasy";
 import { decode } from "jsonwebtoken";
+import iplocate from "node-iplocate";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createToken } from "../../helpers/auth";
 import { checkToken } from "../../helpers/token";
 import { check2FARights } from "../../helpers/functions";
+import { USER_SESSION_ID_PREFIX } from "../../constants";
 
 export default {
   verify2FA: requiresAuth.createResolver(
-    async (_, { userid, type, code, codeId }, { models, token }) => {
+    async (_p, { userid, type, code, codeId }, { models, session }) => {
       try {
         let {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         if (userid && userid != unitid) {
           unitid = await check2FARights(userid, unitid, company);
@@ -43,17 +45,13 @@ export default {
     }
   ),
 
-  validate2FA: async (
-    _,
-    { userid, type, token, twoFAToken },
-    { models, SECRET }
-  ) => {
+  validate2FA: async (_p, { userid, type, token, twoFAToken }, ctx) => {
     try {
+      const { models, SECRET } = ctx;
       const { secret, id } = await models.TwoFA.findOne({
-        where: { unitid: userid, type },
+        where: { unitid: userid, type, verified: true, deleted: false },
         raw: true
       });
-
       await checkToken(twoFAToken, "2FAToken");
 
       const validToken = Speakeasy.totp.verify({
@@ -86,6 +84,30 @@ export default {
 
         const newToken = await createToken(data[0], SECRET);
 
+        const location = await iplocate(
+          // In development using the ip is not possible
+          process.env.ENVIRONMENT == "production" ? ctx.ip : "192.76.145.3"
+        );
+
+        await ctx.redis.lpush(
+          `${USER_SESSION_ID_PREFIX}${userid}`,
+          JSON.stringify({
+            session: ctx.sessionID,
+            ...ctx.userData,
+            ...location,
+            loggedInAt: Date.now()
+          })
+        );
+
+        // Should normally not be needed, but somehow it takes too long to
+        // update the session and it creates an Auth Error in the next step
+        // without it.
+        ctx.session.save(err => {
+          if (err) {
+            console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+          }
+        });
+
         return newToken;
       } else {
         throw new Error("Invalid Token or Token expired");
@@ -96,7 +118,7 @@ export default {
   },
 
   force2FA: requiresRights(["force-2FA"]).createResolver(
-    async (_, { userid }, { models }) => {
+    async (_p, { userid }, { models }) => {
       try {
         await models.Human.update(
           { needstwofa: true },

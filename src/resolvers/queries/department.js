@@ -5,11 +5,11 @@ import { googleMapsClient } from "../../services/gcloud";
 
 export default {
   fetchCompany: requiresAuth.createResolver(
-    async (parent, args, { models, token }) => {
+    async (_parent, _args, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         return await models.Department.findOne({
           where: { unitid: company }
@@ -21,11 +21,11 @@ export default {
   ),
 
   fetchDepartmentsData: requiresRights(["view-departments"]).createResolver(
-    async (parent, args, { models, token }) => {
+    async (_parent, _args, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const departments = await models.sequelize
           .query("Select * from getDepartmentsData(:company)", {
@@ -41,11 +41,11 @@ export default {
   ),
 
   fetchEmployees: requiresRights(["view-employees"]).createResolver(
-    async (parent, args, { models, token }) => {
+    async (_parent, _args, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const employees = await models.sequelize.query(
           `SELECT DISTINCT id, employee FROM department_employee_view
@@ -64,11 +64,11 @@ export default {
   ),
 
   fetchUserSecurityOverview: requiresRights(["view-security"]).createResolver(
-    async (_, args, { models, token }) => {
+    async (_, _args, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const employees = await models.sequelize.query(
           `SELECT human_data.*,
@@ -105,11 +105,11 @@ export default {
   ),
 
   fetchVipfyPlan: requiresAuth.createResolver(
-    async (_, args, { models, token }) => {
+    async (_p, _args, { models, session }) => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const vipfyPlans = await models.Plan.findAll({
           where: { appid: 66 },

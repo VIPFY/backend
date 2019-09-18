@@ -23,11 +23,11 @@ export default {
   },
 
   readNotification: requiresAuth.createResolver(
-    async (parent, { id }, { models, token }) => {
+    async (_parent, { id }, { models, session }) => {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         await models.Notification.update(
           { readtime: models.sequelize.fn("NOW") },
@@ -42,11 +42,11 @@ export default {
   ),
 
   readAllNotifications: requiresAuth.createResolver(
-    async (parent, args, { models, token }) => {
+    async (_parent, _args, { models, session }) => {
       try {
         const {
           user: { unitid }
-        } = decode(token);
+        } = decode(session.token);
 
         await models.Notification.update(
           { readtime: models.sequelize.fn("NOW") },
@@ -60,9 +60,9 @@ export default {
     }
   ),
 
-  ping: async (parent, args, context) => ({ ok: true }),
+  ping: async () => ({ ok: true }),
 
-  checkVat: async (parent, { vat, cc }) => {
+  checkVat: async (_parent, { vat, cc }) => {
     try {
       if (vat.substr(0, 2) != cc) {
         throw new Error("Prefix doesn't match with provided country");
@@ -79,7 +79,7 @@ export default {
   },
 
   logSSOError: requiresAuth.createResolver(
-    async (parent, { eventdata }, { models, ip }) => {
+    async (_parent, { eventdata }, { models, ip }) => {
       try {
         console.error(eventdata);
 

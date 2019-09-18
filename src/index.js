@@ -19,32 +19,29 @@ import * as Services from "@vipfy-private/services";
 import { express as voyagerMiddleware } from "graphql-voyager/middleware";
 import typeDefs from "./schemas/schema";
 import resolvers from "./resolvers/resolvers";
-import { authMiddleware, loggingMiddleWare } from "./middleware";
+import { loggingMiddleWare, sessionMiddleware } from "./middleware";
 import logger from "./loggers";
 import { formatError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
-
-const RateLimit = require("express-rate-limit");
-const RedisStore = require("rate-limit-redis");
-const Redis = require("ioredis");
+import { redis } from "./constants";
+// Is this still needed here?
+// const RateLimit = require("express-rate-limit");
+// const RedisStore = require("rate-limit-redis");
 
 Services.setLogger(logger);
 
 const app = express();
 const {
-  ENVIRONMENT,
-  TOKEN_SET,
+  ENVIRONMENT = "development",
+  PORT = 4000,
   SSL_KEY,
   SSL_CERT,
   SECRET,
-  TOKEN_DEVELOPMENT,
   USE_VOYAGER,
   USE_SSH,
   PROXY_LEVELS
 } = process.env;
 
-const secure = ENVIRONMENT == "production" ? "s" : "";
-const PORT = process.env.PORT || 4000;
 /* const USE_XRAY =
   !!process.env.USE_XRAY &&
   process.env.USE_XRAY != "false" &&
@@ -127,11 +124,34 @@ const corsOptions = {
           "https://aws.vipfy.store"
         ]
       : "http://localhost:3000",
-  credentials: true // <-- REQUIRED backend setting
+  credentials: true // <-- REQUIRED backend setting for sessions
 };
 
-app.use(authMiddleware);
 app.use(cors(corsOptions));
+app.use((req, res, next) => {
+  let tries = 3;
+  // Recursive Function to retry on a lost connection to Redis
+  const lookupSession = error => {
+    if (error) {
+      return next(error);
+    }
+
+    tries--;
+
+    if (req.session !== undefined) {
+      return next();
+    }
+
+    if (tries < 0) {
+      return next(new Error("Could not get session"));
+    }
+
+    return sessionMiddleware(req, res, lookupSession);
+  };
+
+  lookupSession();
+});
+
 app.use(loggingMiddleWare);
 
 /* if (USE_XRAY) {
@@ -150,7 +170,13 @@ const gqlserver = new ApolloServer({
   formatError,
   context: ({ req }) => ({
     models,
-    token: TOKEN_SET ? TOKEN_DEVELOPMENT : req.headers["x-token"],
+    redis,
+    userData: {
+      browser: req.headers["user-agent"],
+      language: req.headers["accept-language"]
+    },
+    session: req.session,
+    sessionID: req.sessionID,
     logger,
     SECRET,
     ip: req.ip,
@@ -169,10 +195,11 @@ if (USE_VOYAGER) {
 }
 
 // The home route is currently empty
-app.get("/", (req, res) =>
-  res.send(`Go to http${secure}://localhost:${PORT}/graphiql for the Interface`)
+app.get("/", (_req, res) =>
+  res.send(`Go to http://localhost:${PORT}/graphiql for the Interface`)
 );
 
+// Is this still needed?
 app.post("/download", async (req, res) => {
   try {
     const token = req.headers["x-token"];

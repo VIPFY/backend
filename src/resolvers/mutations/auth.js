@@ -5,11 +5,12 @@ import { decode } from "jsonwebtoken";
 import { sleep } from "@vipfy-private/service-base";
 import { parseName } from "humanparser";
 import {
-  createToken,
-  checkAuthentification,
-  getNewPasswordData
-} from "../../helpers/auth";
-import { createToken as create2FAToken } from "../../helpers/token";
+  USER_SESSION_ID_PREFIX,
+  REDIS_SESSION_PREFIX,
+  MAX_PASSWORD_LENGTH,
+  MIN_PASSWORD_LENGTH
+} from "../../constants";
+import { createToken, checkAuthentification } from "../../helpers/auth";
 import { createToken as createSetupToken } from "../../helpers/token";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
@@ -17,13 +18,16 @@ import {
   createLog,
   computePasswordScore,
   formatHumanName,
-  checkVat,
   parseAddress,
-  createNotification
+  createNotification,
+  fetchSessions,
+  parseSessions,
+  endSession,
+  createSession,
+  getNewPasswordData
 } from "../../helpers/functions";
 import { googleMapsClient } from "../../services/gcloud";
 import { NormalError } from "../../errors";
-import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "../../constants";
 import { sendEmail, emailRegex } from "../../helpers/email";
 import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
@@ -231,8 +235,8 @@ export default {
           ]
         });
 
-        const fakeToken = await createToken(unit, SECRET);
-        ctx.token = fakeToken;
+        user.company = company.id;
+        const token = await createSession(user, ctx);
 
         await createLog(
           ctx,
@@ -248,10 +252,6 @@ export default {
           },
           ta
         );
-
-        user.company = company.id;
-
-        const token = await createToken(user, SECRET);
 
         return {
           ok: true,
@@ -270,13 +270,13 @@ export default {
   setupFinished: async (
     _p,
     { country, vatoption, vatnumber, placeId, ownAdress, username },
-    { models, token }
+    { models, session }
   ) =>
     models.sequelize.transaction(async ta => {
       try {
         const {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         let p1;
         if (username) {
@@ -353,7 +353,6 @@ export default {
   signUpConfirm: async (_, { token, password, passwordConfirm, email }, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       const { models } = ctx;
-
       if (password != passwordConfirm) {
         throw new Error("Passwords don't match!");
       }
@@ -426,7 +425,7 @@ export default {
 
         const fakeToken = await createToken(user, ctx.SECRET);
 
-        ctx.token = fakeToken;
+        ctx.session.token = fakeToken;
         const p5 = createLog(ctx, "signUpConfirm", { token, email }, ta);
         const [signUpToken] = await Promise.all([p1, p2, p3, p4, p5]);
 
@@ -458,7 +457,7 @@ export default {
       }
     }),
 
-  signIn: async (_, { email, password }, ctx) => {
+  signIn: async (_p, { email, password }, ctx) => {
     try {
       if (password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
@@ -499,7 +498,7 @@ export default {
           raw: true
         });
 
-        const token = await create2FAToken();
+        const token = await createSetupToken();
 
         await ctx.models.Token.create({
           email,
@@ -513,8 +512,10 @@ export default {
 
         // One is needed for the logger function to work correctly
         const fakeToken = await createToken(emailExists, ctx.SECRET);
-        ctx.token = fakeToken;
-        await createLog(ctx, "signIn", { user: emailExists, email }, null);
+        // Does this work with 2FA?
+
+        ctx.session.token = fakeToken;
+        await createLog(ctx, "signIn-2FA", { user: emailExists, email }, null);
 
         return {
           ok: true,
@@ -523,10 +524,11 @@ export default {
           token
         };
       } else {
-        // User doesn't have the property unitid, so we have to pass emailExists for
-        // the token creation
-        const token = await createToken(emailExists, ctx.SECRET);
-        ctx.token = token;
+        // User doesn't have the property unitid, so we have to pass emailExists
+        // for the token creation
+        emailExists.sessionID = ctx.sessionID;
+        const token = await createSession(emailExists, ctx);
+
         await createLog(ctx, "signIn", { user: emailExists, email }, null);
 
         return { ok: true, token };
@@ -537,11 +539,116 @@ export default {
     }
   },
 
+  signOut: requiresAuth.createResolver(
+    async (_p, _args, { session, redis, sessionID }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+
+        if (session.token) {
+          const sessions = await fetchSessions(redis, unitid);
+          const signOutSession = sessions.find(item => {
+            const parsedSession = JSON.parse(item);
+            return parsedSession.session == sessionID;
+          });
+
+          await redis.lrem(
+            `${USER_SESSION_ID_PREFIX}${unitid}`,
+            0, // Remove all elements equal to value
+            signOutSession // This is the value
+          );
+
+          await session.destroy(err => {
+            if (err) {
+              console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+            }
+          });
+        }
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  signOutSession: requiresAuth.createResolver(
+    async (_p, { sessionID }, { session, redis }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+        const remainingSessions = await endSession(redis, unitid, sessionID);
+
+        return parseSessions(remainingSessions);
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  signOutUser: requiresRights(["delete-session"]).createResolver(
+    async (_p, { sessionID, userid }, { redis }) => {
+      try {
+        const remainingSessions = await endSession(redis, userid, sessionID);
+
+        return parseSessions(remainingSessions);
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  signOutEverywhere: requiresAuth.createResolver(
+    async (_p, _args, { session, redis }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+
+        const sessions = await fetchSessions(redis, unitid);
+
+        const promises = [];
+
+        sessions.forEach(sessionID => {
+          promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`));
+        });
+        promises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
+        await Promise.all(promises);
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  signOutUserEverywhere: requiresRights(["delete-session"]).createResolver(
+    async (_p, { userid }, { redis }) => {
+      try {
+        const sessions = await fetchSessions(redis, userid);
+
+        const promises = [];
+
+        sessions.forEach(session => {
+          promises.push(redis.del(`${REDIS_SESSION_PREFIX}${session}`));
+        });
+        promises.push(redis.del(`${USER_SESSION_ID_PREFIX}${userid}`));
+        await Promise.all(promises);
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   changePassword: requiresAuth.createResolver(
-    async (_, { pw, newPw, confirmPw }, ctx) =>
+    async (_p, { pw, newPw, confirmPw }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token, SECRET } = ctx;
+          const { models, session, redis } = ctx;
 
           if (newPw != confirmPw) throw new Error("New passwords don't match!");
           if (pw == newPw) {
@@ -563,7 +670,7 @@ export default {
 
           const {
             user: { unitid }
-          } = await decode(token);
+          } = await decode(session.token);
 
           const findOldPassword = await models.Login.findOne({
             where: { unitid },
@@ -578,10 +685,7 @@ export default {
           const pwData = await getNewPasswordData(newPw);
 
           const p1 = models.Human.update(
-            {
-              needspasswordchange: false,
-              ...pwData
-            },
+            { needspasswordchange: false, ...pwData },
             { where: { unitid }, returning: true, transaction: ta }
           );
           const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
@@ -611,7 +715,17 @@ export default {
           // todo: simpler way to get company, since we don't return user anymore
           const user = await parentAdminCheck(basicUser);
           findOldPassword.company = user.company;
-          const newToken = await createToken(findOldPassword, SECRET);
+
+          const sessions = await fetchSessions(redis, unitid);
+
+          const sessionPromises = sessions.map(sessionString =>
+            redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
+          );
+
+          sessionPromises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
+          await Promise.all(sessionPromises);
+
+          const newToken = await createSession(findOldPassword, ctx);
 
           return { ok: true, token: newToken };
         } catch (err) {
@@ -626,10 +740,10 @@ export default {
   agreeTos: requiresAuth.createResolver(async (_p, _args, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
         const {
           user: { unitid }
-        } = await decode(token);
+        } = await decode(session.token);
 
         const updatedUser = await models.Human.update(
           { firstlogin: false },
@@ -681,8 +795,7 @@ export default {
           { where: { unitid: user.unitid }, returning: true, transaction: ta }
         );
 
-        const token = await createToken(emailExists, ctx.SECRET);
-        ctx.token = token;
+        ctx.session.token = await createToken(emailExists, ctx.SECRET);
 
         await createLog(
           ctx,
@@ -696,12 +809,7 @@ export default {
           fromName: "VIPFY",
           personalizations: [
             {
-              to: [
-                {
-                  email,
-                  name: formatHumanName(user)
-                }
-              ],
+              to: [{ email, name: formatHumanName(user) }],
               dynamic_template_data: {
                 name: formatHumanName(user),
                 password: newPw,
@@ -721,10 +829,10 @@ export default {
     async (_p, { userids }, ctx) =>
       ctx.models.sequelize.transaction(async transaction => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company }
-          } = await decode(token);
+          } = await decode(session.token);
 
           // check that user has rights
           const checks = [];
@@ -808,7 +916,7 @@ export default {
       await checkAuthentification(emailExists.unitid, emailExists.company);
 
       const token = await createToken(emailExists, SECRET, "1d");
-      ctx.token = token;
+      ctx.session.token = token;
 
       const p1 = createLog(
         ctx,

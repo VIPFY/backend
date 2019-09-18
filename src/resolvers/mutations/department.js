@@ -6,13 +6,13 @@ import {
   MIN_PASSWORD_LENGTH
 } from "../../constants";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-import { getNewPasswordData } from "../../helpers/auth";
 import { NormalError } from "../../errors";
 import {
   createLog,
   createNotification,
   formatHumanName,
   selectCredit,
+  getNewPasswordData,
   checkPlanValidity
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
@@ -31,10 +31,10 @@ export default {
     (_p, { data }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { unitid: id, company: unitid }
-          } = decode(token);
+          } = decode(session.token);
 
           const currentData = await models.Department.findOne({
             where: { unitid },
@@ -71,11 +71,11 @@ export default {
     (_p, { unitid, departmentid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           let parentUnit = await models.ParentUnit.create(
             { parentunit: departmentid, childunit: unitid },
@@ -109,7 +109,7 @@ export default {
     async (_p, args, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             name,
             emails,
@@ -124,7 +124,7 @@ export default {
           } = args;
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           let noemail = true;
           for await (const email of emails) {
@@ -307,11 +307,11 @@ export default {
     (_p, { departmentid, name }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { unitid }
-          } = decode(token);
+          } = decode(session.token);
 
           const updatedDepartment = await models.DepartmentData.update(
             { name },
@@ -342,10 +342,10 @@ export default {
   banEmployee: requiresRights(["edit-employees"]).createResolver(
     async (_p, { userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
         const {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         if (userid == unitid) {
           throw new Error("You can't ban yourself!");
@@ -414,13 +414,13 @@ export default {
   unbanEmployee: requiresRights(["edit-employees"]).createResolver(
     async (_p, { userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
+
+        const {
+          user: { unitid, company }
+        } = decode(session.token);
 
         try {
-          const {
-            user: { unitid, company }
-          } = decode(token);
-
           if (userid == unitid) {
             throw new Error("You can't unban yourself!");
           }
@@ -491,10 +491,10 @@ export default {
             userPicFolder
           );
 
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company: id }
-          } = decode(token);
+          } = decode(session.token);
 
           const oldUnit = await models.Unit.findOne({
             where: { id },
@@ -528,12 +528,12 @@ export default {
    *
    * @param {object} data Contains address, phone, website, company and icon
    */
-  saveProposalData: async (_, { data }, { models, token }) =>
+  saveProposalData: async (_, { data }, { models, session }) =>
     models.sequelize.transaction(async ta => {
       try {
         const {
           user: { company }
-        } = decode(token);
+        } = decode(session.token);
 
         const promises = [];
 
@@ -578,10 +578,10 @@ export default {
     async (_p, { unitid, admin }, ctx) =>
       ctx.models.sequelize.transaction(async transaction => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { company }
-          } = decode(token);
+          } = decode(session.token);
 
           const data = {
             holder: unitid,
@@ -646,12 +646,12 @@ export default {
    * As this is on
    */
   addPromocode: requiresAuth.createResolver(
-    async (_p, { promocode }, { models, token }) =>
+    async (_p, { promocode }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const valid = await models.PromocodePlan.findOne({
             where: { code: promocode },
@@ -721,11 +721,11 @@ export default {
   applyPromocode: requiresAuth.createResolver(async (_p, { promocode }, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
-        const { models, token } = ctx;
+        const { models, session } = ctx;
 
         const {
           user: { unitid, company }
-        } = decode(token);
+        } = decode(session.token);
 
         const { credits, currency, creditsexpire } = await selectCredit(
           promocode,
@@ -782,10 +782,10 @@ export default {
         try {
           const { wmail1, wmail2, password, name } = addpersonal;
 
-          const { models, token } = ctx;
+          const { models, session } = ctx;
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
 
           const isEmail = wmail1.indexOf("@");
 
@@ -911,13 +911,8 @@ export default {
                         external: true
                       },
                       options: service.setupfinished
-                        ? {
-                            teamlicence: team.unitid.id
-                          }
-                        : {
-                            teamlicence: team.unitid.id,
-                            nosetup: true
-                          }
+                        ? { teamlicence: team.unitid.id }
+                        : { teamlicence: team.unitid.id, nosetup: true }
                     },
                     { transaction: ta }
                   )
@@ -1059,11 +1054,11 @@ export default {
     async (_p, { employeeid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, token } = ctx;
+          const { models, session } = ctx;
 
           const {
             user: { unitid, company }
-          } = decode(token);
+          } = decode(session.token);
           await models.Unit.update(
             { deleted: true },
             { where: { id: employeeid } },
