@@ -59,7 +59,6 @@ export default async config => {
 
     await Fs.writeFile(config.htmlPath, html, err => {
       if (err) throw err;
-      console.log("Page saved!");
     });
 
     await page.goto(`file://${config.htmlPath}`, {

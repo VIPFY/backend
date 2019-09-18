@@ -49,6 +49,6 @@ export const mutations = `
   removeServiceFromTeam(teamid: ID!, boughtplanid: ID!, keepLicences: [ID!]): Boolean!
   addToTeam(userid: ID!, teamid: ID!, services: [SetupService]!, newEmployeeInfo: JSON, newTeam: JSON): Boolean!
   addEmployeeToTeam(employeeid: ID!, teamid: ID!): Boolean!
-  addAppToTeam(serviceid: ID!, teamid: ID!, employees: [SetupService]!): Boolean!
+  addAppToTeam(serviceid: ID!, teamid: ID!, employees: [SetupService]!): ID!
   updateTeamPic(file: Upload!, teamid: ID!): Team!
 `;

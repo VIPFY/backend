@@ -63,7 +63,6 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-
         const user = await parentAdminCheck(me[0]);
 
         return user;

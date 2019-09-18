@@ -94,6 +94,7 @@ export const types = `
     email: String!
     password: String!
     color: String!
+    manager: Boolean
   }
 
   input AppOptions {
@@ -192,7 +193,6 @@ export const types = `
   input LayoutInput {
     id: ID!
     dashboard: Int
-    sidebar: Int
   }
 
   type SimpleStats {
@@ -229,6 +229,12 @@ export const types = `
     unloaded: Boolean!
     passwordEntered: Boolean!
     emailEntered: Boolean!
+    manager: Boolean
+    userids: [ID]
+  }
+
+  type IDID {
+    id: ID!
   }
 `;
 
@@ -271,11 +277,12 @@ export const queries = `
 `;
 
 export const mutations = `
-  updateLayout(layout: LayoutInput!): Boolean!
+  updateLayout(layout: LayoutInput!): Licence!
+  switchAppsLayout(app1: LayoutInput!, app2: LayoutInput!): [Licence!]!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
 
-  createOwnApp(ssoData: SSOInput!, userids: [ID]): Licence
+  createOwnApp(ssoData: SSOInput!, userids: [ID]): IDID
   giveTemporaryAccess(licences: [LicenceRightInput!]!): TempAccessResponse!
   updateTemporaryAccess(licence: LicenceRightUpdateInput, rightid: ID!): TempLicence!
   removeTemporaryAccess(rightid: ID!): Boolean!

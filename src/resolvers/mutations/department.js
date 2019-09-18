@@ -347,6 +347,10 @@ export default {
           user: { unitid, company }
         } = decode(session.token);
 
+        if (userid == unitid) {
+          throw new Error("You can't ban yourself!");
+        }
+
         try {
           const p1 = await models.DepartmentEmployee.findOne({
             where: { id: company, employee: userid },
@@ -374,15 +378,12 @@ export default {
 
           const bannedUser = await models.Human.update(
             { companyban: true },
-
             { where: { unitid: userid }, returning: true, transaction: ta }
           );
 
           const p4 = createNotification({
             receiver: unitid,
-            message: `You banned ${user.firstname} ${
-              user.lastname
-            } from the company`,
+            message: `You banned ${user.firstname} ${user.lastname} from the company`,
             icon: "user-slash",
             link: "team",
             changed: ["human"]
@@ -418,7 +419,12 @@ export default {
         const {
           user: { unitid, company }
         } = decode(session.token);
+
         try {
+          if (userid == unitid) {
+            throw new Error("You can't unban yourself!");
+          }
+
           const p1 = await models.DepartmentEmployee.findOne({
             where: { id: company, employee: userid },
             raw: true
@@ -447,9 +453,7 @@ export default {
 
           const p4 = createNotification({
             receiver: unitid,
-            message: `You unbanned ${user.firstname} ${
-              user.lastname
-            } from the company`,
+            message: `You unbanned ${user.firstname} ${user.lastname} from the company`,
             icon: "user-check",
             link: "team",
             changed: ["human"]

@@ -262,8 +262,6 @@ export default {
             raw: true
           });
 
-          //console.log("PLAN", plan);
-
           if (!plan) {
             throw new Error("Couldn't find the Plan!");
           }
@@ -276,23 +274,17 @@ export default {
             ta
           );*/
 
-          //console.log("subscription", subscription);
-
           const department = await models.Department.findOne({
             where: { unitid: company },
             raw: true,
             transaction: ta
           });
 
-          //console.log("department", department);
-
           const calculatedPrice = calculatePlanPrice(
             plan.price,
             plan.features,
             JSON.parse(JSON.stringify(features)) // hacky deep copy
           );
-
-          //console.log("calculatedPrice", calculatedPrice);
 
           logger.debug(
             `calulated price: ${calculatedPrice}, supplied price: ${price}`
@@ -340,7 +332,6 @@ export default {
             }
           );
 
-          //console.log("BOUGHTPLAN");
           const boughtPlan = createBoughtPlan.get();
 
           logger.debug("createdBoughtPlan", { boughtPlan });
@@ -349,7 +340,6 @@ export default {
 
           const numLicences = mergedFeatures.users || 0;
 
-          //console.log("BUY PLAN LICENCES", numLicences, mergedFeatures);
           if (numLicences > 0) {
             for (let i = 0; i < numLicences; i++) {
               createLicences.push(

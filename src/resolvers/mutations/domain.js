@@ -26,7 +26,6 @@ export default {
   checkDomain: async (_p, { domain }) => {
     try {
       const res = await checkDomain(domain);
-      console.log(res);
       if (res.code != 210) {
         throw new Error(res.data);
       }
@@ -494,9 +493,7 @@ export default {
             const endtime = new Date();
             let totalprice = 5;
             const additionalfeatures = { whoisprivacy: true };
-            message = `Whois Privacy for ${
-              domainData.domain
-            } was successfully applied`;
+            message = `Whois Privacy for ${domainData.domain} was successfully applied`;
 
             const totalfeatures = {
               domain: domainData.domain,
@@ -573,9 +570,7 @@ export default {
                 }
               );
               addLogs.cancelledDomain = cancelledDomain;
-              message = `Renewalmode of ${
-                domainData.domain
-              } changed to AUTODELETE`;
+              message = `Renewalmode of ${domainData.domain} changed to AUTODELETE`;
             } else {
               message = `Renewal of ${domainData.domain} was successful`;
             }

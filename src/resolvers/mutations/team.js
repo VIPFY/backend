@@ -98,8 +98,6 @@ export default {
 
           //add employees
 
-          console.log("before", addemployees);
-
           const employeepromises = [];
           let counter = 0;
           const newemployees = [];
@@ -531,29 +529,38 @@ export default {
             team[0].services.forEach(serviceid => {
               if (keepLicences && !keepLicences.find(l => l == serviceid)) {
                 promises.push(
-                  models.LicenceData.update(
-                    { endtime: moment().valueOf() },
+                  models.sequelize.query(
+                    `Update licence_data l set endtime = now()
+                     where l.boughtplanid = :serviceid
+                     and l.endtime is null
+                     and l.unitid = :userid
+                     and l.options ->> 'teamlicence' = :teamid`,
                     {
-                      where: {
-                        boughtplanid: serviceid,
-                        endtime: null,
-                        unitid: userid,
-                        options: { teamlicence: teamid }
-                      },
-                      transaction: ta
+                      replacements: { serviceid, userid, teamid },
+                      type: models.sequelize.QueryTypes.SELECT
                     }
                   )
                 );
               } else {
                 promises.push(
                   models.sequelize.query(
-                    `Update licence_data set options = options - 'teamlicence'
-                     where boughtplanid = :serviceid
-                     and endtime is null
-                     and unitid = :userid
-                     and options ->> 'teamlicence' = :teamid`,
+                    `Update licence_data l set options = options - 'teamlicence'
+                     where l.boughtplanid = :serviceid
+                     and l.endtime is null
+                     and l.unitid = :userid
+                     and l.options ->> 'teamlicence' = :teamid`,
                     {
                       replacements: { serviceid, userid, teamid },
+                      type: models.sequelize.QueryTypes.SELECT
+                    }
+                  )
+                );
+                promises.push(
+                  models.sequelize.query(
+                    `Update licence_data l set options = options - 'teamlicence'
+                     l.id = :serviceid`,
+                    {
+                      replacements: { serviceid },
                       type: models.sequelize.QueryTypes.SELECT
                     }
                   )
@@ -597,6 +604,7 @@ export default {
     async (_p, { teamid, boughtplanid, keepLicences }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
+          const keepLicencesSAVE = keepLicences || [];
           const { models, session } = ctx;
           const {
             user: { company }
@@ -604,7 +612,7 @@ export default {
 
           await teamCheck(company, teamid);
 
-          //Destroy all licences except the ones that they want to keep
+          // Destroy all licences except the ones that they want to keep
 
           const team = await models.sequelize.query(
             `SELECT employees FROM team_view 
@@ -617,7 +625,7 @@ export default {
           const promises = [];
           if (team[0] && team[0].employees) {
             team[0].employees.forEach(employeeid => {
-              if (!keepLicences.find(l => l == employeeid)) {
+              if (!keepLicencesSAVE.find(l => l == employeeid)) {
                 promises.push(
                   models.LicenceData.update(
                     { endtime: moment().valueOf() },
@@ -665,17 +673,17 @@ export default {
 
           if (team[0] && team[0].employees) {
             const employeeNotifypromises = [];
-            team[0].employees.forEach(employee =>
+            team[0].employees.forEach(employee => {
               employeeNotifypromises.push(
                 createNotification({
-                  receiver: employee.id,
+                  receiver: employee,
                   message: `A service has been removed from a team`,
                   icon: "minus-circle",
                   link: "teammanger",
                   changed: ["ownLicences"]
                 })
-              )
-            );
+              );
+            });
 
             await Promise.all(employeeNotifypromises);
           }
@@ -753,14 +761,14 @@ export default {
             teamid = unit.dataValues.id;
           }
 
-          //User add to team
+          // User add to team
 
           await models.ParentUnit.create(
             { parentunit: teamid, childunit: userid },
             { transaction: ta }
           );
 
-          //Lizenzen aufsetzen
+          // Lizenzen aufsetzen
           const promises = [];
 
           services.forEach(service =>
@@ -898,9 +906,9 @@ export default {
 
           const { teamid, employees, serviceid } = addInformation;
 
-          //await teamCheck(company, teamid); Maybe implement in loop again
+          // await teamCheck(company, teamid); Maybe implement in loop again
 
-          //Nutzer add to team
+          // Nutzer add to team
 
           const app = await models.App.findOne({
             where: { id: serviceid },
@@ -941,7 +949,7 @@ export default {
             { transaction: ta }
           );
 
-          //Lizenzen aufsetzen
+          // Lizenzen aufsetzen
           const promises = [];
 
           employees.forEach(employee =>
@@ -991,7 +999,7 @@ export default {
 
           await createLog(ctx, "addServiceToTeam", { teamid, serviceid }, ta);
 
-          return true;
+          return boughtPlan.id;
         } catch (err) {
           throw new NormalError({
             message: err.message,

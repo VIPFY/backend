@@ -182,7 +182,7 @@ export default {
     "view-apps",
     "view-boughtplans"
   ]).createResolver(
-    async (parent, { appid, external }, { models, session }) => {
+    async (_parent, { appid, external }, { models, session }) => {
       try {
         const {
           user: { company }
@@ -212,7 +212,6 @@ export default {
 
         return data;
       } catch (err) {
-        console.log("ERROR", err);
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }

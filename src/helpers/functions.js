@@ -494,7 +494,7 @@ export const check2FARights = async (userid, unitid, company) => {
       { holder: unitid },
       { forunit: { [models.Op.or]: [company, null] } },
       models.sequelize.or(
-        { type: { [models.Op.and]: "create-2FA" } },
+        { type: { [models.Op.and]: ["create-2FA"] } },
         { type: "admin" }
       )
     )

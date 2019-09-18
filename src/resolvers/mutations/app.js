@@ -153,9 +153,7 @@ export default {
           const notiGiver = createNotification(
             {
               receiver: giver,
-              message: `Licence distributed to ${user.firstname} ${
-                user.lastname
-              }`,
+              message: `Licence distributed to ${user.firstname} ${user.lastname}`,
               icon: "th",
               link: "teams",
               changed: ["ownLicences"]
@@ -506,9 +504,7 @@ export default {
           const p3 = createNotification(
             {
               receiver: args.touser,
-              message: `${admin.firstname} ${
-                admin.lastname
-              } integrated an external Account for you.`,
+              message: `${admin.firstname} ${admin.lastname} integrated an external Account for you.`,
               icon: "user-plus",
               link: `marketplace/${args.appid}`,
               changed: ["ownLicences"]
@@ -899,7 +895,7 @@ export default {
   ),
 
   updateLayout: requiresAuth.createResolver(
-    async (_, { layout }, { models, session }) => {
+    async (_p, { layout }, { models, session }) => {
       try {
         const {
           user: { unitid }
@@ -920,7 +916,12 @@ export default {
           await models.LicenceLayout.create({ ...data, licenceid, unitid });
         }
 
-        return true;
+        const licence = await models.Licence.findOne({
+          where: { id: licenceid },
+          raw: true
+        });
+
+        return { ...licence, dashboard: data.dashboard };
       } catch (err) {
         throw new NormalError({
           message: err.message,
@@ -928,6 +929,90 @@ export default {
         });
       }
     }
+  ),
+
+  switchAppsLayout: requiresAuth.createResolver(
+    async (_p, { app1, app2 }, { models, token }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(token);
+
+          let layoutExistsApp1 = await models.LicenceLayout.findOne({
+            where: { licenceid: app1.id, unitid },
+            transaction: ta,
+            raw: true
+          });
+
+          let layoutExistsApp2 = await models.LicenceLayout.findOne({
+            where: { licenceid: app2.id, unitid },
+            raw: true,
+            transaction: ta
+          });
+
+          if (!layoutExistsApp1) {
+            const res = await models.LicenceLayout.create(
+              {
+                dashboard: app1.dashboard,
+                licenceid: app1.id,
+                unitid
+              },
+              { transaction: ta }
+            );
+            layoutExistsApp1 = res.get();
+          }
+
+          if (!layoutExistsApp2) {
+            const res = await models.LicenceLayout.create(
+              {
+                dashboard: app2.dashboard,
+                licenceid: app2.id,
+                unitid
+              },
+              { transaction: ta }
+            );
+            layoutExistsApp2 = res.get();
+          }
+
+          const res = await Promise.all([
+            models.LicenceLayout.update(
+              { dashboard: app2.dashboard },
+              {
+                where: { licenceid: app1.id, unitid },
+                transaction: ta
+              }
+            ),
+            models.LicenceLayout.update(
+              { dashboard: app1.dashboard },
+              {
+                where: { licenceid: app2.id, unitid },
+                transaction: ta
+              }
+            ),
+            models.Licence.findOne({
+              where: { id: app1.id, unitid },
+              transaction: ta,
+              raw: true
+            }),
+            models.Licence.findOne({
+              where: { id: app2.id, unitid },
+              transaction: ta,
+              raw: true
+            })
+          ]);
+
+          return [
+            { ...res[2], dashboard: app2.dashboard },
+            { ...res[3], dashboard: app1.dashboard }
+          ];
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   ),
 
   createOwnApp: requiresRights(["create-licences"]).createResolver(
@@ -996,84 +1081,84 @@ export default {
             },
             { transaction: ta }
           );
-
-          const boughtPlan = await models.BoughtPlan.create(
-            {
-              planid: plan.id,
-              alias: data.name,
-              disabled: false,
-              buyer: unitid,
-              payer: company,
-              usedby: company,
-              totalprice: 0,
-              key: {
-                integrated: true,
-                external: true,
-                externaltotalprice: 0,
-                loginurl: data.loginurl
-              },
-              stripeplan: null // Maybe we need one later
-            },
-            { transaction: ta }
-          );
           let licence = null;
-          if (userids) {
-            const licencepromises = [];
-            userids.forEach(u =>
-              licencepromises.push(
-                models.LicenceData.create(
-                  {
-                    unitid: u,
-                    disabled: false,
-                    boughtplanid: boughtPlan.id,
-                    agreed: true,
-                    key: { ...data, external: true }
-                  },
-                  { transaction: ta }
-                )
-              )
-            );
-            await Promise.all(licencepromises);
-            const notifypromises = [];
-            userids.forEach(u =>
-              notifypromises.push(
-                createNotification(
-                  {
-                    receiver: u,
-                    message: `You have a new service`,
-                    icon: "business-time",
-                    link: `dashboard`,
-                    changed: ["ownLicences"]
-                  },
-                  ta
-                )
-              )
-            );
-            await Promise.all(notifypromises);
-          } else {
-            licence = await models.LicenceData.create(
+          if (!ssoData.manager) {
+            const boughtPlan = await models.BoughtPlan.create(
               {
-                unitid,
+                planid: plan.id,
+                alias: data.name,
                 disabled: false,
-                boughtplanid: boughtPlan.id,
-                agreed: true,
-                key: { ...data, external: true }
+                buyer: unitid,
+                payer: company,
+                usedby: company,
+                totalprice: 0,
+                key: {
+                  integrated: true,
+                  external: true,
+                  externaltotalprice: 0,
+                  loginurl: data.loginurl
+                },
+                stripeplan: null // Maybe we need one later
               },
               { transaction: ta }
             );
-            await createNotification(
-              {
-                receiver: unitid,
-                message: `You have a new service`,
-                icon: "business-time",
-                link: `dashboard`,
-                changed: ["ownLicences"]
-              },
-              ta
-            );
+            if (userids) {
+              const licencepromises = [];
+              userids.forEach(u =>
+                licencepromises.push(
+                  models.LicenceData.create(
+                    {
+                      unitid: u,
+                      disabled: false,
+                      boughtplanid: boughtPlan.id,
+                      agreed: true,
+                      key: { ...data, external: true }
+                    },
+                    { transaction: ta }
+                  )
+                )
+              );
+              await Promise.all(licencepromises);
+              const notifypromises = [];
+              userids.forEach(u =>
+                notifypromises.push(
+                  createNotification(
+                    {
+                      receiver: u,
+                      message: `You have a new service`,
+                      icon: "business-time",
+                      link: `dashboard`,
+                      changed: ["ownLicences"]
+                    },
+                    ta
+                  )
+                )
+              );
+              await Promise.all(notifypromises);
+            } else {
+              licence = await models.LicenceData.create(
+                {
+                  unitid,
+                  disabled: false,
+                  boughtplanid: boughtPlan.id,
+                  agreed: true,
+                  key: { ...data, external: true }
+                },
+                { transaction: ta }
+              );
+              await createNotification(
+                {
+                  receiver: unitid,
+                  message: `You have a new service`,
+                  icon: "business-time",
+                  link: `dashboard`,
+                  changed: ["ownLicences"]
+                },
+                ta
+              );
+            }
           }
-
-          return licence;
+          return licence != null ? licence : { id: appOwned.dataValues.id };
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -1084,7 +1169,7 @@ export default {
   ),
 
   giveTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
-    async (_, { licences }, { models, session }) =>
+    async (_p, { licences }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -1178,7 +1263,23 @@ export default {
 
         const updatePromises = [];
         const licencePromises = [];
-        const departmentPromisies = [];
+        const departmentPromises = [];
+
+        const app = await models.App.findOne({
+          where: { id: serviceid },
+          raw: true,
+          transaction: ta
+        });
+
+        if (app.owner == company) {
+          updatePromises.push(
+            models.App.update(
+              { disabled: true },
+              { where: { id: serviceid }, transaction: ta }
+            )
+          );
+        }
+
         boughtPlans.forEach(boughtPlan => {
           const period = Object.keys(boughtPlan.cancelperiod)[0];
           const estimatedEndtime = moment()
@@ -1202,7 +1303,7 @@ export default {
             })
           );
 
-          departmentPromisies.push(
+          departmentPromises.push(
             models.DepartmentApp.destroy(
               { where: { boughtplanid: boughtPlan.id } },
               { transaction: ta }
@@ -1210,7 +1311,7 @@ export default {
           );
         });
 
-        await Promise.all(updatePromises, licencePromises, departmentPromisies);
+        await Promise.all(updatePromises, licencePromises, departmentPromises);
 
         await createLog(context, "deleteService", { serviceid }, ta);
 
@@ -1519,9 +1620,7 @@ export default {
           const p3 = createNotification(
             {
               receiver: touser,
-              message: `${admin.firstname} ${
-                admin.lastname
-              } integrated an external Account for you.`,
+              message: `${admin.firstname} ${admin.lastname} integrated an external Account for you.`,
               icon: "user-plus",
               link: `marketplace/${appid}`,
               changed: ["ownLicences"]
@@ -1555,79 +1654,118 @@ export default {
   ),
 
   failedIntegration: requiresAuth.createResolver(
-    async (_, { data }, { models, session }) =>
+    async (_p, { data }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(session.token);
+          let appOwned = null;
+          let licence = null;
 
-          const appOwned = await models.App.create(
-            {
-              ...data,
-              options: { universallogin: true },
-              disabled: false,
-              color: "#f5f5f5",
-              developer: company,
-              supportunit: company,
-              owner: company
-            },
-            { transaction: ta }
-          );
-
-          const plan = await models.Plan.create(
-            {
-              name: `${data.name} Integrated`,
-              appid: appOwned.dataValues.id,
-              teaserdescription: `Integrated Plan for ${data.name}`,
-              startdate: models.sequelize.fn("NOW"),
-              numlicences: 0,
-              price: 0.0,
-              options: { external: true, integrated: true },
-              payperiod: { years: 1 },
-              cancelperiod: { secs: 1 },
-              hidden: true
-            },
-            { transaction: ta }
-          );
-
-          const boughtPlan = await models.BoughtPlan.create(
-            {
-              planid: plan.id,
-              alias: data.name,
-              disabled: true,
-              buyer: unitid,
-              payer: company,
-              usedby: company,
-              totalprice: 0,
-              key: {
-                integrated: false,
-                external: true,
-                externaltotalprice: 0,
-                loginurl: data.loginurl
-              },
-              stripeplan: null // Maybe we need one later
-            },
-            { transaction: ta }
-          );
-
-          const licence = await models.LicenceData.create(
-            {
-              unitid,
-              disabled: false,
-              boughtplanid: boughtPlan.id,
-              agreed: true,
-              pending: true,
-              key: {
+          if (data.manager) {
+            appOwned = await models.App.create(
+              {
                 ...data,
-                external: true,
-                appid: appOwned.dataValues.id,
-                company
-              }
-            },
-            { transaction: ta }
-          );
+                options: {
+                  universallogin: true,
+                  pending: true,
+                  account: {
+                    ...data,
+                    buyer: unitid
+                  }
+                },
+                disabled: false,
+                color: "#f5f5f5",
+                developer: company,
+                supportunit: company,
+                owner: company
+              },
+              { transaction: ta }
+            );
 
+            await models.Plan.create(
+              {
+                name: `${data.name} Integrated`,
+                appid: appOwned.dataValues.id,
+                teaserdescription: `Integrated Plan for ${data.name}`,
+                startdate: models.sequelize.fn("NOW"),
+                numlicences: 0,
+                price: 0.0,
+                options: { external: true, integrated: true },
+                payperiod: { years: 1 },
+                cancelperiod: { secs: 1 },
+                hidden: true
+              },
+              { transaction: ta }
+            );
+          } else {
+            appOwned = await models.App.create(
+              {
+                ...data,
+                options: { universallogin: true },
+                disabled: false,
+                color: "#f5f5f5",
+                developer: company,
+                supportunit: company,
+                owner: company
+              },
+              { transaction: ta }
+            );
+
+            const plan = await models.Plan.create(
+              {
+                name: `${data.name} Integrated`,
+                appid: appOwned.dataValues.id,
+                teaserdescription: `Integrated Plan for ${data.name}`,
+                startdate: models.sequelize.fn("NOW"),
+                numlicences: 0,
+                price: 0.0,
+                options: { external: true, integrated: true },
+                payperiod: { years: 1 },
+                cancelperiod: { secs: 1 },
+                hidden: true
+              },
+              { transaction: ta }
+            );
+
+            const boughtPlan = await models.BoughtPlan.create(
+              {
+                planid: plan.id,
+                alias: data.name,
+                disabled: true,
+                buyer: unitid,
+                payer: company,
+                usedby: company,
+                totalprice: 0,
+                key: {
+                  integrated: false,
+                  external: true,
+                  externaltotalprice: 0,
+                  loginurl: data.loginurl
+                },
+                stripeplan: null // Maybe we need one later
+              },
+              { transaction: ta }
+            );
+
+            licence = await models.LicenceData.create(
+              {
+                unitid,
+                disabled: false,
+                boughtplanid: boughtPlan.id,
+                agreed: true,
+                pending: true,
+                key: {
+                  ...data,
+                  external: true,
+                  appid: appOwned.dataValues.id,
+                  company
+                }
+              },
+              { transaction: ta }
+            );
+          }
           await sendEmail({
             templateId: "d-58d4a9f85f8c47f88750d379d4fab23a",
             fromName: "VIPFY",
@@ -1639,8 +1777,12 @@ export default {
                   company,
                   loginurl: data.loginurl,
                   name: data.name,
-                  appid: appOwned.dataValues.id,
-                  licenceid: licence.dataValues.id
+                  appid:
+                    appOwned && appOwned.dataValues
+                      ? appOwned.dataValues.id
+                      : -1,
+                  licenceid:
+                    licence && licence.dataValues ? licence.dataValues.id : -1
                 }
               }
             ]
