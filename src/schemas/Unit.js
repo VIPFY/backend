@@ -21,20 +21,69 @@ export const types = `
     deleted: Boolean!
     suspended: Boolean!
     profilepicture: String
+    isadmin: Boolean!
+    companyban: Boolean
+    isonline: Boolean
     emails: [Email]
+    addresses: [Address]
+    phones: [Phone]
     createdate: String
     company: Department
+    passwordlength: Int
+    passwordstrength: Int
+    twofa: [String]
+    needstwofa: Boolean
+    lastactive: Date
     statisticdata: JSON
     needspasswordchange: Boolean!
     firstlogin: Boolean!
-    isadmin: Boolean!
-    companyban: Boolean
     country: String
     config: JSON
     tutorialprogress: JSON
-    isonline: Boolean
     consent: Boolean
+  }
+
+  type PublicUser {
+    id: ID!
+    firstname: String
+    middlename: String
+    lastname: String
+    title: String
+    sex: SEX
+    birthday: Date
+    language: String
+    profilepicture: String
+    isadmin: Boolean!
+    companyban: Boolean
+    isonline: Boolean
+  }
+
+  type SemiPublicUser {
+    id: ID!
+    firstname: String
+    middlename: String
+    lastname: String
+    hiredate: Date
+    position: String
+    title: String
+    sex: SEX
+    birthday: Date
+    language: String
+    deleted: Boolean!
+    banned: Boolean!
+    profilepicture: String
+    isadmin: Boolean!
+    companyban: Boolean
+    isonline: Boolean
+    emails: [Email]
+    addresses: [Address]
+    phones: [Phone]
+    company: Department
+    passwordlength: Int
+    passwordstrength: Int
+    twofa: [String]
     needstwofa: Boolean
+    lastactive: Date
   }
 
   input UserInput {
@@ -66,48 +115,6 @@ export const types = `
     phone2: PhoneInput
     workPhone: PhoneInput
     workPhone2: PhoneInput
-  }
-
-  type PublicUser {
-    id: ID!
-    firstname: String
-    middlename: String
-    lastname: String
-    title: String
-    sex: SEX
-    birthday: Date
-    language: String
-    profilepicture: String
-    isadmin: Boolean!
-    companyban: Boolean
-    isonline: Boolean
-  }
-
-  type SemiPublicUser {
-    id: ID!
-    firstname: String
-    middlename: String
-    lastname: String
-    hiredate: Date
-    position: String
-    title: String
-    sex: SEX
-    birthday: Date
-    language: String
-    profilepicture: String
-    isadmin: Boolean!
-    companyban: Boolean
-    isonline: Boolean
-    emails: [Email]
-    addresses: [Address]
-    phones: [Phone]
-    company: Department
-    passwordlength: Int
-    passwordstrength: Int
-    twofa: [String]
-    needstwofa: Boolean
-    lastactive: Date
-    deleted: Boolean
   }
 `;
 
