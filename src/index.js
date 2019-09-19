@@ -24,7 +24,7 @@ import logger from "./loggers";
 import { formatError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
 import { redis } from "./constants";
-// Is this still needed here?
+
 // const RateLimit = require("express-rate-limit");
 // const RedisStore = require("rate-limit-redis");
 
