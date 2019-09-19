@@ -20,14 +20,15 @@ export const REDIS_SESSION_PREFIX = "session:";
 export const USER_SESSION_ID_PREFIX = "userID-";
 export const IMPERSONATE_PREFIX = "impersonations-";
 
-if (process.env.ENVIRONMENT == "development") {
-  options.tls = {
-    checkServerIdentity: () => undefined
-  };
-
+if (process.env.REDIS_NO_PW) {
   delete options.password;
 }
 
+if (process.env.REDIS_NO_SERVER_ID) {
+  options.tls = {
+    checkServerIdentity: () => undefined
+  };
+}
 export const redis = Redis.createClient([options]);
 
 const subscriber = Redis.createClient([options]);
