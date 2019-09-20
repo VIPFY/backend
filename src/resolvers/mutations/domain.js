@@ -356,7 +356,7 @@ export default {
       } = decode(token);
 
       try {
-        const domain = await models.Domain.findById(id, { raw: true });
+        const domain = await models.Domain.findByPk(id, { raw: true });
 
         await models.Domain.destroy({ where: { id } });
 

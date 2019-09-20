@@ -135,10 +135,18 @@ export const requiresRights = rights =>
 
         if (args.userid && args.userid != "new") {
           await checkCompanyMembership(models, company, args.userid, "user");
+
+          if (args.userid == holder) {
+            return;
+          }
         }
 
         if (args.user && args.user.id && args.user.id != "new") {
           await checkCompanyMembership(models, company, args.user.id, "user");
+
+          if (args.user.id == holder) {
+            return;
+          }
         }
 
         if (args.employeeid && args.employeeid != "new") {
@@ -152,6 +160,10 @@ export const requiresRights = rights =>
 
         if (args.unitid && args.unitid != "new") {
           await checkCompanyMembership(models, company, args.unitid, "user");
+
+          if (args.unitid == holder) {
+            return;
+          }
         }
 
         if (args.userids) {
@@ -170,19 +182,40 @@ export const requiresRights = rights =>
           );
         }
 
-        const hasRight = await models.Right.findOne({
-          where: models.sequelize.and(
-            { holder },
-            { forunit: { [models.Op.or]: [company, null] } },
-            models.sequelize.or(
-              { type: { [models.Op.and]: rights } },
-              { type: "admin" }
+        if (typeof rights[0] == "string") {
+          const hasRight = await models.Right.findOne({
+            where: models.sequelize.and(
+              { holder },
+              { forunit: { [models.Op.or]: [company, null] } },
+              models.sequelize.or(
+                { type: { [models.Op.and]: rights } },
+                { type: "admin" }
+              )
             )
-          )
-        });
+          });
 
-        if (!hasRight) {
-          throw new RightsError();
+          if (!hasRight) {
+            throw new RightsError();
+          }
+        } else {
+          let hasRight = null;
+
+          for await (const right of rights[0]) {
+            hasRight = await models.Right.findOne({
+              where: models.sequelize.and(
+                { holder },
+                { forunit: { [models.Op.or]: [company, null] } },
+                models.sequelize.or(
+                  { type: { [models.Op.and]: right } },
+                  { type: "admin" }
+                )
+              )
+            });
+          }
+
+          if (!hasRight) {
+            throw new RightsError();
+          }
         }
       } catch (err) {
         if (err instanceof RightsError) {

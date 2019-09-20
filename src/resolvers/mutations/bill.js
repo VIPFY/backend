@@ -169,7 +169,7 @@ export default {
         } = decode(session.token);
 
         try {
-          const department = await models.Unit.findById(company, {
+          const department = await models.Unit.findByPk(company, {
             raw: true
           });
 

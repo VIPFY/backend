@@ -31,7 +31,7 @@ export default {
           const {
             user: { unitid }
           } = decode(token);
-          const me = await models.User.findById(unitid);
+          const me = await models.User.findByPk(unitid);
 
           if (me.suspended) throw new Error("This User is suspended!");
           if (me.banned) throw new Error("This User is banned!");
