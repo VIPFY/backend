@@ -202,6 +202,10 @@ export const requiresRights = rights =>
                 )
               )
             });
+
+            if (hasRight) {
+              break;
+            }
           }
 
           if (!hasRight) {
