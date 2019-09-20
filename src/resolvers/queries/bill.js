@@ -123,7 +123,7 @@ export default {
 
   fetchPlanInputs: requiresRights(["view-apps"]).createResolver(
     async (parent, { planid }, { models }) => {
-      const plan = await models.Plan.findById(planid, { raw: true });
+      const plan = await models.Plan.findByPk(planid, { raw: true });
       return Services.getPlanBuySchema(plan.appid);
     }
   ),
