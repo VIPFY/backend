@@ -144,12 +144,16 @@ export const requiresRights = (rights, strict) =>
           }
         }
 
-        if (args.userids) {
-          await Promise.all(
-            args.userids
-              .filter(id => id != "new")
-              .map(id => checkCompanyMembership(models, company, id, "user"))
-          );
+        const moreUserChecks = ["userids", "unitids"];
+
+        for await (const check of moreUserChecks) {
+          if (args[check]) {
+            await Promise.all(
+              args[check]
+                .filter(id => id != "new")
+                .map(id => checkCompanyMembership(models, company, id, "user"))
+            );
+          }
         }
 
         if (args.addemployees) {
@@ -159,14 +163,6 @@ export const requiresRights = (rights, strict) =>
               .map(({ id }) =>
                 checkCompanyMembership(models, company, id, "user")
               )
-          );
-        }
-
-        if (args.unitids) {
-          await Promise.all(
-            args.unitids
-              .filter(id => id != "new")
-              .map(id => checkCompanyMembership(models, company, id, "user"))
           );
         }
 
