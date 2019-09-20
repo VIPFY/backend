@@ -339,7 +339,7 @@ export default {
       })
   ),
 
-  banEmployee: requiresRights(["edit-employees"]).createResolver(
+  banEmployee: requiresRights(["edit-employees"], true).createResolver(
     async (_p, { userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         const { models, token } = ctx;
@@ -411,7 +411,7 @@ export default {
       })
   ),
 
-  unbanEmployee: requiresRights(["edit-employees"]).createResolver(
+  unbanEmployee: requiresRights(["edit-employees"], true).createResolver(
     async (_p, { userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         const { models, token } = ctx;
