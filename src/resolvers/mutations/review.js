@@ -12,7 +12,7 @@ export default {
           user: { unitid }
         } = jwt.decode(token);
         const p1 = models.App.findOne({ where: { id: appid, owner: null } });
-        const p2 = models.User.findById(unitid);
+        const p2 = models.User.findByPk(unitid);
         const [app, user] = await Promise.all([p1, p2]);
 
         if (!app || !user) {
@@ -45,8 +45,8 @@ export default {
           user: { unitid }
         } = jwt.decode(token);
 
-        const p1 = models.User.findById(unitid);
-        const p2 = models.Review.findById(reviewid);
+        const p1 = models.User.findByPk(unitid);
+        const p2 = models.Review.findByPk(reviewid);
         const p3 = models.ReviewHelpful.findOne({
           where: { reviewid, unitid }
         });
