@@ -67,7 +67,7 @@ export default {
       })
   ),
 
-  addEmployee: requiresRights(["create-employees"]).createResolver(
+  addEmployee: requiresRights(["create-employees"], true).createResolver(
     (_p, { unitid, departmentid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {

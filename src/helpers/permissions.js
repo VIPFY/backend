@@ -103,7 +103,7 @@ export const requiresDepartmentCheck = requiresAuth.createResolver(
   }
 );
 
-export const requiresRights = rights =>
+export const requiresRights = (rights, strict) =>
   requiresDepartmentCheck.createResolver(
     async (_parent, args, { models, token }) => {
       try {
@@ -124,11 +124,15 @@ export const requiresRights = rights =>
           await checkCompanyMembership(models, company, args.teamid, "team");
         }
 
-        if (args.userid && args.userid != "new") {
-          await checkCompanyMembership(models, company, args.userid, "user");
+        const userChecks = ["userid", "employeeid", "unitid"];
 
-          if (args.userid == holder) {
-            return;
+        for await (const check of userChecks) {
+          if (args[check] && args[check] != "new") {
+            await checkCompanyMembership(models, company, args[check], "user");
+
+            if (args[check] == holder && !strict) {
+              return;
+            }
           }
         }
 
@@ -140,28 +144,21 @@ export const requiresRights = rights =>
           }
         }
 
-        if (args.employeeid && args.employeeid != "new") {
-          await checkCompanyMembership(
-            models,
-            company,
-            args.employeeid,
-            "user"
-          );
-        }
-
-        if (args.unitid && args.unitid != "new") {
-          await checkCompanyMembership(models, company, args.unitid, "user");
-
-          if (args.unitid == holder) {
-            return;
-          }
-        }
-
         if (args.userids) {
           await Promise.all(
             args.userids
               .filter(id => id != "new")
               .map(id => checkCompanyMembership(models, company, id, "user"))
+          );
+        }
+
+        if (args.addemployees) {
+          await Promise.all(
+            args.addemployees
+              .filter(({ id }) => id != "new")
+              .map(({ id }) =>
+                checkCompanyMembership(models, company, id, "user")
+              )
           );
         }
 

@@ -99,7 +99,7 @@ export default {
           //add employees
 
           const employeepromises = [];
-          let counter = 0;
+
           const newemployees = [];
           for await (const employee of addemployees) {
             if (employee.id == "new") {
@@ -503,7 +503,7 @@ export default {
       })
   ),
 
-  removeFromTeam: requiresRights(["edit-team"]).createResolver(
+  removeFromTeam: requiresRights(["edit-team"], true).createResolver(
     async (_p, { teamid, userid, keepLicences }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
@@ -698,7 +698,7 @@ export default {
       })
   ),
 
-  addToTeam: requiresRights(["edit-team"]).createResolver(
+  addToTeam: requiresRights(["edit-team"], true).createResolver(
     async (_p, addInformation, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
