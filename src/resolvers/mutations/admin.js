@@ -120,7 +120,7 @@ export default {
   adminEndPlan: requiresVipfyAdmin.createResolver(
     async (parent, { id, enddate }, { models }) => {
       try {
-        const plan = models.Plan.findById(id, {
+        const plan = models.Plan.findByPk(id, {
           raw: true,
           attributes: ["stripedata"]
         });
@@ -431,7 +431,7 @@ export default {
   deleteApp: requiresVipfyAdmin.createResolver(
     async (parent, { id }, { models }) => {
       try {
-        const app = await models.App.findById(id);
+        const app = await models.App.findByPk(id);
         await models.App.destroy({ where: { id, owner: null } });
 
         if (app.logo) {
@@ -449,7 +449,7 @@ export default {
   toggleAppStatus: requiresVipfyAdmin.createResolver(
     async (parent, { id }, { models }) => {
       try {
-        const { disabled } = await models.App.findById(id);
+        const { disabled } = await models.App.findByPk(id);
         await models.App.update(
           { disabled: !disabled },
           { where: { id, owner: null } }
@@ -514,7 +514,7 @@ export default {
     async (parent, { unitid }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
-          const already = await models.Unit.findById(unitid);
+          const already = await models.Unit.findByPk(unitid);
           if (already.deleted) throw new Error("User already deleted!");
 
           const p1 = models.Unit.update(
@@ -524,7 +524,7 @@ export default {
           );
 
           let p2;
-          const isHuman = await models.User.findById(unitid);
+          const isHuman = await models.User.findByPk(unitid);
 
           if (isHuman) {
             p2 = models.Human.update(
@@ -585,7 +585,7 @@ export default {
 
   freezeAccount: requiresVipfyAdmin.createResolver(
     async (parent, { unitid }, { models }) => {
-      const accountExists = await models.Unit.findById(unitid);
+      const accountExists = await models.Unit.findByPk(unitid);
 
       if (!accountExists) {
         throw new Error("User not found!");

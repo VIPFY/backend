@@ -23,7 +23,7 @@ export default {
           user: { unitid }
         } = decode(session.token);
 
-        const me = await models.User.findById(unitid);
+        const me = await models.User.findByPk(unitid);
         const user = await parentAdminCheck(me);
 
         if (me.dataValues.needstwofa) {
@@ -53,7 +53,7 @@ export default {
   fetchSemiPublicUser: requiresRights(["view-users"]).createResolver(
     async (_parent, { userid }, { models }) => {
       try {
-        // const me = await models.User.findById(unitid);
+        // const me = await models.User.findByPk(unitid);
 
         const me = await models.sequelize.query(
           `SELECT * FROM users_view

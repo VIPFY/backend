@@ -100,7 +100,7 @@ export default {
             }
           );
 
-          const p4 = models.BoughtPlan.findById(openLicence.boughtplanid, {
+          const p4 = models.BoughtPlan.findByPk(openLicence.boughtplanid, {
             include: [models.Plan],
             raw: true,
             transaction: ta
