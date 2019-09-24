@@ -13,25 +13,37 @@ const options = {
   password: process.env.REDIS_PW,
   // reconnect after
   retryStrategy: times => Math.min(times * 50, 2000),
-  tls: {}
+  tls: {},
+  showFriendlyErrorStack: true
 };
 
 export const REDIS_SESSION_PREFIX = "session:";
 export const USER_SESSION_ID_PREFIX = "userID-";
 export const IMPERSONATE_PREFIX = "impersonations-";
 
-if (process.env.REDIS_NO_PW) {
+if (process.env.REDIS_NO_PW == "true" || process.env.REDIS_NO_PW == "TRUE") {
   delete options.password;
 }
 
-if (process.env.REDIS_NO_SERVER_ID) {
+if (
+  process.env.REDIS_NO_SERVER_ID == "true" ||
+  process.env.REDIS_NO_SERVER_ID == "TRUE"
+) {
   options.tls = {
     checkServerIdentity: () => undefined
   };
 }
-export const redis = Redis.createClient([options]);
+export const redis = new Redis(options);
 
-const subscriber = Redis.createClient([options]);
+redis.on("error", (...args) => console.error("ioredis ERROR", ...args));
+redis.on("connect", (...args) => console.log("ioredis connected", ...args));
+redis.on("ready", (...args) => console.log("ioredis ready", ...args));
+redis.on("close", (...args) => console.log("ioredis close", ...args));
+redis.on("reconnecting", (...args) =>
+  console.log("ioredis reconnecting", ...args)
+);
+
+const subscriber = new Redis(options);
 export const pubsub = new RedisPubSub({ publisher: redis, subscriber });
 
 // The location for uploaded files to be saved
