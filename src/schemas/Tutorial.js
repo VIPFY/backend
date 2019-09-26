@@ -15,4 +15,5 @@ export const queries = `
 
 export const mutations = `
 updateTutorialProgress(tutorialprogress: JSON!): Response!
+closeTutorial(tutorial: String!): Boolean!
 `;
