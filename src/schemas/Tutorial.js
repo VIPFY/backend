@@ -9,10 +9,11 @@ export const types = `
     renderoptions: JSON
   }
 `;
+
 export const queries = `
   tutorialSteps: [Tutorial]!
 `;
 
 export const mutations = `
-updateTutorialProgress(tutorialprogress: JSON!): Response!
+  updateTutorialProgress(tutorialprogress: JSON!): Response!
 `;
