@@ -4,7 +4,7 @@
  * they just have to wrapped around the component which shall be protected.
  */
 
-import { decode } from "jsonwebtoken";
+import { decode, verify } from "jsonwebtoken";
 import { checkRights } from "@vipfy-private/messaging";
 import { checkCompanyMembership } from "./companyMembership";
 import { AuthError, AdminError, RightsError, NormalError } from "../errors";
@@ -23,8 +23,7 @@ const createResolver = resolver => {
 
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(
-  async (_parent, _args, { models, session }, info) => {
-    console.log("\x1b[1m%s\x1b[0m", "LOG info", info);
+  async (_parent, _args, { models, session, SECRET }) => {
     try {
       console.log("\x1b[1m%s\x1b[0m", "LOG req.session.token", session);
       if (!session || !session.token) {
@@ -33,7 +32,7 @@ export const requiresAuth = createResolver(
 
       const {
         user: { company, unitid }
-      } = decode(session.token);
+      } = verify(session.token, SECRET);
 
       const valid = models.User.findOne({
         where: { id: unitid },
