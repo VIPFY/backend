@@ -109,7 +109,7 @@ export const schema = makeExecutableSchema({ typeDefs, resolvers });
   traceResolvers(schema);
 } */
 
-// Enable our Frontend running on localhost:3000 to access the Backend
+// Enable our Frontend running on various ports to access the Backend
 const corsOptions = {
   origin:
     ENVIRONMENT == "production"
@@ -123,7 +123,7 @@ const corsOptions = {
           "http://localhost:3000",
           "https://aws.vipfy.store"
         ]
-      : "http://localhost:3000",
+      : ["http://localhost:3000", "http://localhost:9000"],
   credentials: true // <-- REQUIRED backend setting for sessions
 };
 

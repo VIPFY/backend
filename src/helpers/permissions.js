@@ -7,7 +7,7 @@
 import { decode, verify } from "jsonwebtoken";
 import { checkRights } from "@vipfy-private/messaging";
 import { checkCompanyMembership } from "./companyMembership";
-import { AuthError, AdminError, RightsError } from "../errors";
+import { AuthError, AdminError, RightsError, NormalError } from "../errors";
 
 const createResolver = resolver => {
   const baseResolver = resolver;
@@ -80,7 +80,15 @@ export const requiresAuth = createResolver(
           console.error(err);
         }
       });
-      throw new AuthError(error.message);
+
+      if (info.fieldName == "signOut") {
+        throw new NormalError({
+          message: error.message,
+          internalData: { error }
+        });
+      } else {
+        throw new AuthError(error.message);
+      }
     }
   }
   // all other cases handled by auth middleware

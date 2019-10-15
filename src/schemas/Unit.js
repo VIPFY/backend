@@ -94,10 +94,19 @@ export const types = `
     email: String
     oldemail: String
     title: String
+    position: String
     sex: SEX
     birthday: Date
     language: String
     statisticdata: JSON
+  }
+
+  input SetupInput {
+    name: String
+    company: String
+    position: String
+    sector: String
+    country: String
   }
 
   input EmployeeInput {
@@ -133,6 +142,7 @@ export const mutations = `
   updateEmployeePic(file: Upload!, unitid: ID!): SemiPublicUser!
 
   #Setup Finished
+  initialSetup(token: String!, data: SetupInput!): Boolean!
   setupFinished(country: String, vatoption: Int, vatnumber: String, placeId: String, ownAdress: String, username: String): Response!
 
   # Agree to Vipfy Terms of Service and Privacy Agreement
