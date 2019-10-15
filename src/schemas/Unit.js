@@ -1,3 +1,21 @@
+const userFields = `
+  id: ID!
+  profilepicture: String
+  isadmin: Boolean!
+  companyban: Boolean
+  isonline: Boolean
+`;
+
+const basicFields = `
+  firstname: String
+  middlename: String
+  lastname: String
+  title: String
+  sex: SEX
+  birthday: Date
+  language: String
+`;
+
 export const types = `
   type Unit {
     id: ID!
@@ -6,28 +24,18 @@ export const types = `
   }
 
   type User {
-    id: ID!
-    firstname: String
-    middlename: String
-    lastname: String
+    createdate: String!
+    ${userFields}
+    ${basicFields}
     hiredate: Date
     position: String
-    title: String
-    sex: SEX
-    birthday: String
     resetoption: Int
-    language: String
     banned: Boolean!
     deleted: Boolean!
     suspended: Boolean!
-    profilepicture: String
-    isadmin: Boolean!
-    companyban: Boolean
-    isonline: Boolean
     emails: [Email]
     addresses: [Address]
     phones: [Phone]
-    createdate: String
     company: Department
     passwordlength: Int
     passwordstrength: Int
@@ -44,37 +52,17 @@ export const types = `
   }
 
   type PublicUser {
-    id: ID!
-    firstname: String
-    middlename: String
-    lastname: String
-    title: String
-    sex: SEX
-    birthday: Date
-    language: String
-    profilepicture: String
-    isadmin: Boolean!
-    companyban: Boolean
-    isonline: Boolean
+    ${userFields}
+    ${basicFields}
   }
 
   type SemiPublicUser {
-    id: ID!
-    firstname: String
-    middlename: String
-    lastname: String
+    ${userFields}
+    ${basicFields}
     hiredate: Date
     position: String
-    title: String
-    sex: SEX
-    birthday: Date
-    language: String
     deleted: Boolean!
     banned: Boolean!
-    profilepicture: String
-    isadmin: Boolean!
-    companyban: Boolean
-    isonline: Boolean
     emails: [Email]
     addresses: [Address]
     phones: [Phone]
@@ -87,17 +75,11 @@ export const types = `
   }
 
   input UserInput {
-    firstname: String
-    middlename: String
-    lastname: String
+    ${basicFields}
     password: String
     email: String
     oldemail: String
-    title: String
     position: String
-    sex: SEX
-    birthday: Date
-    language: String
     statisticdata: JSON
   }
 

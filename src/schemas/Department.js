@@ -1,3 +1,14 @@
+const departmentFields = `
+  name: String!
+  legalinformation: JSON
+  unitid: Unit!
+  promocode: String
+  setupfinished: Boolean
+  iscompany: Boolean
+  isprivate: Boolean
+  internaldata: JSON
+`;
+
 export const types = `
   type ParentUnit {
     parentunit: Unit!
@@ -12,9 +23,8 @@ export const types = `
   }
 
   type Department {
-    name: String!
-    legalinformation: JSON
-    unitid: Unit!
+    id: ID!
+    ${departmentFields}
     banned: Boolean!
     deleted: Boolean!
     suspended: Boolean!
@@ -24,23 +34,11 @@ export const types = `
     apps: JSON
     domains: [Domain]
     createdate: String!
-    promocode: String
-    setupfinished: Boolean
-    iscompany: Boolean
-    isprivate: Boolean
-    internaldata: JSON
   }
 
   type DepartmentData {
-    name: String!
-    legalinformation: JSON
-    unitid: Unit!
-    promocode: String
-    setupfinished: Boolean
-    iscompany: Boolean
-    isprivate: Boolean
+    ${departmentFields}
     statisticdata: JSON
-    internaldata: JSON
   }
 
   type DepartmentEmail {
