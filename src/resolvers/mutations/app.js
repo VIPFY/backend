@@ -900,7 +900,6 @@ export default {
         const {
           user: { unitid }
         } = decode(session.token);
-
         const { id: licenceid, ...data } = layout;
 
         const layoutExists = await models.LicenceLayout.findOne({
@@ -932,12 +931,12 @@ export default {
   ),
 
   switchAppsLayout: requiresAuth.createResolver(
-    async (_p, { app1, app2 }, { models, token }) =>
+    async (_p, { app1, app2 }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid }
-          } = decode(token);
+          } = decode(session.token);
 
           let layoutExistsApp1 = await models.LicenceLayout.findOne({
             where: { licenceid: app1.id, unitid },
@@ -1016,7 +1015,7 @@ export default {
   ),
 
   createOwnApp: requiresRights(["create-licences"]).createResolver(
-    async (_, { ssoData, userids }, { models, session }) =>
+    async (_p, { ssoData, userids }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
