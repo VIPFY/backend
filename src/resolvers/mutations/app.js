@@ -1633,7 +1633,7 @@ export default {
 
         await Promise.all(promises);
 
-        return true;
+        return licence.id;
       } catch (err) {
         await createNotification(
           {
@@ -1788,6 +1788,87 @@ export default {
             ]
           });
 
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+  updateLicenceSpeed: requiresAuth.createResolver(
+    async (_p, { licenceid, speed, working, oldspeed }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
+
+          // Check if user is unitid of licence
+
+          const licence = await models.LicenceData.findOne({
+            where: { unitid, id: licenceid },
+            raw: true
+          });
+
+          if (!licence) {
+            return false;
+          }
+
+          const boughtplan = await models.BoughtPlan.findOne({
+            where: { id: licence.boughtplanid },
+            raw: true
+          });
+          const plan = await models.Plan.findOne({
+            where: { id: boughtplan.planid },
+            raw: true
+          });
+          const app = await models.App.findOne({
+            where: { id: plan.appid },
+            raw: true
+          });
+
+          if (working) {
+            await models.LicenceData.update(
+              {
+                options: models.sequelize.literal(
+                  `options || jsonb '{"loginspeed": ${speed}}'`
+                )
+              },
+              {
+                where: { id: licenceid },
+                transaction: ta
+              }
+            );
+          } else {
+            await models.LicenceData.update(
+              {
+                options: models.sequelize.literal(
+                  `options || jsonb '{"loginfailed": ${speed}}'`
+                )
+              },
+              {
+                where: { id: licenceid },
+                transaction: ta
+              }
+            );
+          }
+          console.log(
+            "UPDATE APP",
+            `options || jsonb '{"${speed}-${licenceid}-${moment.now()}": ${working}}'`
+          );
+          await models.App.update(
+            {
+              options: models.sequelize.literal(
+                `options || jsonb '{"${speed}-${licenceid}-${moment.now()}": ${working}}'`
+              )
+            },
+            {
+              where: { id: app.id },
+              transaction: ta
+            }
+          );
           return true;
         } catch (err) {
           throw new NormalError({
