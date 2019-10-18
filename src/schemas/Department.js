@@ -29,6 +29,7 @@ export const types = `
     iscompany: Boolean
     isprivate: Boolean
     internaldata: JSON
+    adminkey: Key
   }
 
   type DepartmentData {

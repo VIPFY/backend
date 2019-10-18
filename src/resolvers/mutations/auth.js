@@ -4,6 +4,7 @@ import moment from "moment";
 import { decode } from "jsonwebtoken";
 import { sleep } from "@vipfy-private/service-base";
 import { parseName } from "humanparser";
+import crypto from "crypto";
 import {
   USER_SESSION_ID_PREFIX,
   REDIS_SESSION_PREFIX,
@@ -457,11 +458,15 @@ export default {
       }
     }),
 
-  signIn: async (_p, { email, password }, ctx) => {
+  signIn: async (_p, { email, password, passkey }, ctx) => {
     try {
-      if (password.length > MAX_PASSWORD_LENGTH) {
+      if (password && password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
       }
+      if (passkey && passkey.length != 128) {
+        throw new Error("Incompatible passkey format, try updating VIPFY");
+      }
+      // password is sent in cleartext, passkey is a password hashed on the client
 
       const message = "Email or Password incorrect!";
 
@@ -479,18 +484,22 @@ export default {
         throw new Error(message);
       }
 
-      const valid = await bcrypt.compare(password, emailExists.passwordhash);
+      let valid = false;
+      if (password) {
+        valid = await bcrypt.compare(password, emailExists.passwordhash);
+      } else if (passkey) {
+        // no further checks on the existance of emailExists.passkey to avoid
+        // revealing info in timing attacks.
+        valid = crypto.timingSafeEqual(
+          Buffer.from(emailExists.passkey || " ".repeat(128)),
+          Buffer.from(passkey)
+        );
+      } else {
+        throw new Error("No Authentification provided");
+      }
       if (!valid) throw new Error(message);
 
       await checkAuthentification(emailExists.unitid, emailExists.company);
-
-      // update password length and strength.
-      // This is temporary to fill values we didn't catch before implementing these metrics
-      const passwordstrength = computePasswordScore(password);
-      await ctx.models.Human.update(
-        { passwordstrength, passwordlength: password.length },
-        { where: { unitid: emailExists.unitid } }
-      );
 
       if (emailExists.twofactor) {
         const { secret } = await ctx.models.TwoFA.findOne({

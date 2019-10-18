@@ -93,7 +93,7 @@ export default {
     payer: "Unit"
   }),
   BoughtplanUsagePerUser: find({ boughtplan: "BoughtPlan", unit: "User" }),
-  Department: find(unit),
+  Department: find({ ...unit, adminkey: "Key" }),
   DepartmentData: find(unit),
   DepartmentEmail: find({ departmentid: "Department", emailownerid: "Unit" }),
   DepartmentEmployee: find({
@@ -111,6 +111,7 @@ export default {
     teamaccount: "Team"
   }),
   Log: find({ user: "User", sudoer: "User" }),
+  Key: find({ unitid: "User" }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
   MessageGroupMembership: find({ groupid: "MessageGroup", unitid: "User" }),
