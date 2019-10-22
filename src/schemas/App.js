@@ -1,25 +1,43 @@
+const appFields = `
+  id: ID!
+  disabled: Boolean!
+  name: String!
+  icon: String
+  loginurl: String
+  description: String
+  teaserdescription: String
+  needssubdomain: Boolean
+  website: String
+  logo: String
+  images: [String]
+  features: JSON
+  options: JSON
+  developer: Unit!
+  supportunit: Unit!
+  color: String!
+  deprecated: Boolean!
+  hidden: Boolean!
+  owner: Department
+`;
+
+const basicLicenceFields = `
+  id: ID!
+  starttime: Date!
+  endtime: Date
+`;
+
+const licenceFields = `
+  options: JSON
+  boughtplanid: BoughtPlan!
+  pending: Boolean
+  dashboard: Int
+  tags: [String]
+`;
+
 export const types = `
   type App {
-    id: ID!
-    name: String!
-    icon: String
-    loginurl: String
-    description: String
-    teaserdescription: String
-    needssubdomain: Boolean
-    website: String
-    disabled: Boolean!
-    logo: String
-    images: [String]
-    features: JSON
-    options: JSON
-    developer: Unit!
-    supportunit: Unit!
-    color: String!
-    deprecated: Boolean!
-    hidden: Boolean!
+    ${appFields}
     hasboughtplan: Boolean
-    owner: Department
   }
 
   type CompanyService{
@@ -30,31 +48,14 @@ export const types = `
   }
 
   type AppDetails {
-    id: ID!
-    name: String
-    developername: String!
-    icon: String
-    loginurl: String
-    needssubdomain: Boolean
-    logo: String
-    description: String
-    teaserdescription: String
-    website: String
-    images: [String]
-    features: JSON
-    options: JSON
-    disabled: Boolean
+    ${appFields}
     avgstars: Float
     cheapestprice: Float
+    developername: String!
     cheapestpromo: Float
     supportwebsite: String
     supportphone: String
     developerwebsite: String
-    developer: Unit!
-    supportunit: Unit!
-    color: String!
-    hidden: Boolean!
-    owner: Unit
   }
 
   type TeamBoughtPlan {
@@ -63,7 +64,16 @@ export const types = `
   }
 
   input AppInput {
+    loginurl: String
+    description: String
+    teaserdescription: String
+    needssubdomain: Boolean
+    website: String    
     name: String
+    disabled: Boolean
+    icon: Upload
+    logo: Upload
+    images: [Upload!]
     developername: String
     commission: String
     color: String
@@ -71,24 +81,15 @@ export const types = `
     supportphone: String
     supportwebsite: String
     developerwebsite: String
-    description: String
-    teaserdescription: String
-    loginurl: String
-    website: String
     external: Boolean
-    disabled: Boolean
-    needssubdomain: Boolean
     developer: ID
     supportunit: ID
     hidden: Boolean
-    icon: Upload
-    logo: Upload
-    images: [Upload!]
     image: Upload
   }
 
   input SSOInput {
-    images: [Upload]
+    images: [Upload!]
     name: String!
     loginurl: String!
     email: String!
@@ -112,60 +113,46 @@ export const types = `
   }
 
   type ServiceLicence{
-    id: ID!
-    licence: Licence!
-    starttime: Date!
-    endtime: Date
+    ${basicLicenceFields}
     agreed: Boolean
     alias: String
+    licence: Licence!
   }
 
   type Licence {
-    id: ID!
-    options: JSON
-    starttime: String!
-    endtime: Date
+    ${basicLicenceFields}
+    ${licenceFields}
+    sidebar: Int
     agreed: Boolean
     disabled: Boolean
-    pending: Boolean
     key: JSON
-    boughtplanid: BoughtPlan!
     unitid: SemiPublicUser
-    dashboard: Int
-    sidebar: Int
     view: Boolean!
     edit: Boolean!
     delete: Boolean!
     use: Boolean!
     vacationstart: Date
     vacationend: Date
-    tags: [String]
     teamlicence: Team
     teamaccount: Team
   }
 
   type PublicLicence {
-    id: ID!
-    starttime: String!
-    endtime: Date
-    options: JSON
-    boughtplanid: BoughtPlan!
-    unitid: PublicUser
-    pending: Boolean
-    dashboard: Int
+    ${basicLicenceFields}
+    ${licenceFields}
     sidebar: Int
-    tags: [String]
+    unitid: PublicUser
   }
 
   type TempLicence {
     id: ID!
-    licenceid: PublicLicence!
+    starttime: Date!
+    endtime: Date!
     view: Boolean!
     edit: Boolean!
     delete: Boolean!
     use: Boolean!
-    starttime: Date!
-    endtime: Date!
+    licenceid: PublicLicence!
     unitid: SemiPublicUser!
     owner: SemiPublicUser!
     tags: [String]!
@@ -322,5 +309,7 @@ export const mutations = `
 
   distributeLicence10(licenceid: ID!, userid: ID!): Boolean!
 
-  addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): Boolean!
+  addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): ID!
+
+  updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
   `;

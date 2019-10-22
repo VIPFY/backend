@@ -1,3 +1,26 @@
+const planFields = `
+  teaserdescription: String
+  features: JSON
+  startdate: String
+  enddate: String
+  numlicences: Int
+  price: Float
+  currency: String
+  options: JSON
+  gototime: String
+`;
+
+const cardFields = `
+  id: String!
+  brand: String!
+  exp_month: Int!
+  exp_year: Int!
+  last4: String!
+  name: String!
+  country: String!
+  cvc_check: String!
+`;
+
 export const types = `
   type Bill {
     id: ID!
@@ -36,37 +59,21 @@ export const types = `
   type Plan {
     id: ID!
     name: String!
-    teaserdescription: String
-    features: JSON
-    startdate: String
-    enddate: String
-    numlicences: Int
-    price: Float
-    currency: String
-    options: JSON
+    ${planFields}
     payperiod: JSON
     cancelperiod: JSON
     optional: Boolean!
-    gototime: String
     appid: App!
     gotoplan: Plan
     hidden: Boolean!
   }
 
   input PlanInput {
+    ${planFields}
     name: String
-    teaserdescription: String
-    features: JSON
-    startdate: String
-    enddate: String
-    numlicences: Int
-    price: Float
-    currency: String
-    options: JSON
     payperiod: Interval
     cancelperiod: Interval
     optional: Boolean
-    gototime: String
     appid: ID
     gotoplan: ID
   }
@@ -150,25 +157,11 @@ export const types = `
   }
 
   type Card {
-    id: String!
-    brand: String!
-    exp_month: Int!
-    exp_year: Int!
-    last4: String!
-    name: String!
-    country: String!
-    cvc_check: String!
+    ${cardFields}
   }
 
   input CardInput {
-    id: String!
-    brand: String!
-    exp_month: Int!
-    exp_year: Int!
-    last4: String!
-    name: String!
-    country: String!
-    cvc_check: String!
+    ${cardFields}
   }
 `;
 

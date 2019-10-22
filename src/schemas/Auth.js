@@ -50,7 +50,6 @@ export const mutations = `
   signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!, isprivate: Boolean): RegisterResponse!
   # After confirming the email, an user has to set a password
   signUpConfirm(email: String!, password: String!, passwordConfirm: String!, token: String!): SignUpConfirmResponse!
-
   signIn(email: String!, password: String, passkey: String): LoginResponse!
   signOut: Boolean!
   signOutSession(sessionID: String!): [SessionResponse!]!

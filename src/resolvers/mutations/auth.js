@@ -45,7 +45,7 @@ export default {
   ) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
-        const { models, SECRET } = ctx;
+        const { models } = ctx;
         if (!privacy || !termsOfService) {
           throw new Error(
             "You have to confirm to our privacy agreement and our Terms of Service!"

@@ -900,7 +900,6 @@ export default {
         const {
           user: { unitid }
         } = decode(session.token);
-
         const { id: licenceid, ...data } = layout;
 
         const layoutExists = await models.LicenceLayout.findOne({
@@ -932,12 +931,12 @@ export default {
   ),
 
   switchAppsLayout: requiresAuth.createResolver(
-    async (_p, { app1, app2 }, { models, token }) =>
+    async (_p, { app1, app2 }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid }
-          } = decode(token);
+          } = decode(session.token);
 
           let layoutExistsApp1 = await models.LicenceLayout.findOne({
             where: { licenceid: app1.id, unitid },
@@ -1016,7 +1015,7 @@ export default {
   ),
 
   createOwnApp: requiresRights(["create-licences"]).createResolver(
-    async (_, { ssoData, userids }, { models, session }) =>
+    async (_p, { ssoData, userids }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -1633,7 +1632,7 @@ export default {
 
         await Promise.all(promises);
 
-        return true;
+        return licence.id;
       } catch (err) {
         await createNotification(
           {
@@ -1788,6 +1787,87 @@ export default {
             ]
           });
 
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+  updateLicenceSpeed: requiresAuth.createResolver(
+    async (_p, { licenceid, speed, working, oldspeed }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
+
+          // Check if user is unitid of licence
+
+          const licence = await models.LicenceData.findOne({
+            where: { unitid, id: licenceid },
+            raw: true
+          });
+
+          if (!licence) {
+            return false;
+          }
+
+          const boughtplan = await models.BoughtPlan.findOne({
+            where: { id: licence.boughtplanid },
+            raw: true
+          });
+          const plan = await models.Plan.findOne({
+            where: { id: boughtplan.planid },
+            raw: true
+          });
+          const app = await models.App.findOne({
+            where: { id: plan.appid },
+            raw: true
+          });
+
+          if (working) {
+            await models.LicenceData.update(
+              {
+                options: models.sequelize.literal(
+                  `options || jsonb '{"loginspeed": ${speed}}'`
+                )
+              },
+              {
+                where: { id: licenceid },
+                transaction: ta
+              }
+            );
+          } else {
+            await models.LicenceData.update(
+              {
+                options: models.sequelize.literal(
+                  `options || jsonb '{"loginfailed": ${speed}}'`
+                )
+              },
+              {
+                where: { id: licenceid },
+                transaction: ta
+              }
+            );
+          }
+          console.log(
+            "UPDATE APP",
+            `options || jsonb '{"${speed}-${licenceid}-${moment.now()}": ${working}}'`
+          );
+          await models.App.update(
+            {
+              options: models.sequelize.literal(
+                `options || jsonb '{"${speed}-${licenceid}-${moment.now()}": ${working}}'`
+              )
+            },
+            {
+              where: { id: app.id },
+              transaction: ta
+            }
+          );
           return true;
         } catch (err) {
           throw new NormalError({
