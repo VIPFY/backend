@@ -40,7 +40,6 @@ export const queries = `
   fetchUsersSessions(userid: ID!): [SessionResponse!]!
 
   fetchPwParams(email: String!): PasswordParams!
-  fetchMyCurrentKey: Key
   fetchKey(id: ID!): Key
   fetchCurrentKey(unitid: ID): Key
 `;

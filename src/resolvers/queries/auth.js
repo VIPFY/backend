@@ -203,28 +203,6 @@ export default {
     }
   },
 
-  fetchMyCurrentKey: requiresAuth.createResolver(
-    async (_p, _args, { models, session }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(session.token);
-        const keys = await models.Key.findAll({
-          where: { unitid },
-          order: [["createdat", "DESC"]],
-          limit: 1
-        });
-        console.log(keys);
-        if (keys.length == 0) {
-          return null;
-        }
-        return keys[0];
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
   fetchKey: requiresAuth.createResolver(
     async (_p, { id }, { models, session }) => {
       try {
