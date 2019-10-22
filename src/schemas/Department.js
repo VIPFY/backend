@@ -34,6 +34,7 @@ export const types = `
     apps: JSON
     domains: [Domain]
     createdate: String!
+    adminkey: Key
   }
 
   type DepartmentData {

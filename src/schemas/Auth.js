@@ -14,6 +14,22 @@ export const types = `
     location: Location
     loggedInAt: Date!
   }
+
+  type PasswordParams {
+    id: ID!
+    salt: String!
+    ops: Int!
+    mem: Int!
+  }
+
+  type Key {
+    id: ID!
+    unitid: PublicUser!
+    privatekey: String!
+    publickey: String!
+    createdat: Date!
+    encryptedby: Key
+  }
 `;
 
 export const queries = `
@@ -22,6 +38,11 @@ export const queries = `
   
   # Fetches all Sessions of a specific User
   fetchUsersSessions(userid: ID!): [SessionResponse!]!
+
+  fetchPwParams(email: String!): PasswordParams!
+  fetchMyCurrentKey: Key
+  fetchKey(id: ID!): Key
+  fetchCurrentKey(unitid: ID): Key
 `;
 
 export const mutations = `
@@ -29,7 +50,7 @@ export const mutations = `
   signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!, isprivate: Boolean): RegisterResponse!
   # After confirming the email, an user has to set a password
   signUpConfirm(email: String!, password: String!, passwordConfirm: String!, token: String!): SignUpConfirmResponse!
-  signIn(email: String!, password: String!): LoginResponse!
+  signIn(email: String!, password: String, passkey: String): LoginResponse!
   signOut: Boolean!
   signOutSession(sessionID: String!): [SessionResponse!]!
   signOutUser(sessionID: String!, userid: ID!): [SessionResponse!]!

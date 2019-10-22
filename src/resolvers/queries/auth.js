@@ -165,5 +165,101 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  fetchPwParams: async (_p, { email }, ctx) => {
+    try {
+      const emailExists = await ctx.models.Login.find({
+        where: {
+          email,
+          deleted: { [ctx.models.Op.or]: [null, false] },
+          banned: { [ctx.models.Op.or]: [null, false] },
+          suspended: { [ctx.models.Op.or]: [null, false] }
+        },
+        raw: true
+      });
+
+      if (!emailExists || !emailExists.passwordsalt) {
+        // generate fake salt in an attempt to make it less obvious if the user exists
+        // this is vulnerable against timing attacks
+        // make fake salt deterministic, otherwise calling this twice will reveal if the user exists
+        const crypt = crypto.createHmac(
+          "sha256",
+          "eAiJzhVOvT0PeSTDkeWrbLICTE7aeTQ1"
+        );
+        crypt.update(email);
+        const salt = crypt.digest("hex").substring(0, 32);
+        return { id: email, salt, ops: 2, mem: 67108864 };
+      }
+
+      return {
+        id: email,
+        salt: emailExists.passwordsalt,
+        ops: 2,
+        mem: 67108864
+      };
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
+
+  fetchMyCurrentKey: requiresAuth.createResolver(
+    async (_p, _args, { models, session }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+        const keys = await models.Key.findAll({
+          where: { unitid },
+          order: [["createdat", "DESC"]],
+          limit: 1
+        });
+        console.log(keys);
+        if (keys.length == 0) {
+          return null;
+        }
+        return keys[0];
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchKey: requiresAuth.createResolver(
+    async (_p, { id }, { models, session }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+        const key = await models.Key.findOne({
+          where: { id, unitid }
+        });
+        return key;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchCurrentKey: requiresAuth.createResolver(
+    async (_p, { unitid }, { models, session }) => {
+      try {
+        if (!unitid) {
+          // eslint-disable-next-line prefer-destructuring
+          unitid = decode(session.token).user.unitid;
+        }
+        const keys = await models.Key.findAll({
+          where: { unitid },
+          order: [["createdat", "DESC"]],
+          limit: 1
+        });
+        if (keys.length == 0) {
+          return null;
+        }
+        return keys[0];
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };
