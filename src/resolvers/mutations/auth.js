@@ -483,11 +483,14 @@ export default {
       if (!emailExists) {
         throw new Error(message);
       }
+      console.log("a");
 
       let valid = false;
       if (password) {
+        console.log("b");
         valid = await bcrypt.compare(password, emailExists.passwordhash);
       } else if (passkey) {
+        console.log("c");
         // no further checks on the existance of emailExists.passkey to avoid
         // revealing info in timing attacks.
         valid = crypto.timingSafeEqual(
@@ -497,9 +500,13 @@ export default {
       } else {
         throw new Error("No Authentification provided");
       }
+
+      console.log("d", valid);
       if (!valid) throw new Error(message);
 
       await checkAuthentification(emailExists.unitid, emailExists.company);
+
+      console.log("e", valid);
 
       if (emailExists.twofactor) {
         const { secret } = await ctx.models.TwoFA.findOne({
@@ -509,6 +516,7 @@ export default {
 
         const token = await createSetupToken();
 
+        console.log("f", valid);
         await ctx.models.Token.create({
           email,
           token,
@@ -523,6 +531,7 @@ export default {
         const fakeToken = await createToken(emailExists, ctx.SECRET);
         // Does this work with 2FA?
 
+        console.log("g", valid);
         ctx.session.token = fakeToken;
         await createLog(ctx, "signIn-2FA", { user: emailExists, email }, null);
 

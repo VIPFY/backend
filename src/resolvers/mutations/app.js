@@ -537,6 +537,157 @@ export default {
     })
   ),
 
+  /**
+   * Adds an external account of an app to the users personal Account
+   *
+   * @param {float} price Optional price of the external account
+   * @param {ID} appid Id of the external app
+   * @param {ID} boughtplanid Id of the bought plan the licence should belong to
+   * @param {ID} touser If the licence should belong to another user
+   *
+   * @returns {object}
+   */
+  addEncryptedExternalLicence: requiresAuth.createResolver(
+    (_p, args, context) =>
+      context.models.sequelize.transaction(async ta => {
+        const { models, session } = context;
+
+        const {
+          user: { unitid, company }
+        } = decode(session.token);
+
+        try {
+          let admin = null;
+
+          if (args.touser) {
+            admin = await companyCheck(company, unitid, args.touser);
+          } else {
+            admin = await models.User.findOne({
+              where: { id: unitid },
+              raw: true
+            });
+          }
+
+          const oldBoughtPlan = await models.BoughtPlan.findOne({
+            where: { id: args.boughtplanid },
+            endtime: {
+              [models.Op.or]: {
+                [models.Op.gt]: models.sequelize.fn("NOW"),
+                [models.Op.eq]: null
+              }
+            },
+            raw: true
+          });
+
+          if (!oldBoughtPlan) {
+            throw new Error("Couldn't find a valid Plan!");
+          }
+
+          const plan = await models.Plan.findOne({
+            where: { id: oldBoughtPlan.planid, options: { external: true } },
+            raw: true
+          });
+
+          if (!plan) {
+            throw new Error(
+              "This App is not integrated to handle external Accounts yet."
+            );
+          }
+
+          await checkPlanValidity(plan);
+          let externaltotalprice = args.price;
+
+          if (oldBoughtPlan.key && oldBoughtPlan.key.externaltotalprice) {
+            externaltotalprice = oldBoughtPlan.key.externaltotalprice;
+          }
+
+          await models.BoughtPlan.update(
+            {
+              key: {
+                ...oldBoughtPlan.key,
+                externaltotalprice
+              }
+            },
+            {
+              where: { id: args.boughtplanid },
+              transaction: ta,
+              returning: true
+            }
+          );
+
+          const licence = await models.LicenceData.create(
+            {
+              unitid: args.touser || unitid,
+              disabled: false,
+              boughtplanid: args.boughtplanid,
+              agreed: true,
+              key: args.key
+            },
+            { transaction: ta }
+          );
+
+          const p1 = createLog(
+            context,
+            "addExternalLicence",
+            {
+              licence: licence.id,
+              oldBoughtPlan,
+              ...args
+            },
+            ta
+          );
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: `Integrated external Account`,
+              icon: "user-plus",
+              link: `marketplace/${args.appid}`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          const promises = [p1, p2];
+
+          if (args.toUser) {
+            const p3 = createNotification(
+              {
+                receiver: args.touser,
+                message: `${admin.firstname} ${admin.lastname} integrated an external Account for you.`,
+                icon: "user-plus",
+                link: `marketplace/${args.appid}`,
+                changed: ["ownLicences"]
+              },
+              ta
+            );
+
+            promises.push(p3);
+          }
+
+          await Promise.all(promises);
+
+          console.log("LICENCE", licence.dataValues);
+          return licence;
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Integration of external Account failed",
+              icon: "bug",
+              link: `marketplace/${args.appid}`,
+              changed: []
+            },
+            ta
+          );
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   deleteServiceLicenceAt: requiresRights(["delete-licences"]).createResolver(
     async (_p, { serviceid, licenceid, time }, context) =>
       context.models.sequelize.transaction(async ta => {
@@ -1650,6 +1801,153 @@ export default {
         });
       }
     })
+  ),
+
+  addEncryptedExternalAccountLicence: requiresAuth.createResolver(
+    (_p, args, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        try {
+          const {
+            touser,
+            boughtplanid,
+            price,
+            appid = 0,
+            identifier,
+            key,
+            options
+          } = args;
+          const { models, session } = ctx;
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
+          let admin = null;
+
+          if (touser) {
+            admin = await companyCheck(company, unitid, touser);
+          } else {
+            admin = await models.User.findOne({
+              where: { id: unitid },
+              raw: true
+            });
+          }
+
+          const oldBoughtPlan = await models.BoughtPlan.findOne({
+            where: { id: boughtplanid },
+            endtime: {
+              [models.Op.or]: {
+                [models.Op.gt]: models.sequelize.fn("NOW"),
+                [models.Op.eq]: null
+              }
+            },
+            raw: true
+          });
+
+          if (!oldBoughtPlan) {
+            throw new Error("Couldn't find a valid Plan!");
+          }
+
+          const plan = await models.Plan.findOne({
+            where: { id: oldBoughtPlan.planid, options: { external: true } },
+            raw: true
+          });
+
+          if (!plan) {
+            throw new Error(
+              "This App is not integrated to handle external Accounts yet."
+            );
+          }
+
+          await checkPlanValidity(plan);
+          let externaltotalprice = price;
+
+          if (oldBoughtPlan.key && oldBoughtPlan.key.externaltotalprice) {
+            externaltotalprice = oldBoughtPlan.key.externaltotalprice;
+          }
+
+          await models.BoughtPlan.update(
+            {
+              key: {
+                ...oldBoughtPlan.key,
+                externaltotalprice
+              }
+            },
+            {
+              where: { id: boughtplanid },
+              transaction: ta,
+              returning: true
+            }
+          );
+
+          const licence = await models.LicenceData.create(
+            {
+              unitid: touser,
+              disabled: false,
+              boughtplanid,
+              agreed: true,
+              key,
+              options: { identifier, ...options }
+            },
+            { transaction: ta }
+          );
+
+          const p1 = createLog(
+            ctx,
+            "addExternalLicence",
+            {
+              licence: licence.id,
+              oldBoughtPlan
+            },
+            ta
+          );
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: `Integrated external Account`,
+              icon: "user-plus",
+              link: `marketplace/${appid}`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          const promises = [p1, p2];
+
+          if (touser) {
+            const p3 = createNotification(
+              {
+                receiver: touser,
+                message: `${admin.firstname} ${admin.lastname} integrated an external Account for you.`,
+                icon: "user-plus",
+                link: `marketplace/${appid}`,
+                changed: ["ownLicences"]
+              },
+              ta
+            );
+
+            promises.push(p3);
+          }
+
+          await Promise.all(promises);
+
+          return licence.dataValues;
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Integration of external Account failed",
+              icon: "bug",
+              link: `marketplace/${appid}`,
+              changed: []
+            },
+            ta
+          );
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   ),
 
   failedIntegration: requiresAuth.createResolver(
