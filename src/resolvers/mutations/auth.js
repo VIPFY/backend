@@ -497,6 +497,7 @@ export default {
       } else {
         throw new Error("No Authentification provided");
       }
+
       if (!valid) throw new Error(message);
 
       await checkAuthentification(emailExists.unitid, emailExists.company);

@@ -294,6 +294,7 @@ export const mutations = `
   # Adds the data of an external App
   addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): BoughtPlan!
   addExternalLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID): Response!
+  addEncryptedExternalLicence(key: JSON!, appid: ID!, boughtplanid: ID!, price: Float, touser: ID): Licence!
 
   failedIntegration(data: SSOResult!): Boolean!
 
@@ -310,6 +311,7 @@ export const mutations = `
   distributeLicence10(licenceid: ID!, userid: ID!): Boolean!
 
   addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): ID!
+  addEncryptedExternalAccountLicence(key: JSON!, appid: ID, boughtplanid: ID!, price: Float, touser: ID, identifier: String, options: JSON): Licence!
 
   updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
   `;
