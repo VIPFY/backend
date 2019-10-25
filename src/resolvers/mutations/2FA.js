@@ -49,7 +49,7 @@ export default {
     try {
       const { models, SECRET } = ctx;
       const { secret, id } = await models.TwoFA.findOne({
-        where: { unitid: userid, type, verified: true, deleted: false },
+        where: { unitid: userid, type, verified: true, deleted: null },
         raw: true
       });
       await checkToken(twoFAToken, "2FAToken");
