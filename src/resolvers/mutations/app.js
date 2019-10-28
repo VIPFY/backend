@@ -23,7 +23,7 @@ import { sendEmail } from "../../helpers/email";
 /* eslint-disable no-return-await */
 
 export default {
-  distributeLicence: requiresRights(["create-licences"]).createResolver(
+  distributeLicence: requiresRights(["create-licences"], true).createResolver(
     (_parent, { licenceid, unitid, departmentid }, context) =>
       context.models.sequelize.transaction(async ta => {
         const { models, token } = context;
@@ -100,7 +100,7 @@ export default {
             }
           );
 
-          const p4 = models.BoughtPlan.findById(openLicence.boughtplanid, {
+          const p4 = models.BoughtPlan.findByPk(openLicence.boughtplanid, {
             include: [models.Plan],
             raw: true,
             transaction: ta

@@ -95,7 +95,7 @@ export default {
     }
   },
 
-  force2FA: requiresRights(["force-2FA"]).createResolver(
+  force2FA: requiresRights(["force-2FA"], true).createResolver(
     async (_, { userid }, { models }) => {
       try {
         await models.Human.update(

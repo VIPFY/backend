@@ -85,7 +85,7 @@ export default {
             }
           }
 
-          const oldAddress = await models.Address.findById(id, {
+          const oldAddress = await models.Address.findByPk(id, {
             raw: true,
             transaction: ta
           });
@@ -428,7 +428,7 @@ export default {
             unitid = userid;
           }
 
-          const oldPhone = await models.Phone.findById(id, {
+          const oldPhone = await models.Phone.findByPk(id, {
             raw: true,
             transaction: ta
           });

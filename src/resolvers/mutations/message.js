@@ -38,8 +38,8 @@ export default {
           user: { unitid }
         } = decode(token);
 
-        const p1 = models.User.findById(unitid);
-        const p2 = models.User.findById(receiver);
+        const p1 = models.User.findByPk(unitid);
+        const p2 = models.User.findByPk(receiver);
 
         const [senderExists, receiverExists] = await Promise.all([p1, p2]);
 
@@ -137,7 +137,7 @@ export default {
       try {
         const { models } = ctx;
 
-        const oldMessage = await models.MessageData.findById(id, { raw: true });
+        const oldMessage = await models.MessageData.findByPk(id, { raw: true });
         if (!oldMessage) {
           throw new Error("Message doesn't exist!");
         }

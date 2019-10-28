@@ -103,7 +103,7 @@ export const requiresDepartmentCheck = requiresAuth.createResolver(
   }
 );
 
-export const requiresRights = rights =>
+export const requiresRights = (rights, strict) =>
   requiresDepartmentCheck.createResolver(
     async (_parent, args, { models, token }) => {
       try {
@@ -124,56 +124,86 @@ export const requiresRights = rights =>
           await checkCompanyMembership(models, company, args.teamid, "team");
         }
 
-        if (args.userid && args.userid != "new") {
-          await checkCompanyMembership(models, company, args.userid, "user");
+        const userChecks = ["userid", "employeeid", "unitid"];
+
+        for await (const check of userChecks) {
+          if (args[check] && args[check] != "new") {
+            await checkCompanyMembership(models, company, args[check], "user");
+
+            if (args[check] == holder && !strict) {
+              return;
+            }
+          }
         }
 
         if (args.user && args.user.id && args.user.id != "new") {
           await checkCompanyMembership(models, company, args.user.id, "user");
+
+          if (args.user.id == holder) {
+            return;
+          }
         }
 
-        if (args.employeeid && args.employeeid != "new") {
-          await checkCompanyMembership(
-            models,
-            company,
-            args.employeeid,
-            "user"
-          );
+        const moreUserChecks = ["userids", "unitids"];
+
+        for await (const check of moreUserChecks) {
+          if (args[check]) {
+            await Promise.all(
+              args[check]
+                .filter(id => id != "new")
+                .map(id => checkCompanyMembership(models, company, id, "user"))
+            );
+          }
         }
 
-        if (args.unitid && args.unitid != "new") {
-          await checkCompanyMembership(models, company, args.unitid, "user");
-        }
-
-        if (args.userids) {
+        if (args.addemployees) {
           await Promise.all(
-            args.userids
-              .filter(id => id != "new")
-              .map(id => checkCompanyMembership(models, company, id, "user"))
+            args.addemployees
+              .filter(({ id }) => id != "new")
+              .map(({ id }) =>
+                checkCompanyMembership(models, company, id, "user")
+              )
           );
         }
 
-        if (args.unitids) {
-          await Promise.all(
-            args.unitids
-              .filter(id => id != "new")
-              .map(id => checkCompanyMembership(models, company, id, "user"))
-          );
-        }
-
-        const hasRight = await models.Right.findOne({
-          where: models.sequelize.and(
-            { holder },
-            { forunit: { [models.Op.or]: [company, null] } },
-            models.sequelize.or(
-              { type: { [models.Op.and]: rights } },
-              { type: "admin" }
+        if (typeof rights[0] == "string") {
+          const hasRight = await models.Right.findOne({
+            where: models.sequelize.and(
+              { holder },
+              { forunit: { [models.Op.or]: [company, null] } },
+              models.sequelize.or(
+                { type: { [models.Op.and]: rights } },
+                { type: "admin" }
+              )
             )
-          )
-        });
+          });
 
-        if (!hasRight) {
-          throw new RightsError();
+          if (!hasRight) {
+            throw new RightsError();
+          }
+        } else {
+          let hasRight = null;
+
+          for await (const right of rights[0]) {
+            hasRight = await models.Right.findOne({
+              where: models.sequelize.and(
+                { holder },
+                { forunit: { [models.Op.or]: [company, null] } },
+                models.sequelize.or(
+                  { type: { [models.Op.and]: right } },
+                  { type: "admin" }
+                )
+              )
+            });
+
+            if (hasRight) {
+              break;
+            }
+          }
+
+          if (!hasRight) {
+            throw new RightsError();
+          }
         }
       } catch (err) {
         if (err instanceof RightsError) {

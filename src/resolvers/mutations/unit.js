@@ -386,7 +386,7 @@ export default {
     })
   ),
 
-  impersonate: requiresRights(["impersonate"]).createResolver(
+  impersonate: requiresRights(["impersonate"], true).createResolver(
     async (_p, { unitid }, ctx) => {
       try {
         const { models, token, SECRET } = ctx;
