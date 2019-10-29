@@ -153,11 +153,9 @@ app.use((req, res, next) => {
 });
 
 app.use(loggingMiddleWare);
-
 /* if (USE_XRAY) {
   app.use(AWSXRay.express.openSegment("backend"));
 } */
-
 let engine = undefined;
 if (ENVIRONMENT == "production") {
   engine = {
