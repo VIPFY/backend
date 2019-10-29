@@ -45,6 +45,7 @@ const {
 
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
+
 /* const USE_XRAY =
   !!process.env.USE_XRAY &&
   process.env.USE_XRAY != "false" &&
@@ -133,11 +134,9 @@ const corsOptions = {
 app.use(authMiddleware);
 app.use(cors(corsOptions));
 app.use(loggingMiddleWare);
-
 /* if (USE_XRAY) {
   app.use(AWSXRay.express.openSegment("backend"));
 } */
-
 let engine = undefined;
 if (ENVIRONMENT == "production") {
   engine = {
