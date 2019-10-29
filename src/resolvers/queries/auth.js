@@ -53,19 +53,12 @@ export default {
   fetchSemiPublicUser: requiresRights(["view-users"]).createResolver(
     async (_parent, { userid }, { models }) => {
       try {
-        // const me = await models.User.findByPk(unitid);
+        const user = await models.User.findOne({
+          where: { id: userid, deleted: false },
+          raw: true
+        });
 
-        const me = await models.sequelize.query(
-          `SELECT * FROM users_view
-         WHERE id = :userid and deleted = false`,
-          {
-            replacements: { userid },
-            type: models.sequelize.QueryTypes.SELECT
-          }
-        );
-        const user = await parentAdminCheck(me[0]);
-
-        return user;
+        return parentAdminCheck(user);
       } catch (err) {
         throw new NormalError({
           message: `fetchSemiPublicUser-Query-ERROR ${err.message}`,

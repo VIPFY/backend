@@ -153,7 +153,7 @@ export default {
     boughtplanid: "BoughtPlan"
   }),
   Upload: GraphQLUpload,
-  User: find({ company: "Department", emails: "[Email]" }),
+  User: find({ company: "Department", emails: "[Email]", phones: "[Phone]" }),
   SemiPublicUser: find({
     company: "Department",
     emails: "[Email]",
