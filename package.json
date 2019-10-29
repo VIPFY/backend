@@ -2,7 +2,7 @@
   "name": "vipfy_graphql_server",
   "author": "Gh05d",
   "license": "propriatary",
-  "version": "0.10.0",
+  "version": "0.10.2",
   "description": "A GraphQL server backend for Vipfy",
   "main": "dist/index.js",
   "scripts": {
