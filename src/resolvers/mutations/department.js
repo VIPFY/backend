@@ -293,6 +293,14 @@ export default {
             ]
           });
 
+          await createNotification({
+            receiver: unitid,
+            message: `${name.fullName} was successfully created`,
+            icon: "user-plus",
+            link: "employeemanager",
+            changed: ["employees"]
+          });
+
           return unit.id;
         } catch (err) {
           throw new NormalError({
