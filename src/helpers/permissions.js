@@ -23,7 +23,7 @@ const createResolver = resolver => {
 
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(
-  async (_parent, _args, { models, session, SECRET }) => {
+  async (_parent, _args, { models, session, SECRET }, info) => {
     try {
       console.log("\x1b[1m%s\x1b[0m", "LOG req.session.token", session);
       if (!session || !session.token) {

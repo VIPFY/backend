@@ -399,8 +399,7 @@ export const companyCheck = async (company, unitid, employee) => {
     const findAdmin = models.User.findOne({ where: { id: unitid }, raw: true });
 
     const [inCompany, admin] = await Promise.all([findCompany, findAdmin]);
-
-    if (!inCompany) {
+    if (!inCompany.length > 0) {
       throw new Error("This user doesn't belong to this company!");
     }
 
