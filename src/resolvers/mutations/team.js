@@ -525,12 +525,13 @@ export default {
             }
           );
           const promises = [];
+          console.log("TEAM", team[0]);
           if (team[0] && team[0].services) {
             team[0].services.forEach(serviceid => {
-              if (keepLicences && !keepLicences.find(l => l == serviceid)) {
+              if (keepLicences && keepLicences.find(l => l == serviceid)) {
                 promises.push(
                   models.sequelize.query(
-                    `Update licence_data l set endtime = now()
+                    `Update licence_data l set options = options - 'teamlicence'
                      where l.boughtplanid = :serviceid
                      and l.endtime is null
                      and l.unitid = :userid
@@ -544,7 +545,7 @@ export default {
               } else {
                 promises.push(
                   models.sequelize.query(
-                    `Update licence_data l set options = options - 'teamlicence'
+                    `Update licence_data l set endtime = now()
                      where l.boughtplanid = :serviceid
                      and l.endtime is null
                      and l.unitid = :userid
@@ -555,16 +556,16 @@ export default {
                     }
                   )
                 );
-                promises.push(
+                /* promises.push(
                   models.sequelize.query(
                     `Update licence_data l set options = options - 'teamlicence'
-                     l.id = :serviceid`,
+                     l.boughtplanid = :serviceid`,
                     {
                       replacements: { serviceid },
                       type: models.sequelize.QueryTypes.SELECT
                     }
                   )
-                );
+                ); */
               }
             });
           }
