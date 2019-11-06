@@ -65,6 +65,8 @@ export const types = `
   input EmailUpdateInput {
     description: String
     priority: Int
+    addTags: [String!]
+    removeTags: [String!]
   }
 
   input PhoneInput {
@@ -100,7 +102,7 @@ export const mutations = `
   searchAddress(input: String!, region: String!): JSON!
 
   createEmail(emailData: EmailInput!, forCompany: Boolean, userid: ID): Email!
-  updateEmail(email: String!, emailData: EmailUpdateInput!, userid: ID): Response!
+  updateEmail(email: String!, emailData: EmailUpdateInput!): Boolean!
   updateEmail08(email: String!, emailData: EmailUpdateInput!, userid: ID): Email!
   deleteEmail(email: String!, forCompany: Boolean, userid: ID): Response!
 
