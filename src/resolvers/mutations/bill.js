@@ -17,6 +17,7 @@ import {
   createCustomer,
   listCards,
   addCard,
+  removeCard,
   addSubscriptionItem,
   updateSubscriptionItem,
   removeSubscriptionItem,
@@ -26,6 +27,7 @@ import { BillingError, NormalError, InvoiceError } from "../../errors";
 import logger from "../../loggers";
 import { getInvoiceLink } from "../../services/aws";
 import createMonthlyInvoice from "../../helpers/createInvoice";
+import { debug } from "util";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
@@ -38,7 +40,7 @@ export default {
    * @param {number} departmentid Identifier for the department the card is for.
    * @returns any
    */
-  addPaymentData: requiresRights(["create-paymentdata"]).createResolver(
+  addPaymentData: requiresRights(["create-payment-data"]).createResolver(
     async (_p, { data, address, email }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         const { models, session } = ctx;
@@ -160,8 +162,8 @@ export default {
       })
   ),
 
-  changeDefaultMethod: requiresRights(["edit-paymentdata"]).createResolver(
-    async (parent, { card }, ctx) =>
+  changeDefaultMethod: requiresRights(["edit-payment-data"]).createResolver(
+    async (_p, { card }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         const { models, session } = ctx;
         const {
@@ -220,6 +222,79 @@ export default {
             },
             ta
           );
+          throw new BillingError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  removePaymentData: requiresRights(["edit-payment-data"]).createResolver(
+    async (_p, { card }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, session } = ctx;
+        const {
+          user: { company, unitid }
+        } = decode(session.token);
+
+        try {
+          const department = await models.Unit.findByPk(company, {
+            raw: true
+          });
+
+          if (department.payingoptions.stripe.cards.length <= 1) {
+            throw new Error("You can't remove your last credit card");
+          }
+
+          await removeCard(department.payingoptions.stripe.id, card);
+
+          const cards = department.payingoptions.stripe.cards.filter(
+            creditCard => creditCard.id != card
+          );
+
+          const updatedDepartment = await models.Unit.update(
+            {
+              payingoptions: {
+                stripe: { ...department.payingoptions.stripe, cards }
+              }
+            },
+            { where: { id: company }, returning: true }
+          );
+
+          const p1 = createLog(
+            ctx,
+            "removePaymentData",
+            { department, updatedDepartment, card },
+            ta
+          );
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: "Removed Credit Card",
+              icon: "credit-card",
+              link: "billing",
+              changed: ["paymentMethods"]
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
+
+          return true;
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Removing of Credit Card failed",
+              icon: "credit-card",
+              link: "billing",
+              changed: ["paymentMethods"]
+            },
+            ta
+          );
+
           throw new BillingError({
             message: err.message,
             internalData: { err }

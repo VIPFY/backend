@@ -183,6 +183,7 @@ export const mutations = `
   setBoughtPlanAlias(boughtplanid: ID!, alias: String): Response!
   addPaymentData(data: JSON, address: AddressInput, email: String): Response!
   changeDefaultMethod(card: String!): Response!
+  removePaymentData(card: String!): Boolean!
 
   # The buying process
   buyPlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!

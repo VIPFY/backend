@@ -254,7 +254,7 @@ export default {
             }
           } else if (removeTags) {
             data.tags = oldEmail.tags.filter(tag =>
-              removeTags.find(rTag => rTag == tag)
+              removeTags.find(rTag => rTag != tag)
             );
           }
 

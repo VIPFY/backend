@@ -126,6 +126,22 @@ export const addCard = async (id, source) => {
 };
 
 /**
+ * Deletes a card from a stripe customer
+ * @exports
+ * @param {string} id The customers stripe id
+ * @param {string} source The identifier of the card
+ */
+export const removeCard = async (id, source) => {
+  try {
+    const res = await stripe.customers.deleteSource(id, source);
+
+    return res;
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
+/**
  *  Fetches a subscription.
  *
  * @param {string} id Id of the subscription at Stripe
