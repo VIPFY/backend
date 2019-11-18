@@ -17,7 +17,10 @@ import {
 // } from "../../services/stripe";
 import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
-import { checkCompanyMembership } from "../../helpers/companyMembership";
+import {
+  checkCompanyMembership,
+  checkLicenceValidilty
+} from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
 
 /* eslint-disable no-return-await */
@@ -2167,6 +2170,132 @@ export default {
             }
           );
           return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  createAccount: requiresRights(["edit-licences"]).createResolver(
+    async (_p, { orbitid, alias, logindata }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(session.token);
+
+          const orbit = await models.sequelize.query(
+            `
+            SELECT appid
+              FROM boughtplan_data bd JOIN plan_data pd on bd.planid = pd.id
+              WHERE bd.id = :orbitid`,
+            {
+              replacements: { orbitid },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+
+          const account = await models.LicenceData.create(
+            {
+              boughtplanid: orbitid,
+              agreed: true,
+              disabled: false,
+              key: {
+                ...logindata,
+                appid: orbit[0].appid,
+                company
+              },
+              alias
+            },
+            { transaction: ta }
+          );
+
+          return account;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  assignAccount: requiresRights([
+    "edit-licences",
+    "edit-licenceRights"
+  ]).createResolver(
+    async (
+      _p,
+      { licenceid, userid, rights, tags, starttime, endtime },
+      { models, session }
+    ) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          console.log("TIMES", starttime, endtime);
+          const {
+            user: { company }
+          } = decode(session.token);
+
+          await checkLicenceValidilty(models, company, licenceid);
+
+          await models.LicenceRight.create({
+            ...rights,
+            ...tags,
+            licenceid,
+            unitid: userid,
+            transaction: ta,
+            starttime,
+            endtime
+          });
+
+          await createNotification(
+            {
+              receiver: userid,
+              message: `You have been assigned to an account`,
+              icon: "business-time",
+              link: `dashboard`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  createOrbit: requiresRights(["edit-licences"]).createResolver(
+    async (_p, { planid, alias, options }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(session.token);
+
+          const orbit = await models.BoughtPlan.create(
+            {
+              planid,
+              key: {
+                ...options
+              },
+              alias,
+              disabled: false,
+              buyer: company,
+              payer: company,
+              usedby: company
+            },
+            { transaction: ta }
+          );
+
+          return orbit;
         } catch (err) {
           throw new NormalError({
             message: err.message,

@@ -135,6 +135,8 @@ export const types = `
     vacationend: Date
     teamlicence: Team
     teamaccount: Team
+    alias: String
+    rightscount: Int
   }
 
   type PublicLicence {
@@ -168,6 +170,13 @@ export const types = `
     tags: [String]
     starttime: Date
     endtime: Date
+  }
+
+  input LicenceRights {
+    view: Boolean
+    edit: Boolean
+    delete: Boolean
+    use: Boolean
   }
 
   input LicenceRightUpdateInput {
@@ -261,6 +270,9 @@ export const queries = `
   fetchIssuedLicences(unitid: ID!): [TempLicence!]
   fetchTempLicences(unitid: ID!): [TempLicence!]
   bulkUpdateLayout(layouts: [LayoutInput!]!): Boolean!
+
+  fetchUseableApps: [AppDetails]
+
 `;
 
 export const mutations = `
@@ -314,4 +326,10 @@ export const mutations = `
   addEncryptedExternalAccountLicence(key: JSON!, appid: ID, boughtplanid: ID!, price: Float, touser: ID, identifier: String, options: JSON): Licence!
 
   updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
+
+
+  createAccount(orbitid: ID!, alias: String, logindata: JSON!): Licence!
+  assignAccount(licenceid: ID!, userid: ID!, rights: LicenceRights, tags: [String], starttime: Date, endtime: Date): Boolean!
+
+  createOrbit(planid: ID!, alias: String, options: JSON): BoughtPlan
   `;

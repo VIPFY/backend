@@ -6,7 +6,11 @@
 
 import { decode, verify } from "jsonwebtoken";
 import { checkRights } from "@vipfy-private/messaging";
-import { checkCompanyMembership } from "./companyMembership";
+import {
+  checkCompanyMembership,
+  checkLicenceMembership,
+  checkOrbitMembership
+} from "./companyMembership";
 import { AuthError, AdminError, RightsError, NormalError } from "../errors";
 
 const createResolver = resolver => {
@@ -135,6 +139,14 @@ export const requiresRights = rights =>
             args.departmentid,
             "department"
           );
+        }
+
+        if (args.licenceid) {
+          await checkLicenceMembership(models, company, args.licenceid);
+        }
+
+        if (args.orbitid) {
+          await checkOrbitMembership(models, company, args.orbitid);
         }
 
         if (args.teamid && args.teamid != "new") {

@@ -215,5 +215,45 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  fetchBoughtPlansOfCompany: requiresRights([
+    "view-licences",
+    "view-apps",
+    "view-boughtplans"
+  ]).createResolver(
+    async (_parent, { appid, external }, { models, session }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
+
+        let externalFilter = "";
+        if (external) {
+          externalFilter = "AND boughtplan_data.key ->> 'external' = 'true'";
+        }
+
+        const data = await models.sequelize.query(
+          `SELECT boughtplan_data.*,
+                COALESCE(JSONB_AGG(to_jsonb(ld) - 'key'), '[]') as licences
+        FROM boughtplan_data
+                JOIN plan_data pd on boughtplan_data.planid = pd.id
+                LEFT OUTER JOIN licence_data ld ON (ld.boughtplanid = boughtplan_data.id)
+        WHERE payer = :company
+          AND appid = :appid
+          ${externalFilter}
+        GROUP BY boughtplan_data.id
+      `,
+          {
+            replacements: { company, appid },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+
+        return data;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };
