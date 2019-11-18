@@ -34,9 +34,6 @@ import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import logger from "../../loggers";
 
-const ZENDESK_TOKEN =
-  "Basic bnZAdmlwZnkuc3RvcmUvdG9rZW46bndGc3lDVWFpMUg2SWNKOXBpbFk3UGRtOHk0bXVhamZlYzFrbzBHeQ==";
-
 export default {
   signUp: async (
     _p,
@@ -70,15 +67,6 @@ export default {
         // generate a new random password
         const password = await randomPassword(3, 2);
         const pwData = await getNewPasswordData(password);
-
-        // Replace special characters in names to avoid frontend errors
-        // const filteredName = name;
-        // Object.keys(name).forEach(item => {
-        //   filteredName[item] = name[item].replace(
-        //     /['"[\]{}()*+?.,\\^$|#\s]/g,
-        //     "\\$&"
-        //   );
-        // });
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
@@ -101,41 +89,6 @@ export default {
 
         let company = await models.Unit.create({}, { transaction: ta });
         company = company.get();
-
-        const zendeskdata = await axios({
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: ZENDESK_TOKEN
-          },
-          data: JSON.stringify({
-            organization: {
-              name: `Company-${company.id}-${createSetupToken()}`,
-              notes: name
-            }
-          }),
-          url: "https://vipfy.zendesk.com/api/v2/organizations.json"
-        });
-
-        sleep(300);
-
-        await axios({
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: ZENDESK_TOKEN
-          },
-          data: JSON.stringify({
-            user: {
-              name: "User",
-              email, // TODO Mehrere Email-Adressen
-              verified: true,
-              organization_id: zendeskdata.data.organization.id,
-              external_id: `User-${unit.id}-${createSetupToken()}`
-            }
-          }),
-          url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
-        });
 
         const p3 = models.Right.create(
           { holder: unit.id, forunit: company.id, type: "admin" },
