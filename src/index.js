@@ -24,9 +24,9 @@ import logger from "./loggers";
 import { formatError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
 
-const RateLimit = require("express-rate-limit");
-const RedisStore = require("rate-limit-redis");
-const Redis = require("ioredis");
+// const RateLimit = require("express-rate-limit");
+// const RedisStore = require("rate-limit-redis");
+// const Redis = require("ioredis");
 
 Services.setLogger(logger);
 
