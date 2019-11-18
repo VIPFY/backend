@@ -747,6 +747,133 @@ export default {
       })
   ),
 
+  changePasswordEncrypted: requiresAuth.createResolver(
+    async (
+      _p,
+      { oldPasskey, newPasskey, passwordMetrics, newKey, replaceKeys },
+      ctx
+    ) =>
+      ctx.models.sequelize.transaction(async ta => {
+        try {
+          const { models, session, redis } = ctx;
+
+          if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
+            throw new Error("Password too long");
+          }
+
+          if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
+            throw new Error(
+              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+            );
+          }
+
+          if (oldPasskey.length != 128 || newPasskey.length != 128) {
+            throw new Error("Incompatible passkey format, try updating VIPFY");
+          }
+
+          const {
+            user: { unitid }
+          } = await decode(session.token);
+
+          const findOldPassword = await models.Login.findOne({
+            where: { unitid },
+            raw: true
+          });
+
+          if (!findOldPassword) throw new Error("No database entry found!");
+
+          const valid = crypto.timingSafeEqual(
+            Buffer.from(findOldPassword.passkey || " ".repeat(128)),
+            Buffer.from(oldPasskey)
+          );
+
+          if (!valid) throw new Error("Incorrect old password!");
+
+          const p1 = models.Human.update(
+            {
+              needspasswordchange: false,
+              ...passwordMetrics,
+              passkey: newPasskey
+            },
+            { where: { unitid }, returning: true, transaction: ta }
+          );
+          const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
+
+          delete newKey.id;
+          delete newKey.createdat;
+          delete newKey.unitid;
+          const p3 = models.Key.create(
+            {
+              ...newKey,
+              unitid
+            },
+            { transaction: ta }
+          );
+
+          const [updatedUser, basicUser, key] = await Promise.all([p1, p2, p3]);
+
+          Promise.all(
+            replaceKeys.map(k =>
+              models.Key.update(
+                {
+                  id: k.id,
+                  privatekey: k.privatekey,
+                  encryptedby: k.encryptedby == "NEW" ? key.id : k.encryptedby
+                },
+                {
+                  where: { id: k.id, unitid, publickey: k.publickey },
+                  transaction: ta
+                }
+              )
+            )
+          );
+
+          const promises = [
+            createLog(
+              ctx,
+              "changePassword",
+              { updatedUser: updatedUser[1], oldUser: findOldPassword },
+              ta
+            ),
+            createNotification(
+              {
+                receiver: unitid,
+                message: "You successfully updated your password",
+                icon: "lock-alt",
+                link: "profile",
+                changed: [""]
+              },
+              ta
+            )
+          ];
+
+          await Promise.all(promises);
+
+          // todo: simpler way to get company, since we don't return user anymore
+          const user = await parentAdminCheck(basicUser);
+          findOldPassword.company = user.company;
+
+          const sessions = await fetchSessions(redis, unitid);
+
+          const sessionPromises = sessions.map(sessionString =>
+            redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
+          );
+
+          sessionPromises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
+          await Promise.all(sessionPromises);
+
+          const newToken = await createSession(findOldPassword, ctx);
+
+          return { ok: true, token: newToken };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   agreeTos: requiresAuth.createResolver(async (_p, _args, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       try {

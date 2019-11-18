@@ -111,7 +111,7 @@ export default {
     teamaccount: "Team"
   }),
   Log: find({ user: "User", sudoer: "User" }),
-  Key: find({ unitid: "User" }),
+  Key: find({ unitid: "User", encryptedby: "Key" }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
   MessageGroupMembership: find({ groupid: "MessageGroup", unitid: "User" }),
