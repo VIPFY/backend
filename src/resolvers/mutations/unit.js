@@ -68,7 +68,7 @@ export default {
 
   updateEmployeePic: requiresRights(["edit-user"]).createResolver(
     async (_p, { file, unitid }, ctx) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const { models, token } = ctx;
           const {
