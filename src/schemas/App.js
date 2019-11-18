@@ -322,5 +322,7 @@ export const mutations = `
 
   distributeLicence10(licenceid: ID!, userid: ID!): Boolean!
 
-  addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): Boolean!
+  addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): ID!
+
+  updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
   `;

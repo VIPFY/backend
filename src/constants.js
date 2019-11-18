@@ -24,9 +24,9 @@ if (process.env.ENVIRONMENT == "development") {
   delete options.password;
 }
 
-export const redis = Redis.createClient([options]);
+export const redis = new Redis(options);
 
-const subscriber = Redis.createClient([options]);
+const subscriber = new Redis(options);
 export const pubsub = new RedisPubSub({ publisher: redis, subscriber });
 
 // The location for uploaded files to be saved

@@ -24,9 +24,9 @@ import logger from "./loggers";
 import { formatError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
 
-const RateLimit = require("express-rate-limit");
-const RedisStore = require("rate-limit-redis");
-const Redis = require("ioredis");
+// const RateLimit = require("express-rate-limit");
+// const RedisStore = require("rate-limit-redis");
+// const Redis = require("ioredis");
 
 Services.setLogger(logger);
 
@@ -45,6 +45,7 @@ const {
 
 const secure = ENVIRONMENT == "production" ? "s" : "";
 const PORT = process.env.PORT || 4000;
+
 /* const USE_XRAY =
   !!process.env.USE_XRAY &&
   process.env.USE_XRAY != "false" &&
@@ -133,11 +134,9 @@ const corsOptions = {
 app.use(authMiddleware);
 app.use(cors(corsOptions));
 app.use(loggingMiddleWare);
-
 /* if (USE_XRAY) {
   app.use(AWSXRay.express.openSegment("backend"));
 } */
-
 let engine = undefined;
 if (ENVIRONMENT == "production") {
   engine = {
