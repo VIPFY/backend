@@ -10,11 +10,11 @@ export const implementDate = {
   description: "Date custom scalar type. Returns a large integer",
   parseValue: value => new Date(value), // value from the client
   serialize(value) {
-    if (value === Number.POSITIVE_INFINITY) {
+    if (value === Number.POSITIVE_INFINITY || value === "infinity") {
       return new Date(8640000000000000).getTime();
     }
 
-    if (value === Number.NEGATIVE_INFINITY) {
+    if (value === Number.NEGATIVE_INFINITY || value === "-infinity") {
       return new Date(-8640000000000000).getTime();
     }
 
@@ -99,6 +99,19 @@ const postprocessors = {
     return value;
   },
   Licence: async (value, fields) => {
+    if (value) {
+      if (value.options) {
+        if (value.options.teamlicence) {
+          value.teamlicence = value.options.teamlicence;
+        }
+        if (value.options.teamaccount) {
+          value.teamaccount = value.options.teamaccount;
+        }
+      }
+    }
+    return value;
+  },
+  LicenceAssignment: async (value, fields) => {
     if (value) {
       if (value.options) {
         if (value.options.teamlicence) {

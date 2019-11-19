@@ -151,7 +151,7 @@ export default {
               licence.key = null;
             }
 
-            if (licence.endtime) {
+            if (licence.endtime && licence.endtime != "infinity") {
               if (Date.parse(licence.endtime) < startTime) {
                 licence.key = null;
               }
@@ -202,9 +202,14 @@ export default {
 
           await Promise.all(createLoginLinks);
         }
+        console.log("LICENCES", licences);
         return licences;
       } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
+        console.error(`Licence Error ${err.message}`);
+        throw new NormalError({
+          message: `fetch Licence ${err.message}`,
+          internalData: { err }
+        });
       }
     }
   ),
@@ -261,7 +266,7 @@ export default {
             licence.key = null;
           }
 
-          if (licence.endtime) {
+          if (licence.endtime && licence.endtime != "infinity") {
             if (Date.parse(licence.endtime) < startTime) {
               licence.key = null;
             }
@@ -307,7 +312,57 @@ export default {
             licence.key = null;
           }
 
-          if (licence.endtime) {
+          if (licence.endtime && licence.endtime != "infinity") {
+            if (Date.parse(licence.endtime) < startTime) {
+              licence.key = null;
+            }
+          }
+
+          if (licence.options) {
+            if (licence.options.teamlicence) {
+              licence.teamlicence = licence.options.teamlicence;
+            }
+
+            if (licence.options.teamlicence) {
+              licence.teamaccount = licence.options.teamaccount;
+            }
+          }
+        });
+
+        return licences;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchUserLicenceAssignments: requiresRights(["view-licences"]).createResolver(
+    async (_parent, { unitid }, { models }) => {
+      try {
+        const licences = await models.sequelize.query(
+          `SELECT licence_view.*, plan_data.appid FROM licence_view JOIN
+        boughtplan_data ON licence_view.boughtplanid = boughtplan_data.id
+        JOIN plan_data ON boughtplan_data.planid = plan_data.id
+        JOIN app_data ON plan_data.appid = app_data.id
+        WHERE licence_view.unitid = :unitid AND not app_data.disabled`,
+          { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
+        );
+
+        const startTime = Date.now();
+
+        licences.forEach(licence => {
+          licence.accountid = licence.id;
+          licence.id = licence.assignmentid;
+          if (licence.disabled) {
+            licence.agreed = false;
+            licence.key = null;
+          }
+
+          if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
+            licence.key = null;
+          }
+
+          if (licence.endtime && licence.endtime != "infinity") {
             if (Date.parse(licence.endtime) < startTime) {
               licence.key = null;
             }
@@ -557,9 +612,15 @@ export default {
           }
         );
 
+        console.log("CS", companyServices);
+
         return companyServices;
       } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
+        console.error("ERROR", err);
+        throw new NormalError({
+          message: `company Services: ${err.message}`,
+          internalData: { err }
+        });
       }
     }
   ),

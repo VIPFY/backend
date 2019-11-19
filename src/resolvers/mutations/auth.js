@@ -102,7 +102,7 @@ export default {
         let company = await models.Unit.create({}, { transaction: ta });
         company = company.get();
 
-        const zendeskdata = await axios({
+        /* const zendeskdata = await axios({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -135,7 +135,7 @@ export default {
             }
           }),
           url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
-        });
+        }); */
 
         const p3 = models.Right.create(
           { holder: unit.id, forunit: company.id, type: "admin" },

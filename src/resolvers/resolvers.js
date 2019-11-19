@@ -110,6 +110,12 @@ export default {
     teamlicence: "Team",
     teamaccount: "Team"
   }),
+  LicenceAssignment: find({
+    unitid: "User",
+    boughtplanid: "BoughtPlan",
+    teamlicence: "Team",
+    teamaccount: "Team"
+  }),
   Log: find({ user: "User", sudoer: "User" }),
   Key: find({ unitid: "User" }),
   Message: find({ receiver: "Human" }),

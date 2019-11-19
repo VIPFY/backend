@@ -2234,22 +2234,24 @@ export default {
     ) =>
       models.sequelize.transaction(async ta => {
         try {
-          console.log("TIMES", starttime, endtime);
           const {
             user: { company }
           } = decode(session.token);
 
           await checkLicenceValidilty(models, company, licenceid);
 
-          await models.LicenceRight.create({
-            ...rights,
-            ...tags,
-            licenceid,
-            unitid: userid,
-            transaction: ta,
-            starttime,
-            endtime
-          });
+          await models.LicenceRight.create(
+            {
+              ...rights,
+              ...tags,
+              licenceid,
+              unitid: userid,
+              transaction: ta,
+              starttime,
+              endtime
+            },
+            ta
+          );
 
           await createNotification(
             {
@@ -2296,6 +2298,57 @@ export default {
           );
 
           return orbit;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  terminateAssignAccount: requiresRights([
+    "edit-licences",
+    "edit-licenceRights"
+  ]).createResolver(
+    async (_p, { assignmentid, endtime }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(session.token);
+
+          const licence = await models.Licence.findOne({
+            where: { assignmentid },
+            raw: true
+          });
+
+          await checkLicenceValidilty(models, company, licence.id);
+
+          const end = endtime || moment.now();
+
+          await models.LicenceRight.update(
+            {
+              endtime: end
+            },
+            {
+              where: { id: assignmentid },
+              transaction: ta
+            }
+          );
+
+          await createNotification(
+            {
+              receiver: licence.unitid,
+              message: `Your assignment to an account have been terminated`,
+              icon: "business-time",
+              link: `dashboard`,
+              changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          return true;
         } catch (err) {
           throw new NormalError({
             message: err.message,

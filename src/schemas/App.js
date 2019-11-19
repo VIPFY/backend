@@ -139,6 +139,27 @@ export const types = `
     rightscount: Int
   }
 
+  type LicenceAssignment {
+    ${basicLicenceFields}
+    ${licenceFields}
+    sidebar: Int
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
+    unitid: SemiPublicUser
+    view: Boolean!
+    edit: Boolean!
+    delete: Boolean!
+    use: Boolean!
+    vacationstart: Date
+    vacationend: Date
+    teamlicence: Team
+    teamaccount: Team
+    alias: String
+    rightscount: Int
+    accountid: ID
+  }
+
   type PublicLicence {
     ${basicLicenceFields}
     ${licenceFields}
@@ -254,6 +275,9 @@ export const queries = `
   # Returns all Licences of a defined user
   fetchUserLicences(unitid: ID!): [Licence]
 
+  # Returns all LicenceAssignments of a defined user
+  fetchUserLicenceAssignments(unitid: ID!): [LicenceAssignment]
+
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
 
   fetchSupportToken: String
@@ -330,6 +354,7 @@ export const mutations = `
 
   createAccount(orbitid: ID!, alias: String, logindata: JSON!): Licence!
   assignAccount(licenceid: ID!, userid: ID!, rights: LicenceRights, tags: [String], starttime: Date, endtime: Date): Boolean!
+  terminateAssignAccount(assignmentid: ID!, endtime: Date): Boolean!
 
   createOrbit(planid: ID!, alias: String, options: JSON): BoughtPlan
   `;
