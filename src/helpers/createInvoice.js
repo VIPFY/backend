@@ -120,6 +120,7 @@ export default async (unitid, throwErr) =>
         const createBill = await models.Bill.create(
           {
             unitid,
+            billname: "temp",
             amount: total,
             currency: pos[0].currency
           },
@@ -297,21 +298,21 @@ export default async (unitid, throwErr) =>
           }
         };
 
-        const pathPdf = `${__dirname}/../../files/${number}.pdf`;
+        const pathPdf = `${__dirname}/../files/${number}.pdf`;
 
         await renderInvoice({
           data,
-          path: `${__dirname}/../../templates/invoice.html`,
+          path: `${__dirname}/../templates/invoice.html`,
           pathPdf,
-          htmlPath: `${__dirname}/../../templates/${number}.html`
+          htmlPath: `${__dirname}/../templates/${number}.html`
         });
-
-        await uploadInvoice(pathPdf, number);
 
         await models.Bill.update(
           { billname: number, invoicedata: data },
           { where: { id: bill.id }, transaction: ta, returning: true }
         );
+
+        await uploadInvoice(pathPdf, number);
       }
 
       return true;
