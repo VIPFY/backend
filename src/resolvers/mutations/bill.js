@@ -880,38 +880,36 @@ export default {
       })
   ),
 
-  createMonthlyInvoices: requiresMachineToken.createResolver(
-    async (_p, _args, { models }) => {
-      try {
-        const companies = await models.Department.findAll({
-          where: { iscompany: true, deleted: false },
-          raw: true
-        });
+  // createMonthlyInvoices: requiresMachineToken.createResolver(
+  //   async (_p, _args, { models }) => {
+  //     try {
+  //       const companies = await models.Department.findAll({
+  //         where: { iscompany: true, deleted: false },
+  //         raw: true
+  //       });
 
-        const promises = companies.map(company =>
-          createMonthlyInvoice(company.unitid)
-        );
+  //       const promises = companies.map(company =>
+  //         createMonthlyInvoice(company.unitid)
+  //       );
 
-        Promise.all(promises);
+  //       Promise.all(promises);
 
-        return true;
-      } catch (err) {
-        throw new InvoiceError(err);
-      }
+  //       return true;
+  //     } catch (err) {
+  //       throw new InvoiceError(err);
+  //     }
+  //   }
+  // ),
+
+  createMonthlyInvoices: async (_p, _args, { models }) => {
+    try {
+      await createMonthlyInvoice(2433);
+
+      return true;
+    } catch (err) {
+      throw new InvoiceError(err);
     }
-  ),
-
-  createInvoice: requiresVipfyAdmin.createResolver(
-    async (parent, { unitid }) => {
-      try {
-        await createInvoice(unitid, true);
-
-        return true;
-      } catch (err) {
-        throw new InvoiceError(err);
-      }
-    }
-  ),
+  },
 
   setBoughtPlanAlias: requiresRights(["edit-boughtplan"]).createResolver(
     async (parent, { alias, boughtplanid }, { models }) => {
@@ -928,6 +926,13 @@ export default {
     }
   ),
 
+  /**
+   * Adds the tag billing to an email
+   *
+   * @param {string} email
+   *
+   * @returns {object} The updated Email
+   */
   addBillingEmail: requiresRights(["edit-billing"]).createResolver(
     async (_p, { email }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
@@ -1058,8 +1063,15 @@ export default {
       })
   ),
 
+  /**
+   * Creates a download link for an invoice
+   *
+   * @param {string} billid
+   *
+   * @returns {string} - Downloadlink for the invoices storage location
+   */
   downloadBill: requiresAuth.createResolver(
-    async (parent, { billid }, { models, session }) => {
+    async (_parent, { billid }, { models, session }) => {
       try {
         const {
           user: { company }
@@ -1070,10 +1082,7 @@ export default {
           raw: true
         });
 
-        const time = moment();
-
-        const invoiceLink = await getInvoiceLink(billname, time);
-        return invoiceLink;
+        return getInvoiceLink(billname, moment());
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

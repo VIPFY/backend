@@ -24,14 +24,14 @@ const cardFields = `
 export const types = `
   type Bill {
     id: ID!
-    billtime: String!
+    billtime: Date!
     billname: String!
-    paytime: String
-    stornotime: String
+    paytime: Date
+    stornotime: Date
     unitid: Unit!
     amount: String!
     currency: String!
-    refundedtime: String
+    refundedtime: Date
   }
 
   type BillPosition {
@@ -195,7 +195,6 @@ export const mutations = `
 
   # This function will be used by a cronjob which runs once a month
   createMonthlyInvoices: Boolean!
-  createInvoice(unitid: ID!): Boolean!
   downloadBill(billid: ID!): String!
   
   removeBillingEmail(email: String!): Response!
