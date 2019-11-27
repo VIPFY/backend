@@ -720,6 +720,10 @@ export default {
             );
           }
 
+          if (passwordMetrics.passwordStrength < 2) {
+            throw new Error("Password too weak!");
+          }
+
           if (oldPasskey.length != 128 || newPasskey.length != 128) {
             throw new Error("Incompatible passkey format, try updating VIPFY");
           }
@@ -765,13 +769,13 @@ export default {
 
           const [updatedUser, basicUser, key] = await Promise.all([p1, p2, p3]);
 
-          Promise.all(
+          await Promise.all(
             replaceKeys.map(k =>
               models.Key.update(
                 {
                   id: k.id,
                   privatekey: k.privatekey,
-                  encryptedby: k.encryptedby == "NEW" ? key.id : k.encryptedby
+                  encryptedby: k.encryptedby == "new" ? key.id : k.encryptedby
                 },
                 {
                   where: { id: k.id, unitid, publickey: k.publickey },
