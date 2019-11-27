@@ -166,6 +166,7 @@ export const types = `
     passwordlength: Int
     passwordstrength: Int
     banned: Boolean!
+    needstwofa: Boolean
     suspended: Boolean!
     createdate: String!
     twofactormethods: [TwoFactorDetails]
