@@ -64,13 +64,13 @@ export default {
   ),
 
   fetchUserSecurityOverview: requiresRights(["view-security"]).createResolver(
-    async (_, _args, { models, session }) => {
+    async (_p, _args, { models, session }) => {
       try {
         const {
           user: { company }
         } = decode(session.token);
 
-        const employees = await models.sequelize.query(
+        return models.sequelize.query(
           `SELECT human_data.*,
             u.*,
             COALESCE(twofa.twofactormethods, ARRAY []::json[]) as twofactormethods
@@ -96,8 +96,6 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-
-        return employees;
       } catch (err) {
         throw new Error(err.message);
       }
