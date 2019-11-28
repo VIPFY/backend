@@ -129,7 +129,7 @@ export default {
   PlansRunning: find({ appid: "App" }),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
-  PublicLicence: find({ unitid: "SemiPublicUser", boughtplanid: "BoughtPlan" }),
+  PublicLicence: find({ unitid: "User", boughtplanid: "BoughtPlan" }),
   Review: find({ unitid: "User", appid: "App", answerto: "Review" }),
   ReviewHelpful: find({ unitid: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),

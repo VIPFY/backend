@@ -11,6 +11,7 @@ const basicFields = `
   middlename: String
   lastname: String
   title: String
+  suffix: String
   sex: SEX
   birthday: Date
   language: String
@@ -72,6 +73,7 @@ export const types = `
     twofa: [String]
     needstwofa: Boolean
     lastactive: Date
+    usesencryption: Boolean
   }
 
   input UserInput {
@@ -107,6 +109,18 @@ export const types = `
     workPhone: PhoneInput
     workPhone2: PhoneInput
   }
+
+  input encryptedKeyInput {
+    key: ID!
+    data: String!
+    belongsto: ID!
+  }
+
+  input licenceKeyUpdateInput {
+    licence: ID!
+    old: encryptedKeyInput!
+    new: encryptedKeyInput!
+  }
 `;
 
 export const queries = `
@@ -136,4 +150,5 @@ export const mutations = `
   resendToken(email: String!): Boolean!
   setConsent(consent: Boolean!): User!
   updateEmployeePassword(unitid: ID!, password: String!, logOut: Boolean): UserSecurityOverview!
+  updateEmployeePasswordEncrypted(unitid: ID!, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, logOut: Boolean, newKey: KeyInput!, deprecateAllExistingKeys: Boolean!, licenceUpdates: [licenceKeyUpdateInput!]!): UserSecurityOverview!
 `;
