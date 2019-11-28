@@ -2,7 +2,7 @@
   "name": "vipfy_graphql_server",
   "author": "Gh05d",
   "license": "propriatary",
-  "version": "0.8.0-dev",
+  "version": "0.10.0-dev",
   "description": "A GraphQL server backend for Vipfy",
   "main": "dist/index.js",
   "scripts": {
@@ -49,7 +49,7 @@
     "@lifeomic/graphql-resolvers-xray-tracing": "^3.0.1",
     "@sendgrid/client": "^6.3.0",
     "@vipfy-private/messaging": "1.18.0",
-    "@vipfy-private/sequelize-setup": "1.95.0",
+    "@vipfy-private/sequelize-setup": "1.100.2",
     "@vipfy-private/service-base": "^1.1.0",
     "@vipfy-private/services": "1.10.4",
     "apollo-errors": "^1.9.0",

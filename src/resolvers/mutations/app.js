@@ -19,7 +19,8 @@ import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
 import {
   checkCompanyMembership,
-  checkLicenceValidilty
+  checkLicenceValidilty,
+  checkOrbitMembership
 } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
 
@@ -2298,6 +2299,56 @@ export default {
           );
 
           return orbit;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  changeOrbit: requiresRights(["edit-licences"]).createResolver(
+    async (_p, { orbitid, alias, loginurl, endtime }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          console.log("UPDATE", orbitid, alias, loginurl, endtime);
+
+          const {
+            user: { company }
+          } = decode(session.token);
+          checkOrbitMembership(models, company, orbitid);
+
+          console.log("CHECKED");
+
+          const oldorbit = await models.Orbit.findOne({
+            where: { id: orbitid },
+            raw: true,
+            transaction: ta
+          });
+
+          await models.BoughtPlan.update(
+            {
+              key: {
+                ...oldorbit.key,
+                loginurl
+              },
+              alias,
+              endtime
+            },
+            { where: { id: orbitid } },
+            { transaction: ta }
+          );
+
+          return {
+            ...oldorbit,
+            key: {
+              ...oldorbit.key,
+              loginurl
+            },
+            alias,
+            endtime
+          };
         } catch (err) {
           throw new NormalError({
             message: err.message,

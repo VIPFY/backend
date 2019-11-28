@@ -40,11 +40,32 @@ export const types = `
     hasboughtplan: Boolean
   }
 
-  type CompanyService{
+  type CompanyServiceNEW{
     id: ID!
     app: AppDetails!
-    licences: [Licence]
+    licences: [LicenceAssignment]
     teams: [TeamBoughtPlan]
+  }
+
+  type CompanyService{
+    app: AppDetails!
+    orbitids: [Orbit]
+  }
+
+  type Orbit {
+    id: ID!
+    buytime: String
+    alias: String
+    endtime: String
+    description: String
+    key: JSON
+    buyer: Unit!
+    payer: Unit!
+    usedby: Unit!
+    planid: Plan!
+    totalprice: Float
+    accounts: [Account]
+    teams: [Team]
   }
 
   type AppDetails {
@@ -137,6 +158,23 @@ export const types = `
     teamaccount: Team
     alias: String
     rightscount: Int
+    assignmentid: LicenceAssignment
+    vacationid: Vacation
+  }
+
+  type Account {
+    id: ID!
+    boughtplanid: BoughtPlan
+    options: JSON
+    starttime: Date
+    endtime: Date
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
+    emailprefix: String
+    pending: Boolean
+    alias: String
+    assignments: [LicenceAssignment]
   }
 
   type LicenceAssignment {
@@ -158,6 +196,8 @@ export const types = `
     alias: String
     rightscount: Int
     accountid: ID
+    assignmentid: ID
+    vacationid: Vacation
   }
 
   type PublicLicence {
@@ -276,7 +316,7 @@ export const queries = `
   fetchUserLicences(unitid: ID!): [Licence]
 
   # Returns all LicenceAssignments of a defined user
-  fetchUserLicenceAssignments(unitid: ID!): [LicenceAssignment]
+  fetchUserLicenceAssignments(unitid: ID): [LicenceAssignment]
 
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
 
@@ -357,4 +397,5 @@ export const mutations = `
   terminateAssignAccount(assignmentid: ID!, endtime: Date): Boolean!
 
   createOrbit(planid: ID!, alias: String, options: JSON): BoughtPlan
+  changeOrbit(orbitid: ID!, alias: String, loginurl: String, endtime: Date): Orbit!
   `;

@@ -69,7 +69,8 @@ export const implementJSON = {
 const specialKeys = {
   Human: "unitid",
   Department: "unitid",
-  Email: "email"
+  Email: "email",
+  LicenceAssignment: "assignmentid"
 };
 
 const postprocessors = {

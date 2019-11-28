@@ -49,11 +49,21 @@ export const types = `
     config: JSON
     tutorialprogress: JSON
     consent: Boolean
+    vacation: [Vacation]
   }
 
   type PublicUser {
     ${userFields}
     ${basicFields}
+  }
+
+  type Vacation {
+    id: ID!
+    unitid: User
+    starttime: Date
+    endtime: Date
+    createdat: Date
+    options: JSON
   }
 
   type SemiPublicUser {
@@ -72,6 +82,7 @@ export const types = `
     twofa: [String]
     needstwofa: Boolean
     lastactive: Date
+    vacation: [Vacation]
   }
 
   input UserInput {

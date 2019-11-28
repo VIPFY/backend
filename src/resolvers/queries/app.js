@@ -337,8 +337,14 @@ export default {
   ),
 
   fetchUserLicenceAssignments: requiresRights(["view-licences"]).createResolver(
-    async (_parent, { unitid }, { models }) => {
+    async (_parent, args, { models, session }) => {
       try {
+        let unitid = args.unitid;
+        if (!args.unitid) {
+          const { user } = decode(session.token);
+          unitid = user.unitid;
+        }
+
         const licences = await models.sequelize.query(
           `SELECT licence_view.*, plan_data.appid FROM licence_view JOIN
         boughtplan_data ON licence_view.boughtplanid = boughtplan_data.id
@@ -557,62 +563,19 @@ export default {
         user: { company }
       } = decode(session.token);
       try {
-        /* const companyServices = await models.sequelize.query(
-          `Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
-          COALESCE(li.licences, ARRAY[]::bigint[]) as licences,
-          COALESCE(t.teams, ARRAY[]::json[]) as teams from
-          (Select appid, COALESCE(array_agg(json_build_object('departmentid', departmentid, 'boughtplanid', departmentapps_data.boughtplanid)), ARRAY[]::json[]) as teams
-            from departmentapps_data join boughtplan_data
-          on departmentapps_data.boughtplanid = boughtplan_data.id join plan_data
-          on boughtplan_data.planid = plan_data.id 
-          where departmentid in (Select childid from department_tree_view where id = :company)
-          group by appid) t full outer join (
-      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_data l
-        join boughtplan_data b on l.boughtplanid = b.id
-        join plan_data p on b.planid = p.id
-        join app_data a on p.appid = a.id
-        where (l.endtime is null or l.endtime > now())
-        and (b.endtime is null or b.endtime > now())
-        and l.disabled = false and b.disabled = false and a.disabled = false
-        and (payer = :company
-      or payer in (Select unitid from department_data
-        join parentunit_data on unitid = childunit where parentunit = :company))
-      group by a.id) li on li.id = t.appid;`,
-          {
-            replacements: { company },
-            type: models.sequelize.QueryTypes.SELECT
-          }
-        ); */
         const companyServices = await models.sequelize.query(
-          `Select id, COALESCE(a.app, b.app) as app,  COALESCE(a.licences, ARRAY[]::bigint[]) as licences,
-          COALESCE(a.teams, ARRAY[]::jsonb[]) as teams
-        from (Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
-          COALESCE(li.licences, ARRAY[]::bigint[]) as licences,
-          COALESCE(t.teams, ARRAY[]::jsonb[]) as teams from
-          (Select appid, COALESCE(array_agg(jsonb_build_object('departmentid', departmentid, 'boughtplanid', departmentapps_data.boughtplanid)), ARRAY[]::jsonb[]) as teams
-            from departmentapps_data join boughtplan_data
-          on departmentapps_data.boughtplanid = boughtplan_data.id join plan_data
-          on boughtplan_data.planid = plan_data.id
-          where departmentid in (Select childid from department_tree_view where id = :company)
-          group by appid) t full outer join (
-      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_data l
-        join boughtplan_data b on l.boughtplanid = b.id
-        join plan_data p on b.planid = p.id
-        join app_data a on p.appid = a.id
-        where (l.endtime is null or l.endtime > now())
-        and (b.endtime is null or b.endtime > now())
-        and l.disabled = false and b.disabled = false and a.disabled = false
-        and (payer = :company
-      or payer in (Select unitid from department_data
-        join parentunit_data on unitid = childunit where parentunit = :company))
-      group by a.id) li on li.id = t.appid) a FULL OUTER JOIN (Select id, id as app from app_data where owner = :company) b USING (id);`,
+          `Select app_data.id as app,
+            COALESCE(array_agg(bpd.id), ARRAY[]::bigint[]) as orbitids
+          from app_data join plan_data pd on app_data.id = pd.appid
+            join boughtplan_data bpd on pd.id = bpd.planid
+          where usedby = :company and
+          (bpd.endtime is null or bpd.endtime > now()) and
+          bpd.buytime <= now() group by app_data.id`,
           {
             replacements: { company },
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-
-        console.log("CS", companyServices);
 
         return companyServices;
       } catch (err) {
@@ -632,29 +595,15 @@ export default {
       } = decode(session.token);
       try {
         const companyServices = await models.sequelize.query(
-          `Select id, COALESCE(a.app, b.app) as app,  COALESCE(a.licences, ARRAY[]::bigint[]) as licences,
-          COALESCE(a.teams, ARRAY[]::jsonb[]) as teams
-
-from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
-          COALESCE(li.licences, ARRAY[]::bigint[]) as licences,
-          COALESCE(t.teams, ARRAY[]::jsonb[]) as teams from
-          (Select appid, COALESCE(array_agg(jsonb_build_object('departmentid', departmentid, 'boughtplanid', departmentapps_data.boughtplanid)), ARRAY[]::jsonb[]) as teams
-            from departmentapps_data join boughtplan_data
-          on departmentapps_data.boughtplanid = boughtplan_data.id join plan_data
-          on boughtplan_data.planid = plan_data.id
-          where departmentid in (Select childid from department_tree_view where id = :company)
-          group by appid) t full outer join (
-      Select a.id, COALESCE(array_agg(l.id), ARRAY[]::bigint[]) as licences from licence_data l
-        join boughtplan_data b on l.boughtplanid = b.id
-        join plan_data p on b.planid = p.id
-        join app_data a on p.appid = a.id
-        where (l.endtime is null or l.endtime > now())
-        and (b.endtime is null or b.endtime > now())
-        and l.disabled = false and b.disabled = false and a.disabled = false
-        and (payer = :company
-      or payer in (Select unitid from department_data
-        join parentunit_data on unitid = childunit where parentunit = :company))
-      group by a.id) li on li.id = t.appid) a FULL OUTER JOIN (Select id, id as app from app_data where owner = :company) b USING (id)) where id = :serviceid;`,
+          `Select app_data.id as app,
+            COALESCE(array_agg(bpd.id), ARRAY[]::bigint[]) as orbitids
+          from app_data join plan_data pd on app_data.id = pd.appid
+            join boughtplan_data bpd on pd.id = bpd.planid
+          where usedby = :company and
+          (bpd.endtime is null or bpd.endtime > now()) and
+          bpd.buytime <= now() and
+          app_data.id = :serviceid
+          group by app_data.id`,
           {
             replacements: { company, serviceid },
             type: models.sequelize.QueryTypes.SELECT
