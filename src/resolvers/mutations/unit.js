@@ -633,7 +633,7 @@ export default {
 
         await ctx.redis.lpush(
           `${IMPERSONATE_PREFIX}${id}`,
-          ctx.JSON.stringify({
+          JSON.stringify({
             session: ctx.sessionID,
             ...ctx.userData,
             ...location,
