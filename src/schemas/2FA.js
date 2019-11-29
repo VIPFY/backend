@@ -29,4 +29,5 @@ export const mutations = `
   unForce2FA(userid: ID!): Boolean!
   validate2FA(userid: ID!, type: TWOFA_TYPE!, token: String!, twoFAToken: String!): String!
   verify2FA(userid: ID!, type: TWOFA_TYPE!, code: String!, codeId: ID!): Boolean!
-`;
+  deactivate2FA(userid: ID!): Boolean!
+  `;
