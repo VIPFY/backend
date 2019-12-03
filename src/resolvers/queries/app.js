@@ -6,7 +6,8 @@ import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-import { companyCheck } from "../../helpers/functions";
+import { companyCheck, concatName } from "../../helpers/functions";
+import jiraServiceApi from "../../services/jiraServiceDesk";
 
 export default {
   allApps: requiresAuth.createResolver(
@@ -418,43 +419,42 @@ export default {
   ),
 
   fetchSupportToken: requiresAuth.createResolver(
-    async (_parent, { licenceid }, { models, session }) => {
+    async (_parent, args, { models, session }) => {
       try {
         const {
           user: { unitid }
         } = decode(session.token);
 
-        const puserdata = models.User.findOne({
+        const user = await models.User.findOne({
           where: { id: unitid },
           raw: true
         });
 
-        //TODO Mehrere EmailAdressen
+        if (!user.supporttoken) {
+          const { data } = await jiraServiceApi("POST", "customer", {
+            displayName: concatName(user),
+            email: user.emails[0]
+          });
 
-        const puseremail = models.Email.findOne({
-          where: { unitid },
-          raw: true
-        });
+          await models.Human.update(
+            { supporttoken: data.accountid },
+            { where: { unitid } }
+          );
 
-        const [userdata, useremail] = await Promise.all([
-          puserdata,
-          puseremail
-        ]);
+          user.supporttoken = data.accountId;
 
-        const payload = {
-          iat: new Date().getTime() / 1000,
-          jti: uuid.v4(),
-          name: `${userdata.firstname} ${userdata.lastname}`,
-          email: useremail.email
-        };
+          await jiraServiceApi(
+            "POST",
+            `organization/${
+              process.env.ENVIRONMENT == "development" ? "3" : "2"
+            }/user`,
+            { accountIds: [data.accountId] }
+          );
+        }
 
-        const supportToken = sign(
-          payload,
-          "k29s4aV67MB6oWwPQzW8vjmveuOpZmLkDbA2Cl7R1NxV2Wk4"
-        );
-
-        return supportToken;
+        return user.supporttoken;
       } catch (err) {
+        console.log("\x1b[1m%s\x1b[0m", "LOG err", err);
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }

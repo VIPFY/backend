@@ -1,8 +1,6 @@
 import bcrypt from "bcrypt";
-import axios from "axios";
 import moment from "moment";
 import { decode } from "jsonwebtoken";
-import { sleep } from "@vipfy-private/service-base";
 import { parseName } from "humanparser";
 import crypto from "crypto";
 import {
@@ -169,33 +167,6 @@ export default {
           verifytoken
         ] = await Promise.all([p3, p4, p5, p6, p7, p8]);
 
-        try {
-          const encodedToken = Buffer.from(
-            `pc@vipfy.com:${process.env.JIRA_SUPPORT}`
-          ).toString("base64");
-
-          const options = {
-            method: "POST",
-            withCredentials: true,
-            url:
-              "https://vipfy-marketplace.atlassian.net/rest/servicedeskapi/customer",
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-              Authorization: `Basic ${encodedToken}`
-            },
-            data: {
-              displayName: name,
-              email: email
-            }
-          };
-
-          const res = await axios(options);
-          console.log(res);
-        } catch (error) {
-          console.log("\x1b[1m%s\x1b[0m", "LOG error", error);
-        }
-        throw new Error("DEBUG");
         const windowsLink = `https://download.vipfy.store/latest/win32/x64/VIPFY-${setupToken}.exe`;
         const macLink = `https://download.vipfy.store/latest/darwin/x64/VIPFY-${setupToken}.dmg`;
 
