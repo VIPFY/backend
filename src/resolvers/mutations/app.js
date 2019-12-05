@@ -8,7 +8,8 @@ import {
   createNotification,
   // checkPaymentData,
   checkPlanValidity,
-  companyCheck
+  companyCheck,
+  concatName
 } from "../../helpers/functions";
 // import {
 //   addSubscriptionItem,
@@ -19,7 +20,7 @@ import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
-
+import jiraServiceApi from "../../services/jiraServiceDesk";
 /* eslint-disable no-return-await */
 
 export default {
@@ -2174,5 +2175,58 @@ export default {
           });
         }
       })
+  ),
+
+  sendSupportRequest: requiresAuth.createResolver(
+    async (_p, { topic, description, component }, { models, session }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+
+        const user = await models.User.findOne({
+          where: { id: unitid },
+          raw: true
+        });
+
+        if (!user.supporttoken) {
+          const { data } = await jiraServiceApi("POST", "customer", {
+            displayName: concatName(user),
+            email: user.emails[0]
+          });
+
+          await models.Human.update(
+            { supporttoken: data.accountId },
+            { where: { unitid } }
+          );
+
+          user.supporttoken = data.accountId;
+
+          await jiraServiceApi(
+            "POST",
+            `organization/${
+              process.env.ENVIRONMENT == "development" ? "3" : "2"
+            }/user`,
+            { accountIds: [data.accountId] }
+          );
+        }
+
+        await jiraServiceApi("POST", "request", {
+          raiseOnBehalfOf: user.supporttoken,
+          serviceDeskId: "1",
+          requestTypeId: component ? "9" : "10",
+          requestFieldValues: {
+            summary: topic,
+            description,
+            labels: [component || "external-app"]
+          }
+        });
+
+        return true;
+      } catch (err) {
+        console.log("\x1b[1m%s\x1b[0m", "LOG err", err);
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };

@@ -7,7 +7,7 @@ import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { companyCheck, concatName } from "../../helpers/functions";
-import jiraServiceApi from "../../services/jiraServiceDesk";
+import jiraServiceDesk from "../../services/jiraServiceDesk";
 
 export default {
   allApps: requiresAuth.createResolver(
@@ -418,48 +418,6 @@ export default {
     }
   ),
 
-  fetchSupportToken: requiresAuth.createResolver(
-    async (_parent, args, { models, session }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(session.token);
-
-        const user = await models.User.findOne({
-          where: { id: unitid },
-          raw: true
-        });
-
-        if (!user.supporttoken) {
-          const { data } = await jiraServiceApi("POST", "customer", {
-            displayName: concatName(user),
-            email: user.emails[0]
-          });
-
-          await models.Human.update(
-            { supporttoken: data.accountid },
-            { where: { unitid } }
-          );
-
-          user.supporttoken = data.accountId;
-
-          await jiraServiceApi(
-            "POST",
-            `organization/${
-              process.env.ENVIRONMENT == "development" ? "3" : "2"
-            }/user`,
-            { accountIds: [data.accountId] }
-          );
-        }
-
-        return user.supporttoken;
-      } catch (err) {
-        console.log("\x1b[1m%s\x1b[0m", "LOG err", err);
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
   fetchBoughtplanUsagePerUser: requiresRights(["view-usage"]).createResolver(
     async (_, { starttime, endtime, boughtplanid }, { models, session }) => {
       try {
@@ -761,5 +719,27 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
           });
         }
       })
+  ),
+
+  fetchSupportRequests: requiresAuth.createResolver(
+    async (_p, args, { models, session }) => {
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(session.token);
+
+        const user = await models.User.findOne({ where: { id: unitid } });
+
+        if (!user.supporttoken) {
+          return null;
+        }
+
+        const { data } = await jiraServiceDesk("GET", "request");
+
+        return data.values;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };

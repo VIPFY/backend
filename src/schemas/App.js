@@ -246,9 +246,7 @@ export const queries = `
   fetchUserLicences(unitid: ID!): [Licence]
 
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
-
-  fetchSupportToken: String
-
+  fetchSupportRequests: JSON
   fetchTotalAppUsage(starttime: Date, endtime: Date): [AppUsage]!
 
   # Total time spend in a specific boughtplan at some time, broken down by user
@@ -268,6 +266,7 @@ export const mutations = `
   switchAppsLayout(app1: LayoutInput!, app2: LayoutInput!): [Licence!]!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
+  sendSupportRequest(topic: String!, description: String!, component: String): Boolean!
 
   createOwnApp(ssoData: SSOInput!, userids: [ID]): IDID
   giveTemporaryAccess(licences: [LicenceRightInput!]!): TempAccessResponse!
