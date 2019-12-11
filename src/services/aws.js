@@ -23,9 +23,10 @@ const fileTypeCheck = createWrapper(file => {
     const validFileExtensions = [
       "image/jpg",
       "image/jpeg",
-      "image/bmp",
+      "image/tiff",
       "image/gif",
-      "image/png"
+      "image/png",
+      "image/webp"
     ];
 
     const validFile = validFileExtensions.find(ext => ext == file.mimetype);
