@@ -361,7 +361,7 @@ export default {
         }
 
         await models.Email.destroy({ where: { email, unitid: id } });
-        await createLog(ctx, "deleteEmail", { belongsToUser }, unitid, "");
+        await createLog(ctx, "deleteEmail", { belongsToUser }, "");
 
         return { ok: true };
       } catch (err) {
