@@ -20,7 +20,9 @@ import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
-import jiraServiceApi from "../../services/jiraServiceDesk";
+import freshdeskAPI from "../../services/freshdesk";
+import Axios from "axios";
+import freshdesk from "../../services/freshdesk";
 /* eslint-disable no-return-await */
 
 export default {
@@ -2178,55 +2180,75 @@ export default {
   ),
 
   sendSupportRequest: requiresAuth.createResolver(
-    async (_p, { topic, description, component }, { models, session }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(session.token);
+    async (_p, args, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company: companyID }
+          } = decode(session.token);
+          const { topic, description, component, internal } = args;
 
-        const user = await models.User.findOne({
-          where: { id: unitid },
-          raw: true
-        });
-
-        if (!user.supporttoken) {
-          const { data } = await jiraServiceApi("POST", "customer", {
-            displayName: concatName(user),
-            email: user.emails[0]
+          const p1 = models.User.findOne({
+            where: { id: unitid },
+            raw: true,
+            transaction: ta
           });
 
-          await models.Human.update(
-            { supporttoken: data.accountId },
-            { where: { unitid } }
-          );
+          const p2 = models.Department.findOne({
+            where: { unitid: companyID },
+            raw: true,
+            transaction: ta
+          });
 
-          user.supporttoken = data.accountId;
+          const [user, company] = await Promise.all([p1, p2]);
 
-          await jiraServiceApi(
-            "POST",
-            `organization/${
-              process.env.ENVIRONMENT == "development" ? "3" : "2"
-            }/user`,
-            { accountIds: [data.accountId] }
-          );
-        }
+          if (!company.supportid) {
+            const { data } = await freshdeskAPI("POST", "companies", {
+              name: `25${company.name}-${company.unitid}`
+            });
 
-        await jiraServiceApi("POST", "request", {
-          raiseOnBehalfOf: user.supporttoken,
-          serviceDeskId: "1",
-          requestTypeId: component ? "9" : "10",
-          requestFieldValues: {
-            summary: topic,
-            description,
-            labels: [component || "external-app"]
+            await models.DepartmentData.update(
+              { supportid: data.id },
+              { where: { unitid: company.unitid } }
+            );
+
+            company.supportid = data.id;
           }
-        });
 
-        return true;
-      } catch (err) {
-        console.log("\x1b[1m%s\x1b[0m", "LOG err", err);
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
+          if (!user.supporttoken) {
+            const { data } = await freshdeskAPI("POST", "contacts", {
+              name: concatName(user),
+              email: user.emails[0],
+              company_id: company.supportid
+            });
+
+            await models.Human.update(
+              { supporttoken: data.id },
+              { where: { unitid } }
+            );
+
+            user.supporttoken = data.id;
+
+            freshdeskAPI("PUT", `contacts/${data.id}/send_invite`);
+          }
+
+          await freshdeskAPI("POST", "tickets", {
+            requester_id: user.supporttoken,
+            subject: `${component} - ${topic}`,
+            type: internal ? "VIPFY" : "External App",
+            description,
+            source: 1,
+            status: 2,
+            priority: 2
+          });
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };

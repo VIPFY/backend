@@ -266,7 +266,7 @@ export const mutations = `
   switchAppsLayout(app1: LayoutInput!, app2: LayoutInput!): [Licence!]!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
-  sendSupportRequest(topic: String!, description: String!, component: String): Boolean!
+  sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
 
   createOwnApp(ssoData: SSOInput!, userids: [ID]): IDID
   giveTemporaryAccess(licences: [LicenceRightInput!]!): TempAccessResponse!

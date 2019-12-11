@@ -7,7 +7,7 @@ import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { companyCheck, concatName } from "../../helpers/functions";
-import jiraServiceDesk from "../../services/jiraServiceDesk";
+import freshdeskAPI from "../../services/freshdesk";
 
 export default {
   allApps: requiresAuth.createResolver(
@@ -722,10 +722,10 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
   ),
 
   fetchSupportRequests: requiresAuth.createResolver(
-    async (_p, args, { models, session }) => {
+    async (_p, _args, { models, session }) => {
       try {
         const {
-          user: { unitid, company }
+          user: { unitid }
         } = decode(session.token);
 
         const user = await models.User.findOne({ where: { id: unitid } });
@@ -734,10 +734,14 @@ from ((Select COALESCE(li.id, t.appid) as id, COALESCE(li.id,t.appid) as app,
           return null;
         }
 
-        const { data } = await jiraServiceDesk("GET", "request");
+        const res = await freshdeskAPI("GET", "tickets", {
+          requester_id: user.supporttoken
+        });
+        console.log("\x1b[1m%s\x1b[0m", "LOG res", res);
 
-        return data.values;
+        return res.data;
       } catch (err) {
+        console.log("\x1b[1m%s\x1b[0m", "LOG err", err);
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
