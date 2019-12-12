@@ -6,7 +6,8 @@ import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-import { companyCheck } from "../../helpers/functions";
+import { companyCheck, concatName } from "../../helpers/functions";
+import freshdeskAPI from "../../services/freshdesk";
 
 export default {
   allApps: requiresAuth.createResolver(
@@ -450,51 +451,8 @@ export default {
     }
   ),
 
-  fetchSupportToken: requiresAuth.createResolver(
-    async (_parent, { licenceid }, { models, session }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(session.token);
-
-        const puserdata = models.User.findOne({
-          where: { id: unitid },
-          raw: true
-        });
-
-        //TODO Mehrere EmailAdressen
-
-        const puseremail = models.Email.findOne({
-          where: { unitid },
-          raw: true
-        });
-
-        const [userdata, useremail] = await Promise.all([
-          puserdata,
-          puseremail
-        ]);
-
-        const payload = {
-          iat: new Date().getTime() / 1000,
-          jti: uuid.v4(),
-          name: `${userdata.firstname} ${userdata.lastname}`,
-          email: useremail.email
-        };
-
-        const supportToken = sign(
-          payload,
-          "k29s4aV67MB6oWwPQzW8vjmveuOpZmLkDbA2Cl7R1NxV2Wk4"
-        );
-
-        return supportToken;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
   fetchBoughtplanUsagePerUser: requiresRights(["view-usage"]).createResolver(
-    async (_, { starttime, endtime, boughtplanid }, { models, session }) => {
+    async (_p, { starttime, endtime, boughtplanid }, { models, session }) => {
       try {
         const {
           user: { company }
@@ -792,6 +750,31 @@ export default {
 
         return allApps;
       } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+  fetchSupportRequests: requiresAuth.createResolver(
+    async (_p, _args, { models, session }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+
+        const user = await models.User.findOne({ where: { id: unitid } });
+
+        if (!user.supporttoken) {
+          return null;
+        }
+
+        const res = await freshdeskAPI("GET", "tickets", {
+          requester_id: user.supporttoken
+        });
+        console.log("\x1b[1m%s\x1b[0m", "LOG res", res);
+
+        return res.data;
+      } catch (err) {
+        console.log("\x1b[1m%s\x1b[0m", "LOG err", err);
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }

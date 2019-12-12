@@ -51,6 +51,7 @@ export const types = `
     tutorialprogress: JSON
     consent: Boolean
     vacation: [Vacation]
+    supporttoken: String
   }
 
   type PublicUser {
