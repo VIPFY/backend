@@ -133,7 +133,14 @@ export default {
   MessageResponse: find({ message: "MessageData" }),
   Newsletter: find({ email: "Email" }),
   Notification: find({ receiver: "Unit" }),
-  Orbit: find({ accounts: "[Account]", teams: "[Team]" }),
+  Orbit: find({
+    accounts: "[Account]",
+    teams: "[Team]",
+    buyer: "Unit",
+    usedby: "Unit",
+    planid: "Plan",
+    payer: "Unit"
+  }),
   ParentUnit: find({ parentunit: "Unit", childunit: "Unit" }),
   Phone: find({}),
   Plan: find(plans),
@@ -150,7 +157,7 @@ export default {
     unitid: "Unit",
     employees: "[User]",
     licences: "[Licence]",
-    services: "[BoughtPlan]"
+    services: "[Orbit]"
   }),
   ServiceLicence: find({
     licence: "Licence"
@@ -178,6 +185,6 @@ export default {
     vacation: "[Vacation]"
   }),
   UserSecurityOverview: find({ unitid: "User" }),
-  Vacation: find({}),
+  Vacation: find({ unitid: "User" }),
   Website: find({})
 };

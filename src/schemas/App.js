@@ -197,6 +197,7 @@ export const types = `
     rightscount: Int
     accountid: ID
     assignmentid: ID
+    assignoptions: JSON
     vacationid: Vacation
   }
 
@@ -293,6 +294,12 @@ export const types = `
   type IDID {
     id: ID!
   }
+
+  type TerminateAssignment {
+    assignmentid: ID
+    endtime: Date
+  }
+
 `;
 
 export const queries = `
@@ -392,10 +399,14 @@ export const mutations = `
   updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
 
 
-  createAccount(orbitid: ID!, alias: String, logindata: JSON!): Licence!
-  assignAccount(licenceid: ID!, userid: ID!, rights: LicenceRights, tags: [String], starttime: Date, endtime: Date): Boolean!
-  terminateAssignAccount(assignmentid: ID!, endtime: Date): Boolean!
+  createAccount(orbitid: ID!, alias: String, logindata: JSON!, starttime: Date, endtime: Date): Account!
+  changeAccount(accountid: ID!, alias: String, logindata: JSON, starttime: Date, endtime: Date): Account
 
-  createOrbit(planid: ID!, alias: String, options: JSON): BoughtPlan
-  changeOrbit(orbitid: ID!, alias: String, loginurl: String, endtime: Date): Orbit!
+  assignAccount(licenceid: ID!, userid: ID!, rights: LicenceRights, tags: [String], starttime: Date, endtime: Date): Boolean!
+  terminateAssignAccount(assignmentid: ID!, endtime: Date, isNull: Boolean): TerminateAssignment
+
+  createOrbit(planid: ID!, alias: String, options: JSON, starttime: Date, endtime: Date): BoughtPlan
+  changeOrbit(orbitid: ID!, alias: String, loginurl: String, starttime: Date, endtime: Date): Orbit!
+
+  createVacation(userid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
   `;

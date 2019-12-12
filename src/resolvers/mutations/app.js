@@ -2181,7 +2181,11 @@ export default {
   ),
 
   createAccount: requiresRights(["edit-licences"]).createResolver(
-    async (_p, { orbitid, alias, logindata }, { models, session }) =>
+    async (
+      _p,
+      { orbitid, alias, logindata, starttime, endtime },
+      { models, session }
+    ) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -2209,12 +2213,89 @@ export default {
                 appid: orbit[0].appid,
                 company
               },
-              alias
+              alias,
+              starttime,
+              endtime
             },
             { transaction: ta }
           );
 
-          return account;
+          const newAccount = await models.Account.findOne({
+            where: { id: account.get({ plain: true }).id },
+            transaction: ta,
+            raw: true
+          });
+
+          return newAccount;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  changeAccount: requiresRights(["edit-licences"]).createResolver(
+    async (
+      _p,
+      { accountid, alias, logindata, starttime, endtime },
+      { models, session }
+    ) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(session.token);
+
+          await checkLicenceValidilty(models, company, accountid);
+
+          const oldaccount = await models.Account.findOne({
+            where: { id: accountid },
+            raw: true
+          });
+
+          const newaccount = await models.LicenceData.update(
+            {
+              alias,
+              key: {
+                ...oldaccount.key,
+                ...logindata
+              },
+              starttime,
+              endtime
+            },
+            {
+              where: { id: accountid },
+              returning: true,
+              transaction: ta,
+              raw: true
+            }
+          );
+
+          const notifications = [];
+
+          oldaccount.assignments.forEach(async assignment => {
+            const user = await models.LicenceAssignment.findOne({
+              where: { assignmentid: assignment }
+            });
+            notifications.push(
+              createNotification(
+                {
+                  receiver: user,
+                  message: `An account has been updated`,
+                  icon: "business-time",
+                  link: `dashboard`,
+                  changed: ["ownLicences"]
+                },
+                ta
+              )
+            );
+          });
+
+          await Promise.all(notifications);
+
+          return { ...oldaccount, ...newaccount[1][0] };
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -2236,7 +2317,7 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { company }
+            user: { unitid, company }
           } = decode(session.token);
 
           await checkLicenceValidilty(models, company, licenceid);
@@ -2265,6 +2346,17 @@ export default {
             ta
           );
 
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `You have assigned an account`,
+              icon: "business-time",
+              link: `dashboard`,
+              changed: ["companyServices"]
+            },
+            ta
+          );
+
           return true;
         } catch (err) {
           throw new NormalError({
@@ -2276,7 +2368,11 @@ export default {
   ),
 
   createOrbit: requiresRights(["edit-licences"]).createResolver(
-    async (_p, { planid, alias, options }, { models, session }) =>
+    async (
+      _p,
+      { planid, alias, options, starttime, endtime },
+      { models, session }
+    ) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -2293,7 +2389,9 @@ export default {
               disabled: false,
               buyer: company,
               payer: company,
-              usedby: company
+              usedby: company,
+              starttime,
+              endtime
             },
             { transaction: ta }
           );
@@ -2309,17 +2407,17 @@ export default {
   ),
 
   changeOrbit: requiresRights(["edit-licences"]).createResolver(
-    async (_p, { orbitid, alias, loginurl, endtime }, { models, session }) =>
+    async (
+      _p,
+      { orbitid, alias, loginurl, starttime, endtime },
+      { models, session }
+    ) =>
       models.sequelize.transaction(async ta => {
         try {
-          console.log("UPDATE", orbitid, alias, loginurl, endtime);
-
           const {
             user: { company }
           } = decode(session.token);
           checkOrbitMembership(models, company, orbitid);
-
-          console.log("CHECKED");
 
           const oldorbit = await models.Orbit.findOne({
             where: { id: orbitid },
@@ -2334,6 +2432,7 @@ export default {
                 loginurl
               },
               alias,
+              starttime,
               endtime
             },
             { where: { id: orbitid } },
@@ -2347,6 +2446,7 @@ export default {
               loginurl
             },
             alias,
+            starttime,
             endtime
           };
         } catch (err) {
@@ -2362,7 +2462,7 @@ export default {
     "edit-licences",
     "edit-licenceRights"
   ]).createResolver(
-    async (_p, { assignmentid, endtime }, { models, session }) =>
+    async (_p, { assignmentid, endtime, isNull }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -2376,7 +2476,12 @@ export default {
 
           await checkLicenceValidilty(models, company, licence.id);
 
-          const end = endtime || moment.now();
+          let end;
+          if (isNull) {
+            end = "infinity";
+          } else {
+            end = endtime || moment.now();
+          }
 
           await models.LicenceRight.update(
             {
@@ -2399,7 +2504,97 @@ export default {
             ta
           );
 
-          return true;
+          return { assignmentid, endtime: endtime || "infinity" };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  createVacation: requiresRights([
+    "edit-licences",
+    "edit-licenceRights"
+  ]).createResolver(
+    async (
+      _p,
+      { userid, starttime, endtime, assignments },
+      { models, session }
+    ) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(session.token);
+
+          const vacation = await models.Vacation.create(
+            {
+              unitid: userid,
+              starttime,
+              endtime
+            },
+            {
+              transaction: ta,
+              returning: true
+            }
+          );
+
+          const promises = [];
+          const users = [];
+          assignments.forEach(a => {
+            if (!users.find(u => u == a.userid)) {
+              users.push(a.userid);
+            }
+            promises.push(
+              models.LicenceRight.create(
+                {
+                  view: true,
+                  use: true,
+                  tags: ["vacation"],
+                  licenceid: a.accountid,
+                  unitid: a.userid,
+                  starttime,
+                  endtime
+                },
+                ta
+              )
+            );
+          });
+          await Promise.all(promises);
+
+          const notifypromises = [];
+
+          users.forEach(u => {
+            notifypromises.push(
+              createNotification(
+                {
+                  receiver: u,
+                  message: `You have been assigned to an vacation account`,
+                  icon: "business-time",
+                  link: `dashboard`,
+                  changed: ["ownLicences"]
+                },
+                ta
+              )
+            );
+          });
+
+          await Promise.all(notifypromises);
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `You have created an vacation`,
+              icon: "business-time",
+              link: `dashboard`,
+              changed: ["companyServices"]
+            },
+            ta
+          );
+
+          return vacation;
         } catch (err) {
           throw new NormalError({
             message: err.message,

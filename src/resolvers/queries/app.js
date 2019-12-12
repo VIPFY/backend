@@ -610,7 +610,14 @@ export default {
           }
         );
 
-        return companyServices[0];
+        let returnValue;
+        if (companyServices[0]) {
+          [returnValue] = companyServices;
+        } else {
+          returnValue = { app: serviceid, orbitids: null };
+        }
+
+        return returnValue;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
