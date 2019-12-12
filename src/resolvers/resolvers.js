@@ -121,7 +121,7 @@ export default {
     vacationid: "Vacation"
   }),
   Log: find({ user: "User", sudoer: "User" }),
-  Key: find({ unitid: "User" }),
+  Key: find({ unitid: "User", encryptedby: "Key" }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
   MessageGroupMembership: find({ groupid: "MessageGroup", unitid: "User" }),
@@ -147,7 +147,7 @@ export default {
   PlansRunning: find({ appid: "App" }),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
-  PublicLicence: find({ unitid: "SemiPublicUser", boughtplanid: "BoughtPlan" }),
+  PublicLicence: find({ unitid: "User", boughtplanid: "BoughtPlan" }),
   Review: find({ unitid: "User", appid: "App", answerto: "Review" }),
   ReviewHelpful: find({ unitid: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),

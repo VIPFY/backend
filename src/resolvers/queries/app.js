@@ -54,34 +54,6 @@ export default {
     }
   ),
 
-  fetchAllAppsEnhanced: requiresRights([
-    "view-apps",
-    "view-licences"
-  ]).createResolver(async (_parent, _args, { models, session }) => {
-    try {
-      const {
-        user: { company }
-      } = decode(session.token);
-
-      const data = models.sequelize.query(
-        `SELECT app_data.*,
-            bool_or(:company in (SELECT payer FROM boughtplan_data WHERE planid = d2.id)) as hasboughtplan
-          FROM app_data
-               inner join plan_data d2 on app_data.id = d2.appid
-          GROUP BY app_data.id
-        `,
-        {
-          replacements: { company },
-          type: models.sequelize.QueryTypes.SELECT
-        }
-      );
-
-      return data;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
-    }
-  }),
-
   fetchAppById: requiresRights(["view-apps"]).createResolver(
     async (_parent, { id }, { models, session }) => {
       try {

@@ -355,9 +355,207 @@ export default {
         return {
           id: unitid,
           passwordlength: pw.passwordlength,
-          passwordstrength: pw.passwordstrength
+          passwordstrength: pw.passwordstrength,
+          needspasswordchange: true,
+          unitid: unitid
         };
       } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  updateEmployeePasswordEncrypted: requiresRights([
+    "edit-employee"
+  ]).createResolver(
+    async (
+      _p,
+      {
+        unitid,
+        newPasskey,
+        passwordMetrics,
+        logOut,
+        newKey,
+        deprecateAllExistingKeys,
+        licenceUpdates
+      },
+      ctx
+    ) => {
+      try {
+        const { models, session } = ctx;
+        const {
+          user: { unitid: id, company }
+        } = decode(session.token);
+
+        return await ctx.models.sequelize.transaction(async transaction => {
+          try {
+            if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
+              throw new Error("Password too long");
+            }
+
+            if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
+              throw new Error(
+                `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+              );
+            }
+
+            if (passwordMetrics.passwordStrength < 2) {
+              throw new Error("Password too weak!");
+            }
+
+            if (newPasskey.length != 128) {
+              throw new Error(
+                "Incompatible passkey format, try updating VIPFY"
+              );
+            }
+
+            const p1 = models.User.findOne({
+              where: { id, isadmin: true },
+              raw: true,
+              transaction
+            });
+
+            const p2 = models.User.findOne({
+              where: { id: unitid },
+              raw: true,
+              transaction
+            });
+            const [isAdmin, employee] = await Promise.all([p1, p2]);
+
+            await companyCheck(company, id, unitid);
+
+            if (!isAdmin) {
+              throw new Error("You don't have the necessary rights!");
+            }
+
+            // An admin should be able to update his own password
+            if (employee.isadmin && employee.id != isAdmin.id) {
+              throw new Error("You can't change another admins password!");
+            }
+
+            if (deprecateAllExistingKeys) {
+              await models.Key.update(
+                { deprecated: true },
+                { where: { unitid }, transaction }
+              );
+            }
+
+            const promises = [];
+            promises.push(
+              models.Human.update(
+                {
+                  needspasswordchange: true,
+                  ...passwordMetrics,
+                  passkey: newPasskey
+                },
+                { where: { unitid }, returning: true, transaction }
+              )
+            );
+
+            delete newKey.id;
+            delete newKey.createdat;
+            delete newKey.unitid;
+            promises.push(
+              models.Key.create(
+                {
+                  ...newKey,
+                  unitid
+                },
+                { transaction }
+              )
+            );
+
+            promises.push(
+              models.LicenceData.findAll({
+                attributes: ["id", "key"],
+                where: {
+                  id: { [models.Op.in]: licenceUpdates.map(u => u.licence) }
+                },
+                transaction
+              })
+            );
+
+            console.log("a", Promise.all, promises);
+            // let human = await promises[0];
+            // console.log("human", human);
+            // let key = await promises[1];
+            // console.log("key", key);
+            // let licences = await promises[2];
+            let [human, key, licences] = await Promise.all(promises);
+            console.log("b", licences);
+
+            promises.length = 0;
+            for (const u of licenceUpdates) {
+              if (u.new.key == "new") {
+                u.new.key = key.id;
+              }
+              for (const l of licences) {
+                if (l.key.encrypted) {
+                  l.key = {
+                    ...l.key,
+                    encrypted: l.key.encrypted.map(e => {
+                      if (
+                        e.key != u.old.key ||
+                        e.data != u.old.data ||
+                        e.belongsto != u.old.belongsto
+                      ) {
+                        return e;
+                      }
+                      return u.new;
+                    })
+                  };
+                }
+              }
+            }
+
+            Promise.all(
+              licences.map(l => l.save({ fields: ["key"], transaction }))
+            );
+
+            const employeeName = concatName(employee);
+            const adminName = concatName(isAdmin);
+
+            // await sendEmail({
+            //   templateId: "d-9beb3ea901d64894a8227c295aa8548e",
+            //   personalizations: [
+            //     {
+            //       to: [{ email: employee.emails[0] }],
+            //       dynamic_template_data: { employeeName, adminName, password }
+            //     }
+            //   ],
+            //   fromName: "VIPFY GmbH"
+            // });
+
+            if (logOut) {
+              const sessions = await fetchSessions(ctx.redis, unitid);
+
+              const sessionPromises = [];
+
+              sessions.forEach(sessionString => {
+                sessionPromises.push(
+                  ctx.redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
+                );
+              });
+
+              sessionPromises.push(
+                ctx.redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`)
+              );
+              await Promise.all(sessionPromises);
+            }
+
+            return {
+              id: unitid,
+              ...passwordMetrics,
+              needspasswordchange: true,
+              unitid: unitid
+            };
+          } catch (error) {
+            console.log(error);
+            throw error;
+          }
+        });
+      } catch (err) {
+        console.error(err, err.sql);
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
@@ -435,7 +633,7 @@ export default {
 
         await ctx.redis.lpush(
           `${IMPERSONATE_PREFIX}${id}`,
-          ctx.JSON.stringify({
+          JSON.stringify({
             session: ctx.sessionID,
             ...ctx.userData,
             ...location,

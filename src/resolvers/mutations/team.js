@@ -470,7 +470,10 @@ export default {
           await teamCheck(company, teamid);
 
           const parsedFile = await file;
-          await deleteUserImage(oldUnit.profilepicture);
+
+          if (oldUnit.profilepicture) {
+            await deleteUserImage(oldUnit.profilepicture);
+          }
 
           const profilepicture = await uploadTeamImage(
             parsedFile,

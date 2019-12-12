@@ -30,6 +30,19 @@ export const types = `
     createdat: Date!
     encryptedby: Key
   }
+
+  input KeyInput {
+    id: ID
+    unitid: ID
+    privatekey: String
+    publickey: String
+    encryptedby: ID
+  }
+
+  input PasswordMetricsInput {
+    passwordlength: Int!
+    passwordstrength: Int!
+  }
 `;
 
 export const queries = `
@@ -58,6 +71,7 @@ export const mutations = `
 
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!
+  changePasswordEncrypted(oldPasskey: String!, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, newKey: KeyInput!, replaceKeys: [KeyInput!]!): LoginResponse!
 
   # Send the user a new link for sign up
   forgotPassword(email: String!): ForgotPwResponse!
