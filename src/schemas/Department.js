@@ -91,6 +91,7 @@ export const queries = `
 
   # Returns the amount of units in a Department
   fetchEmployees: [DepartmentEmployee]!
+  fetchVacationRequests: [User]!
 
   fetchUserSecurityOverview: [UserSecurityOverview]!
   fetchVipfyPlan: BoughtPlan

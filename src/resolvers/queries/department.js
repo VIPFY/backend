@@ -137,5 +137,49 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
+
+  fetchVacationRequests: async (_p, args, { models, session }) => {
+    try {
+      const {
+        user: { unitid, company }
+      } = decode(session.token);
+
+      const data = await models.sequelize.query(
+        `SELECT DISTINCT employee FROM department_employee_view
+       WHERE id = :company AND employee NOTNULL`,
+        {
+          replacements: { company },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
+
+      const employeeIDs = data.map(({ employee }) => parseInt(employee));
+      console.log("\x1b[1m%s\x1b[0m", "LOG employeeIDs", employeeIDs);
+      const employees = await models.sequelize.query(
+        `
+        uv.id,
+        uv.middlename,
+        uv.lastname,
+        uv.profilepicture,
+          COALESCE(vacation_requests_data.vacationrequests, ARRAY []::json[]) as vacationrequests
+          FROM users_view uv
+          LEFT JOIN (SELECT vrd.unitid,
+                    COALESCE(array_agg(json_build_object('startdate', vrd.startdate, 'enddate', vrd.enddate, 'days', vrd.days 'status', vrd.status)),
+                              ARRAY []::json[]) as vacationrequests
+              FROM vacation_requests_data vrd
+              GROUP BY vrd.unitid) vacation_requests_data ON uv.id = vacation_requests_data.unitid
+          WHERE uv.id IN (:employeeIDs)`,
+        {
+          replacements: { employeeIDs },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
+
+      console.log("\x1b[1m%s\x1b[0m", "LOG employees", employees);
+      return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };
