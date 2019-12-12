@@ -6,14 +6,14 @@ import { teamPicFolder, userPicFolder } from "../constants";
 
 const s3 = new AWS.S3({ region: "eu-central-1" });
 
-const createWrapper = resolver => {
-  const baseResolver = resolver;
-  baseResolver.createWrapper = childResolver => {
-    const newResolver = async (file, folder, optional) => {
-      await resolver(file, folder, optional);
-      return childResolver(file, folder, optional);
+const createWrapper = wrapper => {
+  const baseResolver = wrapper;
+  baseResolver.createWrapper = childWrapper => {
+    const newWrapper = async (file, folder, optional) => {
+      await wrapper(file, folder, optional);
+      return childWrapper(file, folder, optional);
     };
-    return createWrapper(newResolver);
+    return createWrapper(newWrapper);
   };
   return baseResolver;
 };
@@ -91,7 +91,7 @@ export const uploadUserImage = fileTypeCheck.createWrapper(
   }
 );
 
-export const uploadTeamImage = fileTypeCheck.createResolver(
+export const uploadTeamImage = fileTypeCheck.createWrapper(
   async ({ stream, filename }, folder) => {
     const ourFilename = formatFilename(filename);
     const Key = `${folder}/${ourFilename}`;
@@ -115,7 +115,7 @@ export const uploadTeamImage = fileTypeCheck.createResolver(
   }
 );
 
-export const uploadAppImage = fileTypeCheck.createResolver(
+export const uploadAppImage = fileTypeCheck.createWrapper(
   async ({ stream, filename }, folder, fileName) => {
     const ourFilename = fileName || formatFilename(filename);
     const Key = `${folder}/${ourFilename}`;
