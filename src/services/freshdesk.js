@@ -1,7 +1,7 @@
 import axios from "axios";
 
 /**
- * Makes a request to Jira Servicedesk
+ * Makes a request to Freshdesk
  * @exports
  * @param {string} method GET or POST
  * @param {string} url The endpoint to talk to. For Example "organization"
