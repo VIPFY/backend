@@ -8,7 +8,8 @@ import {
   createNotification,
   // checkPaymentData,
   checkPlanValidity,
-  companyCheck
+  companyCheck,
+  concatName
 } from "../../helpers/functions";
 // import {
 //   addSubscriptionItem,
@@ -19,7 +20,9 @@ import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
-
+import freshdeskAPI from "../../services/freshdesk";
+import Axios from "axios";
+import freshdesk from "../../services/freshdesk";
 /* eslint-disable no-return-await */
 
 export default {
@@ -2166,6 +2169,79 @@ export default {
               transaction: ta
             }
           );
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  sendSupportRequest: requiresAuth.createResolver(
+    async (_p, args, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company: companyID }
+          } = decode(session.token);
+          const { topic, description, component, internal } = args;
+
+          const p1 = models.User.findOne({
+            where: { id: unitid },
+            raw: true,
+            transaction: ta
+          });
+
+          const p2 = models.Department.findOne({
+            where: { unitid: companyID },
+            raw: true,
+            transaction: ta
+          });
+
+          const [user, company] = await Promise.all([p1, p2]);
+
+          if (!company.supportid) {
+            const { data } = await freshdeskAPI("POST", "companies", {
+              name: `25${company.name}-${company.unitid}`
+            });
+
+            await models.DepartmentData.update(
+              { supportid: data.id },
+              { where: { unitid: company.unitid } }
+            );
+
+            company.supportid = data.id;
+          }
+
+          if (!user.supporttoken) {
+            const { data } = await freshdeskAPI("POST", "contacts", {
+              name: concatName(user),
+              email: user.emails[0],
+              company_id: company.supportid
+            });
+
+            await models.Human.update(
+              { supporttoken: data.id },
+              { where: { unitid } }
+            );
+
+            user.supporttoken = data.id;
+
+            freshdeskAPI("PUT", `contacts/${data.id}/send_invite`);
+          }
+
+          await freshdeskAPI("POST", "tickets", {
+            requester_id: user.supporttoken,
+            subject: `${component} - ${topic}`,
+            type: internal ? "VIPFY" : "External App",
+            description,
+            source: 1,
+            status: 2,
+            priority: 2
+          });
+
           return true;
         } catch (err) {
           throw new NormalError({

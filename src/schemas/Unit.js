@@ -50,6 +50,7 @@ export const types = `
     config: JSON
     tutorialprogress: JSON
     consent: Boolean
+    supporttoken: String
   }
 
   type PublicUser {
