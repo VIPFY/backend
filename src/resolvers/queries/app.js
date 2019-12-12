@@ -433,7 +433,7 @@ export default {
   ),
 
   fetchBoughtplanUsagePerUser: requiresRights(["view-usage"]).createResolver(
-    async (_, { starttime, endtime, boughtplanid }, { models, session }) => {
+    async (_p, { starttime, endtime, boughtplanid }, { models, session }) => {
       try {
         const {
           user: { company }
