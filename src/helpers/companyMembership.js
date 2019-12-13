@@ -28,10 +28,13 @@ export const checkCompanyMembership = async (
   }
 
   if (entityName == "user") {
-    await models.User.findOne({ where: { id: entityID }, raw: true });
+    const user = await models.User.findOne({
+      where: { id: entityID },
+      raw: true
+    });
 
     if (!user) {
-      throw new Error("The provided id does not belong to an user!");
+      throw new RightsError("The provided id does not belong to an user!");
     }
   }
 
@@ -80,7 +83,68 @@ export const checkCompanyMembership = async (
   return true;
 };
 
-export const resetCompanyMembershipCache = async (company, entityID) => {
+export const checkLicenceValidilty = async (models, company, licenceid) => {
+  const account = await models.sequelize.query(
+    `
+    SELECT l.id
+      FROM boughtplan_data bd
+          JOIN licence_data l on l.boughtplanid = bd.id
+      WHERE (bd.endtime IS NULL OR bd.endtime > NOW())
+        AND (l.endtime IS NULL OR l.endtime > NOW())
+        AND bd.usedby = :company
+        AND l.id = :licenceid
+        AND l.disabled = false AND bd.disabled = false`,
+    {
+      replacements: { company, licenceid },
+      type: models.sequelize.QueryTypes.SELECT
+    }
+  );
+
+  if (account.length != 1) {
+    throw new RightsError(
+      "Account is disabled, terminated or outside company."
+    );
+  }
+};
+
+export const checkLicenceMembership = async (models, company, licenceid) => {
+  const account = await models.sequelize.query(
+    `
+    SELECT l.id
+      FROM boughtplan_data bd
+          JOIN licence_data l on l.boughtplanid = bd.id
+      WHERE bd.usedby = :company
+        AND l.id = :licenceid`,
+    {
+      replacements: { company, licenceid },
+      type: models.sequelize.QueryTypes.SELECT
+    }
+  );
+
+  if (account.length != 1) {
+    throw new RightsError("Account doesn't belong to the user's company!");
+  }
+};
+
+export const checkOrbitMembership = async (models, company, orbitid) => {
+  const orbit = await models.sequelize.query(
+    `
+    SELECT id
+      FROM boughtplan_data 
+      WHERE usedby = :company
+        AND id = :orbitid`,
+    {
+      replacements: { company, orbitid },
+      type: models.sequelize.QueryTypes.SELECT
+    }
+  );
+
+  if (orbit.length != 1) {
+    throw new RightsError("Orbit doesn't belong to the user's company!");
+  }
+};
+
+export const resetCompanyMembershipCache = async (company, entityid) => {
   // sanity check
   if (`${company}`.indexOf("-") !== -1) {
     throw new Error("company must be a number");

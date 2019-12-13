@@ -40,11 +40,32 @@ export const types = `
     hasboughtplan: Boolean
   }
 
-  type CompanyService{
+  type CompanyServiceNEW{
     id: ID!
     app: AppDetails!
-    licences: [Licence]
+    licences: [LicenceAssignment]
     teams: [TeamBoughtPlan]
+  }
+
+  type CompanyService{
+    app: AppDetails!
+    orbitids: [Orbit]
+  }
+
+  type Orbit {
+    id: ID!
+    buytime: String
+    alias: String
+    endtime: String
+    description: String
+    key: JSON
+    buyer: Unit!
+    payer: Unit!
+    usedby: Unit!
+    planid: Plan!
+    totalprice: Float
+    accounts: [Account]
+    teams: [Team]
   }
 
   type AppDetails {
@@ -135,6 +156,49 @@ export const types = `
     vacationend: Date
     teamlicence: Team
     teamaccount: Team
+    alias: String
+    rightscount: Int
+    assignmentid: LicenceAssignment
+    vacationid: Vacation
+  }
+
+  type Account {
+    id: ID!
+    boughtplanid: BoughtPlan
+    options: JSON
+    starttime: Date
+    endtime: Date
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
+    emailprefix: String
+    pending: Boolean
+    alias: String
+    assignments: [LicenceAssignment]
+  }
+
+  type LicenceAssignment {
+    ${basicLicenceFields}
+    ${licenceFields}
+    sidebar: Int
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
+    unitid: SemiPublicUser
+    view: Boolean!
+    edit: Boolean!
+    delete: Boolean!
+    use: Boolean!
+    vacationstart: Date
+    vacationend: Date
+    teamlicence: Team
+    teamaccount: Team
+    alias: String
+    rightscount: Int
+    accountid: ID
+    assignmentid: ID
+    assignoptions: JSON
+    vacationid: Vacation
   }
 
   type PublicLicence {
@@ -168,6 +232,13 @@ export const types = `
     tags: [String]
     starttime: Date
     endtime: Date
+  }
+
+  input LicenceRights {
+    view: Boolean
+    edit: Boolean
+    delete: Boolean
+    use: Boolean
   }
 
   input LicenceRightUpdateInput {
@@ -223,6 +294,7 @@ export const types = `
   type IDID {
     id: ID!
   }
+
 `;
 
 export const queries = `
@@ -244,6 +316,9 @@ export const queries = `
   # Returns all Licences of a defined user
   fetchUserLicences(unitid: ID!): [Licence]
 
+  # Returns all LicenceAssignments of a defined user
+  fetchUserLicenceAssignments(unitid: ID): [LicenceAssignment]
+
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
   fetchSupportRequests: JSON
   fetchTotalAppUsage(starttime: Date, endtime: Date): [AppUsage]!
@@ -258,6 +333,9 @@ export const queries = `
   fetchIssuedLicences(unitid: ID!): [TempLicence!]
   fetchTempLicences(unitid: ID!): [TempLicence!]
   bulkUpdateLayout(layouts: [LayoutInput!]!): Boolean!
+
+  fetchUseableApps: [AppDetails]
+
 `;
 
 export const mutations = `
@@ -312,4 +390,16 @@ export const mutations = `
   addEncryptedExternalAccountLicence(key: JSON!, appid: ID, boughtplanid: ID!, price: Float, touser: ID, identifier: String, options: JSON): Licence!
 
   updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
+
+
+  createAccount(orbitid: ID!, alias: String, logindata: JSON!, starttime: Date, endtime: Date): Account!
+  changeAccount(accountid: ID!, alias: String, logindata: JSON, starttime: Date, endtime: Date): Account
+
+  assignAccount(licenceid: ID!, userid: ID!, rights: LicenceRights, tags: [String], starttime: Date, endtime: Date): Boolean!
+  terminateAssignAccount(assignmentid: ID!, endtime: Date, isNull: Boolean): LicenceAssignment
+
+  createOrbit(planid: ID!, alias: String, options: JSON, starttime: Date, endtime: Date): BoughtPlan
+  changeOrbit(orbitid: ID!, alias: String, loginurl: String, starttime: Date, endtime: Date): Orbit!
+
+  createVacation(userid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
   `;

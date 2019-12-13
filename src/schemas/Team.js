@@ -20,7 +20,7 @@ export const types = `
     apps: JSON
     domains: [Domain]
     licences: [Licence]
-    services: [BoughtPlan]
+    services: [Orbit]
     createdate: String!
     promocode: String
     setupfinished: Boolean
@@ -51,4 +51,10 @@ export const mutations = `
   addEmployeeToTeam(employeeid: ID!, teamid: ID!): Boolean!
   addAppToTeam(serviceid: ID!, teamid: ID!, employees: [SetupService]!): ID!
   updateTeamPic(file: Upload!, teamid: ID!): Team!
+
+  addOrbitToTeam(teamid: ID!, orbitid: ID!, assignments: JSON): Team
+  addMemberToTeam(teamid: ID!, employeeid: ID!, assignments: JSON): Team
+  removeTeamOrbitFromTeam(teamid: ID!, orbitid: ID!, deletejson: JSON, endtime: Date): Team
+  removeMemberFromTeam(teamid: ID!, userid: ID!, deletejson: JSON, endtime: Date): Team
+
 `;

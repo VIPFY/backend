@@ -177,6 +177,7 @@ export const queries = `
   fetchCredits: Credit
 
   fetchAllBoughtPlansFromCompany(appid: ID!, external: Boolean): [BoughtPlan]!
+  fetchBoughtPlansOfCompany(appid: ID!, external: Boolean): [BoughtPlan]!
 `;
 
 export const mutations = `

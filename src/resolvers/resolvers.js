@@ -79,6 +79,7 @@ export default {
   Mutation,
   Date: implementDate,
   JSON: implementJSON,
+  Account: find({ assignments: "[LicenceAssignment]" }),
   Address: find({}),
   App: find(developerAndSupport),
   AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
@@ -108,7 +109,16 @@ export default {
     unitid: "User",
     boughtplanid: "BoughtPlan",
     teamlicence: "Team",
-    teamaccount: "Team"
+    teamaccount: "Team",
+    assignmentid: "LicenceAssignment",
+    vacationid: "Vacation"
+  }),
+  LicenceAssignment: find({
+    unitid: "User",
+    boughtplanid: "BoughtPlan",
+    teamlicence: "Team",
+    teamaccount: "Team",
+    vacationid: "Vacation"
   }),
   Log: find({ user: "User", sudoer: "User" }),
   Key: find({ unitid: "User", encryptedby: "Key" }),
@@ -123,6 +133,14 @@ export default {
   MessageResponse: find({ message: "MessageData" }),
   Newsletter: find({ email: "Email" }),
   Notification: find({ receiver: "Unit" }),
+  Orbit: find({
+    accounts: "[Account]",
+    teams: "[Team]",
+    buyer: "Unit",
+    usedby: "Unit",
+    planid: "Plan",
+    payer: "Unit"
+  }),
   ParentUnit: find({ parentunit: "Unit", childunit: "Unit" }),
   Phone: find({}),
   Plan: find(plans),
@@ -139,27 +157,36 @@ export default {
     unitid: "Unit",
     employees: "[User]",
     licences: "[Licence]",
-    services: "[BoughtPlan]"
+    services: "[Orbit]"
   }),
   ServiceLicence: find({
     licence: "Licence"
   }),
   CompanyService: find({
     app: "App",
-    licences: "[Licence]"
+    orbitids: "[Orbit]"
   }),
   TeamBoughtPlan: find({
     departmentid: "Team",
     boughtplanid: "BoughtPlan"
   }),
   Upload: GraphQLUpload,
-  User: find({ company: "Department", emails: "[Email]", phones: "[Phone]" }),
+  User: find({
+    company: "Department",
+    emails: "[Email]",
+    phones: "[Phone]",
+    vacations: "[Vacation]",
+    assignments: "[LicenceAssignment]"
+  }),
   SemiPublicUser: find({
     company: "Department",
     emails: "[Email]",
     addresses: "[Address]",
-    phones: "[Phone]"
+    phones: "[Phone]",
+    vacations: "[Vacation]",
+    assignments: "[LicenceAssignment]"
   }),
   UserSecurityOverview: find({ unitid: "User" }),
+  Vacation: find({ unitid: "User" }),
   Website: find({})
 };
