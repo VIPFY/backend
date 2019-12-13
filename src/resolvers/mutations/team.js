@@ -1085,6 +1085,18 @@ export default {
               transaction: ta
             }
           );
+
+          await createLog(
+            context,
+            "addOrbitToTeam",
+            {
+              teamid,
+              orbitid,
+              assignments,
+              team
+            },
+            ta
+          );
           return team && team[0];
         } catch (err) {
           throw new NormalError({
@@ -1152,6 +1164,19 @@ export default {
               transaction: ta
             }
           );
+
+          await createLog(
+            context,
+            "addMemberToTeam",
+            {
+              teamid,
+              employeeid,
+              assignments,
+              team
+            },
+            ta
+          );
+
           return team && team[0];
         } catch (err) {
           throw new NormalError({
@@ -1291,6 +1316,19 @@ export default {
               type: models.sequelize.QueryTypes.SELECT,
               transaction: ta
             }
+          );
+
+          await createLog(
+            context,
+            "removeTeamOrbitFromTeam",
+            {
+              teamid,
+              orbitid,
+              deletejson,
+              endtime,
+              team
+            },
+            ta
           );
           return team && team[0];
         } catch (err) {
@@ -1456,6 +1494,18 @@ export default {
               type: models.sequelize.QueryTypes.SELECT,
               transaction: ta
             }
+          );
+          await createLog(
+            context,
+            "removeMemberFromTeam",
+            {
+              teamid,
+              userid,
+              deletejson,
+              endtime,
+              team
+            },
+            ta
           );
           return team && team[0];
         } catch (err) {

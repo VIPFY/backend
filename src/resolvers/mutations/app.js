@@ -2212,9 +2212,7 @@ export default {
               agreed: true,
               disabled: false,
               key: {
-                ...logindata,
-                appid: orbit[0].appid,
-                company
+                ...logindata
               },
               alias,
               starttime,
@@ -2228,6 +2226,21 @@ export default {
             transaction: ta,
             raw: true
           });
+
+          await createLog(
+            context,
+            "createAccount",
+            {
+              orbitid,
+              alias,
+              logindata,
+              starttime,
+              endtime,
+              account,
+              newAccount
+            },
+            ta
+          );
 
           return newAccount;
         } catch (err) {
@@ -2298,6 +2311,20 @@ export default {
 
           await Promise.all(notifications);
 
+          await createLog(
+            context,
+            "changeAccount",
+            {
+              accountid,
+              alias,
+              logindata,
+              starttime,
+              endtime,
+              newaccount
+            },
+            ta
+          );
+
           return { ...oldaccount, ...newaccount[1][0] };
         } catch (err) {
           throw new NormalError({
@@ -2360,6 +2387,20 @@ export default {
             ta
           );
 
+          await createLog(
+            context,
+            "assignAccount",
+            {
+              licenceid,
+              userid,
+              rights,
+              tags,
+              starttime,
+              endtime
+            },
+            ta
+          );
+
           return true;
         } catch (err) {
           throw new NormalError({
@@ -2397,6 +2438,20 @@ export default {
               endtime
             },
             { transaction: ta }
+          );
+
+          await createLog(
+            context,
+            "createOrbit",
+            {
+              planid,
+              alias,
+              options,
+              starttime,
+              endtime,
+              orbit
+            },
+            ta
           );
 
           return orbit;
@@ -2440,6 +2495,29 @@ export default {
             },
             { where: { id: orbitid } },
             { transaction: ta }
+          );
+
+          await createLog(
+            context,
+            "changeOrbit",
+            {
+              orbitid,
+              alias,
+              loginurl,
+              starttime,
+              endtime,
+              neworbit: {
+                ...oldorbit,
+                key: {
+                  ...oldorbit.key,
+                  loginurl
+                },
+                alias,
+                starttime,
+                endtime
+              }
+            },
+            ta
           );
 
           return {
@@ -2503,6 +2581,17 @@ export default {
               icon: "business-time",
               link: `dashboard`,
               changed: ["ownLicences"]
+            },
+            ta
+          );
+
+          await createLog(
+            context,
+            "terminateAssignAccount",
+            {
+              assignmentid,
+              endtime,
+              isNull
             },
             ta
           );
@@ -2593,6 +2682,18 @@ export default {
               icon: "business-time",
               link: `dashboard`,
               changed: ["companyServices"]
+            },
+            ta
+          );
+
+          await createLog(
+            context,
+            "createVacation",
+            {
+              userid,
+              starttime,
+              endtime,
+              assignments
             },
             ta
           );
