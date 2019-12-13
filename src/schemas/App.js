@@ -295,11 +295,6 @@ export const types = `
     id: ID!
   }
 
-  type TerminateAssignment {
-    assignmentid: ID
-    endtime: Date
-  }
-
 `;
 
 export const queries = `
@@ -401,7 +396,7 @@ export const mutations = `
   changeAccount(accountid: ID!, alias: String, logindata: JSON, starttime: Date, endtime: Date): Account
 
   assignAccount(licenceid: ID!, userid: ID!, rights: LicenceRights, tags: [String], starttime: Date, endtime: Date): Boolean!
-  terminateAssignAccount(assignmentid: ID!, endtime: Date, isNull: Boolean): TerminateAssignment
+  terminateAssignAccount(assignmentid: ID!, endtime: Date, isNull: Boolean): LicenceAssignment
 
   createOrbit(planid: ID!, alias: String, options: JSON, starttime: Date, endtime: Date): BoughtPlan
   changeOrbit(orbitid: ID!, alias: String, loginurl: String, starttime: Date, endtime: Date): Orbit!

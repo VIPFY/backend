@@ -2585,6 +2585,12 @@ export default {
             ta
           );
 
+          const assignment = await models.LicenceAssignment.findOne({
+            where: { assignmentid },
+            transaction: ta,
+            raw: true
+          });
+
           await createLog(
             context,
             "terminateAssignAccount",
@@ -2596,7 +2602,7 @@ export default {
             ta
           );
 
-          return { assignmentid, endtime: endtime || "infinity" };
+          return assignment;
         } catch (err) {
           throw new NormalError({
             message: err.message,
