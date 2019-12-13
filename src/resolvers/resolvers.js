@@ -175,7 +175,7 @@ export default {
     company: "Department",
     emails: "[Email]",
     phones: "[Phone]",
-    vacation: "[Vacation]",
+    vacations: "[Vacation]",
     assignments: "[LicenceAssignment]"
   }),
   SemiPublicUser: find({
@@ -183,7 +183,7 @@ export default {
     emails: "[Email]",
     addresses: "[Address]",
     phones: "[Phone]",
-    vacation: "[Vacation]",
+    vacations: "[Vacation]",
     assignments: "[LicenceAssignment]"
   }),
   UserSecurityOverview: find({ unitid: "User" }),

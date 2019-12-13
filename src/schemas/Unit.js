@@ -50,7 +50,7 @@ export const types = `
     config: JSON
     tutorialprogress: JSON
     consent: Boolean
-    vacation: [Vacation]
+    vacations: [Vacation]
     supporttoken: String
     assignments: [LicenceAssignment]
   }
@@ -85,7 +85,7 @@ export const types = `
     twofa: [String]
     needstwofa: Boolean
     lastactive: Date
-    vacation: [Vacation]
+    vacations: [Vacation]
     usesencryption: Boolean
     assignments: [LicenceAssignment]
   }
