@@ -1018,12 +1018,14 @@ export default {
   ),
 
   addOrbitToTeam: requiresRights(["edit-team"]).createResolver(
-    async (_p, { teamid, orbitid, assignments }, { models, session }) =>
+    async (_p, { teamid, orbitid, assignments }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(session.token);
+
+          const { models, session } = ctx;
 
           await teamCheck(company, teamid);
 
@@ -1087,7 +1089,7 @@ export default {
           );
 
           await createLog(
-            context,
+            ctx,
             "addOrbitToTeam",
             {
               teamid,
@@ -1108,12 +1110,14 @@ export default {
   ),
 
   addMemberToTeam: requiresRights(["edit-team"]).createResolver(
-    async (_p, { teamid, employeeid, assignments }, { models, session }) =>
+    async (_p, { teamid, employeeid, assignments }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(session.token);
+
+          const { models, session } = ctx;
 
           await teamCheck(company, teamid);
 
@@ -1166,7 +1170,7 @@ export default {
           );
 
           await createLog(
-            context,
+            ctx,
             "addMemberToTeam",
             {
               teamid,
@@ -1188,12 +1192,14 @@ export default {
   ),
 
   removeTeamOrbitFromTeam: requiresRights(["edit-team"]).createResolver(
-    async (_p, { teamid, orbitid, deletejson, endtime }, { models, session }) =>
+    async (_p, { teamid, orbitid, deletejson, endtime }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(session.token);
+
+          const { models, session } = ctx;
 
           await teamCheck(company, teamid);
 
@@ -1319,7 +1325,7 @@ export default {
           );
 
           await createLog(
-            context,
+            ctx,
             "removeTeamOrbitFromTeam",
             {
               teamid,
@@ -1342,12 +1348,14 @@ export default {
   ),
 
   removeMemberFromTeam: requiresRights(["edit-team"]).createResolver(
-    async (_p, { teamid, userid, deletejson, endtime }, { models, session }) =>
+    async (_p, { teamid, userid, deletejson, endtime }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(session.token);
+
+          const { models, session } = ctx;
 
           await teamCheck(company, teamid);
 
@@ -1496,7 +1504,7 @@ export default {
             }
           );
           await createLog(
-            context,
+            ctx,
             "removeMemberFromTeam",
             {
               teamid,
