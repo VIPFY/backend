@@ -1087,7 +1087,7 @@ export default {
           );
 
           await createLog(
-            context,
+            { models, session },
             "addOrbitToTeam",
             {
               teamid,
@@ -1166,7 +1166,7 @@ export default {
           );
 
           await createLog(
-            context,
+            { models, session },
             "addMemberToTeam",
             {
               teamid,
@@ -1319,7 +1319,7 @@ export default {
           );
 
           await createLog(
-            context,
+            { models, session },
             "removeTeamOrbitFromTeam",
             {
               teamid,
@@ -1496,7 +1496,7 @@ export default {
             }
           );
           await createLog(
-            context,
+            { models, session },
             "removeMemberFromTeam",
             {
               teamid,

@@ -2228,7 +2228,7 @@ export default {
           });
 
           await createLog(
-            context,
+            { models, session },
             "createAccount",
             {
               orbitid,
@@ -2312,7 +2312,7 @@ export default {
           await Promise.all(notifications);
 
           await createLog(
-            context,
+            { models, session },
             "changeAccount",
             {
               accountid,
@@ -2388,7 +2388,7 @@ export default {
           );
 
           await createLog(
-            context,
+            { models, session },
             "assignAccount",
             {
               licenceid,
@@ -2441,7 +2441,7 @@ export default {
           );
 
           await createLog(
-            context,
+            { models, session },
             "createOrbit",
             {
               planid,
@@ -2498,7 +2498,7 @@ export default {
           );
 
           await createLog(
-            context,
+            { models, session },
             "changeOrbit",
             {
               orbitid,
@@ -2592,7 +2592,7 @@ export default {
           });
 
           await createLog(
-            context,
+            { models, session },
             "terminateAssignAccount",
             {
               assignmentid,
@@ -2693,7 +2693,7 @@ export default {
           );
 
           await createLog(
-            context,
+            { models, session },
             "createVacation",
             {
               userid,
