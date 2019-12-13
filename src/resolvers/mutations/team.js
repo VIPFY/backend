@@ -1019,7 +1019,7 @@ export default {
 
   addOrbitToTeam: requiresRights(["edit-team"]).createResolver(
     async (_p, { teamid, orbitid, assignments }, ctx) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
@@ -1111,7 +1111,7 @@ export default {
 
   addMemberToTeam: requiresRights(["edit-team"]).createResolver(
     async (_p, { teamid, employeeid, assignments }, ctx) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
@@ -1193,7 +1193,7 @@ export default {
 
   removeTeamOrbitFromTeam: requiresRights(["edit-team"]).createResolver(
     async (_p, { teamid, orbitid, deletejson, endtime }, ctx) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
@@ -1349,7 +1349,7 @@ export default {
 
   removeMemberFromTeam: requiresRights(["edit-team"]).createResolver(
     async (_p, { teamid, userid, deletejson, endtime }, ctx) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }

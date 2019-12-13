@@ -2185,7 +2185,7 @@ export default {
 
   createAccount: requiresRights(["edit-licences"]).createResolver(
     async (_p, { orbitid, alias, logindata, starttime, endtime }, ctx) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company }
@@ -2252,7 +2252,7 @@ export default {
 
   changeAccount: requiresRights(["edit-licences"]).createResolver(
     async (_p, { accountid, alias, logindata, starttime, endtime }, ctx) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company }
@@ -2336,7 +2336,7 @@ export default {
     "edit-licenceRights"
   ]).createResolver(
     async (_p, { licenceid, userid, rights, tags, starttime, endtime }, ctx) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
@@ -2407,7 +2407,7 @@ export default {
 
   createOrbit: requiresRights(["edit-licences"]).createResolver(
     async (_p, { planid, alias, options, starttime, endtime }, ctx) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company }
@@ -2458,7 +2458,7 @@ export default {
 
   changeOrbit: requiresRights(["edit-licences"]).createResolver(
     async (_p, { orbitid, alias, loginurl, starttime, endtime }, ctx) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company }
@@ -2534,7 +2534,7 @@ export default {
     "edit-licences",
     "edit-licenceRights"
   ]).createResolver(async (_p, { assignmentid, endtime, isNull }, ctx) =>
-    models.sequelize.transaction(async ta => {
+    ctx.models.sequelize.transaction(async ta => {
       try {
         const {
           user: { company }
@@ -2609,7 +2609,7 @@ export default {
     "edit-licenceRights"
   ]).createResolver(
     async (_p, { userid, starttime, endtime, assignments }, ctx) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid }
@@ -2705,7 +2705,7 @@ export default {
   ),
   sendSupportRequest: requiresAuth.createResolver(
     async (_p, args, { models, session }) =>
-      models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company: companyID }
