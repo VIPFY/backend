@@ -55,5 +55,6 @@ export const mutations = `
   addOrbitToTeam(teamid: ID!, orbitid: ID!, assignments: JSON): Team
   addMemberToTeam(teamid: ID!, employeeid: ID!, assignments: JSON): Team
   removeTeamOrbitFromTeam(teamid: ID!, orbitid: ID!, deletejson: JSON, endtime: Date): Team
+  removeMemberFromTeam(teamid: ID!, userid: ID!, deletejson: JSON, endtime: Date): Team
 
 `;

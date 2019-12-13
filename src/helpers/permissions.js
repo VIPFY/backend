@@ -264,6 +264,7 @@ export const requiresRights = rights =>
               console.error(error);
             }
           });
+          console.error(err);
           throw new AuthError({
             message:
               "Opps, something went wrong. Please report this error with id auth_1"

@@ -28,10 +28,13 @@ export const checkCompanyMembership = async (
   }
 
   if (entityName == "user") {
-    await models.User.findOne({ where: { id: entityID }, raw: true });
+    const user = await models.User.findOne({
+      where: { id: entityID },
+      raw: true
+    });
 
     if (!user) {
-      throw new Error("The provided id does not belong to an user!");
+      throw new RightsError("The provided id does not belong to an user!");
     }
   }
 

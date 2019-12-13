@@ -175,14 +175,16 @@ export default {
     company: "Department",
     emails: "[Email]",
     phones: "[Phone]",
-    vacation: "[Vacation]"
+    vacation: "[Vacation]",
+    assignments: "[LicenceAssignment]"
   }),
   SemiPublicUser: find({
     company: "Department",
     emails: "[Email]",
     addresses: "[Address]",
     phones: "[Phone]",
-    vacation: "[Vacation]"
+    vacation: "[Vacation]",
+    assignments: "[LicenceAssignment]"
   }),
   UserSecurityOverview: find({ unitid: "User" }),
   Vacation: find({ unitid: "User" }),

@@ -52,6 +52,7 @@ export const types = `
     consent: Boolean
     vacation: [Vacation]
     supporttoken: String
+    assignments: [LicenceAssignment]
   }
 
   type PublicUser {
@@ -86,6 +87,7 @@ export const types = `
     lastactive: Date
     vacation: [Vacation]
     usesencryption: Boolean
+    assignments: [LicenceAssignment]
   }
 
   input UserInput {

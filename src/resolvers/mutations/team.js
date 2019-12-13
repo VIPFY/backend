@@ -1025,9 +1025,9 @@ export default {
             user: { unitid, company }
           } = decode(session.token);
 
-          teamCheck(company, teamid);
+          await teamCheck(company, teamid);
 
-          checkOrbitMembership(models, company, orbitid);
+          await checkOrbitMembership(models, company, orbitid);
 
           // Add as Teamorbit (DepartmentApp)
 
@@ -1039,7 +1039,9 @@ export default {
           const promises = [];
 
           assignments.forEach(a => {
-            checkCompanyMembership(models, company, a.employeeid, "employee");
+            promises.push(
+              checkCompanyMembership(models, company, a.employeeid, "employee")
+            );
 
             promises.push(
               models.LicenceRight.create(
@@ -1101,9 +1103,9 @@ export default {
             user: { unitid, company }
           } = decode(session.token);
 
-          teamCheck(company, teamid);
+          await teamCheck(company, teamid);
 
-          checkCompanyMembership(models, company, employeeid, "Employee");
+          await checkCompanyMembership(models, company, employeeid, "Employee");
 
           await models.ParentUnit.create(
             { parentunit: teamid, childunit: employeeid },
@@ -1113,7 +1115,7 @@ export default {
           const promises = [];
 
           assignments.forEach(a => {
-            checkOrbitMembership(models, company, a.orbitid);
+            promises.push(checkOrbitMembership(models, company, a.orbitid));
 
             promises.push(
               models.LicenceRight.create(
@@ -1168,9 +1170,9 @@ export default {
             user: { unitid, company }
           } = decode(session.token);
 
-          teamCheck(company, teamid);
+          await teamCheck(company, teamid);
 
-          checkOrbitMembership(models, company, orbitid);
+          await checkOrbitMembership(models, company, orbitid);
 
           const promises = [];
 
@@ -1281,6 +1283,171 @@ export default {
             );
           }
           await Promise.all(promises);
+
+          const team = await models.sequelize.query(
+            `SELECT * FROM team_view WHERE unitid = :teamid`,
+            {
+              replacements: { teamid },
+              type: models.sequelize.QueryTypes.SELECT,
+              transaction: ta
+            }
+          );
+          return team && team[0];
+        } catch (err) {
+          console.log("ERROR", err);
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  removeMemberFromTeam: requiresRights(["edit-team"]).createResolver(
+    async (_p, { teamid, userid, deletejson, endtime }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
+
+          await teamCheck(company, teamid);
+
+          const promises = [];
+
+          console.log("INPUTS", teamid, userid, deletejson, endtime);
+
+          // Delete all assignments of as
+          await Promise.all(
+            deletejson.assignments.map(async as => {
+              if (as.bool) {
+                promises.push(
+                  models.LicenceRight.update(
+                    {
+                      endtime
+                    },
+                    {
+                      where: { id: as.id },
+                      transaction: ta
+                    }
+                  )
+                );
+              } else {
+                // Remove team tag and assignoption
+                const checkassignment = await models.LicenceRight.findOne({
+                  where: { id: as.id },
+                  raw: true,
+                  transaction: ta
+                });
+                if (
+                  checkassignment.tags &&
+                  checkassignment.tags.includes("teamlicence") &&
+                  checkassignment.options &&
+                  checkassignment.options.teamlicence == teamid
+                ) {
+                  promises.push(
+                    models.LicenceRight.update(
+                      {
+                        tags: checkassignment.tags.splice(
+                          checkassignment.tags.findIndex(
+                            e => e == "teamlicence"
+                          ),
+                          1
+                        ),
+                        options: {
+                          ...checkassignment.options,
+                          teamlicence: undefined
+                        }
+                      },
+                      {
+                        where: { id: as.id },
+                        transaction: ta
+                      }
+                    )
+                  );
+                }
+              }
+            })
+          );
+          await Promise.all(promises);
+
+          //Check for other assignments
+          if (deletejson.autodelete) {
+            await Promise.all(
+              deletejson.assignments.map(async asa => {
+                const licenceRight = await models.LicenceRight.findOne({
+                  where: { id: asa.id },
+                  raw: true,
+                  transaction: ta
+                });
+
+                console.log("LR", licenceRight);
+
+                const licences = await models.sequelize.query(
+                  `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
+                  {
+                    replacements: { licenceid: licenceRight.licenceid },
+                    type: models.sequelize.QueryTypes.SELECT,
+                    transaction: ta
+                  }
+                );
+
+                console.log("LICENCES", licences);
+                if (licences.length == 0) {
+                  await models.LicenceData.update(
+                    {
+                      endtime
+                    },
+                    {
+                      where: { id: licenceRight.licenceid },
+                      transaction: ta
+                    }
+                  );
+
+                  const otherlicences = await models.sequelize.query(
+                    `Select distinct (lva.*)
+                    from licence_view lva left outer join licence_view lvb on lva.boughtplanid = lvb.boughtplanid
+                    where lvb.id = :licenceid and lva.starttime < now() and lva.endtime > now();`,
+                    {
+                      replacements: { licenceid: licenceRight.licenceid },
+                      type: models.sequelize.QueryTypes.SELECT,
+                      transaction: ta
+                    }
+                  );
+
+                  console.log(otherlicences);
+
+                  if (otherlicences.length == 0) {
+                    const boughtplan = await models.sequelize.query(
+                      `SELECT boughtplanid FROM licence_view WHERE id = :licenceid`,
+                      {
+                        replacements: { licenceid: licenceRight.licenceid },
+                        type: models.sequelize.QueryTypes.SELECT,
+                        transaction: ta
+                      }
+                    );
+
+                    console.log("BOUGHTPLAN", boughtplan);
+
+                    await models.BoughtPlan.update(
+                      {
+                        endtime
+                      },
+                      {
+                        where: { id: boughtplan[0].boughtplanid },
+                        transaction: ta
+                      }
+                    );
+                  }
+                }
+              })
+            );
+          }
+
+          await models.ParentUnit.destroy({
+            where: { parentunit: teamid, childunit: userid },
+            transaction: ta
+          });
 
           const team = await models.sequelize.query(
             `SELECT * FROM team_view WHERE unitid = :teamid`,
