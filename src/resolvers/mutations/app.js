@@ -2184,16 +2184,14 @@ export default {
   ),
 
   createAccount: requiresRights(["edit-licences"]).createResolver(
-    async (
-      _p,
-      { orbitid, alias, logindata, starttime, endtime },
-      { models, session }
-    ) =>
+    async (_p, { orbitid, alias, logindata, starttime, endtime }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company }
           } = decode(session.token);
+
+          const { models, session } = ctx;
 
           const orbit = await models.sequelize.query(
             `
@@ -2228,7 +2226,7 @@ export default {
           });
 
           await createLog(
-            { models, session },
+            ctx,
             "createAccount",
             {
               orbitid,
@@ -2253,16 +2251,14 @@ export default {
   ),
 
   changeAccount: requiresRights(["edit-licences"]).createResolver(
-    async (
-      _p,
-      { accountid, alias, logindata, starttime, endtime },
-      { models, session }
-    ) =>
+    async (_p, { accountid, alias, logindata, starttime, endtime }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company }
           } = decode(session.token);
+
+          const { models, session } = ctx;
 
           await checkLicenceValidilty(models, company, accountid);
 
@@ -2312,7 +2308,7 @@ export default {
           await Promise.all(notifications);
 
           await createLog(
-            { models, session },
+            ctx,
             "changeAccount",
             {
               accountid,
@@ -2339,16 +2335,14 @@ export default {
     "edit-licences",
     "edit-licenceRights"
   ]).createResolver(
-    async (
-      _p,
-      { licenceid, userid, rights, tags, starttime, endtime },
-      { models, session }
-    ) =>
+    async (_p, { licenceid, userid, rights, tags, starttime, endtime }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company }
           } = decode(session.token);
+
+          const { models, session } = ctx;
 
           await checkLicenceValidilty(models, company, licenceid);
 
@@ -2388,7 +2382,7 @@ export default {
           );
 
           await createLog(
-            { models, session },
+            ctx,
             "assignAccount",
             {
               licenceid,
@@ -2412,16 +2406,14 @@ export default {
   ),
 
   createOrbit: requiresRights(["edit-licences"]).createResolver(
-    async (
-      _p,
-      { planid, alias, options, starttime, endtime },
-      { models, session }
-    ) =>
+    async (_p, { planid, alias, options, starttime, endtime }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company }
           } = decode(session.token);
+
+          const { models, session } = ctx;
 
           const orbit = await models.BoughtPlan.create(
             {
@@ -2441,7 +2433,7 @@ export default {
           );
 
           await createLog(
-            { models, session },
+            ctx,
             "createOrbit",
             {
               planid,
@@ -2465,17 +2457,16 @@ export default {
   ),
 
   changeOrbit: requiresRights(["edit-licences"]).createResolver(
-    async (
-      _p,
-      { orbitid, alias, loginurl, starttime, endtime },
-      { models, session }
-    ) =>
+    async (_p, { orbitid, alias, loginurl, starttime, endtime }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { company }
           } = decode(session.token);
-          checkOrbitMembership(models, company, orbitid);
+
+          const { models, session } = ctx;
+
+          await checkOrbitMembership(models, company, orbitid);
 
           const oldorbit = await models.Orbit.findOne({
             where: { id: orbitid },
@@ -2498,7 +2489,7 @@ export default {
           );
 
           await createLog(
-            { models, session },
+            ctx,
             "changeOrbit",
             {
               orbitid,
@@ -2542,90 +2533,89 @@ export default {
   terminateAssignAccount: requiresRights([
     "edit-licences",
     "edit-licenceRights"
-  ]).createResolver(
-    async (_p, { assignmentid, endtime, isNull }, { models, session }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { company }
-          } = decode(session.token);
+  ]).createResolver(async (_p, { assignmentid, endtime, isNull }, ctx) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
 
-          const licence = await models.Licence.findOne({
-            where: { assignmentid },
-            raw: true
-          });
+        const { models, session } = ctx;
 
-          await checkLicenceValidilty(models, company, licence.id);
+        const licence = await models.Licence.findOne({
+          where: { assignmentid },
+          raw: true
+        });
 
-          let end;
-          if (isNull) {
-            end = "infinity";
-          } else {
-            end = endtime || moment.now();
-          }
+        await checkLicenceValidilty(models, company, licence.id);
 
-          await models.LicenceRight.update(
-            {
-              endtime: end
-            },
-            {
-              where: { id: assignmentid },
-              transaction: ta
-            }
-          );
-
-          await createNotification(
-            {
-              receiver: licence.unitid,
-              message: `Your assignment to an account have been terminated`,
-              icon: "business-time",
-              link: `dashboard`,
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          const assignment = await models.LicenceAssignment.findOne({
-            where: { assignmentid },
-            transaction: ta,
-            raw: true
-          });
-
-          await createLog(
-            { models, session },
-            "terminateAssignAccount",
-            {
-              assignmentid,
-              endtime,
-              isNull
-            },
-            ta
-          );
-
-          return assignment;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+        let end;
+        if (isNull) {
+          end = "infinity";
+        } else {
+          end = endtime || moment.now();
         }
-      })
+
+        await models.LicenceRight.update(
+          {
+            endtime: end
+          },
+          {
+            where: { id: assignmentid },
+            transaction: ta
+          }
+        );
+
+        await createNotification(
+          {
+            receiver: licence.unitid,
+            message: `Your assignment to an account have been terminated`,
+            icon: "business-time",
+            link: `dashboard`,
+            changed: ["ownLicences"]
+          },
+          ta
+        );
+
+        const assignment = await models.LicenceAssignment.findOne({
+          where: { assignmentid },
+          transaction: ta,
+          raw: true
+        });
+
+        await createLog(
+          ctx,
+          "terminateAssignAccount",
+          {
+            assignmentid,
+            endtime,
+            isNull
+          },
+          ta
+        );
+
+        return assignment;
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    })
   ),
 
   createVacation: requiresRights([
     "edit-licences",
     "edit-licenceRights"
   ]).createResolver(
-    async (
-      _p,
-      { userid, starttime, endtime, assignments },
-      { models, session }
-    ) =>
+    async (_p, { userid, starttime, endtime, assignments }, ctx) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid }
           } = decode(session.token);
+
+          const { models, session } = ctx;
 
           const vacation = await models.Vacation.create(
             {
@@ -2693,7 +2683,7 @@ export default {
           );
 
           await createLog(
-            { models, session },
+            ctx,
             "createVacation",
             {
               userid,
