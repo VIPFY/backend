@@ -49,7 +49,7 @@
     "@lifeomic/graphql-resolvers-xray-tracing": "^3.0.1",
     "@sendgrid/client": "^6.3.0",
     "@vipfy-private/messaging": "1.18.0",
-    "@vipfy-private/sequelize-setup": "1.105.1",
+    "@vipfy-private/sequelize-setup": "1.109.5",
     "@vipfy-private/service-base": "^1.1.0",
     "@vipfy-private/services": "1.10.4",
     "apollo-errors": "^1.9.0",
@@ -93,6 +93,7 @@
     "lodash": "^4.17.15",
     "mkdirp": "^0.5.1",
     "moment": "^2.24.0",
+    "moment-feiertage": "^1.1.5",
     "node-cache": "^4.2.0",
     "node-iplocate": "^1.0.1",
     "node-mailjet": "^3.3.1",
@@ -124,7 +125,10 @@
     "winston": "^3.2.1",
     "zxcvbn": "^4.4.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "eslint-plugin-prettier": "^3.1.1",
+    "prettier": "^1.19.1"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://gh05d@bitbucket.org/vipfymarketplace/vipfy-backend.git"

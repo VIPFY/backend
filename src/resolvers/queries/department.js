@@ -1,7 +1,7 @@
+import moment from "moment";
 import { decode } from "jsonwebtoken";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
-import { googleMapsClient } from "../../services/gcloud";
 
 export default {
   fetchCompany: requiresAuth.createResolver(
@@ -139,7 +139,9 @@ export default {
     }
   ),
 
-  fetchVacationRequests: async (_p, args, { models, session }) => {
+  fetchVacationRequests: requiresRights([
+    "view-vacation-requests"
+  ]).createResolver(async (_p, args, { models, session }) => {
     try {
       const {
         user: { unitid, company }
@@ -154,21 +156,34 @@ export default {
         }
       );
 
-      const employeeIDs = data.map(({ employee }) => parseInt(employee));
-      console.log("\x1b[1m%s\x1b[0m", "LOG employeeIDs", employeeIDs);
+      let employeeIDs = data.map(({ employee }) => employee);
+      if (args.userid && args.userid == unitid) {
+        employeeIDs = employeeIDs.filter(ID => ID == unitid);
+      }
+
       const employees = await models.sequelize.query(
         `
-        uv.id,
+        SELECT uv.id,
+        uv.firstname,
         uv.middlename,
         uv.lastname,
+        uv.isadmin,
         uv.profilepicture,
-          COALESCE(vacation_requests_data.vacationrequests, ARRAY []::json[]) as vacationrequests
+        COALESCE(vacation_requests_data.vacationrequests, ARRAY []::json[]) as vacationrequests,
+        COALESCE(vacation_year_days_data.vacationdaysperyear) as vacationdaysperyear
           FROM users_view uv
-          LEFT JOIN (SELECT vrd.unitid,
-                    COALESCE(array_agg(json_build_object('startdate', vrd.startdate, 'enddate', vrd.enddate, 'days', vrd.days 'status', vrd.status)),
-                              ARRAY []::json[]) as vacationrequests
-              FROM vacation_requests_data vrd
-              GROUP BY vrd.unitid) vacation_requests_data ON uv.id = vacation_requests_data.unitid
+            LEFT JOIN (SELECT vrd.unitid,
+                              COALESCE(array_agg(json_build_object('startdate', vrd.startdate, 'enddate', vrd.enddate,
+                                                                    'requested', vrd.requested, 'decided', vrd.decided,
+                                                                    'days', vrd.days, 'status', vrd.status)),
+                                        ARRAY []::json[]) as vacationrequests
+                        FROM vacation_requests_data vrd
+                        GROUP BY vrd.unitid) vacation_requests_data ON uv.id = vacation_requests_data.unitid
+            LEFT JOIN (SELECT vydd.unitid,
+                              jsonb_object_agg(vydd.year::TEXT, vydd.days)
+                                         as vacationdaysperyear
+                        FROM vacation_year_days_data vydd
+                        GROUP BY vydd.unitid) vacation_year_days_data ON uv.id = vacation_year_days_data.unitid
           WHERE uv.id IN (:employeeIDs)`,
         {
           replacements: { employeeIDs },
@@ -176,10 +191,9 @@ export default {
         }
       );
 
-      console.log("\x1b[1m%s\x1b[0m", "LOG employees", employees);
-      return true;
+      return employees;
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
-  }
+  })
 };
