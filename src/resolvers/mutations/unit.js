@@ -566,7 +566,7 @@ export default {
       const { models, session } = ctx;
       const {
         user: { unitid }
-      } = decode(session.token);
+      } = decode(ctx.session.token);
 
       try {
         await models.Human.update(

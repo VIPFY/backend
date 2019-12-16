@@ -875,7 +875,7 @@ export default {
           const { models, session } = ctx;
           const {
             user: { company }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           await teamCheck(company, teamid);
 
@@ -910,7 +910,7 @@ export default {
           const { models, session } = ctx;
           const {
             user: { unitid, company }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           const { teamid, employees, serviceid } = addInformation;
 
@@ -1023,7 +1023,7 @@ export default {
         try {
           const {
             user: { unitid, company }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           const { models, session } = ctx;
 
@@ -1115,7 +1115,7 @@ export default {
         try {
           const {
             user: { unitid, company }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           const { models, session } = ctx;
 
@@ -1197,7 +1197,7 @@ export default {
         try {
           const {
             user: { unitid, company }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           const { models, session } = ctx;
 
@@ -1353,7 +1353,7 @@ export default {
         try {
           const {
             user: { unitid, company }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           const { models, session } = ctx;
 

@@ -2189,7 +2189,7 @@ export default {
         try {
           const {
             user: { company }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           const { models, session } = ctx;
 
@@ -2256,7 +2256,7 @@ export default {
         try {
           const {
             user: { company }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           const { models, session } = ctx;
 
@@ -2340,7 +2340,7 @@ export default {
         try {
           const {
             user: { unitid, company }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           const { models, session } = ctx;
 
@@ -2411,7 +2411,7 @@ export default {
         try {
           const {
             user: { company }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           const { models, session } = ctx;
 
@@ -2462,7 +2462,7 @@ export default {
         try {
           const {
             user: { company }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           const { models, session } = ctx;
 
@@ -2538,7 +2538,7 @@ export default {
       try {
         const {
           user: { company }
-        } = decode(session.token);
+        } = decode(ctx.session.token);
 
         const { models, session } = ctx;
 
@@ -2613,7 +2613,7 @@ export default {
         try {
           const {
             user: { unitid }
-          } = decode(session.token);
+          } = decode(ctx.session.token);
 
           const { models, session } = ctx;
 
