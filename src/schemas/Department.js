@@ -103,8 +103,8 @@ export const mutations = `
   editDepartmentName(departmentid: ID!, name: String!): Response!
 
   addEmployee(unitid: ID!, departmentid: ID!): Response!
-  createEmployee(file: Upload, addpersonal:JSON!, addteams:[JSON]!, apps:[JSON]!): Boolean!
-  createEmployee09(name: HumanName!, emails: [EmailInput!]!, password: String!, needpasswordchange: Boolean, file: Upload, birthday: Date, hiredate: Date, address: AddressInput, position: String, phones: [PhoneInput]): ID!
+  createEmployeeOLD(file: Upload, addpersonal:JSON!, addteams:[JSON]!, apps:[JSON]!): Boolean!
+  createEmployee(name: HumanName!, emails: [EmailInput!]!, password: String!, needpasswordchange: Boolean, file: Upload, birthday: Date, hiredate: Date, address: AddressInput, position: String, phones: [PhoneInput]): SemiPublicUser!
   deleteEmployee(employeeid: ID!): Boolean!
 
   # Saves data we fetched in the Business Advisor

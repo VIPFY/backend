@@ -105,7 +105,7 @@ export default {
       })
   ),
 
-  createEmployee09: requiresRights(["create-employees"]).createResolver(
+  createEmployee: requiresRights(["create-employees"]).createResolver(
     async (_p, args, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
@@ -301,7 +301,11 @@ export default {
             changed: ["employees"]
           });
 
-          return unit.id;
+          return await models.User.findOne({
+            where: { id: unit.id },
+            transaction: ta,
+            raw: true
+          });
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -784,7 +788,7 @@ export default {
     })
   ),
 
-  createEmployee: requiresRights(["create-employees"]).createResolver(
+  createEmployeeOLD: requiresRights(["create-employees"]).createResolver(
     async (_p, { file, addpersonal, addteams, apps }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
