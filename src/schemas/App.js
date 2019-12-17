@@ -330,7 +330,6 @@ export const queries = `
   fetchCompanyServices: [CompanyService]
   fetchCompanyService(serviceid: ID!): CompanyService
 
-  fetchIssuedLicences(unitid: ID!): [TempLicence!]
   fetchTempLicences(unitid: ID!): [TempLicence!]
   bulkUpdateLayout(layouts: [LayoutInput!]!): Boolean!
 
@@ -346,15 +345,9 @@ export const mutations = `
   sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
 
   createOwnApp(ssoData: SSOInput!, userids: [ID]): IDID
-  giveTemporaryAccess(licences: [LicenceRightInput!]!): TempAccessResponse!
-  updateTemporaryAccess(licence: LicenceRightUpdateInput, rightid: ID!): TempLicence!
-  removeTemporaryAccess(rightid: ID!): Boolean!
 
   # Admin: toogle App between disabled and enabled
   toggleAppStatus(id: ID!): Response!
-
-  # Give an user a licence from the licence pool of department
-  distributeLicence(licenceid: ID!, unitid: ID!, departmentid: ID!): DistributeResponse!
 
   # Deletes a licence on a set date, if it is after the normal cancel period
   deleteLicenceAt(licenceid: ID!, time: Date!): Date!
@@ -383,8 +376,6 @@ export const mutations = `
   createService(serviceData: JSON!, addedTeams: [JSON]!, addedEmployees: [JSON]!):Boolean!
   deleteService(serviceid: ID!): Boolean!
   removeLicence(licenceid: ID!, oldname: String!): Boolean!
-
-  distributeLicence10(licenceid: ID!, userid: ID!): Boolean!
 
   addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): ID!
   addEncryptedExternalAccountLicence(key: JSON!, appid: ID, boughtplanid: ID!, price: Float, touser: ID, identifier: String, options: JSON): Licence!

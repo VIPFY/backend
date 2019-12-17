@@ -625,29 +625,6 @@ export default {
     }
   ),
 
-  fetchIssuedLicences: requiresRights(["view-licences"]).createResolver(
-    async (_, { unitid: userId }, { models, session }) => {
-      try {
-        const {
-          user: { unitid, company }
-        } = decode(session.token);
-
-        await companyCheck(company, unitid, userId);
-
-        const issuedLicences = await models.sequelize.query(
-          `SELECT licenceright_data.*, ld.unitid as owner
-          FROM licenceright_data LEFT OUTER JOIN licence_data ld on licenceright_data.licenceid = ld.id
-          WHERE ld.unitid=:userId AND licenceright_data.endtime > NOW();`,
-          { replacements: { userId }, type: models.sequelize.QueryTypes.SELECT }
-        );
-
-        return issuedLicences;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
   fetchTempLicences: requiresRights(["view-licences"]).createResolver(
     async (_p, { unitid: userId }, { models, session }) => {
       try {

@@ -30,180 +30,6 @@ import freshdesk from "../../services/freshdesk";
 /* eslint-disable no-return-await */
 
 export default {
-  distributeLicence: requiresRights(["create-licences"]).createResolver(
-    (_parent, { licenceid, unitid, departmentid }, context) =>
-      context.models.sequelize.transaction(async ta => {
-        const { models, session } = context;
-        const {
-          user: { unitid: giver }
-        } = decode(session.token);
-
-        try {
-          const p1 = models.Licence.findOne({
-            where: {
-              unitid: null,
-              id: licenceid,
-              endtime: {
-                [models.Op.or]: {
-                  [models.Op.eq]: null,
-                  [models.Op.gt]: models.sequelize.fn("NOW")
-                }
-              }
-            },
-            raw: true
-          });
-
-          const p2 = models.Right.findOne({
-            where: {
-              holder: giver,
-              forunit: departmentid,
-              type: { [models.Op.or]: ["admin", "distributeapps"] }
-            }
-          });
-
-          const [openLicence, hasRight] = await Promise.all([p1, p2]);
-
-          if (!openLicence) {
-            return {
-              ok: false,
-              error: {
-                code: 1,
-                message:
-                  "There are no open Licences to distribute for this plan!"
-              }
-            };
-          } else if (!openLicence && !hasRight) {
-            return {
-              ok: false,
-              error: {
-                code: 2,
-                message:
-                  "There are no open Licences and you don't have the right to distribute!"
-              }
-            };
-          } else if (!openLicence && hasRight) {
-            return {
-              ok: false,
-              error: {
-                code: 3,
-                message: "There is no open Licence to distribute for this plan!"
-              }
-            };
-          } else if (!hasRight) {
-            return {
-              ok: false,
-              error: {
-                code: 4,
-                message: "You don't have the right to distribute Licences"
-              }
-            };
-          }
-
-          const p3 = models.LicenceData.update(
-            { unitid },
-            {
-              where: { id: licenceid },
-              transaction: ta
-            }
-          );
-
-          const p4 = models.BoughtPlan.findByPk(openLicence.boughtplanid, {
-            include: [models.Plan],
-            raw: true,
-            transaction: ta
-          });
-
-          const p5 = models.Human.findOne({
-            where: { unitid },
-            transaction: ta
-          });
-
-          const [updatedLicence, boughtPlan, user] = await Promise.all([
-            p3,
-            p4,
-            p5
-          ]);
-
-          logger.debug("distributeLicence: boughtplan", { boughtPlan });
-
-          // TODO: set email properly
-          const inputUser = {
-            id: unitid,
-            firstname: user.firstname,
-            middlename: user.middlename,
-            lastname: user.lastname,
-            rights: [],
-            email: "test@example.com"
-          };
-
-          await Services.addUser(
-            models,
-            boughtPlan["plan_datum.appid"],
-            openLicence.boughtplanid,
-            licenceid,
-            inputUser,
-            ta
-          );
-
-          const log = createLog(
-            context,
-            "distributeLicence",
-            {
-              departmentid,
-              openLicence,
-              hasRight,
-              updatedLicence
-            },
-            ta
-          );
-
-          const notiGiver = createNotification(
-            {
-              receiver: giver,
-              message: `Licence distributed to ${user.firstname} ${user.lastname}`,
-              icon: "th",
-              link: "teams",
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          const notiReceiver = createNotification(
-            {
-              receiver: unitid,
-              message: `User ${giver} has given you access to a new App.
-              Please relog in`,
-              icon: "th",
-              link: "teams",
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          await Promise.all([log, notiGiver, notiReceiver]);
-
-          return { ok: true };
-        } catch (err) {
-          await createNotification(
-            {
-              receiver: giver,
-              message: "Distribution of App failed",
-              icon: "th",
-              link: "teams",
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          logger.error(err);
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
   agreeToLicence: requiresAuth.createResolver(
     (_parent, { licenceid }, context) =>
       context.models.sequelize.transaction(async ta => {
@@ -1325,67 +1151,6 @@ export default {
       })
   ),
 
-  giveTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
-    async (_p, { licences }, { models, session }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { company }
-          } = decode(session.token);
-
-          const errors = [];
-          const newLicences = [];
-          let ok = true;
-
-          for await (const licence of licences) {
-            try {
-              if (!licence.starttime && !licence.endtime) {
-                throw new Error("No start or endtime set!");
-              }
-
-              if (!licence.tags || licence.tags.length < 1) {
-                throw new Error("Please specify the reason for the access!");
-              }
-
-              const { id: licenceid, ...data } = licence;
-
-              checkCompanyMembership(licence.impersonator, company);
-
-              const createdLicence = await models.LicenceRight.create({
-                ...data,
-                licenceid,
-                unitid: licence.impersonator,
-                transaction: ta
-              });
-
-              newLicences.push(createdLicence.dataValues);
-
-              await createNotification(
-                {
-                  receiver: licence.impersonator,
-                  message: `You got vacation access granted for a new Service`,
-                  link: "dashboard",
-                  icon: "th",
-                  changed: ["ownLicences"]
-                },
-                ta
-              );
-            } catch (error) {
-              errors.push(licence.id);
-              ok = false;
-            }
-          }
-
-          return { errors, licences: newLicences, ok };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
   deleteService: requiresRights([
     "delete-licences, delete-boughtplans"
   ]).createResolver(async (_p, { serviceid, time }, context) =>
@@ -1482,53 +1247,6 @@ export default {
     })
   ),
 
-  updateTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
-    async (_, { licence, rightid }, { models }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          // Don't update the id!!!
-          if (licence.id) {
-            delete licence.id;
-          }
-
-          if (licence.licenceid) {
-            delete licence.licenceid;
-          }
-
-          licence.unitid = licence.user;
-          delete licence.user;
-
-          const oldLicence = await models.LicenceRight.findOne({
-            where: { id: rightid },
-            raw: true
-          });
-
-          await models.LicenceRight.update(licence, {
-            where: { id: rightid },
-            returning: true,
-            transaction: ta
-          });
-
-          await createNotification(
-            {
-              receiver: oldLicence.unitid,
-              message: `The admin updated your vacation licence`,
-              link: "teammanager",
-              icon: "th",
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          return { ...oldLicence, ...licence };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
   removeLicence: requiresRights(["delete-licences"]).createResolver(
     async (_, { licenceid, oldname }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
@@ -1574,82 +1292,6 @@ export default {
           );
 
           await createLog(ctx, "removeLicence", { licenceid }, ta);
-
-          return true;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
-  distributeLicence10: requiresRights(["edit-licences"]).createResolver(
-    async (_p, { licenceid, userid }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
-        try {
-          const { models } = ctx;
-          const distribute = await models.LicenceData.update(
-            { unitid: userid },
-            {
-              where: { id: licenceid },
-              transaction: ta
-            }
-          );
-
-          await createNotification(
-            {
-              receiver: userid,
-              message: `You have a new service`,
-              icon: "business-time",
-              link: `dashboard`,
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          if (distribute == 0) {
-            throw new Error("Licence not found!");
-          }
-
-          await createLog(ctx, "distributeLicence", { licenceid, userid }, ta);
-
-          return true;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
-  removeTemporaryAccess: requiresRights(["edit-licenceRights"]).createResolver(
-    async (_, { rightid }, { models }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const { unitid } = await models.LicenceRight.findOne({
-            where: { id: rightid },
-            transaction: ta,
-            raw: true
-          });
-
-          await models.LicenceRight.update(
-            { endtime: models.sequelize.fn("NOW") },
-            { where: { id: rightid }, transaction: ta }
-          );
-
-          await createNotification(
-            {
-              receiver: unitid,
-              message: "The admin removed your access to a vacation licence",
-              icon: "th",
-              link: `teammanager`,
-              changed: ["ownLicences"]
-            },
-            ta
-          );
 
           return true;
         } catch (err) {
@@ -2101,6 +1743,8 @@ export default {
         }
       })
   ),
+
+  //Not used at the moment - maybe for late use
   updateLicenceSpeed: requiresAuth.createResolver(
     async (_p, { licenceid, speed, working, oldspeed }, { models, session }) =>
       models.sequelize.transaction(async ta => {
@@ -2183,6 +1827,7 @@ export default {
       })
   ),
 
+  //New Service - Orbit - Account - Assignment - Stuff
   createAccount: requiresRights(["edit-licences"]).createResolver(
     async (_p, { orbitid, alias, logindata, starttime, endtime }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
