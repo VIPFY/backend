@@ -179,7 +179,7 @@ export const createNotification = async (
         if (notificationBody.show !== false) {
           promises.push(
             models.Notification.create(
-              { ...notificationBody, sendtime },
+              { ...notificationBody, receiver: id, sendtime },
               { transaction }
             )
           );
@@ -189,7 +189,9 @@ export const createNotification = async (
       if (promises.length > 0) {
         await Promise.all(promises);
       }
-    } else {
+    }
+
+    if (notificationBody.receiver) {
       pubsub.publish(NEW_NOTIFICATION, {
         newNotification: {
           ...notification.dataValues,
