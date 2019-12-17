@@ -295,7 +295,7 @@ export default {
 
           await createNotification({
             receiver: unitid,
-            message: `${name.fullName} was successfully created`,
+            message: `${formatHumanName(name)} was successfully created`,
             icon: "user-plus",
             link: "employeemanager",
             changed: ["employees"]
