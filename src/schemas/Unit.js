@@ -156,8 +156,8 @@ export const mutations = `
   # Agree to Vipfy Terms of Service and Privacy Agreement
   agreeTos: Response!
 
-  requestVacation(startDate: Date!, endDate: Date!, days: Int!): Boolean!
-
+  requestVacation(startDate: Date!, endDate: Date!, days: Int!): VacationRequestResponse!
+  deleteVacationRequest(id: ID!): Boolean!
   # take a token from a setup file and return a one-day JWT
   redeemSetupToken(setuptoken: String!): LoginResponse!
 

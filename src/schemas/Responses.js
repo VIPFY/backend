@@ -38,6 +38,7 @@ export const types = `
   }
 
   type VacationRequestResponse {
+    id: ID!
     startdate: Date!
     enddate: Date!
     requested: Date!

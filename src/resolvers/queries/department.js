@@ -173,7 +173,7 @@ export default {
         COALESCE(vacation_year_days_data.vacationdaysperyear) as vacationdaysperyear
           FROM users_view uv
             LEFT JOIN (SELECT vrd.unitid,
-                              COALESCE(array_agg(json_build_object('startdate', vrd.startdate, 'enddate', vrd.enddate,
+                              COALESCE(array_agg(json_build_object('id', vrd.id,'startdate', vrd.startdate, 'enddate', vrd.enddate,
                                                                     'requested', vrd.requested, 'decided', vrd.decided,
                                                                     'days', vrd.days, 'status', vrd.status)),
                                         ARRAY []::json[]) as vacationrequests

@@ -797,68 +797,122 @@ export default {
   ),
 
   requestVacation: requiresAuth.createResolver(
-    async (_p, { startDate, endDate, days }, { models, session }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(session.token);
+    async (_p, { startDate, endDate, days }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
 
-        const startdate = moment(startDate);
-        const enddate = moment(endDate);
+          const startdate = moment(startDate);
+          const enddate = moment(endDate);
 
-        const computeVacationDays = (date, fullDays) => {
-          if (fullDays == 1) {
-            return 1;
-          }
-
-          const clonedDate = moment(date);
-          let offDays = 0;
-
-          for (let i = 0; i < fullDays; i++) {
-            clonedDate.add(i < 2 ? i : 1, "days");
-
-            if (
-              clonedDate.isoWeekday() == 6 ||
-              clonedDate.isoWeekday() == 7 ||
-              clonedDate.isHoliday(["SL"]).holidayName
-            ) {
-              offDays++;
+          const computeVacationDays = (date, fullDays) => {
+            if (fullDays == 1) {
+              return 1;
             }
+
+            const clonedDate = moment(date);
+            let offDays = 0;
+
+            for (let i = 0; i < fullDays; i++) {
+              clonedDate.add(i < 2 ? i : 1, "days");
+
+              if (
+                clonedDate.isoWeekday() == 6 ||
+                clonedDate.isoWeekday() == 7 ||
+                clonedDate.isHoliday(["SL"]).holidayName
+              ) {
+                offDays++;
+              }
+            }
+
+            return fullDays - offDays;
+          };
+
+          const computedDays = computeVacationDays(
+            startdate,
+            moment
+              .duration(
+                moment(enddate)
+                  .endOf("day")
+                  // Otherwise it won't be a full day
+                  .add(1, "day")
+                  .diff(startdate.startOf("day"))
+              )
+              .days()
+          );
+
+          if (computedDays != days) {
+            throw new Error(
+              "The days don't match the length of the vacation duration!"
+            );
           }
 
-          return fullDays - offDays;
-        };
-
-        const computedDays = computeVacationDays(
-          startdate,
-          moment
-            .duration(
-              moment(enddate)
-                .endOf("day")
-                // Otherwise it won't be a full day
-                .add(1, "day")
-                .diff(startdate.startOf("day"))
-            )
-            .days()
-        );
-
-        if (computedDays != days) {
-          throw new Error(
-            "The days don't match the length of the vacation duration!"
+          const request = await models.VacationRequest.create(
+            {
+              unitid,
+              startdate: startdate.format("LL"),
+              enddate: enddate.format("LL"),
+              days,
+              requested: models.sequelize.fn("NOW")
+            },
+            { transaction: ta }
           );
+
+          createNotification(
+            {
+              receiver: unitid,
+              message: "Vacation request successfully created",
+              icon: "umbrella-beach",
+              link: "vacationRequest",
+              changed: ["vacationRequest"]
+            },
+            ta,
+            company
+          );
+          return request;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
+      })
+  ),
 
-        await models.VacationRequest.create({
-          unitid,
-          startdate: startdate.format("LL"),
-          enddate: enddate.format("LL"),
-          days
-        });
+  deleteVacationRequest: requiresAuth.createResolver(
+    async (_p, { id }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
 
-        return true;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
+          await Promise.all([
+            models.VacationRequest.update(
+              { decided: models.sequelize.fn("NOW"), status: "CANCELLED" },
+              { where: { id, unitid }, transaction: ta }
+            ),
+            createNotification(
+              {
+                message: "Successfully deleted request",
+                icon: "umbrella-beach",
+                link: "vacationRequest",
+                changed: ["vacationRequest"]
+              },
+              ta,
+              company
+            )
+          ]);
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };
