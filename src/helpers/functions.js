@@ -127,32 +127,84 @@ export const formatHumanName = human =>
 /**
  * Create a notification and send it to the user via Webhooks
  * @param {object} notificationBody
- * @param {string} transaction
- * notificationBody needs these properties:
- * @param {string} receiver
- * @param {string} message
- * @param {string} icon
- * @param {string} link
+ * @param {string} [notificationBody.receiver]
+ * @param {boolean | string} [notificationBody.show]
+ * @param {string} notificationBody.message
+ * @param {string[]} notificationBody.changed The queries which should be refetched by the Frontend
+ * @param {string} notificationBody.icon
+ * @param {string} notificationBody.link
+ * @param {string} [transaction]
+ * @param {number} [informAdmins] The companies ID when all Admins should get a notification
  */
-export const createNotification = async (notificationBody, transaction) => {
+export const createNotification = async (
+  notificationBody,
+  transaction,
+  informAdmins
+) => {
   try {
     const sendtime = getDate();
 
     let notification = { dataValues: notificationBody };
-    if (notificationBody.show !== false) {
-      notification = await models.Notification.create(
-        { ...notificationBody, sendtime },
-        { transaction }
-      );
-    }
 
-    pubsub.publish(NEW_NOTIFICATION, {
-      newNotification: {
-        ...notification.dataValues,
-        changed: notificationBody.changed,
-        show: notificationBody.show
+    if (informAdmins) {
+      const admins = await models.sequelize.query(
+        `
+        SELECT DISTINCT employee
+        FROM department_employee_view dev
+                INNER JOIN right_data rd ON rd.holder = dev.employee
+        WHERE rd.forunit = :company
+          AND dev.id = :company
+          AND rd.type = 'admin';
+        `,
+        {
+          replacements: { company: informAdmins },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
+
+      const adminIDs = admins.map(({ employee }) => employee);
+
+      const promises = [];
+
+      for (const id of adminIDs) {
+        pubsub.publish(NEW_NOTIFICATION, {
+          newNotification: {
+            ...notification.dataValues,
+            receiver: id,
+            changed: notificationBody.changed,
+            show: notificationBody.show
+          }
+        });
+
+        if (notificationBody.show !== false) {
+          promises.push(
+            models.Notification.create(
+              { ...notificationBody, sendtime },
+              { transaction }
+            )
+          );
+        }
       }
-    });
+
+      if (promises.length > 0) {
+        await Promise.all(promises);
+      }
+    } else {
+      pubsub.publish(NEW_NOTIFICATION, {
+        newNotification: {
+          ...notification.dataValues,
+          changed: notificationBody.changed,
+          show: notificationBody.show
+        }
+      });
+
+      if (notificationBody.show !== false) {
+        notification = await models.Notification.create(
+          { ...notificationBody, sendtime },
+          { transaction }
+        );
+      }
+    }
 
     return notification;
   } catch (err) {
