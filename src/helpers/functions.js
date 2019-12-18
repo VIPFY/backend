@@ -167,15 +167,6 @@ export const createNotification = async (
       const promises = [];
 
       for (const id of adminIDs) {
-        pubsub.publish(NEW_NOTIFICATION, {
-          newNotification: {
-            ...notification.dataValues,
-            receiver: id,
-            changed: notificationBody.changed,
-            show: notificationBody.show
-          }
-        });
-
         if (notificationBody.show !== false) {
           promises.push(
             models.Notification.create(
@@ -184,14 +175,28 @@ export const createNotification = async (
             )
           );
         }
+        pubsub.publish(NEW_NOTIFICATION, {
+          newNotification: {
+            ...notification.dataValues,
+            receiver: id,
+            changed: notificationBody.changed,
+            show: notificationBody.show
+          }
+        });
       }
 
       if (promises.length > 0) {
         await Promise.all(promises);
       }
     }
-
     if (notificationBody.receiver) {
+      if (notificationBody.show !== false) {
+        notification = await models.Notification.create(
+          { ...notificationBody, sendtime },
+          { transaction }
+        );
+      }
+
       pubsub.publish(NEW_NOTIFICATION, {
         newNotification: {
           ...notification.dataValues,
@@ -199,13 +204,6 @@ export const createNotification = async (
           show: notificationBody.show
         }
       });
-
-      if (notificationBody.show !== false) {
-        notification = await models.Notification.create(
-          { ...notificationBody, sendtime },
-          { transaction }
-        );
-      }
     }
 
     return notification;
