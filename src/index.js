@@ -182,6 +182,14 @@ const gqlserver = new ApolloServer({
   }),
   debug: ENVIRONMENT == "development",
   validationRules: [depthLimit(10)],
+  upload: {
+    //Max allowed non-file multipart form field size in bytes; enough for your queries (default: 1 MB).
+    // maxFieldSize: 5,
+    //Max allowed file size in bytes (default: Infinity).
+    maxFileSize: 20000000,
+    //Max allowed number of files (default: Infinity).
+    maxFiles: 5
+  },
   introspection: true,
   tracing: true
 });

@@ -2,7 +2,7 @@
   "name": "vipfy_graphql_server",
   "author": "Gh05d",
   "license": "propriatary",
-  "version": "0.8.0-dev",
+  "version": "0.10.0-dev",
   "description": "A GraphQL server backend for Vipfy",
   "main": "dist/index.js",
   "scripts": {
@@ -43,7 +43,6 @@
     "@babel/polyfill": "^7.4.3",
     "@babel/preset-env": "^7.4.3",
     "@babel/runtime": "^7.4.3",
-    "@google-cloud/logging-winston": "^0.11.1",
     "@google-cloud/storage": "~1.6.0",
     "@google/maps": "^0.5.5",
     "@lifeomic/graphql-resolvers-xray-tracing": "^3.0.1",

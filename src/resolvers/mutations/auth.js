@@ -1,8 +1,6 @@
 import bcrypt from "bcrypt";
-import axios from "axios";
 import moment from "moment";
 import { decode } from "jsonwebtoken";
-import { sleep } from "@vipfy-private/service-base";
 import { parseName } from "humanparser";
 import crypto from "crypto";
 import {

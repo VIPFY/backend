@@ -6,6 +6,41 @@ import { teamPicFolder, userPicFolder } from "../constants";
 
 const s3 = new AWS.S3({ region: "eu-central-1" });
 
+const createWrapper = wrapper => {
+  const baseResolver = wrapper;
+  baseResolver.createWrapper = childWrapper => {
+    const newWrapper = async (file, folder, optional) => {
+      await wrapper(file, folder, optional);
+      return childWrapper(file, folder, optional);
+    };
+    return createWrapper(newWrapper);
+  };
+  return baseResolver;
+};
+
+const fileTypeCheck = createWrapper(file => {
+  try {
+    const validFileExtensions = [
+      "image/jpg",
+      "image/jpeg",
+      "image/tiff",
+      "image/gif",
+      "image/png",
+      "image/webp"
+    ];
+
+    const validFile = validFileExtensions.find(ext => ext == file.mimetype);
+
+    if (!validFile) {
+      throw new Error("Not a supported file type");
+    }
+
+    return true;
+  } catch (err) {
+    throw new Error(err);
+  }
+});
+
 export const uploadInvoice = async (path, name) => {
   const year = moment().format("YYYY");
   const Key = `${year}/${name}.pdf`;
@@ -32,75 +67,77 @@ export const uploadInvoice = async (path, name) => {
   }
 };
 
-export const uploadUserImage = async ({ stream, filename }, folder) => {
-  const ourFilename = formatFilename(filename);
-  const Key = `${folder}/${ourFilename}`;
-  const Bucket = "userimages.vipfy.store";
+export const uploadUserImage = fileTypeCheck.createWrapper(
+  async ({ stream, filename }, folder) => {
+    const ourFilename = formatFilename(filename);
+    const Key = `${folder}/${ourFilename}`;
+    const Bucket = "userimages.vipfy.store";
 
-  try {
-    const Body = stream;
+    try {
+      const Body = stream;
 
-    const params = {
-      Key,
-      Body,
-      Bucket
-    };
+      const params = {
+        Key,
+        Body,
+        Bucket
+      };
 
-    await s3.upload(params).promise();
+      await s3.upload(params).promise();
 
-    return Key;
-  } catch (err) {
-    throw new Error(err);
+      return Key;
+    } catch (err) {
+      throw new Error(err);
+    }
   }
-};
+);
 
-export const uploadTeamImage = async ({ stream, filename }, folder) => {
-  const ourFilename = formatFilename(filename);
-  const Key = `${folder}/${ourFilename}`;
-  const Bucket = "userimages.vipfy.store";
+export const uploadTeamImage = fileTypeCheck.createWrapper(
+  async ({ stream, filename }, folder) => {
+    const ourFilename = formatFilename(filename);
+    const Key = `${folder}/${ourFilename}`;
+    const Bucket = "userimages.vipfy.store";
 
-  try {
-    const Body = stream;
+    try {
+      const Body = stream;
 
-    const params = {
-      Key,
-      Body,
-      Bucket
-    };
+      const params = {
+        Key,
+        Body,
+        Bucket
+      };
 
-    await s3.upload(params).promise();
+      await s3.upload(params).promise();
 
-    return Key;
-  } catch (err) {
-    throw new Error(err);
+      return Key;
+    } catch (err) {
+      throw new Error(err);
+    }
   }
-};
+);
 
-export const uploadAppImage = async (
-  { stream, filename },
-  folder,
-  fileName
-) => {
-  const ourFilename = fileName || formatFilename(filename);
-  const Key = `${folder}/${ourFilename}`;
-  const Bucket = "appimages.vipfy.store";
+export const uploadAppImage = fileTypeCheck.createWrapper(
+  async ({ stream, filename }, folder, fileName) => {
+    const ourFilename = fileName || formatFilename(filename);
+    const Key = `${folder}/${ourFilename}`;
+    const Bucket = "appimages.vipfy.store";
 
-  try {
-    const Body = stream;
+    try {
+      const Body = stream;
 
-    const params = {
-      Key,
-      Body,
-      Bucket
-    };
+      const params = {
+        Key,
+        Body,
+        Bucket
+      };
 
-    await s3.upload(params).promise();
+      await s3.upload(params).promise();
 
-    return Key;
-  } catch (err) {
-    throw new Error(err);
+      return Key;
+    } catch (err) {
+      throw new Error(err);
+    }
   }
-};
+);
 
 export const deleteUserImage = async file => {
   const params = {

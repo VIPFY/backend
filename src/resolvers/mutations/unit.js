@@ -568,7 +568,7 @@ export default {
       const { models, session } = ctx;
       const {
         user: { unitid }
-      } = decode(session.token);
+      } = decode(ctx.session.token);
 
       try {
         await models.Human.update(
@@ -635,7 +635,7 @@ export default {
 
         await ctx.redis.lpush(
           `${IMPERSONATE_PREFIX}${id}`,
-          ctx.JSON.stringify({
+          JSON.stringify({
             session: ctx.sessionID,
             ...ctx.userData,
             ...location,
