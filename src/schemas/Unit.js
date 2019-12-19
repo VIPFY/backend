@@ -83,7 +83,7 @@ export const types = `
     lastname: String
     profilepicture: String
     isadmin: Boolean!
-    vacationdays: Int
+    vacationdays: Float
     vacationrequests: [VacationRequestResponse]!
     vacationdaysperyear: JSON
   }
@@ -158,6 +158,7 @@ export const mutations = `
 
   requestVacation(startDate: Date!, endDate: Date!, days: Int!): VacationRequestResponse!
   deleteVacationRequest(id: ID!): Boolean!
+  requestHalfVacationDay(day: Date!): VacationRequestResponse!
   # take a token from a setup file and return a one-day JWT
   redeemSetupToken(setuptoken: String!): LoginResponse!
 

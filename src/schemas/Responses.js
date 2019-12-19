@@ -43,7 +43,7 @@ export const types = `
     enddate: Date!
     requested: Date!
     decided: Date
-    days: Int!
+    days: Float!
     status: VACATION_STATUS!
   }
 

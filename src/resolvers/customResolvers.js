@@ -21,7 +21,7 @@ export const implementDate = {
     return new Date(value).getTime();
   },
   parseLiteral(ast) {
-    if (ast.kind === Kind.INT) {
+    if (ast && ast.kind && ast.kind === Kind.INT) {
       return parseInt(ast.value, 10); // ast value is always in string format
     }
     return null;

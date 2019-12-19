@@ -134,7 +134,9 @@ export const formatHumanName = human =>
  * @param {string} notificationBody.icon
  * @param {string} notificationBody.link
  * @param {string} [transaction]
- * @param {number} [informAdmins] The companies ID when all Admins should get a notification
+ * @param {object} [informAdmins]
+ * @param {number} [informAdmins.company] The companies ID when all Admins should get a notification
+ * @param {string} [informAdmins.message] The message displayed to the Admins
  */
 export const createNotification = async (
   notificationBody,
@@ -145,6 +147,15 @@ export const createNotification = async (
     const sendtime = getDate();
 
     let notification = { dataValues: notificationBody };
+
+    if (notificationBody.receiver) {
+      if (notificationBody.show !== false) {
+        notification = await models.Notification.create(
+          { ...notificationBody, sendtime },
+          { transaction }
+        );
+      }
+    }
 
     if (informAdmins) {
       const admins = await models.sequelize.query(
@@ -157,52 +168,53 @@ export const createNotification = async (
           AND rd.type = 'admin';
         `,
         {
-          replacements: { company: informAdmins },
+          replacements: { company: informAdmins.company },
           type: models.sequelize.QueryTypes.SELECT
         }
       );
 
-      const adminIDs = admins.map(({ employee }) => employee);
+      const adminIDs = admins
+        .map(({ employee }) => employee)
+        .filter(ID => {
+          if (notificationBody.receiver) {
+            return ID != notificationBody.receiver;
+          } else {
+            return true;
+          }
+        });
 
-      const promises = [];
+      for await (const id of adminIDs) {
+        if (notificationBody.show !== false) {
+          notification = await models.Notification.create(
+            {
+              ...notificationBody,
+              message: informAdmins.message,
+              receiver: id,
+              sendtime
+            },
+            { transaction }
+          );
+        }
+      }
+
+      if (notificationBody.receiver) {
+        adminIDs.push(notificationBody.receiver);
+      }
 
       for (const id of adminIDs) {
         pubsub.publish(NEW_NOTIFICATION, {
           newNotification: {
             ...notification.dataValues,
+            message:
+              notificationBody.receiver && notificationBody.receiver == id
+                ? notificationBody.message
+                : informAdmins.message,
             receiver: id,
+            sendtime: Date.now(),
             changed: notificationBody.changed,
             show: notificationBody.show
           }
         });
-
-        if (notificationBody.show !== false) {
-          promises.push(
-            models.Notification.create(
-              { ...notificationBody, sendtime },
-              { transaction }
-            )
-          );
-        }
-      }
-
-      if (promises.length > 0) {
-        await Promise.all(promises);
-      }
-    } else {
-      pubsub.publish(NEW_NOTIFICATION, {
-        newNotification: {
-          ...notification.dataValues,
-          changed: notificationBody.changed,
-          show: notificationBody.show
-        }
-      });
-
-      if (notificationBody.show !== false) {
-        notification = await models.Notification.create(
-          { ...notificationBody, sendtime },
-          { transaction }
-        );
       }
     }
 

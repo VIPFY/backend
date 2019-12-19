@@ -121,6 +121,9 @@ export const mutations = `
   applyPromocode(promocode: String!): Response!
   banEmployee(userid: ID!): Response!
   unbanEmployee(userid: ID!): Response!
+
+  approveVacationRequest(userid: ID!, requestid: ID!): Boolean!
+  declineVacationRequest(userid: ID!, requestid: ID!): Boolean!
 `;
 
 // banEmployee, unbanEmployee unused but maybe useful?  createEmployee only used once

@@ -797,9 +797,9 @@ export default {
   ),
 
   requestVacation: requiresAuth.createResolver(
-    async (_p, { startDate, endDate, days }, { models, session }) =>
-      models.sequelize.transaction(async ta => {
-        try {
+    async (_p, { startDate, endDate, days }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
           const {
             user: { unitid, company }
           } = decode(session.token);
@@ -865,54 +865,99 @@ export default {
               receiver: unitid,
               message: "Vacation request successfully created",
               icon: "umbrella-beach",
-              link: "vacationRequest",
+              link: "vacation",
               changed: ["vacationRequest"]
             },
             ta,
-            company
+            { company, message: `User ${unitid} requested vacation` }
           );
+
           return request;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
+        });
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
   ),
 
-  deleteVacationRequest: requiresAuth.createResolver(
-    async (_p, { id }, { models, session }) =>
-      models.sequelize.transaction(async ta => {
-        try {
+  requestHalfVacationDay: requiresAuth.createResolver(
+    async (_p, { day }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
           const {
             user: { unitid, company }
           } = decode(session.token);
 
-          await Promise.all([
-            models.VacationRequest.update(
-              { decided: models.sequelize.fn("NOW"), status: "CANCELLED" },
-              { where: { id, unitid }, transaction: ta }
-            ),
-            createNotification(
-              {
-                message: "Successfully deleted request",
-                icon: "umbrella-beach",
-                link: "vacationRequest",
-                changed: ["vacationRequest"]
-              },
-              ta,
-              company
-            )
-          ]);
+          const request = await models.VacationRequest.create(
+            {
+              unitid,
+              startdate: day,
+              enddate: day,
+              days: 0.5,
+              requested: models.sequelize.fn("NOW")
+            },
+            { transaction: ta }
+          );
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Vacation request successfully created",
+              icon: "umbrella-beach",
+              link: "vacation",
+              changed: ["vacationRequest"]
+            },
+            ta,
+            { company, message: `User ${unitid} requested half a vacation day` }
+          );
+
+          return request;
+        });
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  deleteVacationRequest: requiresAuth.createResolver(
+    async (_p, { id }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
+
+          const res = await models.VacationRequest.update(
+            { decided: models.sequelize.fn("NOW"), status: "CANCELLED" },
+            { where: { id, unitid }, transaction: ta }
+          );
+
+          if (res[0] == 0) {
+            throw new Error("Could not update request");
+          }
+
+          await createNotification(
+            {
+              message: "Successfully deleted request",
+              icon: "umbrella-beach",
+              link: "vacation",
+              changed: ["vacationRequest"]
+            },
+            ta,
+            { company, message: `User ${unitid} deleted a vacation request` }
+          );
 
           return true;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
+        });
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
   )
 };
