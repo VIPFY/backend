@@ -282,7 +282,7 @@ export default {
   ),
 
   deleteTeam: requiresRights(["delete-team"]).createResolver(
-    async (_, { teamid, keepLicences }, ctx) =>
+    async (_, { teamid, deletejson, endtime }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const { models, session } = ctx;
@@ -292,146 +292,204 @@ export default {
 
           await teamCheck(company, teamid);
 
-          const options = { transaction: ta, raw: true };
-
-          const findOptions = { where: { unitid: teamid }, ...options };
-
-          const what = { where: { unitid: teamid } };
-
-          const p1 = models.Unit.findOne({ where: { id: teamid }, ...options });
-          const p2 = models.DepartmentData.findOne(findOptions);
-          const p3 = models.Email.findOne(findOptions);
-          const p4 = models.Address.findOne(findOptions);
-          const p5 = models.Phone.findOne(findOptions);
-          const p6 = models.ParentUnit.findOne({
-            where: {
-              [models.Op.or]: [{ childunit: teamid }, { parentunit: teamid }]
-            },
-            transaction: ta
-          });
-          const p7 = models.DepartmentApp.findOne({
-            where: { departmentid: teamid },
-            transaction: ta
-          });
-
-          // Keep Licences
-
-          const team = await models.sequelize.query(
-            `SELECT employees, services FROM team_view 
-            WHERE unitid = :teamid`,
+          const oldTeam = await models.sequelize.query(
+            `SELECT * FROM team_view WHERE unitid = :teamid`,
             {
               replacements: { teamid },
-              type: models.sequelize.QueryTypes.SELECT
+              type: models.sequelize.QueryTypes.SELECT,
+              transaction: ta
             }
           );
-          const licencesPromises = [];
-          if (team[0] && team[0].services) {
-            team[0].services.forEach(serviceid => {
-              team[0].employees.forEach(employeeid => {
-                if (
-                  !keepLicences.find(
-                    l => l.service == serviceid && l.employee == employeeid
-                  )
-                ) {
-                  licencesPromises.push(
-                    models.LicenceData.update(
-                      { endtime: moment().valueOf() },
-                      {
-                        where: {
-                          boughtplanid: serviceid,
-                          endtime: null,
-                          unitid: employeeid,
-                          options: { teamlicence: teamid }
+
+          await Promise.all(
+            deletejson.users.map(async user => {
+              const deleteUserJson = user;
+              const userid = user.id;
+
+              //START DELETE ONE EMPLOYEE
+              const promises = [];
+
+              // Delete all assignments of as
+              await Promise.all(
+                deleteUserJson.assignments.map(async as => {
+                  if (as.bool) {
+                    promises.push(
+                      models.LicenceRight.update(
+                        {
+                          endtime
                         },
+                        {
+                          where: { id: as.id },
+                          transaction: ta
+                        }
+                      )
+                    );
+                  } else {
+                    // Remove team tag and assignoption
+                    const checkassignment = await models.LicenceRight.findOne({
+                      where: { id: as.id },
+                      raw: true,
+                      transaction: ta
+                    });
+                    if (
+                      checkassignment.tags &&
+                      checkassignment.tags.includes("teamlicence") &&
+                      checkassignment.options &&
+                      checkassignment.options.teamlicence == teamid
+                    ) {
+                      let newtags = checkassignment.tags;
+                      newtags.splice(
+                        checkassignment.tags.findIndex(e => e == "teamlicence"),
+                        1
+                      );
+                      promises.push(
+                        models.LicenceRight.update(
+                          {
+                            tags: newtags,
+                            options: {
+                              ...checkassignment.options,
+                              teamlicence: undefined
+                            }
+                          },
+                          {
+                            where: { id: as.id },
+                            transaction: ta
+                          }
+                        )
+                      );
+                    }
+                  }
+                })
+              );
+              await Promise.all(promises);
+
+              //Check for other assignments
+              if (deleteUserJson.autodelete) {
+                await Promise.all(
+                  deleteUserJson.assignments.map(async asa => {
+                    const licenceRight = await models.LicenceRight.findOne({
+                      where: { id: asa.id },
+                      raw: true,
+                      transaction: ta
+                    });
+
+                    const licences = await models.sequelize.query(
+                      `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
+                      {
+                        replacements: { licenceid: licenceRight.licenceid },
+                        type: models.sequelize.QueryTypes.SELECT,
                         transaction: ta
                       }
-                    )
-                  );
-                } else {
-                  licencesPromises.push(
-                    models.sequelize.query(
-                      `Update licence_data set options = options - 'teamlicence'
-                      where boughtplanid = :serviceid
-                      and endtime is null
-                      and unitid = :employeeid
-                      and options ->> 'teamlicence' = :teamid`,
-                      {
-                        replacements: { serviceid, employeeid, teamid },
-                        type: models.sequelize.QueryTypes.SELECT
-                      }
-                    )
-                  );
-                }
-              });
-            });
-          }
-          await Promise.all(licencesPromises);
+                    );
 
-          await models.DepartmentApp.destroy(
-            { where: { departmentid: teamid } },
-            { transaction: ta }
+                    if (licences.length == 0) {
+                      await models.LicenceData.update(
+                        {
+                          endtime
+                        },
+                        {
+                          where: { id: licenceRight.licenceid },
+                          transaction: ta
+                        }
+                      );
+
+                      const otherlicences = await models.sequelize.query(
+                        `Select distinct (lva.*)
+                    from licence_view lva left outer join licence_view lvb on lva.boughtplanid = lvb.boughtplanid
+                    where lvb.id = :licenceid and lva.starttime < now() and lva.endtime > now();`,
+                        {
+                          replacements: { licenceid: licenceRight.licenceid },
+                          type: models.sequelize.QueryTypes.SELECT,
+                          transaction: ta
+                        }
+                      );
+
+                      if (otherlicences.length == 0) {
+                        const boughtplan = await models.sequelize.query(
+                          `SELECT boughtplanid FROM licence_view WHERE id = :licenceid`,
+                          {
+                            replacements: { licenceid: licenceRight.licenceid },
+                            type: models.sequelize.QueryTypes.SELECT,
+                            transaction: ta
+                          }
+                        );
+
+                        await models.BoughtPlan.update(
+                          {
+                            endtime
+                          },
+                          {
+                            where: { id: boughtplan[0].boughtplanid },
+                            transaction: ta
+                          }
+                        );
+                      }
+                    }
+                  })
+                );
+              }
+
+              await models.ParentUnit.destroy({
+                where: { parentunit: teamid, childunit: userid },
+                transaction: ta
+              });
+
+              //END ONE EMPLOYEE DELETED
+            })
           );
-          const p8 = models.Unit.update(
-            { deleted: true },
-            { where: { id: teamid }, transaction: ta }
+
+          //End TeamOrbits
+
+          const deletePromises = [];
+
+          console.log("END TEAMORBITS");
+
+          deletePromises.push(
+            models.DepartmentApp.update(
+              {
+                endtime
+              },
+              {
+                where: { departmentid: teamid, endtime: Infinity },
+                transaction: ta
+              }
+            )
           );
-          const p9 = models.DepartmentData.destroy(what, { transaction: ta });
-          const p10 = models.Email.destroy(what, { transaction: ta });
-          const p11 = models.Address.destroy(what, { transaction: ta });
-          const p12 = models.Phone.destroy(what, { transaction: ta });
-          const p13 = models.ParentUnit.destroy(
-            {
+
+          deletePromises.push(
+            models.Unit.update(
+              { deleted: true },
+              { where: { id: teamid }, transaction: ta }
+            )
+          );
+
+          deletePromises.push(
+            models.ParentUnit.destroy({
               where: {
                 [models.Op.or]: [{ childunit: teamid }, { parentunit: teamid }]
-              }
-            },
-            { transaction: ta }
+              },
+              transaction: ta
+            })
           );
 
-          const [
-            oldUnit,
-            oldDepartment,
-            oldEmail,
-            oldAddress,
-            oldPhone,
-            oldParentUnit,
-            oldDepartmentApps
-          ] = await Promise.all([p1, p2, p3, p4, p5, p6, p7]);
-
-          try {
-            await deleteUserImage(oldUnit.profilepicture);
-          } catch (err) {
-            await createLog(
-              ctx,
-              "deleteTeam - Image",
-              { pic: oldUnit.profilepicture },
-              ta
-            );
-          }
-
-          await Promise.all([p7, p8, p9, p10, p11, p12, p13]);
+          await Promise.all(deletePromises);
 
           await createLog(
             ctx,
             "deleteTeam",
             {
-              oldUnit,
-              oldDepartment,
-              oldEmail,
-              oldAddress,
-              oldPhone,
-              oldParentUnit,
-              oldDepartmentApps
+              teamid,
+              deletejson
             },
             ta
           );
 
-          if (team[0] && team[0].employees) {
-            const employeeNotifypromises = [];
-            team[0].employees.forEach(employee =>
-              employeeNotifypromises.push(
+          if (oldTeam[0].employees) {
+            console.log("EMPLOYEES", oldTeam[0].employees);
+            await Promise.all(
+              oldTeam[0].employees.map(async employeeid =>
                 createNotification({
-                  receiver: employee.id,
+                  receiver: employeeid,
                   message: `A Team is deleted`,
                   icon: "users",
                   link: "teammanger",
@@ -439,8 +497,6 @@ export default {
                 })
               )
             );
-
-            await Promise.all(employeeNotifypromises);
           }
 
           return true;
@@ -1257,15 +1313,15 @@ export default {
                     checkassignment.options &&
                     checkassignment.options.teamlicence == teamid
                   ) {
+                    let newtags = checkassignment.tags;
+                    newtags.splice(
+                      checkassignment.tags.findIndex(e => e == "teamlicence"),
+                      1
+                    );
                     promises.push(
                       models.LicenceRight.update(
                         {
-                          tags: checkassignment.tags.splice(
-                            checkassignment.tags.findIndex(
-                              e => e == "teamlicence"
-                            ),
-                            1
-                          ),
+                          tags: newtags,
                           options: {
                             ...checkassignment.options,
                             teamlicence: undefined
