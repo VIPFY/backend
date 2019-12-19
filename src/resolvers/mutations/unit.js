@@ -1,5 +1,7 @@
 import { decode, verify } from "jsonwebtoken";
 import iplocate from "node-iplocate";
+import moment from "moment";
+import "moment-feiertage";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
   userPicFolder,
@@ -769,5 +771,193 @@ export default {
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
-    })
+    }),
+
+  setVacationDays: requiresAuth.createResolver(
+    async (_p, { year, days, userid }, { models, session }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
+
+        await models.sequelize.query(
+          `
+        INSERT into vacation_year_days_data(unitid, company, year, days)
+        VALUES(:userid, :company, :year, :days)
+        ON CONFLICT (unitid, company, year) DO UPDATE SET days = :days
+        `,
+          { replacements: { year, company, days, userid } }
+        );
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  requestVacation: requiresAuth.createResolver(
+    async (_p, { startDate, endDate, days }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
+
+          const startdate = moment(startDate);
+          const enddate = moment(endDate);
+
+          const computeVacationDays = (date, fullDays) => {
+            if (fullDays == 1) {
+              return 1;
+            }
+
+            const clonedDate = moment(date);
+            let offDays = 0;
+
+            for (let i = 0; i < fullDays; i++) {
+              clonedDate.add(i < 2 ? i : 1, "days");
+
+              if (
+                clonedDate.isoWeekday() == 6 ||
+                clonedDate.isoWeekday() == 7 ||
+                clonedDate.isHoliday(["SL"]).holidayName
+              ) {
+                offDays++;
+              }
+            }
+
+            return fullDays - offDays;
+          };
+
+          const computedDays = computeVacationDays(
+            startdate,
+            moment
+              .duration(
+                moment(enddate)
+                  .endOf("day")
+                  // Otherwise it won't be a full day
+                  .add(1, "day")
+                  .diff(startdate.startOf("day"))
+              )
+              .days()
+          );
+
+          if (computedDays != days) {
+            throw new Error(
+              "The days don't match the length of the vacation duration!"
+            );
+          }
+
+          const request = await models.VacationRequest.create(
+            {
+              unitid,
+              startdate: startdate.format("LL"),
+              enddate: enddate.format("LL"),
+              days,
+              requested: models.sequelize.fn("NOW")
+            },
+            { transaction: ta }
+          );
+
+          createNotification(
+            {
+              receiver: unitid,
+              message: "Vacation request successfully created",
+              icon: "umbrella-beach",
+              link: "vacation",
+              changed: ["vacationRequest"]
+            },
+            ta,
+            { company, message: `User ${unitid} requested vacation` }
+          );
+
+          return request;
+        });
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
+  ),
+
+  requestHalfVacationDay: requiresAuth.createResolver(
+    async (_p, { day }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
+
+          const request = await models.VacationRequest.create(
+            {
+              unitid,
+              startdate: day,
+              enddate: day,
+              days: 0.5,
+              requested: models.sequelize.fn("NOW")
+            },
+            { transaction: ta }
+          );
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Vacation request successfully created",
+              icon: "umbrella-beach",
+              link: "vacation",
+              changed: ["vacationRequest"]
+            },
+            ta,
+            { company, message: `User ${unitid} requested half a vacation day` }
+          );
+
+          return request;
+        });
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  deleteVacationRequest: requiresAuth.createResolver(
+    async (_p, { id }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
+
+          const res = await models.VacationRequest.update(
+            { decided: models.sequelize.fn("NOW"), status: "CANCELLED" },
+            { where: { id, unitid }, transaction: ta }
+          );
+
+          if (res[0] == 0) {
+            throw new Error("Could not update request");
+          }
+
+          await createNotification(
+            {
+              message: "Successfully deleted request",
+              icon: "umbrella-beach",
+              link: "vacation",
+              changed: ["vacationRequest"]
+            },
+            ta,
+            { company, message: `User ${unitid} deleted a vacation request` }
+          );
+
+          return true;
+        });
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
+  )
 };

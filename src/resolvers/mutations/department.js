@@ -1089,5 +1089,80 @@ export default {
           });
         }
       })
+  ),
+
+  approveVacationRequest: requiresRights([
+    "edit-vacation-requests"
+  ]).createResolver(async (_p, { userid, requestid }, { models, session }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
+
+        const res = await models.VacationRequest.update(
+          { status: "CONFIRMED", decided: models.sequelize.fn("NOW") },
+          { where: { unitid: userid, id: requestid } }
+        );
+
+        if (res[0] == 0) {
+          throw new Error("Could not update request");
+        }
+
+        await createNotification(
+          {
+            receiver: userid,
+            show: true,
+            message: "Your vacation request was confirmed",
+            icon: "umbrella-beach",
+            changed: ["vacationRequest"],
+            link: "vacation"
+          },
+          ta,
+          { company, message: `User ${userid} vacation request was confirmed` }
+        );
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    })
+  ),
+
+  declineVacationRequest: requiresRights([
+    "edit-vacation-requests"
+  ]).createResolver(async (_p, { userid, requestid }, { models, session }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
+        const res = await models.VacationRequest.update(
+          { status: "REJECTED", decided: models.sequelize.fn("NOW") },
+          { where: { unitid: userid, id: requestid }, transaction: ta }
+        );
+
+        if (res[0] == 0) {
+          throw new Error("Could not update request");
+        }
+
+        await createNotification(
+          {
+            receiver: userid,
+            show: true,
+            message: "Your vacation request was declined",
+            icon: "umbrella-beach",
+            changed: ["vacationRequest"],
+            link: "vacation"
+          },
+          ta,
+          { company, message: `User ${userid} vacation request was declined` }
+        );
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    })
   )
 };

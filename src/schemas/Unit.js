@@ -90,6 +90,18 @@ export const types = `
     assignments: [LicenceAssignment]
   }
 
+  type VacationUser {
+    id: ID!
+    firstname: String
+    middlename: String
+    lastname: String
+    profilepicture: String
+    isadmin: Boolean!
+    vacationdays: Float
+    vacationrequests: [VacationRequestResponse]!
+    vacationdaysperyear: JSON
+  }
+
   input UserInput {
     ${basicFields}
     password: String
@@ -158,11 +170,15 @@ export const mutations = `
   # Agree to Vipfy Terms of Service and Privacy Agreement
   agreeTos: Response!
 
+  requestVacation(startDate: Date!, endDate: Date!, days: Int!): VacationRequestResponse!
+  deleteVacationRequest(id: ID!): Boolean!
+  requestHalfVacationDay(day: Date!): VacationRequestResponse!
   # take a token from a setup file and return a one-day JWT
   redeemSetupToken(setuptoken: String!): LoginResponse!
 
   resendToken(email: String!): Boolean!
   setConsent(consent: Boolean!): User!
+  setVacationDays(year: Int!, days: Int!, userid: ID!): Boolean!
   updateEmployeePassword(unitid: ID!, password: String!, logOut: Boolean): UserSecurityOverview!
   updateEmployeePasswordEncrypted(unitid: ID!, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, logOut: Boolean, newKey: KeyInput!, deprecateAllExistingKeys: Boolean!, licenceUpdates: [licenceKeyUpdateInput!]!): UserSecurityOverview!
 `;

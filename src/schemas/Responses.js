@@ -37,6 +37,16 @@ export const types = `
     allCompanies: Int!
   }
 
+  type VacationRequestResponse {
+    id: ID!
+    startdate: Date!
+    enddate: Date!
+    requested: Date!
+    decided: Date
+    days: Float!
+    status: VACATION_STATUS!
+  }
+
 # If the registration was successful, a boolean will be given back
   type RegisterResponse {
     ok: Boolean!

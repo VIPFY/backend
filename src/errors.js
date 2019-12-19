@@ -37,7 +37,7 @@ export const AuthError = createError("AuthError", {
 });
 
 export const RightsError = createError("RightsError", {
-  message: "You don't have the nessesary rights.",
+  message: "You don't have the neccessary rights.",
   data: { code: 403, id: 6 }
 });
 
