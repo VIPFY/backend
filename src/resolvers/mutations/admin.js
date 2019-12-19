@@ -519,8 +519,7 @@ export default {
 
           const p1 = models.Unit.update(
             { deleted: true, profilepicture: "" },
-            { where: { id: unitid } },
-            { transaction: ta }
+            { where: { id: unitid }, transaction: ta }
           );
 
           let p2;
@@ -529,45 +528,39 @@ export default {
           if (isHuman) {
             p2 = models.Human.update(
               { firstname: "Deleted", middlename: "", lastname: "User" },
-              { where: { unitid } },
-              { transaction: ta }
+              { where: { unitid }, transaction: ta }
             );
           } else {
-            p2 = models.DepartmentData.destroy(
-              { where: { unitid } },
-              { transaction: ta }
-            );
+            p2 = models.DepartmentData.destroy({
+              where: { unitid },
+              transaction: ta
+            });
           }
 
-          const p3 = models.Email.destroy(
-            { where: { unitid } },
-            { transaction: ta }
-          );
+          const p3 = models.Email.destroy({
+            where: { unitid },
+            transaction: ta
+          });
 
-          const p4 = models.Address.destroy(
-            { where: { unitid } },
-            { transaction: ta }
-          );
+          const p4 = models.Address.destroy({
+            where: { unitid },
+            transaction: ta
+          });
 
           let p5;
 
           if (isHuman) {
-            p5 = models.ParentUnit.destroy(
-              { where: { childunit: unitid } },
-              { transaction: ta }
-            );
+            p5 = models.ParentUnit.destroy({
+              where: { childunit: unitid },
+              transaction: ta
+            });
           } else {
-            p5 = models.ParentUnit.destroy(
-              {
-                where: {
-                  [models.Op.or]: [
-                    { parentunit: unitid },
-                    { childunit: unitid }
-                  ]
-                }
+            p5 = models.ParentUnit.destroy({
+              where: {
+                [models.Op.or]: [{ parentunit: unitid }, { childunit: unitid }]
               },
-              { transaction: ta }
-            );
+              transaction: ta
+            });
           }
 
           await Promise.all([p1, p2, p3, p4, p5]);

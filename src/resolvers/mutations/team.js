@@ -634,10 +634,10 @@ export default {
           }
           await Promise.all(promises);
 
-          await models.ParentUnit.destroy(
-            { where: { parentunit: teamid, childunit: userid } },
-            { transaction: ta }
-          );
+          await models.ParentUnit.destroy({
+            where: { parentunit: teamid, childunit: userid },
+            transaction: ta
+          });
 
           await createLog(
             ctx,
@@ -723,10 +723,10 @@ export default {
           }
           await Promise.all(promises);
 
-          await models.DepartmentApp.destroy(
-            { where: { departmentid: teamid, boughtplanid } },
-            { transaction: ta }
-          );
+          await models.DepartmentApp.destroy({
+            where: { departmentid: teamid, boughtplanid },
+            transaction: ta
+          });
 
           await createLog(
             ctx,

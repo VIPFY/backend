@@ -1183,10 +1183,6 @@ export default {
           throw new Error("BoughtPlan doesn't exist or isn't active anymore!");
         }
 
-        const updatePromises = [];
-        const licencePromises = [];
-        const departmentPromises = [];
-
         const app = await models.App.findOne({
           where: { id: serviceid },
           raw: true,
@@ -1194,16 +1190,18 @@ export default {
         });
 
         if (app.owner == company) {
-          updatePromises.push(
-            models.App.update(
-              { disabled: true },
-              { where: { id: serviceid }, transaction: ta }
-            )
+          await models.App.update(
+            { disabled: true },
+            { where: { id: serviceid }, transaction: ta }
           );
         }
 
-        boughtPlans.forEach(boughtPlan => {
-          const period = Object.keys(boughtPlan.cancelperiod)[0];
+        const notifiyUsers = [];
+
+        await Promise.all(
+          boughtPlans.map(async boughtPlan => {
+            const endtime = parsedTime;
+            /*const period = Object.keys(boughtPlan.cancelperiod)[0];
           const estimatedEndtime = moment()
             .add(boughtPlan.cancelperiod[period], period)
             .valueOf();
@@ -1230,10 +1228,84 @@ export default {
               { where: { boughtplanid: boughtPlan.id } },
               { transaction: ta }
             )
-          );
-        });
+          );*/
 
-        await Promise.all(updatePromises, licencePromises, departmentPromises);
+            await models.BoughtPlan.update(
+              {
+                endtime
+              },
+              { where: { id: boughtPlan.id }, transaction: ta }
+            );
+
+            const oldAccounts = await models.LicenceData.update(
+              {
+                endtime
+              },
+              {
+                where: { boughtplanid: boughtPlan.id, endtime: null },
+                returning: true,
+                transaction: ta,
+                raw: true
+              }
+            );
+
+            const oldassignments = await models.LicenceRight.update(
+              {
+                endtime
+              },
+              {
+                where: {
+                  licenceid: oldAccounts[1].map(oa => oa.id),
+                  endtime: {
+                    [models.Op.or]: {
+                      [models.Op.gt]: endtime,
+                      [models.Op.eq]: Infinity
+                    }
+                  }
+                },
+                returning: true,
+                transaction: ta,
+                raw: true
+              }
+            );
+
+            if (oldassignments[1]) {
+              oldassignments[1].forEach(oas => {
+                if (!notifiyUsers.find(nu => nu == oas.unitid)) {
+                  notifiyUsers.push(oas.unitid);
+                }
+              });
+            }
+
+            await models.DepartmentApp.update(
+              {
+                endtime
+              },
+              {
+                where: { boughtplanid: boughtPlan.id, endtime: Infinity },
+                transaction: ta
+              }
+            );
+          })
+        );
+
+        //NOTIFY USERS
+        if (notifiyUsers) {
+          await Promise.all(
+            notifiyUsers.map(nu =>
+              createNotification(
+                {
+                  receiver: nu,
+                  message: `An account has been updated`,
+                  icon: "business-time",
+                  link: `dashboard`,
+                  changed: ["ownLicences"]
+                },
+                ta
+              )
+            )
+          );
+        }
 
         await createLog(context, "deleteService", { serviceid }, ta);
 
@@ -2146,8 +2218,7 @@ export default {
               starttime,
               endtime
             },
-            { where: { id: orbitid } },
-            { transaction: ta }
+            { where: { id: orbitid }, transaction: ta }
           );
 
           if (endtime) {
