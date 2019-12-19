@@ -500,14 +500,12 @@ export default {
           from app_data join plan_data pd on app_data.id = pd.appid
             join boughtplan_data bpd on pd.id = bpd.planid
           where usedby = :company and
-          (bpd.endtime is null or bpd.endtime > now()) and
-          bpd.buytime <= now() group by app_data.id`,
+          (bpd.endtime is null or bpd.endtime > now()) group by app_data.id`,
           {
             replacements: { company },
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-
         return companyServices;
       } catch (err) {
         console.error("ERROR", err);
@@ -532,7 +530,6 @@ export default {
             join boughtplan_data bpd on pd.id = bpd.planid
           where usedby = :company and
           (bpd.endtime is null or bpd.endtime > now()) and
-          bpd.buytime <= now() and
           app_data.id = :serviceid
           group by app_data.id`,
           {
@@ -540,7 +537,6 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-
         let returnValue;
         if (companyServices[0]) {
           [returnValue] = companyServices;
