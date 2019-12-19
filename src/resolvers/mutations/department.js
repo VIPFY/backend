@@ -1062,8 +1062,8 @@ export default {
       })
   ),
 
-  deleteEmployee: requiresRights(["delete-employees"]).createResolver(
-    async (_p, { employeeid }, ctx) =>
+  deleteUser: requiresRights(["delete-employees"]).createResolver(
+    async (_p, { userid, autodelete }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const { models, session } = ctx;
@@ -1071,13 +1071,157 @@ export default {
           const {
             user: { unitid, company }
           } = decode(session.token);
+
+          const oldUser = await models.sequelize.query(
+            `SELECT * FROM users_view WHERE id = :userid`,
+            {
+              replacements: { userid },
+              type: models.sequelize.QueryTypes.SELECT,
+              transaction: ta
+            }
+          );
+
+          //oldUser all informations
+
+          //START DELETE ONE EMPLOYEE
+          const promises = [];
+
+          if (oldUser.assignments) {
+            // Delete all assignments of oldUser
+            await Promise.all(
+              oldUser.assignments.map(async asid => {
+                if (as.bool) {
+                  promises.push(
+                    models.LicenceRight.update(
+                      {
+                        endtime
+                      },
+                      {
+                        where: { id: asid },
+                        transaction: ta
+                      }
+                    )
+                  );
+                } else {
+                  // Remove team tag and assignoption
+                  const checkassignment = await models.LicenceRight.findOne({
+                    where: { id: asid },
+                    raw: true,
+                    transaction: ta
+                  });
+                  if (
+                    checkassignment.tags &&
+                    checkassignment.tags.includes("teamlicence") &&
+                    checkassignment.options &&
+                    checkassignment.options.teamlicence == teamid
+                  ) {
+                    let newtags = checkassignment.tags;
+                    newtags.splice(
+                      checkassignment.tags.findIndex(e => e == "teamlicence"),
+                      1
+                    );
+                    promises.push(
+                      models.LicenceRight.update(
+                        {
+                          tags: newtags,
+                          options: {
+                            ...checkassignment.options,
+                            teamlicence: undefined
+                          }
+                        },
+                        {
+                          where: { id: asid },
+                          transaction: ta
+                        }
+                      )
+                    );
+                  }
+                }
+              })
+            );
+            await Promise.all(promises);
+
+            //Check for other assignments
+            if (autodelete) {
+              await Promise.all(
+                oldUser.assignments.map(async asid => {
+                  const licenceRight = await models.LicenceRight.findOne({
+                    where: { id: asid },
+                    raw: true,
+                    transaction: ta
+                  });
+
+                  const licences = await models.sequelize.query(
+                    `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
+                    {
+                      replacements: { licenceid: licenceRight.licenceid },
+                      type: models.sequelize.QueryTypes.SELECT,
+                      transaction: ta
+                    }
+                  );
+
+                  if (licences.length == 0) {
+                    await models.LicenceData.update(
+                      {
+                        endtime
+                      },
+                      {
+                        where: { id: licenceRight.licenceid },
+                        transaction: ta
+                      }
+                    );
+
+                    const otherlicences = await models.sequelize.query(
+                      `Select distinct (lva.*)
+                    from licence_view lva left outer join licence_view lvb on lva.boughtplanid = lvb.boughtplanid
+                    where lvb.id = :licenceid and lva.starttime < now() and lva.endtime > now();`,
+                      {
+                        replacements: { licenceid: licenceRight.licenceid },
+                        type: models.sequelize.QueryTypes.SELECT,
+                        transaction: ta
+                      }
+                    );
+
+                    if (otherlicences.length == 0) {
+                      const boughtplan = await models.sequelize.query(
+                        `SELECT boughtplanid FROM licence_view WHERE id = :licenceid`,
+                        {
+                          replacements: { licenceid: licenceRight.licenceid },
+                          type: models.sequelize.QueryTypes.SELECT,
+                          transaction: ta
+                        }
+                      );
+
+                      await models.BoughtPlan.update(
+                        {
+                          endtime
+                        },
+                        {
+                          where: { id: boughtplan[0].boughtplanid },
+                          transaction: ta
+                        }
+                      );
+                    }
+                  }
+                })
+              );
+            }
+          }
+
+          //Delete from teams
+
+          await models.ParentUnit.destroy({
+            where: { childunit: userid },
+            transaction: ta
+          });
+
           await models.Unit.update(
             { deleted: true },
-            { where: { id: employeeid } },
+            { where: { id: userid } },
             { transaction: ta, returning: true }
           );
 
-          await createLog(ctx, "fireEmployee", { employeeid }, ta);
+          await createLog(ctx, "fireEmployee", { userid }, ta);
 
           resetCompanyMembershipCache(company, unitid.id);
 

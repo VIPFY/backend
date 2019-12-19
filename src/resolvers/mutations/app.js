@@ -1930,27 +1930,44 @@ export default {
             }
           );
 
-          const notifications = [];
-
-          oldaccount.assignments.forEach(async assignment => {
-            const user = await models.LicenceAssignment.findOne({
-              where: { assignmentid: assignment }
-            });
-            notifications.push(
-              createNotification(
-                {
-                  receiver: user,
-                  message: `An account has been updated`,
-                  icon: "business-time",
-                  link: `dashboard`,
-                  changed: ["ownLicences"]
+          if (endtime) {
+            const oldassignments = await models.LicenceRight.update(
+              {
+                endtime
+              },
+              {
+                where: {
+                  licenceid: accountid,
+                  endtime: {
+                    [models.Op.or]: {
+                      [models.Op.gt]: endtime,
+                      [models.Op.eq]: Infinity
+                    }
+                  }
                 },
-                ta
-              )
+                returning: true,
+                transaction: ta,
+                raw: true
+              }
             );
-          });
 
-          await Promise.all(notifications);
+            if (oldassignments[1]) {
+              await Promise.all(
+                oldassignments[1].map(oas =>
+                  createNotification(
+                    {
+                      receiver: oas.unitid,
+                      message: `An account has been updated`,
+                      icon: "business-time",
+                      link: `dashboard`,
+                      changed: ["ownLicences"]
+                    },
+                    ta
+                  )
+                )
+              );
+            }
+          }
 
           await createLog(
             ctx,
@@ -2133,6 +2150,60 @@ export default {
             { transaction: ta }
           );
 
+          if (endtime) {
+            const oldAccounts = await models.LicenceData.update(
+              {
+                endtime
+              },
+              {
+                where: { boughtplanid: orbitid, endtime: null },
+                returning: true,
+                transaction: ta,
+                raw: true
+              }
+            );
+            console.error("OLDACCOUNTS", oldAccounts[1]);
+
+            const oldassignments = await models.LicenceRight.update(
+              {
+                endtime
+              },
+              {
+                where: {
+                  licenceid: oldAccounts[1].map(oa => oa.id),
+                  endtime: {
+                    [models.Op.or]: {
+                      [models.Op.gt]: endtime,
+                      [models.Op.eq]: Infinity
+                    }
+                  }
+                },
+                returning: true,
+                transaction: ta,
+                raw: true
+              }
+            );
+
+            console.error("OLDASSIGNMENTS", oldassignments[1]);
+
+            if (oldassignments[1]) {
+              await Promise.all(
+                oldassignments[1].map(oas =>
+                  createNotification(
+                    {
+                      receiver: oas.unitid,
+                      message: `An account has been updated`,
+                      icon: "business-time",
+                      link: `dashboard`,
+                      changed: ["ownLicences"]
+                    },
+                    ta
+                  )
+                )
+              );
+            }
+          }
+
           await createLog(
             ctx,
             "changeOrbit",
@@ -2214,7 +2285,7 @@ export default {
         await createNotification(
           {
             receiver: licence.unitid,
-            message: `Your assignment to an account have been terminated`,
+            message: `Your assignment to an account has been terminated`,
             icon: "business-time",
             link: `dashboard`,
             changed: ["ownLicences"]

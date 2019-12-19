@@ -44,7 +44,7 @@ export const queries = `
 export const mutations = `
   addTeam(name: String!, data: TeamInput!): Department!
   createTeam(team: JSON!, addemployees: [JSON]!, apps: [JSON]!): ID!
-  deleteTeam(teamid: ID!, keepLicences: [JSON!]): Boolean!
+  deleteTeam(teamid: ID!, deletejson: JSON, endtime: Date): Boolean!
   removeFromTeam(teamid: ID!, userid: ID!, keepLicences: [ID!]): Boolean!
   removeServiceFromTeam(teamid: ID!, boughtplanid: ID!, keepLicences: [ID!]): Boolean!
   addToTeam(userid: ID!, teamid: ID!, services: [SetupService]!, newEmployeeInfo: JSON, newTeam: JSON): Boolean!
