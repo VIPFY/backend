@@ -42,7 +42,13 @@ export const requiresAuth = createResolver(
         raw: true
       });
 
-      if (!valid || valid.deleted || valid.suspended || valid.banned) {
+      if (
+        !valid ||
+        valid.deleted ||
+        valid.companyban ||
+        valid.suspended ||
+        valid.banned
+      ) {
         throw new Error("Login is currently not possible for you!");
       }
 
