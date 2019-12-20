@@ -2431,17 +2431,26 @@ export default {
                   licenceid: a.accountid,
                   unitid: a.userid,
                   starttime,
-                  endtime
+                  endtime,
+                  options: { vacationid: vacation.id }
                 },
-                ta
+                { transaction: ta, returning: true }
               )
             );
           });
-          await Promise.all(promises);
+
+          const vacationLicences = await Promise.all(promises);
 
           const notifypromises = [];
 
-          users.forEach(u => {
+          const options = [];
+          users.forEach((u, k) => {
+            options.push({
+              userid: u,
+              assignmentid: vacationLicences[k].id,
+              accountid: vacationLicences[k].licenceid
+            });
+
             notifypromises.push(
               createNotification(
                 {
@@ -2457,6 +2466,16 @@ export default {
           });
 
           await Promise.all(notifypromises);
+
+          models.Vacation.update(
+            {
+              options
+            },
+            {
+              where: { id: vacation.id },
+              transaction: ta
+            }
+          );
 
           await createNotification(
             {
