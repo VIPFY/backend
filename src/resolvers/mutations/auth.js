@@ -426,7 +426,7 @@ export default {
           email,
           deleted: { [ctx.models.Op.or]: [null, false] },
           banned: { [ctx.models.Op.or]: [null, false] },
-          suspended: { [ctx.models.Op.or]: [null, false] },
+          suspended: { [ctx.models.Op.or]: [null, false],
           companyban: { [ctx.models.Op.or]: [null, false] }
         },
         raw: true
