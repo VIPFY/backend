@@ -2198,7 +2198,12 @@ export default {
             user: { company }
           } = decode(ctx.session.token);
 
-          const { models, session } = ctx;
+          const { models } = ctx;
+
+          if (orbitid == 66) {
+            // Don't let people change the VIPFY App Orbit
+            throw new Error("You can't change this orbit!");
+          }
 
           await checkOrbitMembership(models, company, orbitid);
 
