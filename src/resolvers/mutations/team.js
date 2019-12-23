@@ -1123,7 +1123,7 @@ export default {
             employeeNotifypromises.push(
               createNotification({
                 receiver: a.employeeid,
-                message: `A service has been added to a team`,
+                message: `An orbit has been added to a team`,
                 icon: "plus-circle",
                 link: "teammanger",
                 changed: ["ownLicences"]
@@ -1208,7 +1208,7 @@ export default {
 
           await createNotification({
             receiver: employeeid,
-            message: `A service has been added to a team`,
+            message: `Someone has been added to a team`,
             icon: "plus-circle",
             link: "teammanger",
             changed: ["ownLicences"]
