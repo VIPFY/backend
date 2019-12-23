@@ -585,42 +585,28 @@ export const check2FARights = async (userid, unitid, company) => {
 };
 
 /**
- * Creates and returns a token for the session and saves the current session
+ * Parses the Sessions back to a JSON object
+ * @exports
  *
- * @param {object} user The User which should be saved in the token
- * @param {object} ctx The context which includes the current session
+ * @param {string[]} sessions
  */
-export const createSession = async (user, ctx) => {
+export const parseSessions = async sessions => {
   try {
-    const token = await createToken(user, process.env.SECRET);
+    const parsedSessions = sessions.map(item => {
+      const parsedSession = JSON.parse(item);
 
-    ctx.session.token = token;
-
-    // Should normally not be needed, but somehow it takes too long to
-    // update the session and it creates an Auth Error in the next step
-    // without it.
-    await ctx.session.save(err => {
-      if (err) {
-        console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
-      }
+      return {
+        id: parsedSession.session,
+        system: parsedSession.browser,
+        loggedInAt: parsedSession.loggedInAt,
+        location: {
+          city: parsedSession.city,
+          country: parsedSession.country
+        }
+      };
     });
 
-    const location = await iplocate(
-      // In development using the ip is not possible
-      process.env.ENVIRONMENT == "production" ? ctx.ip : "82.192.202.122"
-    );
-
-    await ctx.redis.lpush(
-      `${USER_SESSION_ID_PREFIX}${user.unitid}`,
-      JSON.stringify({
-        session: ctx.sessionID,
-        ...ctx.userData,
-        ...location,
-        loggedInAt: Date.now()
-      })
-    );
-
-    return token;
+    return parsedSessions;
   } catch (error) {
     throw new Error(error);
   }
@@ -645,28 +631,62 @@ export const fetchSessions = async (redis, userid) => {
 };
 
 /**
- * Parses the Sessions back to a JSON object
- * @exports
+ * Creates and returns a token for the session and saves the current session
  *
- * @param {string[]} sessions
+ * @param {object} user The User which should be saved in the token
+ * @param {number} user.unitid In this context the user has an unitid instead of an id!
+ * @param {object} ctx The context which includes the current session
+ * @param {object} ctx.redis The Redis instance
  */
-export const parseSessions = async sessions => {
+export const createSession = async (user, ctx) => {
   try {
-    const parsedSessions = sessions.map(item => {
-      const parsedSession = JSON.parse(item);
+    const token = await createToken(user, process.env.SECRET);
 
-      return {
-        id: parsedSession.session,
-        system: parsedSession.browser,
-        loggedInAt: parsedSession.loggedInAt,
-        location: {
-          city: parsedSession.city,
-          country: parsedSession.country
-        }
-      };
+    ctx.session.token = token;
+
+    // Should normally not be needed, but somehow it takes too long to
+    // update the session and it creates an Auth Error in the next step
+    // without it.
+    await ctx.session.save(err => {
+      if (err) {
+        console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+      }
     });
 
-    return parsedSessions;
+    const location = await iplocate(
+      // In development using the ip is not possible
+      process.env.ENVIRONMENT == "production" ? ctx.ip : "82.192.202.122"
+    );
+
+    const sessions = await fetchSessions(ctx.redis, user.unitid);
+    const parsedSessions = await parseSessions(sessions);
+    const expiredSessions = [];
+
+    parsedSessions.forEach((session, i) => {
+      if (moment(session.loggedInAt).isBefore(moment().subtract(10, "hours"))) {
+        expiredSessions.push(
+          ctx.redis.lrem(
+            `${USER_SESSION_ID_PREFIX}${user.unitid}`,
+            0,
+            sessions[i]
+          )
+        );
+      }
+    });
+
+    await Promise.all(expiredSessions);
+
+    await ctx.redis.lpush(
+      `${USER_SESSION_ID_PREFIX}${user.unitid}`,
+      JSON.stringify({
+        session: ctx.sessionID,
+        ...ctx.userData,
+        ...location,
+        loggedInAt: Date.now()
+      })
+    );
+
+    return token;
   } catch (error) {
     throw new Error(error);
   }

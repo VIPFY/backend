@@ -414,10 +414,11 @@ export default {
       if (password && password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
       }
+
+      // Password is sent in cleartext, passkey is a password hashed on the client
       if (passkey && passkey.length != 128) {
         throw new Error("Incompatible passkey format, try updating VIPFY");
       }
-      // password is sent in cleartext, passkey is a password hashed on the client
 
       const message = "Email or Password incorrect!";
 
