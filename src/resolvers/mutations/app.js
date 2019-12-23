@@ -1899,18 +1899,14 @@ export default {
       })
   ),
 
-  //New Service - Orbit - Account - Assignment - Stuff
-  createAccount: requiresRights(["edit-licences"]).createResolver(
+  // New Service - Orbit - Account - Assignment - Stuff
+  createAccount: requiresRights(["myself", "edit-licences"]).createResolver(
     async (_p, { orbitid, alias, logindata, starttime, endtime }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const {
-            user: { company }
-          } = decode(ctx.session.token);
+          const { models } = ctx;
 
-          const { models, session } = ctx;
-
-          const orbit = await models.sequelize.query(
+          await models.sequelize.query(
             `
             SELECT appid
               FROM boughtplan_data bd JOIN plan_data pd on bd.planid = pd.id
@@ -1926,9 +1922,7 @@ export default {
               boughtplanid: orbitid,
               agreed: true,
               disabled: false,
-              key: {
-                ...logindata
-              },
+              key: { ...logindata },
               alias,
               starttime,
               endtime
@@ -2139,7 +2133,7 @@ export default {
       })
   ),
 
-  createOrbit: requiresRights(["edit-licences"]).createResolver(
+  createOrbit: requiresRights(["myself", "edit-licences"]).createResolver(
     async (_p, { planid, alias, options, starttime, endtime }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
@@ -2147,7 +2141,7 @@ export default {
             user: { company }
           } = decode(ctx.session.token);
 
-          const { models, session } = ctx;
+          const { models } = ctx;
 
           const orbit = await models.BoughtPlan.create(
             {
