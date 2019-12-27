@@ -1087,5 +1087,25 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  createNewBillingEmail: requiresRights(["create-email"]).createResolver(
+    async (_p, { email }, { models, session }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
+
+        await models.Email.create({
+          unitid: company,
+          email,
+          tags: ["billing"]
+        });
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };
