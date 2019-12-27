@@ -592,8 +592,12 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company }
+            user: { company, unitid: userid }
           } = decode(session.token);
+
+          if (userid == unitid) {
+            throw new Error("You can't take your own admin rights!");
+          }
 
           const data = {
             holder: unitid,
@@ -640,7 +644,11 @@ export default {
               link: "profile",
               changed: ["me"]
             },
-            transaction
+            transaction,
+            {
+              company,
+              message: `Admin Rights have been changed for user ${unitid}`
+            }
           );
 
           return { id: unitid, status: admin };
