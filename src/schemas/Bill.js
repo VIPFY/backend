@@ -200,4 +200,5 @@ export const mutations = `
   
   removeBillingEmail(email: String!): Response!
   addBillingEmail(email: String!): Email!
+  createNewBillingEmail(email: String!): Boolean!
 `;

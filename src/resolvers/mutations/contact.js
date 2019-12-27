@@ -245,7 +245,6 @@ export default {
           }
 
           const { addTags, removeTags, ...data } = emailData;
-
           if (addTags) {
             if (oldEmail.tags) {
               data.tags = [...oldEmail.tags, ...addTags];
