@@ -75,29 +75,25 @@ export default {
   ),
 
   updateEmployeePic: requiresRights(["edit-user"]).createResolver(
-    async (_p, { file, unitid }, ctx) =>
+    async (_p, { file, userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, session } = ctx;
-          const {
-            user: { unitid: adminid }
-          } = decode(session.token);
+          const { models } = ctx;
 
           const parsedFile = await file;
-
           const profilepicture = await uploadUserImage(
             parsedFile,
             userPicFolder
           );
 
           const oldUnit = await models.Unit.findOne({
-            where: { id: unitid },
+            where: { id: userid },
             raw: true
           });
 
           const updatedUnit = await models.Unit.update(
             { profilepicture },
-            { where: { id: unitid }, returning: true, transaction: ta }
+            { where: { id: userid }, returning: true, transaction: ta }
           );
 
           const p1 = createLog(
@@ -107,7 +103,7 @@ export default {
             ta
           );
 
-          const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
+          const p2 = models.User.findOne({ where: { id: userid }, raw: true });
 
           const [, user] = await Promise.all([p1, p2]);
           const employee = await parentAdminCheck(user);
