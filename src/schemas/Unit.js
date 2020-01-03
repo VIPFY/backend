@@ -161,7 +161,7 @@ export const mutations = `
   updateEmployee(user: EmployeeInput!): SemiPublicUser!
   updateUser(user: UserInput!): Response!
   updateProfilePic(file: Upload!): User!
-  updateEmployeePic(file: Upload!, unitid: ID!): SemiPublicUser!
+  updateEmployeePic(file: Upload!, userid: ID!): SemiPublicUser!
 
   #Setup Finished
   initialSetup(token: String!, data: SetupInput!): Boolean!
