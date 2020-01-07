@@ -220,7 +220,8 @@ export const requiresRights = rights =>
               right == "myself" &&
               ((args.userid && args.userid == holder) ||
                 (args.employeeid && args.employeeid == holder) ||
-                (args.user && args.user.id && args.user.id == holder))
+                (args.user && args.user.id && args.user.id == holder) ||
+                (!args.user && !args.userid && !args.employeeid))
             ) {
               break;
             }
