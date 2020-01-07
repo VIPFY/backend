@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { requiresRights } from "../../helpers/permissions";
-import { NormalError } from "../../errors";
+import { NormalError, RightsError } from "../../errors";
 import { createLog } from "../../helpers/functions";
 import {
   newsletterSignup,
@@ -33,7 +33,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
@@ -79,7 +81,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
@@ -138,7 +142,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
@@ -388,7 +394,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
@@ -435,7 +443,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
@@ -492,7 +502,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
