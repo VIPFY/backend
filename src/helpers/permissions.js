@@ -263,6 +263,7 @@ export const requiresRights = rights =>
         }
       } catch (err) {
         if (err instanceof RightsError) {
+          console.error(err);
           throw err;
         } else {
           session.destroy(error => {
