@@ -11,7 +11,7 @@ import {
   USER_SESSION_ID_PREFIX,
   REDIS_SESSION_PREFIX
 } from "../../constants";
-import { NormalError } from "../../errors";
+import { NormalError, RightsError } from "../../errors";
 import {
   createLog,
   companyCheck,
@@ -303,7 +303,9 @@ export default {
         await companyCheck(company, id, unitid);
 
         if (!isAdmin) {
-          throw new Error("You don't have the necessary rights!");
+          throw new RightsError({
+            message: "You don't have the neccessary rights!"
+          });
         }
 
         // An admin should be able to update his own password
@@ -358,7 +360,14 @@ export default {
           unitid: unitid
         };
       } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
+        if (err instanceof RightsError) {
+          throw err;
+        } else {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
       }
     }
   ),
@@ -423,7 +432,9 @@ export default {
             await companyCheck(company, id, unitid);
 
             if (!isAdmin) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             }
 
             // An admin should be able to update his own password
@@ -553,8 +564,15 @@ export default {
           }
         });
       } catch (err) {
-        console.error(err, err.sql);
-        throw new NormalError({ message: err.message, internalData: { err } });
+        if (err instanceof RightsError) {
+          throw err;
+        } else {
+          console.error(err, err.sql);
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
       }
     }
   ),

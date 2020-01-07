@@ -6,7 +6,7 @@ import iplocate from "node-iplocate";
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { createSubscription } from "../services/stripe";
-import { NormalError } from "../errors";
+import { NormalError, RightsError } from "../errors";
 import {
   pubsub,
   NEW_NOTIFICATION,
@@ -578,7 +578,7 @@ export const check2FARights = async (userid, unitid, company) => {
   });
 
   if (!hasRight) {
-    throw new Error("You don't have the neccessary rights!");
+    throw new RightsError({ message: "You don't have the neccessary rights!" });
   } else {
     return userid;
   }

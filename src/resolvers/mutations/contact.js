@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { requiresRights } from "../../helpers/permissions";
-import { NormalError } from "../../errors";
+import { NormalError, RightsError } from "../../errors";
 import { createLog } from "../../helpers/functions";
 import {
   newsletterSignup,
@@ -33,7 +33,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
@@ -51,10 +53,14 @@ export default {
 
           return newAddress;
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
@@ -79,7 +85,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
@@ -110,10 +118,14 @@ export default {
 
           return updatedAddress[1][0];
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
@@ -138,7 +150,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
@@ -159,10 +173,14 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
@@ -388,7 +406,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
@@ -407,10 +427,14 @@ export default {
 
           return newPhone;
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
@@ -435,7 +459,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
@@ -464,10 +490,14 @@ export default {
 
           return updatedPhone[1][0];
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
@@ -492,7 +522,9 @@ export default {
             });
 
             if (!hasRight) {
-              throw new Error("You don't have the necessary rights!");
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
             } else {
               unitid = company;
             }
@@ -516,10 +548,14 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
