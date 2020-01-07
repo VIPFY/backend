@@ -109,7 +109,7 @@ export const schema = makeExecutableSchema({ typeDefs, resolvers });
   traceResolvers(schema);
 } */
 
-// Enable our Frontend running on localhost:3000 to access the Backend
+// Enable our Frontend running on various ports to access the Backend
 const corsOptions = {
   origin:
     ENVIRONMENT == "production"
@@ -123,7 +123,7 @@ const corsOptions = {
           "http://localhost:3000",
           "https://aws.vipfy.store"
         ]
-      : "http://localhost:3000",
+      : ["http://localhost:3000", "http://localhost:9000"],
   credentials: true // <-- REQUIRED backend setting for sessions
 };
 
@@ -153,11 +153,9 @@ app.use((req, res, next) => {
 });
 
 app.use(loggingMiddleWare);
-
 /* if (USE_XRAY) {
   app.use(AWSXRay.express.openSegment("backend"));
 } */
-
 let engine = undefined;
 if (ENVIRONMENT == "production") {
   engine = {
@@ -184,6 +182,14 @@ const gqlserver = new ApolloServer({
   }),
   debug: ENVIRONMENT == "development",
   validationRules: [depthLimit(10)],
+  upload: {
+    //Max allowed non-file multipart form field size in bytes; enough for your queries (default: 1 MB).
+    // maxFieldSize: 5,
+    //Max allowed file size in bytes (default: Infinity).
+    maxFileSize: 20000000,
+    //Max allowed number of files (default: Infinity).
+    maxFiles: 5
+  },
   introspection: true,
   tracing: true
 });

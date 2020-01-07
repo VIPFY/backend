@@ -1,7 +1,7 @@
+import moment from "moment";
 import { decode } from "jsonwebtoken";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
-import { googleMapsClient } from "../../services/gcloud";
 
 export default {
   fetchCompany: requiresAuth.createResolver(
@@ -64,13 +64,13 @@ export default {
   ),
 
   fetchUserSecurityOverview: requiresRights(["view-security"]).createResolver(
-    async (_, _args, { models, session }) => {
+    async (_p, _args, { models, session }) => {
       try {
         const {
           user: { company }
         } = decode(session.token);
 
-        const employees = await models.sequelize.query(
+        return models.sequelize.query(
           `SELECT human_data.*,
             u.*,
             COALESCE(twofa.twofactormethods, ARRAY []::json[]) as twofactormethods
@@ -96,8 +96,6 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-
-        return employees;
       } catch (err) {
         throw new Error(err.message);
       }
@@ -139,5 +137,63 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
+
+  fetchVacationRequests: requiresRights([
+    "view-vacation-requests"
+  ]).createResolver(async (_p, args, { models, session }) => {
+    try {
+      const {
+        user: { unitid, company }
+      } = decode(session.token);
+
+      const data = await models.sequelize.query(
+        `SELECT DISTINCT employee FROM department_employee_view
+       WHERE id = :company AND employee NOTNULL`,
+        {
+          replacements: { company },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
+
+      let employeeIDs = data.map(({ employee }) => employee);
+      if (args.userid && args.userid == unitid) {
+        employeeIDs = employeeIDs.filter(ID => ID == unitid);
+      }
+
+      const employees = await models.sequelize.query(
+        `
+        SELECT uv.id,
+        uv.firstname,
+        uv.middlename,
+        uv.lastname,
+        uv.isadmin,
+        uv.profilepicture,
+        COALESCE(vacation_requests_data.vacationrequests, ARRAY []::json[]) as vacationrequests,
+        COALESCE(vacation_year_days_data.vacationdaysperyear) as vacationdaysperyear
+          FROM users_view uv
+            LEFT JOIN (SELECT vrd.unitid,
+                              COALESCE(array_agg(json_build_object('id', vrd.id,'startdate', vrd.startdate, 'enddate', vrd.enddate,
+                                                                    'requested', vrd.requested, 'decided', vrd.decided,
+                                                                    'days', vrd.days, 'status', vrd.status)),
+                                        ARRAY []::json[]) as vacationrequests
+                        FROM vacation_requests_data vrd
+                        GROUP BY vrd.unitid) vacation_requests_data ON uv.id = vacation_requests_data.unitid
+            LEFT JOIN (SELECT vydd.unitid,
+                              jsonb_object_agg(vydd.year::TEXT, vydd.days)
+                                         as vacationdaysperyear
+                        FROM vacation_year_days_data vydd
+                        GROUP BY vydd.unitid) vacation_year_days_data ON uv.id = vacation_year_days_data.unitid
+          WHERE uv.id IN (:employeeIDs)`,
+        {
+          replacements: { employeeIDs },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
+
+      return employees;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  })
 };

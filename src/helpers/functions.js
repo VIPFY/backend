@@ -6,7 +6,7 @@ import iplocate from "node-iplocate";
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import { createSubscription } from "../services/stripe";
-import { NormalError } from "../errors";
+import { NormalError, RightsError } from "../errors";
 import {
   pubsub,
   NEW_NOTIFICATION,
@@ -127,32 +127,96 @@ export const formatHumanName = human =>
 /**
  * Create a notification and send it to the user via Webhooks
  * @param {object} notificationBody
- * @param {string} transaction
- * notificationBody needs these properties:
- * @param {string} receiver
- * @param {string} message
- * @param {string} icon
- * @param {string} link
+ * @param {string} [notificationBody.receiver]
+ * @param {boolean | string} [notificationBody.show]
+ * @param {string} notificationBody.message
+ * @param {string[]} notificationBody.changed The queries which should be refetched by the Frontend
+ * @param {string} notificationBody.icon
+ * @param {string} notificationBody.link
+ * @param {string} [transaction]
+ * @param {object} [informAdmins]
+ * @param {number} [informAdmins.company] The companies ID when all Admins should get a notification
+ * @param {string} [informAdmins.message] The message displayed to the Admins
  */
-export const createNotification = async (notificationBody, transaction) => {
+export const createNotification = async (
+  notificationBody,
+  transaction,
+  informAdmins
+) => {
   try {
     const sendtime = getDate();
 
     let notification = { dataValues: notificationBody };
-    if (notificationBody.show !== false) {
-      notification = await models.Notification.create(
-        { ...notificationBody, sendtime },
-        { transaction }
-      );
+
+    if (notificationBody.receiver) {
+      if (notificationBody.show !== false) {
+        notification = await models.Notification.create(
+          { ...notificationBody, sendtime },
+          { transaction }
+        );
+      }
     }
 
-    pubsub.publish(NEW_NOTIFICATION, {
-      newNotification: {
-        ...notification.dataValues,
-        changed: notificationBody.changed,
-        show: notificationBody.show
+    if (informAdmins) {
+      const admins = await models.sequelize.query(
+        `
+        SELECT DISTINCT employee
+        FROM department_employee_view dev
+                INNER JOIN right_data rd ON rd.holder = dev.employee
+        WHERE rd.forunit = :company
+          AND dev.id = :company
+          AND rd.type = 'admin';
+        `,
+        {
+          replacements: { company: informAdmins.company },
+          type: models.sequelize.QueryTypes.SELECT
+        }
+      );
+
+      const adminIDs = admins
+        .map(({ employee }) => employee)
+        .filter(ID => {
+          if (notificationBody.receiver) {
+            return ID != notificationBody.receiver;
+          } else {
+            return true;
+          }
+        });
+
+      for await (const id of adminIDs) {
+        if (notificationBody.show !== false) {
+          notification = await models.Notification.create(
+            {
+              ...notificationBody,
+              message: informAdmins.message,
+              receiver: id,
+              sendtime
+            },
+            { transaction }
+          );
+        }
       }
-    });
+
+      if (notificationBody.receiver) {
+        adminIDs.push(notificationBody.receiver);
+      }
+
+      for (const id of adminIDs) {
+        pubsub.publish(NEW_NOTIFICATION, {
+          newNotification: {
+            ...notification.dataValues,
+            message:
+              notificationBody.receiver && notificationBody.receiver == id
+                ? notificationBody.message
+                : informAdmins.message,
+            receiver: id,
+            sendtime: Date.now(),
+            changed: notificationBody.changed,
+            show: notificationBody.show
+          }
+        });
+      }
+    }
 
     return notification;
   } catch (err) {
@@ -399,8 +463,7 @@ export const companyCheck = async (company, unitid, employee) => {
     const findAdmin = models.User.findOne({ where: { id: unitid }, raw: true });
 
     const [inCompany, admin] = await Promise.all([findCompany, findAdmin]);
-
-    if (!inCompany) {
+    if (!inCompany.length > 0) {
       throw new Error("This user doesn't belong to this company!");
     }
 
@@ -484,7 +547,10 @@ export const checkMailPossible = email => {
 
 /**
  * Generates a full name out of the properties
- * @param {object} name
+ * @param {object} user The user object
+ * @param {string} user.firstname
+ * @param {string} [user.middlename]
+ * @param {string} user.lastname
  */
 export const concatName = ({ firstname, middlename, lastname }) =>
   `${firstname} ${middlename ? `${middlename} ` : ""}${lastname}`;
@@ -512,69 +578,9 @@ export const check2FARights = async (userid, unitid, company) => {
   });
 
   if (!hasRight) {
-    throw new Error("You don't have the neccessary rights!");
+    throw new RightsError({ message: "You don't have the neccessary rights!" });
   } else {
     return userid;
-  }
-};
-
-/**
- * Creates and returns a token for the session and saves the current session
- *
- * @param {object} user The User which should be saved in the token
- * @param {object} ctx The context which includes the current session
- */
-export const createSession = async (user, ctx) => {
-  try {
-    const token = await createToken(user, process.env.SECRET);
-
-    ctx.session.token = token;
-
-    // Should normally not be needed, but somehow it takes too long to
-    // update the session and it creates an Auth Error in the next step
-    // without it.
-    await ctx.session.save(err => {
-      if (err) {
-        console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
-      }
-    });
-
-    const location = await iplocate(
-      // In development using the ip is not possible
-      process.env.ENVIRONMENT == "production" ? ctx.ip : "82.192.202.122"
-    );
-
-    await ctx.redis.lpush(
-      `${USER_SESSION_ID_PREFIX}${user.unitid}`,
-      JSON.stringify({
-        session: ctx.sessionID,
-        ...ctx.userData,
-        ...location,
-        loggedInAt: Date.now()
-      })
-    );
-
-    return token;
-  } catch (error) {
-    throw new Error(error);
-  }
-};
-
-/**
- * Fetches all Sessions of a given User
- * @exports
- *
- * @param {any} redis
- * @param {number} userid
- */
-export const fetchSessions = async (redis, userid) => {
-  try {
-    const listName = `${USER_SESSION_ID_PREFIX}${userid}`;
-    const sessions = await redis.lrange(listName, 0, -1);
-
-    return sessions;
-  } catch (err) {
-    throw new Error(err);
   }
 };
 
@@ -601,6 +607,86 @@ export const parseSessions = async sessions => {
     });
 
     return parsedSessions;
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+/**
+ * Fetches all Sessions of a given User
+ * @exports
+ *
+ * @param {any} redis
+ * @param {number} userid
+ */
+export const fetchSessions = async (redis, userid) => {
+  try {
+    const listName = `${USER_SESSION_ID_PREFIX}${userid}`;
+    const sessions = await redis.lrange(listName, 0, -1);
+
+    return sessions;
+  } catch (err) {
+    throw new Error(err);
+  }
+};
+
+/**
+ * Creates and returns a token for the session and saves the current session
+ *
+ * @param {object} user The User which should be saved in the token
+ * @param {number} user.unitid In this context the user has an unitid instead of an id!
+ * @param {object} ctx The context which includes the current session
+ * @param {object} ctx.redis The Redis instance
+ */
+export const createSession = async (user, ctx) => {
+  try {
+    const token = await createToken(user, process.env.SECRET);
+
+    ctx.session.token = token;
+
+    // Should normally not be needed, but somehow it takes too long to
+    // update the session and it creates an Auth Error in the next step
+    // without it.
+    await ctx.session.save(err => {
+      if (err) {
+        console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
+      }
+    });
+
+    const location = await iplocate(
+      // In development using the ip is not possible
+      process.env.ENVIRONMENT == "production" ? ctx.ip : "82.192.202.122"
+    );
+
+    const sessions = await fetchSessions(ctx.redis, user.unitid);
+    const parsedSessions = await parseSessions(sessions);
+    const expiredSessions = [];
+
+    parsedSessions.forEach((session, i) => {
+      if (moment(session.loggedInAt).isBefore(moment().subtract(10, "hours"))) {
+        expiredSessions.push(
+          ctx.redis.lrem(
+            `${USER_SESSION_ID_PREFIX}${user.unitid}`,
+            0,
+            sessions[i]
+          )
+        );
+      }
+    });
+
+    await Promise.all(expiredSessions);
+
+    await ctx.redis.lpush(
+      `${USER_SESSION_ID_PREFIX}${user.unitid}`,
+      JSON.stringify({
+        session: ctx.sessionID,
+        ...ctx.userData,
+        ...location,
+        loggedInAt: Date.now()
+      })
+    );
+
+    return token;
   } catch (error) {
     throw new Error(error);
   }

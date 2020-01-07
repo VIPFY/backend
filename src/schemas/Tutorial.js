@@ -9,6 +9,7 @@ export const types = `
     renderoptions: JSON
   }
 `;
+
 export const queries = `
   tutorialSteps: [Tutorial]!
 `;

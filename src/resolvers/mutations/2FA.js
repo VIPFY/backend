@@ -49,7 +49,7 @@ export default {
     try {
       const { models, SECRET } = ctx;
       const { secret, id } = await models.TwoFA.findOne({
-        where: { unitid: userid, type, verified: true, deleted: false },
+        where: { unitid: userid, type, verified: true, deleted: null },
         raw: true
       });
       await checkToken(twoFAToken, "2FAToken");
@@ -130,5 +130,46 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  unForce2FA: requiresRights(["force-2FA"]).createResolver(
+    async (_p, { userid }, { models }) => {
+      try {
+        await models.Human.update(
+          { needstwofa: false },
+          { where: { unitid: userid } }
+        );
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  deactivate2FA: requiresRights(["force-2FA"]).createResolver(
+    async (_p, { userid }, { models }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          await Promise.all([
+            models.Human.update(
+              { needstwofa: false },
+              { where: { unitid: userid }, transaction: ta }
+            ),
+
+            models.TwoFA.update(
+              { deleted: models.sequelize.fn("NOW") },
+              { where: { unitid: userid }, transaction: ta }
+            )
+          ]);
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };

@@ -17,6 +17,7 @@ import {
   createCustomer,
   listCards,
   addCard,
+  removeCard,
   addSubscriptionItem,
   updateSubscriptionItem,
   removeSubscriptionItem,
@@ -26,6 +27,7 @@ import { BillingError, NormalError, InvoiceError } from "../../errors";
 import logger from "../../loggers";
 import { getInvoiceLink } from "../../services/aws";
 import createMonthlyInvoice from "../../helpers/createInvoice";
+import { debug } from "util";
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
@@ -38,7 +40,7 @@ export default {
    * @param {number} departmentid Identifier for the department the card is for.
    * @returns any
    */
-  addPaymentData: requiresRights(["create-paymentdata"]).createResolver(
+  addPaymentData: requiresRights(["create-payment-data"]).createResolver(
     async (_p, { data, address, email }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         const { models, session } = ctx;
@@ -160,8 +162,8 @@ export default {
       })
   ),
 
-  changeDefaultMethod: requiresRights(["edit-paymentdata"]).createResolver(
-    async (parent, { card }, ctx) =>
+  changeDefaultMethod: requiresRights(["edit-payment-data"]).createResolver(
+    async (_p, { card }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         const { models, session } = ctx;
         const {
@@ -220,6 +222,79 @@ export default {
             },
             ta
           );
+          throw new BillingError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  removePaymentData: requiresRights(["edit-payment-data"]).createResolver(
+    async (_p, { card }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, session } = ctx;
+        const {
+          user: { company, unitid }
+        } = decode(session.token);
+
+        try {
+          const department = await models.Unit.findByPk(company, {
+            raw: true
+          });
+
+          if (department.payingoptions.stripe.cards.length <= 1) {
+            throw new Error("You can't remove your last credit card");
+          }
+
+          await removeCard(department.payingoptions.stripe.id, card);
+
+          const cards = department.payingoptions.stripe.cards.filter(
+            creditCard => creditCard.id != card
+          );
+
+          const updatedDepartment = await models.Unit.update(
+            {
+              payingoptions: {
+                stripe: { ...department.payingoptions.stripe, cards }
+              }
+            },
+            { where: { id: company }, returning: true }
+          );
+
+          const p1 = createLog(
+            ctx,
+            "removePaymentData",
+            { department, updatedDepartment, card },
+            ta
+          );
+
+          const p2 = createNotification(
+            {
+              receiver: unitid,
+              message: "Removed Credit Card",
+              icon: "credit-card",
+              link: "billing",
+              changed: ["paymentMethods"]
+            },
+            ta
+          );
+
+          await Promise.all([p1, p2]);
+
+          return true;
+        } catch (err) {
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Removing of Credit Card failed",
+              icon: "credit-card",
+              link: "billing",
+              changed: ["paymentMethods"]
+            },
+            ta
+          );
+
           throw new BillingError({
             message: err.message,
             internalData: { err }
@@ -805,38 +880,36 @@ export default {
       })
   ),
 
-  createMonthlyInvoices: requiresMachineToken.createResolver(
-    async (_p, _args, { models }) => {
-      try {
-        const companies = await models.Department.findAll({
-          where: { iscompany: true, deleted: false },
-          raw: true
-        });
+  // createMonthlyInvoices: requiresMachineToken.createResolver(
+  //   async (_p, _args, { models }) => {
+  //     try {
+  //       const companies = await models.Department.findAll({
+  //         where: { iscompany: true, deleted: false },
+  //         raw: true
+  //       });
 
-        const promises = companies.map(company =>
-          createMonthlyInvoice(company.unitid)
-        );
+  //       const promises = companies.map(company =>
+  //         createMonthlyInvoice(company.unitid)
+  //       );
 
-        Promise.all(promises);
+  //       Promise.all(promises);
 
-        return true;
-      } catch (err) {
-        throw new InvoiceError(err);
-      }
+  //       return true;
+  //     } catch (err) {
+  //       throw new InvoiceError(err);
+  //     }
+  //   }
+  // ),
+
+  createMonthlyInvoices: async (_p, _args, { models }) => {
+    try {
+      await createMonthlyInvoice(2433);
+
+      return true;
+    } catch (err) {
+      throw new InvoiceError(err);
     }
-  ),
-
-  createInvoice: requiresVipfyAdmin.createResolver(
-    async (parent, { unitid }) => {
-      try {
-        await createInvoice(unitid, true);
-
-        return true;
-      } catch (err) {
-        throw new InvoiceError(err);
-      }
-    }
-  ),
+  },
 
   setBoughtPlanAlias: requiresRights(["edit-boughtplan"]).createResolver(
     async (parent, { alias, boughtplanid }, { models }) => {
@@ -853,6 +926,13 @@ export default {
     }
   ),
 
+  /**
+   * Adds the tag billing to an email
+   *
+   * @param {string} email
+   *
+   * @returns {object} The updated Email
+   */
   addBillingEmail: requiresRights(["edit-billing"]).createResolver(
     async (_p, { email }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
@@ -983,8 +1063,15 @@ export default {
       })
   ),
 
+  /**
+   * Creates a download link for an invoice
+   *
+   * @param {string} billid
+   *
+   * @returns {string} - Downloadlink for the invoices storage location
+   */
   downloadBill: requiresAuth.createResolver(
-    async (parent, { billid }, { models, session }) => {
+    async (_parent, { billid }, { models, session }) => {
       try {
         const {
           user: { company }
@@ -995,10 +1082,27 @@ export default {
           raw: true
         });
 
-        const time = moment();
+        return getInvoiceLink(billname, moment());
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
 
-        const invoiceLink = await getInvoiceLink(billname, time);
-        return invoiceLink;
+  createNewBillingEmail: requiresRights(["create-email"]).createResolver(
+    async (_p, { email }, { models, session }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
+
+        await models.Email.create({
+          unitid: company,
+          email,
+          tags: ["billing"]
+        });
+
+        return true;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

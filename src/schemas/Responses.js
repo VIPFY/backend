@@ -37,6 +37,16 @@ export const types = `
     allCompanies: Int!
   }
 
+  type VacationRequestResponse {
+    id: ID!
+    startdate: Date!
+    enddate: Date!
+    requested: Date!
+    decided: Date
+    days: Float!
+    status: VACATION_STATUS!
+  }
+
 # If the registration was successful, a boolean will be given back
   type RegisterResponse {
     ok: Boolean!
@@ -166,6 +176,7 @@ export const types = `
     passwordlength: Int
     passwordstrength: Int
     banned: Boolean!
+    needstwofa: Boolean
     suspended: Boolean!
     createdate: String!
     twofactormethods: [TwoFactorDetails]

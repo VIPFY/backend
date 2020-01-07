@@ -1,3 +1,14 @@
+const departmentFields = `
+  name: String!
+  legalinformation: JSON
+  unitid: Unit!
+  promocode: String
+  setupfinished: Boolean
+  iscompany: Boolean
+  isprivate: Boolean
+  internaldata: JSON
+`;
+
 export const types = `
   type ParentUnit {
     parentunit: Unit!
@@ -12,9 +23,8 @@ export const types = `
   }
 
   type Department {
-    name: String!
-    legalinformation: JSON
-    unitid: Unit!
+    id: ID!
+    ${departmentFields}
     banned: Boolean!
     deleted: Boolean!
     suspended: Boolean!
@@ -24,23 +34,12 @@ export const types = `
     apps: JSON
     domains: [Domain]
     createdate: String!
-    promocode: String
-    setupfinished: Boolean
-    iscompany: Boolean
-    isprivate: Boolean
-    internaldata: JSON
+    adminkey: Key
   }
 
   type DepartmentData {
-    name: String!
-    legalinformation: JSON
-    unitid: Unit!
-    promocode: String
-    setupfinished: Boolean
-    iscompany: Boolean
-    isprivate: Boolean
+    ${departmentFields}
     statisticdata: JSON
-    internaldata: JSON
   }
 
   type DepartmentEmail {
@@ -92,6 +91,7 @@ export const queries = `
 
   # Returns the amount of units in a Department
   fetchEmployees: [DepartmentEmployee]!
+  fetchVacationRequests(userid: ID): [VacationUser]!
 
   fetchUserSecurityOverview: [UserSecurityOverview]!
   fetchVipfyPlan: BoughtPlan
@@ -104,9 +104,9 @@ export const mutations = `
   editDepartmentName(departmentid: ID!, name: String!): Response!
 
   addEmployee(unitid: ID!, departmentid: ID!): Response!
-  createEmployee(file: Upload, addpersonal:JSON!, addteams:[JSON]!, apps:[JSON]!): Boolean!
-  createEmployee09(name: HumanName!, emails: [EmailInput!]!, password: String!, needpasswordchange: Boolean, file: Upload, birthday: Date, hiredate: Date, address: AddressInput, position: String, phones: [PhoneInput]): ID!
-  deleteEmployee(employeeid: ID!): Boolean!
+  createEmployeeOLD(file: Upload, addpersonal:JSON!, addteams:[JSON]!, apps:[JSON]!): Boolean!
+  createEmployee(name: HumanName!, emails: [EmailInput!]!, password: String!, needpasswordchange: Boolean, file: Upload, birthday: Date, hiredate: Date, address: AddressInput, position: String, phones: [PhoneInput]): SemiPublicUser!
+  deleteUser(userid: ID!, autodelete: Boolean): Boolean!
 
   # Saves data we fetched in the Business Advisor
   saveProposalData(data: ProposalInput!): Response!
@@ -121,6 +121,9 @@ export const mutations = `
   applyPromocode(promocode: String!): Response!
   banEmployee(userid: ID!): Response!
   unbanEmployee(userid: ID!): Response!
+
+  approveVacationRequest(userid: ID!, requestid: ID!): Boolean!
+  declineVacationRequest(userid: ID!, requestid: ID!): Boolean!
 `;
 
-//banEmployee, unbanEmployee unused but maybe useful?  createEmployee only used once
+// banEmployee, unbanEmployee unused but maybe useful?  createEmployee only used once

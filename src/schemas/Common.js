@@ -6,6 +6,13 @@ enum SEX {
   u
 }
 
+enum VACATION_STATUS {
+  PENDING,
+  REJECTED,
+  CONFIRMED,
+  CANCELLED
+}
+
 # An user must have one of these stati
 enum USER_STATUS {
   toverify,

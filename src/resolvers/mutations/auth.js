@@ -1,9 +1,8 @@
 import bcrypt from "bcrypt";
-import axios from "axios";
 import moment from "moment";
 import { decode } from "jsonwebtoken";
-import { sleep } from "@vipfy-private/service-base";
 import { parseName } from "humanparser";
+import crypto from "crypto";
 import {
   USER_SESSION_ID_PREFIX,
   REDIS_SESSION_PREFIX,
@@ -33,9 +32,6 @@ import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import logger from "../../loggers";
 
-const ZENDESK_TOKEN =
-  "Basic bnZAdmlwZnkuc3RvcmUvdG9rZW46bndGc3lDVWFpMUg2SWNKOXBpbFk3UGRtOHk0bXVhamZlYzFrbzBHeQ==";
-
 export default {
   signUp: async (
     _p,
@@ -44,7 +40,7 @@ export default {
   ) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
-        const { models, SECRET } = ctx;
+        const { models } = ctx;
         if (!privacy || !termsOfService) {
           throw new Error(
             "You have to confirm to our privacy agreement and our Terms of Service!"
@@ -69,15 +65,6 @@ export default {
         // generate a new random password
         const password = await randomPassword(3, 2);
         const pwData = await getNewPasswordData(password);
-
-        // Replace special characters in names to avoid frontend errors
-        // const filteredName = name;
-        // Object.keys(name).forEach(item => {
-        //   filteredName[item] = name[item].replace(
-        //     /['"[\]{}()*+?.,\\^$|#\s]/g,
-        //     "\\$&"
-        //   );
-        // });
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
@@ -100,41 +87,6 @@ export default {
 
         let company = await models.Unit.create({}, { transaction: ta });
         company = company.get();
-
-        const zendeskdata = await axios({
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: ZENDESK_TOKEN
-          },
-          data: JSON.stringify({
-            organization: {
-              name: `Company-${company.id}-${createSetupToken()}`,
-              notes: name
-            }
-          }),
-          url: "https://vipfy.zendesk.com/api/v2/organizations.json"
-        });
-
-        sleep(300);
-
-        await axios({
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: ZENDESK_TOKEN
-          },
-          data: JSON.stringify({
-            user: {
-              name: "User",
-              email, // TODO Mehrere Email-Adressen
-              verified: true,
-              organization_id: zendeskdata.data.organization.id,
-              external_id: `User-${unit.id}-${createSetupToken()}`
-            }
-          }),
-          url: "https://vipfy.zendesk.com/api/v2/users/create_or_update.json"
-        });
 
         const p3 = models.Right.create(
           { holder: unit.id, forunit: company.id, type: "admin" },
@@ -457,10 +409,15 @@ export default {
       }
     }),
 
-  signIn: async (_p, { email, password }, ctx) => {
+  signIn: async (_p, { email, password, passkey }, ctx) => {
     try {
-      if (password.length > MAX_PASSWORD_LENGTH) {
+      if (password && password.length > MAX_PASSWORD_LENGTH) {
         throw new Error("Password too long");
+      }
+
+      // Password is sent in cleartext, passkey is a password hashed on the client
+      if (passkey && passkey.length != 128) {
+        throw new Error("Incompatible passkey format, try updating VIPFY");
       }
 
       const message = "Email or Password incorrect!";
@@ -479,18 +436,23 @@ export default {
         throw new Error(message);
       }
 
-      const valid = await bcrypt.compare(password, emailExists.passwordhash);
+      let valid = false;
+      if (password) {
+        valid = await bcrypt.compare(password, emailExists.passwordhash);
+      } else if (passkey) {
+        // no further checks on the existance of emailExists.passkey to avoid
+        // revealing info in timing attacks.
+        valid = crypto.timingSafeEqual(
+          Buffer.from(emailExists.passkey || " ".repeat(128)),
+          Buffer.from(passkey)
+        );
+      } else {
+        throw new Error("No Authentification provided");
+      }
+
       if (!valid) throw new Error(message);
 
       await checkAuthentification(emailExists.unitid, emailExists.company);
-
-      // update password length and strength.
-      // This is temporary to fill values we didn't catch before implementing these metrics
-      const passwordstrength = computePasswordScore(password);
-      await ctx.models.Human.update(
-        { passwordstrength, passwordlength: password.length },
-        { where: { unitid: emailExists.unitid } }
-      );
 
       if (emailExists.twofactor) {
         const { secret } = await ctx.models.TwoFA.findOne({
@@ -691,6 +653,137 @@ export default {
           const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
 
           const [updatedUser, basicUser] = await Promise.all([p1, p2]);
+          const promises = [
+            createLog(
+              ctx,
+              "changePassword",
+              { updatedUser: updatedUser[1], oldUser: findOldPassword },
+              ta
+            ),
+            createNotification(
+              {
+                receiver: unitid,
+                message: "You successfully updated your password",
+                icon: "lock-alt",
+                link: "profile",
+                changed: [""]
+              },
+              ta
+            )
+          ];
+
+          await Promise.all(promises);
+
+          // todo: simpler way to get company, since we don't return user anymore
+          const user = await parentAdminCheck(basicUser);
+          findOldPassword.company = user.company;
+
+          const sessions = await fetchSessions(redis, unitid);
+
+          const sessionPromises = sessions.map(sessionString =>
+            redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
+          );
+
+          sessionPromises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
+          await Promise.all(sessionPromises);
+
+          const newToken = await createSession(findOldPassword, ctx);
+
+          return { ok: true, token: newToken };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
+  changePasswordEncrypted: requiresAuth.createResolver(
+    async (
+      _p,
+      { oldPasskey, newPasskey, passwordMetrics, newKey, replaceKeys },
+      ctx
+    ) =>
+      ctx.models.sequelize.transaction(async ta => {
+        try {
+          const { models, session, redis } = ctx;
+
+          if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
+            throw new Error("Password too long");
+          }
+
+          if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
+            throw new Error(
+              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+            );
+          }
+
+          if (passwordMetrics.passwordStrength < 2) {
+            throw new Error("Password too weak!");
+          }
+
+          if (oldPasskey.length != 128 || newPasskey.length != 128) {
+            throw new Error("Incompatible passkey format, try updating VIPFY");
+          }
+
+          const {
+            user: { unitid }
+          } = await decode(session.token);
+
+          const findOldPassword = await models.Login.findOne({
+            where: { unitid },
+            raw: true
+          });
+
+          if (!findOldPassword) throw new Error("No database entry found!");
+
+          const valid = crypto.timingSafeEqual(
+            Buffer.from(findOldPassword.passkey || " ".repeat(128)),
+            Buffer.from(oldPasskey)
+          );
+
+          if (!valid) throw new Error("Incorrect old password!");
+
+          const p1 = models.Human.update(
+            {
+              needspasswordchange: false,
+              ...passwordMetrics,
+              passkey: newPasskey
+            },
+            { where: { unitid }, returning: true, transaction: ta }
+          );
+          const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
+
+          delete newKey.id;
+          delete newKey.createdat;
+          delete newKey.unitid;
+          const p3 = models.Key.create(
+            {
+              ...newKey,
+              unitid
+            },
+            { transaction: ta }
+          );
+
+          const [updatedUser, basicUser, key] = await Promise.all([p1, p2, p3]);
+
+          await Promise.all(
+            replaceKeys.map(k =>
+              models.Key.update(
+                {
+                  id: k.id,
+                  privatekey: k.privatekey,
+                  encryptedby: k.encryptedby == "new" ? key.id : k.encryptedby
+                },
+                {
+                  where: { id: k.id, unitid, publickey: k.publickey },
+                  transaction: ta
+                }
+              )
+            )
+          );
+
           const promises = [
             createLog(
               ctx,

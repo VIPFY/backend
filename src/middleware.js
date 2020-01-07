@@ -120,7 +120,7 @@ export const loggingMiddleWare = (req, res, next) => {
       };
 
       if (parsedBody.data) {
-        logger.log("verbose", eventtype, log);
+        //logger.log("verbose", eventtype, log);
       }
 
       if (user) {

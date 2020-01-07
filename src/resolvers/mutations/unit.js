@@ -1,5 +1,7 @@
-import { decode } from "jsonwebtoken";
+import { decode, verify } from "jsonwebtoken";
 import iplocate from "node-iplocate";
+import moment from "moment";
+import "moment-feiertage";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
   userPicFolder,
@@ -9,7 +11,7 @@ import {
   USER_SESSION_ID_PREFIX,
   REDIS_SESSION_PREFIX
 } from "../../constants";
-import { NormalError } from "../../errors";
+import { NormalError, RightsError } from "../../errors";
 import {
   createLog,
   companyCheck,
@@ -73,29 +75,25 @@ export default {
   ),
 
   updateEmployeePic: requiresRights(["edit-user"]).createResolver(
-    async (_p, { file, unitid }, ctx) =>
-      models.sequelize.transaction(async ta => {
+    async (_p, { file, userid }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, session } = ctx;
-          const {
-            user: { unitid: adminid }
-          } = decode(session.token);
+          const { models } = ctx;
 
           const parsedFile = await file;
-
           const profilepicture = await uploadUserImage(
             parsedFile,
             userPicFolder
           );
 
           const oldUnit = await models.Unit.findOne({
-            where: { id: unitid },
+            where: { id: userid },
             raw: true
           });
 
           const updatedUnit = await models.Unit.update(
             { profilepicture },
-            { where: { id: unitid }, returning: true, transaction: ta }
+            { where: { id: userid }, returning: true, transaction: ta }
           );
 
           const p1 = createLog(
@@ -105,7 +103,7 @@ export default {
             ta
           );
 
-          const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
+          const p2 = models.User.findOne({ where: { id: userid }, raw: true });
 
           const [, user] = await Promise.all([p1, p2]);
           const employee = await parentAdminCheck(user);
@@ -305,7 +303,9 @@ export default {
         await companyCheck(company, id, unitid);
 
         if (!isAdmin) {
-          throw new Error("You don't have the necessary rights!");
+          throw new RightsError({
+            message: "You don't have the neccessary rights!"
+          });
         }
 
         // An admin should be able to update his own password
@@ -355,10 +355,224 @@ export default {
         return {
           id: unitid,
           passwordlength: pw.passwordlength,
-          passwordstrength: pw.passwordstrength
+          passwordstrength: pw.passwordstrength,
+          needspasswordchange: true,
+          unitid: unitid
         };
       } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
+        if (err instanceof RightsError) {
+          throw err;
+        } else {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      }
+    }
+  ),
+
+  updateEmployeePasswordEncrypted: requiresRights([
+    "edit-employee"
+  ]).createResolver(
+    async (
+      _p,
+      {
+        unitid,
+        newPasskey,
+        passwordMetrics,
+        logOut,
+        newKey,
+        deprecateAllExistingKeys,
+        licenceUpdates
+      },
+      ctx
+    ) => {
+      try {
+        const { models, session } = ctx;
+        const {
+          user: { unitid: id, company }
+        } = decode(session.token);
+
+        return await ctx.models.sequelize.transaction(async transaction => {
+          try {
+            if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
+              throw new Error("Password too long");
+            }
+
+            if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
+              throw new Error(
+                `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+              );
+            }
+
+            if (passwordMetrics.passwordStrength < 2) {
+              throw new Error("Password too weak!");
+            }
+
+            if (newPasskey.length != 128) {
+              throw new Error(
+                "Incompatible passkey format, try updating VIPFY"
+              );
+            }
+
+            const p1 = models.User.findOne({
+              where: { id, isadmin: true },
+              raw: true,
+              transaction
+            });
+
+            const p2 = models.User.findOne({
+              where: { id: unitid },
+              raw: true,
+              transaction
+            });
+            const [isAdmin, employee] = await Promise.all([p1, p2]);
+
+            await companyCheck(company, id, unitid);
+
+            if (!isAdmin) {
+              throw new RightsError({
+                message: "You don't have the neccessary rights!"
+              });
+            }
+
+            // An admin should be able to update his own password
+            if (employee.isadmin && employee.id != isAdmin.id) {
+              throw new Error("You can't change another admins password!");
+            }
+
+            if (deprecateAllExistingKeys) {
+              await models.Key.update(
+                { deprecated: true },
+                { where: { unitid }, transaction }
+              );
+            }
+
+            const promises = [];
+            promises.push(
+              models.Human.update(
+                {
+                  needspasswordchange: true,
+                  ...passwordMetrics,
+                  passkey: newPasskey
+                },
+                { where: { unitid }, returning: true, transaction }
+              )
+            );
+
+            delete newKey.id;
+            delete newKey.createdat;
+            delete newKey.unitid;
+            promises.push(
+              models.Key.create(
+                {
+                  ...newKey,
+                  unitid
+                },
+                { transaction }
+              )
+            );
+
+            promises.push(
+              models.LicenceData.findAll({
+                attributes: ["id", "key"],
+                where: {
+                  id: { [models.Op.in]: licenceUpdates.map(u => u.licence) }
+                },
+                transaction
+              })
+            );
+
+            console.log("a", Promise.all, promises);
+            // let human = await promises[0];
+            // console.log("human", human);
+            // let key = await promises[1];
+            // console.log("key", key);
+            // let licences = await promises[2];
+            let [human, key, licences] = await Promise.all(promises);
+            console.log("b", licences);
+
+            promises.length = 0;
+            for (const u of licenceUpdates) {
+              if (u.new.key == "new") {
+                u.new.key = key.id;
+              }
+              for (const l of licences) {
+                if (l.key.encrypted) {
+                  l.key = {
+                    ...l.key,
+                    encrypted: l.key.encrypted.map(e => {
+                      if (
+                        e.key != u.old.key ||
+                        e.data != u.old.data ||
+                        e.belongsto != u.old.belongsto
+                      ) {
+                        return e;
+                      }
+                      return u.new;
+                    })
+                  };
+                }
+              }
+            }
+
+            Promise.all(
+              licences.map(l => l.save({ fields: ["key"], transaction }))
+            );
+
+            const employeeName = concatName(employee);
+            const adminName = concatName(isAdmin);
+
+            // await sendEmail({
+            //   templateId: "d-9beb3ea901d64894a8227c295aa8548e",
+            //   personalizations: [
+            //     {
+            //       to: [{ email: employee.emails[0] }],
+            //       dynamic_template_data: { employeeName, adminName, password }
+            //     }
+            //   ],
+            //   fromName: "VIPFY GmbH"
+            // });
+
+            if (logOut) {
+              const sessions = await fetchSessions(ctx.redis, unitid);
+
+              const sessionPromises = [];
+
+              sessions.forEach(sessionString => {
+                sessionPromises.push(
+                  ctx.redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
+                );
+              });
+
+              sessionPromises.push(
+                ctx.redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`)
+              );
+              await Promise.all(sessionPromises);
+            }
+
+            return {
+              id: unitid,
+              ...passwordMetrics,
+              needspasswordchange: true,
+              unitid: unitid
+            };
+          } catch (error) {
+            console.log(error);
+            throw error;
+          }
+        });
+      } catch (err) {
+        if (err instanceof RightsError) {
+          throw err;
+        } else {
+          console.error(err, err.sql);
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
       }
     }
   ),
@@ -368,7 +582,7 @@ export default {
       const { models, session } = ctx;
       const {
         user: { unitid }
-      } = decode(session.token);
+      } = decode(ctx.session.token);
 
       try {
         await models.Human.update(
@@ -435,7 +649,7 @@ export default {
 
         await ctx.redis.lpush(
           `${IMPERSONATE_PREFIX}${id}`,
-          ctx.JSON.stringify({
+          JSON.stringify({
             session: ctx.sessionID,
             ...ctx.userData,
             ...location,
@@ -492,5 +706,272 @@ export default {
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
-  }
+  },
+
+  initialSetup: async (_p, { token, data }, { models, SECRET }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { unitid, company }
+        } = verify(token, SECRET);
+
+        const promises = [];
+
+        if (data.name) {
+          const name = data.name.split(" ");
+          const firstname = name[0];
+          let middlename = "";
+          let lastname = "";
+
+          if (name.length > 1) {
+            if (name.length > 2) {
+              lastname = name[name.length - 1];
+
+              name.pop();
+              name.shift();
+              middlename = name.join(" ");
+            } else {
+              lastname = name[1];
+            }
+          }
+
+          promises.push(
+            models.Human.update(
+              { firstname, middlename, lastname },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
+        if (data.position) {
+          promises.push(
+            models.Human.update(
+              { position: data.position },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
+        if (data.company) {
+          promises.push(
+            models.DepartmentData.update(
+              { name: data.name },
+              { where: { unitid: company }, transaction: ta }
+            )
+          );
+        }
+
+        if (data.sector) {
+          promises.push(
+            models.Human.update(
+              { statisticdata: { sector: data.sector } },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
+        if (data.country) {
+          promises.push(
+            models.Address.update(
+              { country: data.country },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
+        await Promise.all(promises);
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }),
+
+  setVacationDays: requiresAuth.createResolver(
+    async (_p, { year, days, userid }, { models, session }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
+
+        await models.sequelize.query(
+          `
+        INSERT into vacation_year_days_data(unitid, company, year, days)
+        VALUES(:userid, :company, :year, :days)
+        ON CONFLICT (unitid, company, year) DO UPDATE SET days = :days
+        `,
+          { replacements: { year, company, days, userid } }
+        );
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  requestVacation: requiresAuth.createResolver(
+    async (_p, { startDate, endDate, days }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
+
+          const startdate = moment(startDate);
+          const enddate = moment(endDate);
+
+          const computeVacationDays = (date, fullDays) => {
+            if (fullDays == 1) {
+              return 1;
+            }
+
+            const clonedDate = moment(date);
+            let offDays = 0;
+
+            for (let i = 0; i < fullDays; i++) {
+              clonedDate.add(i < 2 ? i : 1, "days");
+
+              if (
+                clonedDate.isoWeekday() == 6 ||
+                clonedDate.isoWeekday() == 7 ||
+                clonedDate.isHoliday(["SL"]).holidayName
+              ) {
+                offDays++;
+              }
+            }
+
+            return fullDays - offDays;
+          };
+
+          const computedDays = computeVacationDays(
+            startdate,
+            moment
+              .duration(
+                moment(enddate)
+                  .endOf("day")
+                  // Otherwise it won't be a full day
+                  .add(1, "day")
+                  .diff(startdate.startOf("day"))
+              )
+              .days()
+          );
+
+          if (computedDays != days) {
+            throw new Error(
+              "The days don't match the length of the vacation duration!"
+            );
+          }
+
+          const request = await models.VacationRequest.create(
+            {
+              unitid,
+              startdate: startdate.format("LL"),
+              enddate: enddate.format("LL"),
+              days,
+              requested: models.sequelize.fn("NOW")
+            },
+            { transaction: ta }
+          );
+
+          createNotification(
+            {
+              receiver: unitid,
+              message: "Vacation request successfully created",
+              icon: "umbrella-beach",
+              link: "vacation",
+              changed: ["vacationRequest"]
+            },
+            ta,
+            { company, message: `User ${unitid} requested vacation` }
+          );
+
+          return request;
+        });
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
+  ),
+
+  requestHalfVacationDay: requiresAuth.createResolver(
+    async (_p, { day }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
+
+          const request = await models.VacationRequest.create(
+            {
+              unitid,
+              startdate: day,
+              enddate: day,
+              days: 0.5,
+              requested: models.sequelize.fn("NOW")
+            },
+            { transaction: ta }
+          );
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Vacation request successfully created",
+              icon: "umbrella-beach",
+              link: "vacation",
+              changed: ["vacationRequest"]
+            },
+            ta,
+            { company, message: `User ${unitid} requested half a vacation day` }
+          );
+
+          return request;
+        });
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  deleteVacationRequest: requiresAuth.createResolver(
+    async (_p, { id }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
+          const {
+            user: { unitid, company }
+          } = decode(session.token);
+
+          const res = await models.VacationRequest.update(
+            { decided: models.sequelize.fn("NOW"), status: "CANCELLED" },
+            { where: { id, unitid }, transaction: ta }
+          );
+
+          if (res[0] == 0) {
+            throw new Error("Could not update request");
+          }
+
+          await createNotification(
+            {
+              message: "Successfully deleted request",
+              icon: "umbrella-beach",
+              link: "vacation",
+              changed: ["vacationRequest"]
+            },
+            ta,
+            { company, message: `User ${unitid} deleted a vacation request` }
+          );
+
+          return true;
+        });
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    }
+  )
 };

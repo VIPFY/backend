@@ -14,6 +14,35 @@ export const types = `
     location: Location
     loggedInAt: Date!
   }
+
+  type PasswordParams {
+    id: ID!
+    salt: String!
+    ops: Int!
+    mem: Int!
+  }
+
+  type Key {
+    id: ID!
+    unitid: PublicUser!
+    privatekey: String!
+    publickey: String!
+    createdat: Date!
+    encryptedby: Key
+  }
+
+  input KeyInput {
+    id: ID
+    unitid: ID
+    privatekey: String
+    publickey: String
+    encryptedby: ID
+  }
+
+  input PasswordMetricsInput {
+    passwordlength: Int!
+    passwordstrength: Int!
+  }
 `;
 
 export const queries = `
@@ -22,6 +51,10 @@ export const queries = `
   
   # Fetches all Sessions of a specific User
   fetchUsersSessions(userid: ID!): [SessionResponse!]!
+
+  fetchPwParams(email: String!): PasswordParams!
+  fetchKey(id: ID!): Key
+  fetchCurrentKey(unitid: ID): Key
 `;
 
 export const mutations = `
@@ -29,8 +62,7 @@ export const mutations = `
   signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!, isprivate: Boolean): RegisterResponse!
   # After confirming the email, an user has to set a password
   signUpConfirm(email: String!, password: String!, passwordConfirm: String!, token: String!): SignUpConfirmResponse!
-
-  signIn(email: String!, password: String!): LoginResponse!
+  signIn(email: String!, password: String, passkey: String): LoginResponse!
   signOut: Boolean!
   signOutSession(sessionID: String!): [SessionResponse!]!
   signOutUser(sessionID: String!, userid: ID!): [SessionResponse!]!
@@ -39,6 +71,7 @@ export const mutations = `
 
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!
+  changePasswordEncrypted(oldPasskey: String!, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, newKey: KeyInput!, replaceKeys: [KeyInput!]!): LoginResponse!
 
   # Send the user a new link for sign up
   forgotPassword(email: String!): ForgotPwResponse!

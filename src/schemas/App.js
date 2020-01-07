@@ -1,60 +1,82 @@
+const appFields = `
+  id: ID!
+  disabled: Boolean!
+  name: String!
+  icon: String
+  loginurl: String
+  description: String
+  teaserdescription: String
+  needssubdomain: Boolean
+  website: String
+  logo: String
+  images: [String]
+  features: JSON
+  options: JSON
+  developer: Unit!
+  supportunit: Unit!
+  color: String!
+  deprecated: Boolean!
+  hidden: Boolean!
+  owner: Department
+`;
+
+const basicLicenceFields = `
+  id: ID!
+  starttime: Date!
+  endtime: Date
+`;
+
+const licenceFields = `
+  options: JSON
+  boughtplanid: BoughtPlan!
+  pending: Boolean
+  dashboard: Int
+  tags: [String]
+`;
+
 export const types = `
   type App {
-    id: ID!
-    name: String!
-    icon: String
-    loginurl: String
-    description: String
-    teaserdescription: String
-    needssubdomain: Boolean
-    website: String
-    disabled: Boolean!
-    logo: String
-    images: [String]
-    features: JSON
-    options: JSON
-    developer: Unit!
-    supportunit: Unit!
-    color: String!
-    deprecated: Boolean!
-    hidden: Boolean!
+    ${appFields}
     hasboughtplan: Boolean
-    owner: Department
   }
 
-  type CompanyService{
+  type CompanyServiceNEW{
     id: ID!
     app: AppDetails!
-    licences: [Licence]
+    licences: [LicenceAssignment]
     teams: [TeamBoughtPlan]
   }
 
-  type AppDetails {
+  type CompanyService{
+    app: AppDetails!
+    orbitids: [Orbit]
+  }
+
+  type Orbit {
     id: ID!
-    name: String
-    developername: String!
-    icon: String
-    loginurl: String
-    needssubdomain: Boolean
-    logo: String
+    buytime: String
+    alias: String
+    endtime: String
     description: String
-    teaserdescription: String
-    website: String
-    images: [String]
-    features: JSON
-    options: JSON
-    disabled: Boolean
+    key: JSON
+    buyer: Unit!
+    payer: Unit!
+    usedby: Unit!
+    planid: Plan!
+    totalprice: Float
+    accounts: [Account]
+    teams: [Team]
+  }
+
+  type AppDetails {
+    ${appFields}
     avgstars: Float
     cheapestprice: Float
+    developername: String!
     cheapestpromo: Float
     supportwebsite: String
     supportphone: String
     developerwebsite: String
-    developer: Unit!
-    supportunit: Unit!
-    color: String!
-    hidden: Boolean!
-    owner: Unit
   }
 
   type TeamBoughtPlan {
@@ -63,7 +85,16 @@ export const types = `
   }
 
   input AppInput {
+    loginurl: String
+    description: String
+    teaserdescription: String
+    needssubdomain: Boolean
+    website: String    
     name: String
+    disabled: Boolean
+    icon: Upload
+    logo: Upload
+    images: [Upload!]
     developername: String
     commission: String
     color: String
@@ -71,24 +102,15 @@ export const types = `
     supportphone: String
     supportwebsite: String
     developerwebsite: String
-    description: String
-    teaserdescription: String
-    loginurl: String
-    website: String
     external: Boolean
-    disabled: Boolean
-    needssubdomain: Boolean
     developer: ID
     supportunit: ID
     hidden: Boolean
-    icon: Upload
-    logo: Upload
-    images: [Upload!]
     image: Upload
   }
 
   input SSOInput {
-    images: [Upload]
+    images: [Upload!]
     name: String!
     loginurl: String!
     email: String!
@@ -112,60 +134,89 @@ export const types = `
   }
 
   type ServiceLicence{
-    id: ID!
-    licence: Licence!
-    starttime: Date!
-    endtime: Date
+    ${basicLicenceFields}
     agreed: Boolean
     alias: String
+    licence: Licence!
   }
 
   type Licence {
-    id: ID!
-    options: JSON
-    starttime: String!
-    endtime: Date
+    ${basicLicenceFields}
+    ${licenceFields}
+    sidebar: Int
     agreed: Boolean
     disabled: Boolean
-    pending: Boolean
     key: JSON
-    boughtplanid: BoughtPlan!
     unitid: SemiPublicUser
-    dashboard: Int
-    sidebar: Int
     view: Boolean!
     edit: Boolean!
     delete: Boolean!
     use: Boolean!
     vacationstart: Date
     vacationend: Date
-    tags: [String]
     teamlicence: Team
     teamaccount: Team
+    alias: String
+    rightscount: Int
+    assignmentid: LicenceAssignment
+    vacationid: Vacation
   }
 
-  type PublicLicence {
+  type Account {
     id: ID!
-    starttime: String!
-    endtime: Date
+    boughtplanid: BoughtPlan
     options: JSON
-    boughtplanid: BoughtPlan!
-    unitid: PublicUser
+    starttime: Date
+    endtime: Date
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
+    emailprefix: String
     pending: Boolean
-    dashboard: Int
-    sidebar: Int
-    tags: [String]
+    alias: String
+    assignments: [LicenceAssignment]
   }
 
-  type TempLicence {
-    id: ID!
-    licenceid: PublicLicence!
+  type LicenceAssignment {
+    ${basicLicenceFields}
+    ${licenceFields}
+    sidebar: Int
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
+    unitid: SemiPublicUser
     view: Boolean!
     edit: Boolean!
     delete: Boolean!
     use: Boolean!
+    vacationstart: Date
+    vacationend: Date
+    teamlicence: Team
+    teamaccount: Team
+    alias: String
+    rightscount: Int
+    accountid: ID
+    assignmentid: ID
+    assignoptions: JSON
+    vacationid: Vacation
+  }
+
+  type PublicLicence {
+    ${basicLicenceFields}
+    ${licenceFields}
+    sidebar: Int
+    unitid: PublicUser
+  }
+
+  type TempLicence {
+    id: ID!
     starttime: Date!
     endtime: Date!
+    view: Boolean!
+    edit: Boolean!
+    delete: Boolean!
+    use: Boolean!
+    licenceid: PublicLicence!
     unitid: SemiPublicUser!
     owner: SemiPublicUser!
     tags: [String]!
@@ -181,6 +232,13 @@ export const types = `
     tags: [String]
     starttime: Date
     endtime: Date
+  }
+
+  input LicenceRights {
+    view: Boolean
+    edit: Boolean
+    delete: Boolean
+    use: Boolean
   }
 
   input LicenceRightUpdateInput {
@@ -236,12 +294,12 @@ export const types = `
   type IDID {
     id: ID!
   }
+
 `;
 
 export const queries = `
   # Returns all apps in Vipfy
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
-  fetchAllAppsEnhanced: [App]!
 
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
@@ -258,10 +316,11 @@ export const queries = `
   # Returns all Licences of a defined user
   fetchUserLicences(unitid: ID!): [Licence]
 
+  # Returns all LicenceAssignments of a defined user
+  fetchUserLicenceAssignments(unitid: ID): [LicenceAssignment]
+
   fetchUnitAppsSimpleStats(departmentid: ID!): [SimpleStats]
-
-  fetchSupportToken: String
-
+  fetchSupportRequests: JSON
   fetchTotalAppUsage(starttime: Date, endtime: Date): [AppUsage]!
 
   # Total time spend in a specific boughtplan at some time, broken down by user
@@ -271,9 +330,11 @@ export const queries = `
   fetchCompanyServices: [CompanyService]
   fetchCompanyService(serviceid: ID!): CompanyService
 
-  fetchIssuedLicences(unitid: ID!): [TempLicence!]
   fetchTempLicences(unitid: ID!): [TempLicence!]
   bulkUpdateLayout(layouts: [LayoutInput!]!): Boolean!
+
+  fetchUseableApps: [AppDetails]
+
 `;
 
 export const mutations = `
@@ -281,17 +342,12 @@ export const mutations = `
   switchAppsLayout(app1: LayoutInput!, app2: LayoutInput!): [Licence!]!
   # Admin: delete App from database
   deleteApp(id: ID!): Response!
+  sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
 
   createOwnApp(ssoData: SSOInput!, userids: [ID]): IDID
-  giveTemporaryAccess(licences: [LicenceRightInput!]!): TempAccessResponse!
-  updateTemporaryAccess(licence: LicenceRightUpdateInput, rightid: ID!): TempLicence!
-  removeTemporaryAccess(rightid: ID!): Boolean!
 
   # Admin: toogle App between disabled and enabled
   toggleAppStatus(id: ID!): Response!
-
-  # Give an user a licence from the licence pool of department
-  distributeLicence(licenceid: ID!, unitid: ID!, departmentid: ID!): DistributeResponse!
 
   # Deletes a licence on a set date, if it is after the normal cancel period
   deleteLicenceAt(licenceid: ID!, time: Date!): Date!
@@ -307,6 +363,7 @@ export const mutations = `
   # Adds the data of an external App
   addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): BoughtPlan!
   addExternalLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID): Response!
+  addEncryptedExternalLicence(key: JSON!, appid: ID!, boughtplanid: ID!, price: Float, touser: ID): Licence!
 
   failedIntegration(data: SSOResult!): Boolean!
 
@@ -320,7 +377,21 @@ export const mutations = `
   deleteService(serviceid: ID!): Boolean!
   removeLicence(licenceid: ID!, oldname: String!): Boolean!
 
-  distributeLicence10(licenceid: ID!, userid: ID!): Boolean!
+  addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): ID!
+  addEncryptedExternalAccountLicence(key: JSON!, appid: ID, boughtplanid: ID!, price: Float, touser: ID, identifier: String, options: JSON): Licence!
 
-  addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): Boolean!
+  updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
+
+
+  createAccount(orbitid: ID!, alias: String, logindata: JSON!, starttime: Date, endtime: Date): Account!
+  changeAccount(accountid: ID!, alias: String, logindata: JSON, starttime: Date, endtime: Date): Account
+
+  assignAccount(licenceid: ID!, userid: ID!, rights: LicenceRights, tags: [String], starttime: Date, endtime: Date): Boolean!
+  terminateAssignAccount(assignmentid: ID!, endtime: Date, isNull: Boolean): LicenceAssignment
+
+  createOrbit(planid: ID!, alias: String, options: JSON, starttime: Date, endtime: Date): BoughtPlan
+  changeOrbit(orbitid: ID!, alias: String, loginurl: String, starttime: Date, endtime: Date): Orbit!
+
+  createVacation(userid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
+  editVacation(vacationid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
   `;

@@ -4,10 +4,14 @@
  * they just have to wrapped around the component which shall be protected.
  */
 
-import { decode } from "jsonwebtoken";
+import { decode, verify } from "jsonwebtoken";
 import { checkRights } from "@vipfy-private/messaging";
-import { checkCompanyMembership } from "./companyMembership";
-import { AuthError, AdminError, RightsError } from "../errors";
+import {
+  checkCompanyMembership,
+  checkLicenceMembership,
+  checkOrbitMembership
+} from "./companyMembership";
+import { AuthError, AdminError, RightsError, NormalError } from "../errors";
 
 const createResolver = resolver => {
   const baseResolver = resolver;
@@ -23,23 +27,28 @@ const createResolver = resolver => {
 
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(
-  async (_parent, _args, { models, session }) => {
+  async (_parent, _args, { models, session, SECRET }, info) => {
     try {
-      console.log("\x1b[1m%s\x1b[0m", "LOG req.session.token", session);
       if (!session || !session.token) {
         throw new Error("No valid token received!");
       }
 
       const {
         user: { company, unitid }
-      } = decode(session.token);
+      } = verify(session.token, SECRET);
 
       const valid = models.User.findOne({
         where: { id: unitid },
         raw: true
       });
 
-      if (!valid || valid.deleted || valid.suspended || valid.banned) {
+      if (
+        !valid ||
+        valid.deleted ||
+        valid.companyban ||
+        valid.suspended ||
+        valid.banned
+      ) {
         throw new Error("Login is currently not possible for you!");
       }
 
@@ -80,7 +89,15 @@ export const requiresAuth = createResolver(
           console.error(err);
         }
       });
-      throw new AuthError(error.message);
+
+      if (info.fieldName == "signOut") {
+        throw new NormalError({
+          message: error.message,
+          internalData: { error }
+        });
+      } else {
+        throw new AuthError(error.message);
+      }
     }
   }
   // all other cases handled by auth middleware
@@ -127,6 +144,14 @@ export const requiresRights = rights =>
             args.departmentid,
             "department"
           );
+        }
+
+        if (args.licenceid) {
+          await checkLicenceMembership(models, company, args.licenceid);
+        }
+
+        if (args.orbitid) {
+          await checkOrbitMembership(models, company, args.orbitid);
         }
 
         if (args.teamid && args.teamid != "new") {
@@ -182,43 +207,63 @@ export const requiresRights = rights =>
           );
         }
 
-        if (typeof rights[0] == "string") {
-          const hasRight = await models.Right.findOne({
-            where: models.sequelize.and(
-              { holder },
-              { forunit: { [models.Op.or]: [company, null] } },
-              models.sequelize.or(
-                { type: { [models.Op.and]: rights } },
-                { type: "admin" }
-              )
-            )
-          });
+        const rightsCheck = {};
+        let index = 0;
 
-          if (!hasRight) {
-            throw new RightsError();
-          }
-        } else {
-          let hasRight = null;
+        rights.forEach((_r, i) => {
+          rightsCheck[i] = true;
+        });
 
-          for await (const right of rights[0]) {
-            hasRight = await models.Right.findOne({
+        for await (const right of rights) {
+          if (typeof right == "string") {
+            if (
+              right == "myself" &&
+              ((args.userid && args.userid == holder) ||
+                (args.employeeid && args.employeeid == holder) ||
+                (args.user && args.user.id && args.user.id == holder))
+            ) {
+              break;
+            }
+
+            const hasRight = await models.Right.findOne({
               where: models.sequelize.and(
                 { holder },
                 { forunit: { [models.Op.or]: [company, null] } },
-                models.sequelize.or(
-                  { type: { [models.Op.and]: right } },
-                  { type: "admin" }
-                )
+                models.sequelize.or({ type: right }, { type: "admin" })
               )
             });
-          }
 
-          if (!hasRight) {
-            throw new RightsError();
+            if (hasRight) {
+              break;
+            } else {
+              rightsCheck[index] = false;
+            }
+          } else {
+            for await (const subRight of right) {
+              const hasRight = await models.Right.findOne({
+                where: models.sequelize.and(
+                  { holder },
+                  { forunit: { [models.Op.or]: [company, null] } },
+                  models.sequelize.or({ type: subRight }, { type: "admin" })
+                )
+              });
+
+              if (!hasRight) {
+                rightsCheck[index] = false;
+                break;
+              }
+            }
           }
+          index++;
+        }
+
+        const okay = Object.values(rightsCheck).some(val => val === true);
+        if (!okay) {
+          throw new RightsError();
         }
       } catch (err) {
         if (err instanceof RightsError) {
+          console.error(err);
           throw err;
         } else {
           session.destroy(error => {
@@ -226,6 +271,7 @@ export const requiresRights = rights =>
               console.error(error);
             }
           });
+          console.error(err);
           throw new AuthError({
             message:
               "Opps, something went wrong. Please report this error with id auth_1"

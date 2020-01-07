@@ -2,7 +2,6 @@ import fs from "fs";
 import moment from "moment";
 import path from "path";
 import winston from "winston";
-import { LoggingWinston } from "@google-cloud/logging-winston";
 
 const date = moment().format("YYYY-MM-DD");
 const logDir = path.join(__dirname, "./logs");
@@ -43,8 +42,6 @@ if (!process.env.NO_LOG_FILE) {
 
 if (process.env.WINSTON == "generic") {
   logger.add(new winston.transports.Console(options.console));
-} else if (process.env.WINSTON == "gcp") {
-  logger.add(new LoggingWinston());
 }
 
 export default logger;

@@ -105,7 +105,7 @@ export default {
       })
   ),
 
-  createEmployee09: requiresRights(["create-employees"]).createResolver(
+  createEmployee: requiresRights(["create-employees"]).createResolver(
     async (_p, args, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
@@ -293,7 +293,19 @@ export default {
             ]
           });
 
-          return unit.id;
+          await createNotification({
+            receiver: unitid,
+            message: `${formatHumanName(name)} was successfully created`,
+            icon: "user-plus",
+            link: "employeemanager",
+            changed: ["employees"]
+          });
+
+          return await models.User.findOne({
+            where: { id: unit.id },
+            transaction: ta,
+            raw: true
+          });
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -580,8 +592,12 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company }
+            user: { company, unitid: userid }
           } = decode(session.token);
+
+          if (userid == unitid) {
+            throw new Error("You can't take your own admin rights!");
+          }
 
           const data = {
             holder: unitid,
@@ -628,7 +644,11 @@ export default {
               link: "profile",
               changed: ["me"]
             },
-            transaction
+            transaction,
+            {
+              company,
+              message: `Admin Rights have been changed for user ${unitid}`
+            }
           );
 
           return { id: unitid, status: admin };
@@ -776,7 +796,7 @@ export default {
     })
   ),
 
-  createEmployee: requiresRights(["create-employees"]).createResolver(
+  createEmployeeOLD: requiresRights(["create-employees"]).createResolver(
     async (_p, { file, addpersonal, addteams, apps }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
@@ -1050,8 +1070,8 @@ export default {
       })
   ),
 
-  deleteEmployee: requiresRights(["delete-employees"]).createResolver(
-    async (_p, { employeeid }, ctx) =>
+  deleteUser: requiresRights(["delete-employees"]).createResolver(
+    async (_p, { userid, autodelete }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const { models, session } = ctx;
@@ -1059,13 +1079,157 @@ export default {
           const {
             user: { unitid, company }
           } = decode(session.token);
+
+          const oldUser = await models.sequelize.query(
+            `SELECT * FROM users_view WHERE id = :userid`,
+            {
+              replacements: { userid },
+              type: models.sequelize.QueryTypes.SELECT,
+              transaction: ta
+            }
+          );
+
+          //oldUser all informations
+
+          //START DELETE ONE EMPLOYEE
+          const promises = [];
+
+          if (oldUser.assignments) {
+            // Delete all assignments of oldUser
+            await Promise.all(
+              oldUser.assignments.map(async asid => {
+                if (as.bool) {
+                  promises.push(
+                    models.LicenceRight.update(
+                      {
+                        endtime
+                      },
+                      {
+                        where: { id: asid },
+                        transaction: ta
+                      }
+                    )
+                  );
+                } else {
+                  // Remove team tag and assignoption
+                  const checkassignment = await models.LicenceRight.findOne({
+                    where: { id: asid },
+                    raw: true,
+                    transaction: ta
+                  });
+                  if (
+                    checkassignment.tags &&
+                    checkassignment.tags.includes("teamlicence") &&
+                    checkassignment.options &&
+                    checkassignment.options.teamlicence == teamid
+                  ) {
+                    let newtags = checkassignment.tags;
+                    newtags.splice(
+                      checkassignment.tags.findIndex(e => e == "teamlicence"),
+                      1
+                    );
+                    promises.push(
+                      models.LicenceRight.update(
+                        {
+                          tags: newtags,
+                          options: {
+                            ...checkassignment.options,
+                            teamlicence: undefined
+                          }
+                        },
+                        {
+                          where: { id: asid },
+                          transaction: ta
+                        }
+                      )
+                    );
+                  }
+                }
+              })
+            );
+            await Promise.all(promises);
+
+            //Check for other assignments
+            if (autodelete) {
+              await Promise.all(
+                oldUser.assignments.map(async asid => {
+                  const licenceRight = await models.LicenceRight.findOne({
+                    where: { id: asid },
+                    raw: true,
+                    transaction: ta
+                  });
+
+                  const licences = await models.sequelize.query(
+                    `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
+                    {
+                      replacements: { licenceid: licenceRight.licenceid },
+                      type: models.sequelize.QueryTypes.SELECT,
+                      transaction: ta
+                    }
+                  );
+
+                  if (licences.length == 0) {
+                    await models.LicenceData.update(
+                      {
+                        endtime
+                      },
+                      {
+                        where: { id: licenceRight.licenceid },
+                        transaction: ta
+                      }
+                    );
+
+                    const otherlicences = await models.sequelize.query(
+                      `Select distinct (lva.*)
+                    from licence_view lva left outer join licence_view lvb on lva.boughtplanid = lvb.boughtplanid
+                    where lvb.id = :licenceid and lva.starttime < now() and lva.endtime > now();`,
+                      {
+                        replacements: { licenceid: licenceRight.licenceid },
+                        type: models.sequelize.QueryTypes.SELECT,
+                        transaction: ta
+                      }
+                    );
+
+                    if (otherlicences.length == 0) {
+                      const boughtplan = await models.sequelize.query(
+                        `SELECT boughtplanid FROM licence_view WHERE id = :licenceid`,
+                        {
+                          replacements: { licenceid: licenceRight.licenceid },
+                          type: models.sequelize.QueryTypes.SELECT,
+                          transaction: ta
+                        }
+                      );
+
+                      await models.BoughtPlan.update(
+                        {
+                          endtime
+                        },
+                        {
+                          where: { id: boughtplan[0].boughtplanid },
+                          transaction: ta
+                        }
+                      );
+                    }
+                  }
+                })
+              );
+            }
+          }
+
+          //Delete from teams
+
+          await models.ParentUnit.destroy({
+            where: { childunit: userid },
+            transaction: ta
+          });
+
           await models.Unit.update(
             { deleted: true },
-            { where: { id: employeeid } },
+            { where: { id: userid } },
             { transaction: ta, returning: true }
           );
 
-          await createLog(ctx, "fireEmployee", { employeeid }, ta);
+          await createLog(ctx, "fireEmployee", { userid }, ta);
 
           resetCompanyMembershipCache(company, unitid.id);
 
@@ -1077,5 +1241,80 @@ export default {
           });
         }
       })
+  ),
+
+  approveVacationRequest: requiresRights([
+    "edit-vacation-requests"
+  ]).createResolver(async (_p, { userid, requestid }, { models, session }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
+
+        const res = await models.VacationRequest.update(
+          { status: "CONFIRMED", decided: models.sequelize.fn("NOW") },
+          { where: { unitid: userid, id: requestid } }
+        );
+
+        if (res[0] == 0) {
+          throw new Error("Could not update request");
+        }
+
+        await createNotification(
+          {
+            receiver: userid,
+            show: true,
+            message: "Your vacation request was confirmed",
+            icon: "umbrella-beach",
+            changed: ["vacationRequest"],
+            link: "vacation"
+          },
+          ta,
+          { company, message: `User ${userid} vacation request was confirmed` }
+        );
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    })
+  ),
+
+  declineVacationRequest: requiresRights([
+    "edit-vacation-requests"
+  ]).createResolver(async (_p, { userid, requestid }, { models, session }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
+        const res = await models.VacationRequest.update(
+          { status: "REJECTED", decided: models.sequelize.fn("NOW") },
+          { where: { unitid: userid, id: requestid }, transaction: ta }
+        );
+
+        if (res[0] == 0) {
+          throw new Error("Could not update request");
+        }
+
+        await createNotification(
+          {
+            receiver: userid,
+            show: true,
+            message: "Your vacation request was declined",
+            icon: "umbrella-beach",
+            changed: ["vacationRequest"],
+            link: "vacation"
+          },
+          ta,
+          { company, message: `User ${userid} vacation request was declined` }
+        );
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    })
   )
 };

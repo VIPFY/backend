@@ -20,7 +20,7 @@ export const types = `
     apps: JSON
     domains: [Domain]
     licences: [Licence]
-    services: [BoughtPlan]
+    services: [Orbit]
     createdate: String!
     promocode: String
     setupfinished: Boolean
@@ -44,11 +44,17 @@ export const queries = `
 export const mutations = `
   addTeam(name: String!, data: TeamInput!): Department!
   createTeam(team: JSON!, addemployees: [JSON]!, apps: [JSON]!): ID!
-  deleteTeam(teamid: ID!, keepLicences: [JSON!]): Boolean!
+  deleteTeam(teamid: ID!, deletejson: JSON, endtime: Date): Boolean!
   removeFromTeam(teamid: ID!, userid: ID!, keepLicences: [ID!]): Boolean!
   removeServiceFromTeam(teamid: ID!, boughtplanid: ID!, keepLicences: [ID!]): Boolean!
   addToTeam(userid: ID!, teamid: ID!, services: [SetupService]!, newEmployeeInfo: JSON, newTeam: JSON): Boolean!
   addEmployeeToTeam(employeeid: ID!, teamid: ID!): Boolean!
   addAppToTeam(serviceid: ID!, teamid: ID!, employees: [SetupService]!): ID!
   updateTeamPic(file: Upload!, teamid: ID!): Team!
+
+  addOrbitToTeam(teamid: ID!, orbitid: ID!, assignments: JSON): Team
+  addMemberToTeam(teamid: ID!, employeeid: ID!, assignments: JSON): Team
+  removeTeamOrbitFromTeam(teamid: ID!, orbitid: ID!, deletejson: JSON, endtime: Date): Team
+  removeMemberFromTeam(teamid: ID!, userid: ID!, deletejson: JSON, endtime: Date): Team
+
 `;

@@ -1,14 +1,37 @@
+const planFields = `
+  teaserdescription: String
+  features: JSON
+  startdate: String
+  enddate: String
+  numlicences: Int
+  price: Float
+  currency: String
+  options: JSON
+  gototime: String
+`;
+
+const cardFields = `
+  id: String!
+  brand: String!
+  exp_month: Int!
+  exp_year: Int!
+  last4: String!
+  name: String!
+  country: String!
+  cvc_check: String!
+`;
+
 export const types = `
   type Bill {
     id: ID!
-    billtime: String!
+    billtime: Date!
     billname: String!
-    paytime: String
-    stornotime: String
+    paytime: Date
+    stornotime: Date
     unitid: Unit!
     amount: String!
     currency: String!
-    refundedtime: String
+    refundedtime: Date
   }
 
   type BillPosition {
@@ -36,37 +59,21 @@ export const types = `
   type Plan {
     id: ID!
     name: String!
-    teaserdescription: String
-    features: JSON
-    startdate: String
-    enddate: String
-    numlicences: Int
-    price: Float
-    currency: String
-    options: JSON
+    ${planFields}
     payperiod: JSON
     cancelperiod: JSON
     optional: Boolean!
-    gototime: String
     appid: App!
     gotoplan: Plan
     hidden: Boolean!
   }
 
   input PlanInput {
+    ${planFields}
     name: String
-    teaserdescription: String
-    features: JSON
-    startdate: String
-    enddate: String
-    numlicences: Int
-    price: Float
-    currency: String
-    options: JSON
     payperiod: Interval
     cancelperiod: Interval
     optional: Boolean
-    gototime: String
     appid: ID
     gotoplan: ID
   }
@@ -150,25 +157,11 @@ export const types = `
   }
 
   type Card {
-    id: String!
-    brand: String!
-    exp_month: Int!
-    exp_year: Int!
-    last4: String!
-    name: String!
-    country: String!
-    cvc_check: String!
+    ${cardFields}
   }
 
   input CardInput {
-    id: String!
-    brand: String!
-    exp_month: Int!
-    exp_year: Int!
-    last4: String!
-    name: String!
-    country: String!
-    cvc_check: String!
+    ${cardFields}
   }
 `;
 
@@ -184,12 +177,14 @@ export const queries = `
   fetchCredits: Credit
 
   fetchAllBoughtPlansFromCompany(appid: ID!, external: Boolean): [BoughtPlan]!
+  fetchBoughtPlansOfCompany(appid: ID!, external: Boolean): [BoughtPlan]!
 `;
 
 export const mutations = `
   setBoughtPlanAlias(boughtplanid: ID!, alias: String): Response!
   addPaymentData(data: JSON, address: AddressInput, email: String): Response!
   changeDefaultMethod(card: String!): Response!
+  removePaymentData(card: String!): Boolean!
 
   # The buying process
   buyPlan(planid: ID!, features: JSON!, price: Float!, planinputs: JSON!): Response!
@@ -201,9 +196,9 @@ export const mutations = `
 
   # This function will be used by a cronjob which runs once a month
   createMonthlyInvoices: Boolean!
-  createInvoice(unitid: ID!): Boolean!
   downloadBill(billid: ID!): String!
   
   removeBillingEmail(email: String!): Response!
   addBillingEmail(email: String!): Email!
+  createNewBillingEmail(email: String!): Boolean!
 `;
