@@ -2490,7 +2490,7 @@ export default {
           await createNotification(
             {
               receiver: unitid,
-              message: `You have created an vacation`,
+              message: `You have created a vacation`,
               icon: "business-time",
               link: `dashboard`,
               changed: ["companyServices"]
@@ -2613,7 +2613,7 @@ export default {
               createNotification(
                 {
                   receiver: u,
-                  message: `You have been assigned to an vacation account`,
+                  message: `You have been assigned to a vacation account`,
                   icon: "business-time",
                   link: `dashboard`,
                   changed: ["ownLicences"]
@@ -2630,7 +2630,7 @@ export default {
               createNotification(
                 {
                   receiver: u,
-                  message: `You have been unassigned from an vacation account`,
+                  message: `You have been unassigned from a vacation account`,
                   icon: "business-time",
                   link: `dashboard`,
                   changed: ["ownLicences"]
@@ -2656,7 +2656,7 @@ export default {
           await createNotification(
             {
               receiver: unitid,
-              message: `You have updated an vacation`,
+              message: `You have updated a vacation`,
               icon: "business-time",
               link: `dashboard`,
               changed: ["companyServices"]
