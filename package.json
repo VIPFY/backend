@@ -122,12 +122,11 @@
     "uuid": "^3.3.2",
     "validate-vat": "^0.5.1",
     "winston": "^3.2.1",
-    "zxcvbn": "^4.4.2"
-  },
-  "devDependencies": {
+    "zxcvbn": "^4.4.2",
     "eslint-plugin-prettier": "^3.1.1",
     "prettier": "^1.19.1"
   },
+  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://gh05d@bitbucket.org/vipfymarketplace/vipfy-backend.git"
