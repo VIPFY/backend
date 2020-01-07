@@ -34,7 +34,9 @@ export const checkCompanyMembership = async (
     });
 
     if (!user) {
-      throw new RightsError("The provided id does not belong to an user!");
+      throw new RightsError({
+        message: "The provided id does not belong to an user!"
+      });
     }
   }
 
@@ -44,9 +46,9 @@ export const checkCompanyMembership = async (
     // found in cache
 
     if (cacheItem === false) {
-      throw new RightsError(
-        `This ${entityName} doesn't belong to the user's company!`
-      );
+      throw new RightsError({
+        message: `This ${entityName} doesn't belong to the user's company!`
+      });
     } else if (cacheItem === true) {
       return true;
     } else {
@@ -68,16 +70,18 @@ export const checkCompanyMembership = async (
   const [valid, departments] = await Promise.all([p1, p2]);
 
   if (!valid || valid.deleted || valid.suspended || valid.banned) {
-    throw new Error("You can only edit valid units!");
+    throw new RightsError({
+      message: "You can only edit valid units!"
+    });
   }
 
   const inDepartment = departments.length > 0;
   companyMembershipCache.set(cacheKey, inDepartment);
 
   if (!inDepartment) {
-    throw new RightsError(
-      `This ${entityName} doesn't belong to the user's company!`
-    );
+    throw new RightsError({
+      message: `This ${entityName} doesn't belong to the user's company!`
+    });
   }
 
   return true;
@@ -101,9 +105,9 @@ export const checkLicenceValidilty = async (models, company, licenceid) => {
   );
 
   if (account.length != 1) {
-    throw new RightsError(
-      "Account is disabled, terminated or outside company."
-    );
+    throw new RightsError({
+      message: "Account is disabled, terminated or outside company."
+    });
   }
 };
 
@@ -122,7 +126,9 @@ export const checkLicenceMembership = async (models, company, licenceid) => {
   );
 
   if (account.length != 1) {
-    throw new RightsError("Account doesn't belong to the user's company!");
+    throw new RightsError({
+      message: "Account doesn't belong to the user's company!"
+    });
   }
 };
 
@@ -140,7 +146,9 @@ export const checkOrbitMembership = async (models, company, orbitid) => {
   );
 
   if (orbit.length != 1) {
-    throw new RightsError("Orbit doesn't belong to the user's company!");
+    throw new RightsError({
+      message: "Orbit doesn't belong to the user's company!"
+    });
   }
 };
 

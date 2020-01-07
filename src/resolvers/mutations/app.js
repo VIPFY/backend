@@ -2424,9 +2424,9 @@ export default {
           const promises = [];
           const users = [];
           assignments.forEach(a => {
-            if (!users.find(u => u == a.userid)) {
-              users.push(a.userid);
-            }
+            // if (!users.find(u => u == a.userid)) {
+            users.push(a.userid);
+            // }
             promises.push(
               models.LicenceRight.create(
                 {
@@ -2449,30 +2449,35 @@ export default {
           const notifypromises = [];
 
           const options = [];
+          const sended = [];
           users.forEach((u, k) => {
             options.push({
               userid: u,
               assignmentid: vacationLicences[k].id,
+              originalassignment: assignments[k].originalassignment,
               accountid: vacationLicences[k].licenceid
             });
 
-            notifypromises.push(
-              createNotification(
-                {
-                  receiver: u,
-                  message: `You have been assigned to an vacation account`,
-                  icon: "business-time",
-                  link: `dashboard`,
-                  changed: ["ownLicences"]
-                },
-                ta
-              )
-            );
+            if (!sended.find(s => u)) {
+              sended.push(u);
+              notifypromises.push(
+                createNotification(
+                  {
+                    receiver: u,
+                    message: `You have been assigned to a vacation account`,
+                    icon: "business-time",
+                    link: `dashboard`,
+                    changed: ["ownLicences"]
+                  },
+                  ta
+                )
+              );
+            }
           });
 
           await Promise.all(notifypromises);
 
-          models.Vacation.update(
+          await models.Vacation.update(
             {
               options
             },
@@ -2485,7 +2490,7 @@ export default {
           await createNotification(
             {
               receiver: unitid,
-              message: `You have created an vacation`,
+              message: `You have created a vacation`,
               icon: "business-time",
               link: `dashboard`,
               changed: ["companyServices"]
@@ -2514,6 +2519,173 @@ export default {
         }
       })
   ),
+  editVacation: requiresRights([
+    "edit-licences",
+    "edit-licenceRights"
+  ]).createResolver(
+    async (_p, { vacationid, starttime, endtime, assignments }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid }
+          } = decode(ctx.session.token);
+
+          const { models, session } = ctx;
+
+          let vacation = await models.Vacation.update(
+            {
+              starttime,
+              endtime
+            },
+            {
+              where: { id: vacationid },
+              transaction: ta,
+              returning: true
+            }
+          );
+
+          const promises = [];
+          const oldpromises = [];
+          const users = [];
+          const oldusers = [];
+          assignments.forEach(a => {
+            if (!users.find(u => u == a.userid)) {
+              users.push(a.userid);
+            }
+            if (!oldusers.find(u => u == a.olduserid)) {
+              oldusers.push(a.olduserid);
+            }
+            oldpromises.push(
+              models.LicenceRight.update(
+                {
+                  endtime: models.sequelize.fn("NOW")
+                },
+                {
+                  where: {
+                    id: vacation[1][0].options.find(
+                      o => o.originalassignment == a.assignmentid
+                    ).assignmentid
+                  },
+                  transaction: ta
+                }
+              )
+            );
+            if (a.userid != "") {
+              promises.push(
+                models.LicenceRight.create(
+                  {
+                    view: true,
+                    use: true,
+                    tags: ["vacation"],
+                    licenceid: a.accountid,
+                    unitid: a.userid,
+                    starttime: starttime || vacation[1][0].starttime,
+                    endtime: endtime || vacation[1][0].endtime,
+                    options: { vacationid }
+                  },
+                  { transaction: ta, returning: true }
+                )
+              );
+            }
+          });
+
+          const vacationLicences = await Promise.all(promises);
+          await Promise.all(oldpromises);
+
+          const notifypromises = [];
+
+          // Line up assignments and vacation options
+          const { options } = vacation[1][0];
+          let emptyAssignments = 0;
+          assignments.forEach((a, k) => {
+            options.find(o => o.originalassignment == a.assignmentid).userid =
+              a.userid;
+            if (a.userid != "") {
+              options.find(
+                o => o.originalassignment == a.assignmentid
+              ).assignmentid = vacationLicences[k - emptyAssignments].id;
+            } else {
+              emptyAssignments++;
+            }
+          });
+          users.forEach((u, k) => {
+            notifypromises.push(
+              createNotification(
+                {
+                  receiver: u,
+                  message: `You have been assigned to a vacation account`,
+                  icon: "business-time",
+                  link: `dashboard`,
+                  changed: ["ownLicences"]
+                },
+                ta
+              )
+            );
+          });
+
+          // Notify old users because of remove
+
+          oldusers.forEach((u, k) => {
+            notifypromises.push(
+              createNotification(
+                {
+                  receiver: u,
+                  message: `You have been unassigned from a vacation account`,
+                  icon: "business-time",
+                  link: `dashboard`,
+                  changed: ["ownLicences"]
+                },
+                ta
+              )
+            );
+          });
+
+          await Promise.all(notifypromises);
+
+          vacation = await models.Vacation.update(
+            {
+              options
+            },
+            {
+              where: { id: vacationid },
+              transaction: ta,
+              returning: true
+            }
+          );
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `You have updated a vacation`,
+              icon: "business-time",
+              link: `dashboard`,
+              changed: ["companyServices"]
+            },
+            ta
+          );
+
+          await createLog(
+            ctx,
+            "createVacation",
+            {
+              unitid,
+              starttime,
+              endtime,
+              assignments
+            },
+            ta
+          );
+
+          return vacation[1][0];
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+
   sendSupportRequest: requiresAuth.createResolver(
     async (_p, args, { models, session }) =>
       ctx.models.sequelize.transaction(async ta => {
