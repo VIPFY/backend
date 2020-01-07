@@ -2532,8 +2532,6 @@ export default {
 
           const { models, session } = ctx;
 
-          console.log(vacationid, starttime, endtime, assignments);
-
           let vacation = await models.Vacation.update(
             {
               starttime,
@@ -2594,30 +2592,15 @@ export default {
           const vacationLicences = await Promise.all(promises);
           await Promise.all(oldpromises);
 
-          console.log(
-            vacation,
-            vacation[1],
-            vacation[1][0].options,
-            users,
-            oldusers,
-            vacationLicences
-          );
           const notifypromises = [];
 
           // Line up assignments and vacation options
           const { options } = vacation[1][0];
           let emptyAssignments = 0;
           assignments.forEach((a, k) => {
-            console.log(
-              "ASSIGNMENTS",
-              a,
-              k - emptyAssignments,
-              vacationLicences[k - emptyAssignments]
-            );
             options.find(o => o.originalassignment == a.assignmentid).userid =
               a.userid;
             if (a.userid != "") {
-              console.log("CHECK", a);
               options.find(
                 o => o.originalassignment == a.assignmentid
               ).assignmentid = vacationLicences[k - emptyAssignments].id;
