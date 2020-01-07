@@ -2464,7 +2464,7 @@ export default {
                 createNotification(
                   {
                     receiver: u,
-                    message: `You have been assigned to an vacation account`,
+                    message: `You have been assigned to a vacation account`,
                     icon: "business-time",
                     link: `dashboard`,
                     changed: ["ownLicences"]
