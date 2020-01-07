@@ -393,4 +393,5 @@ export const mutations = `
   changeOrbit(orbitid: ID!, alias: String, loginurl: String, starttime: Date, endtime: Date): Orbit!
 
   createVacation(userid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
+  editVacation(vacationid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
   `;
