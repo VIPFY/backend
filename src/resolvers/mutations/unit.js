@@ -360,7 +360,14 @@ export default {
           unitid: unitid
         };
       } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
+        if (err instanceof RightsError) {
+          throw err;
+        } else {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
       }
     }
   ),
@@ -557,8 +564,15 @@ export default {
           }
         });
       } catch (err) {
-        console.error(err, err.sql);
-        throw new NormalError({ message: err.message, internalData: { err } });
+        if (err instanceof RightsError) {
+          throw err;
+        } else {
+          console.error(err, err.sql);
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
       }
     }
   ),

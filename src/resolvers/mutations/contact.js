@@ -53,10 +53,14 @@ export default {
 
           return newAddress;
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
@@ -114,10 +118,14 @@ export default {
 
           return updatedAddress[1][0];
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
@@ -165,10 +173,14 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
@@ -415,10 +427,14 @@ export default {
 
           return newPhone;
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
@@ -474,10 +490,14 @@ export default {
 
           return updatedPhone[1][0];
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
@@ -528,10 +548,14 @@ export default {
 
           return { ok: true };
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          if (err instanceof RightsError) {
+            throw err;
+          } else {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
+            });
+          }
         }
       })
   ),
