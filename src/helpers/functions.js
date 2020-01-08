@@ -148,6 +148,7 @@ export const createNotification = async (
 
     let notification = { dataValues: notificationBody };
 
+    // Filter the case where only admins should be informed
     if (notificationBody.receiver) {
       if (notificationBody.show !== false) {
         notification = await models.Notification.create(
@@ -155,6 +156,10 @@ export const createNotification = async (
           { transaction }
         );
       }
+
+      pubsub.publish(NEW_NOTIFICATION, {
+        newNotification: notification
+      });
     }
 
     if (informAdmins) {
