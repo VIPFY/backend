@@ -822,7 +822,8 @@ export default {
                 {
                   id: k.id,
                   privatekey: k.privatekey,
-                  encryptedby: k.encryptedby == "new" ? key.id : k.encryptedby
+                  encryptedby:
+                    k.encryptedby == "new" ? key.publickey : k.encryptedby
                 },
                 {
                   where: { id: k.id, unitid, publickey: k.publickey },

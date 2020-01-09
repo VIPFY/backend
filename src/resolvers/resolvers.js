@@ -128,7 +128,14 @@ export default {
     vacationid: "Vacation"
   }),
   Log: find({ user: "User", sudoer: "User" }),
-  Key: find({ unitid: "User", encryptedby: "Key" }),
+  Key: find({
+    unitid: "User",
+    encryptedby: {
+      datatype: "Key",
+      multiple: true,
+      query: "SELECT * FROM key_data WHERE publickey=:key"
+    }
+  }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
   MessageGroupMembership: find({ groupid: "MessageGroup", unitid: "User" }),

@@ -28,7 +28,7 @@ export const types = `
     privatekey: String!
     publickey: String!
     createdat: Date!
-    encryptedby: Key
+    encryptedby: [Key]
   }
 
   input KeyInput {
@@ -36,7 +36,7 @@ export const types = `
     unitid: ID
     privatekey: String
     publickey: String
-    encryptedby: ID
+    encryptedby: String
   }
 
   input PasswordMetricsInput {
