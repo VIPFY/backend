@@ -35,7 +35,18 @@ import logger from "../../loggers";
 export default {
   signUp: async (
     _p,
-    { email, companyname: name, privacy, termsOfService, isprivate },
+    {
+      email,
+      companyname: name,
+      privacy,
+      termsOfService,
+      isprivate,
+      passkey,
+      passwordMetrics,
+      personalKey,
+      adminKey,
+      passwordsalt
+    },
     ctx
   ) =>
     ctx.models.sequelize.transaction(async ta => {
@@ -53,6 +64,24 @@ export default {
           throw new Error("This is not a valid email");
         }
 
+        if (passwordMetrics.passwordStrength < 2) {
+          throw new Error("Password too weak!");
+        }
+
+        if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
+          throw new Error("Password too long");
+        }
+
+        if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
+          throw new Error(
+            `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+          );
+        }
+
+        if (passkey.length != 128) {
+          throw new Error("Incompatible passkey format, try updating VIPFY");
+        }
+
         // Check whether the email is already in use
         const emailInUse = await models.Email.findOne({
           where: { email },
@@ -62,9 +91,6 @@ export default {
         if (emailInUse) {
           throw new Error("Email already in use!");
         }
-        // generate a new random password
-        const password = await randomPassword(3, 2);
-        const pwData = await getNewPasswordData(password);
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
@@ -72,7 +98,10 @@ export default {
             firstlogin: false,
             needspasswordchange: false,
             consent: null,
-            ...pwData
+            passkey,
+            ...passwordMetrics,
+            passwordsalt,
+            passwordhash: ""
           },
           { transaction: ta }
         );
@@ -102,7 +131,8 @@ export default {
             legalinformation: {
               privacy: new Date(),
               termsOfService: new Date()
-            }
+            },
+            adminkey: adminKey.publickey
           },
           { transaction: ta }
         );
@@ -158,14 +188,32 @@ export default {
           { transaction: ta }
         );
 
+        const p9 = models.Key.create(
+          {
+            ...personalKey,
+            unitid: unit.id
+          },
+          { transaction: ta, returning: true }
+        );
+
+        const p10 = models.Key.create(
+          {
+            ...adminKey,
+            unitid: unit.id
+          },
+          { transaction: ta, returning: true }
+        );
+
         const [
           rights,
           department,
           parentUnit,
           vipfyPlan,
           setuptoken,
-          verifytoken
-        ] = await Promise.all([p3, p4, p5, p6, p7, p8]);
+          verifytoken,
+          key1,
+          key2
+        ] = await Promise.all([p3, p4, p5, p6, p7, p8, p9, p10]);
 
         const windowsLink = `https://download.vipfy.store/latest/win32/x64/VIPFY-${setupToken}.exe`;
         const macLink = `https://download.vipfy.store/latest/darwin/x64/VIPFY-${setupToken}.dmg`;
