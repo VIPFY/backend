@@ -490,25 +490,24 @@ export default {
 
   fetchCompanyServices: requiresRights(["view-licences"]).createResolver(
     async (_parent, _args, { models, session }) => {
-      const {
-        user: { company }
-      } = decode(session.token);
       try {
-        const companyServices = await models.sequelize.query(
-          `Select app_data.id as app,
+        const {
+          user: { company }
+        } = decode(session.token);
+
+        return models.sequelize.query(
+          `SELECT app_data.id as app,
             COALESCE(array_agg(bpd.id), ARRAY[]::bigint[]) as orbitids
-          from app_data join plan_data pd on app_data.id = pd.appid
-            join boughtplan_data bpd on pd.id = bpd.planid
-          where usedby = :company and
-          (bpd.endtime is null or bpd.endtime > now()) group by app_data.id`,
+          FROM app_data JOIN plan_data pd on app_data.id = pd.appid
+            JOIN boughtplan_data bpd on pd.id = bpd.planid
+          WHERE usedby = :company AND app_data.name != 'Vipfy' AND
+          (bpd.endtime is null or bpd.endtime > now()) GROUP BY app_data.id`,
           {
             replacements: { company },
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-        return companyServices;
       } catch (err) {
-        console.error("ERROR", err);
         throw new NormalError({
           message: `company Services: ${err.message}`,
           internalData: { err }
