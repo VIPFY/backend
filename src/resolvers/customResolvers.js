@@ -211,8 +211,7 @@ export const find = data => {
               data[search].datatype && data[search].datatype in postprocessors;
             const result = await models.sequelize.query(data[search].query, {
               replacements: { key: parent[search] },
-              type: models.sequelize.QueryTypes.SELECT,
-              plain: true
+              type: models.sequelize.QueryTypes.SELECT
             });
             if (requiresPostprocessing && loadMultiple) {
               return await Promise.all(
