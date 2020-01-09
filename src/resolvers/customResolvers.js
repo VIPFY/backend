@@ -195,15 +195,6 @@ export const find = data => {
     searches[search] = async (parent, args, ctx, info) => {
       const { models } = ctx;
       try {
-        const loadMultiple = data[search][0] == "[";
-        const datatype = loadMultiple
-          ? data[search].substring(1, data[search].length - 1)
-          : data[search];
-
-        const key = datatype in specialKeys ? specialKeys[datatype] : "id";
-        const value = parent[search];
-        const requiresPostprocessing = datatype in postprocessors;
-
         const fields = info.fieldNodes[0].selectionSet.selections
           .filter(
             selection =>
@@ -212,6 +203,39 @@ export const find = data => {
               selection.name.value != "__typename"
           )
           .map(selection => selection.name.value);
+
+        if (typeof data[search] !== "string") {
+          if (data[search].query) {
+            const loadMultiple = !!data[search].multiple;
+            const requiresPostprocessing =
+              data[search].datatype && data[search].datatype in postprocessors;
+            const result = await models.sequelize.query(data[search].query, {
+              replacements: { key: parent[search] },
+              type: models.sequelize.QueryTypes.SELECT,
+              plain: true
+            });
+            if (requiresPostprocessing && loadMultiple) {
+              return await Promise.all(
+                result.map(v =>
+                  postprocess(data[search].datatype, v, fields, models)
+                )
+              );
+            } else if (requiresPostprocessing) {
+              return await postprocess(datatype, result, fields, models);
+            } else {
+              return result;
+            }
+          }
+        }
+
+        const loadMultiple = data[search][0] == "[";
+        const datatype = loadMultiple
+          ? data[search].substring(1, data[search].length - 1)
+          : data[search];
+
+        const key = datatype in specialKeys ? specialKeys[datatype] : "id";
+        const value = parent[search];
+        const requiresPostprocessing = datatype in postprocessors;
 
         if (loadMultiple) {
           let result;

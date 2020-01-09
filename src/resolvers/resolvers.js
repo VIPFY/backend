@@ -94,7 +94,14 @@ export default {
     payer: "Unit"
   }),
   BoughtplanUsagePerUser: find({ boughtplan: "BoughtPlan", unit: "User" }),
-  Department: find({ ...unit, adminkey: "Key" }),
+  Department: find({
+    ...unit,
+    adminkey: {
+      datatype: "Key",
+      multiple: true,
+      query: "SELECT * FROM key_data WHERE publickey=:key"
+    }
+  }),
   DepartmentData: find(unit),
   DepartmentEmail: find({ departmentid: "Department", emailownerid: "Unit" }),
   DepartmentEmployee: find({
