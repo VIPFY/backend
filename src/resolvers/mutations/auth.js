@@ -15,7 +15,6 @@ import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
   parentAdminCheck,
   createLog,
-  computePasswordScore,
   formatHumanName,
   parseAddress,
   createNotification,
@@ -23,7 +22,9 @@ import {
   parseSessions,
   endSession,
   createSession,
-  getNewPasswordData
+  getNewPasswordData,
+  hashPasskey,
+  comparePasskey
 } from "../../helpers/functions";
 import { googleMapsClient } from "../../services/gcloud";
 import { NormalError } from "../../errors";
@@ -98,7 +99,7 @@ export default {
             firstlogin: false,
             needspasswordchange: false,
             consent: null,
-            passkey,
+            passkey: await hashPasskey(passkey),
             ...passwordMetrics,
             passwordsalt,
             passwordhash: ""
@@ -490,10 +491,7 @@ export default {
       } else if (passkey) {
         // no further checks on the existance of emailExists.passkey to avoid
         // revealing info in timing attacks.
-        valid = crypto.timingSafeEqual(
-          Buffer.from(emailExists.passkey || " ".repeat(128)),
-          Buffer.from(passkey)
-        );
+        valid = await comparePasskey(passkey, emailExists.passkey);
       } else {
         throw new Error("No Authentification provided");
       }
@@ -786,9 +784,9 @@ export default {
 
           if (!findOldPassword) throw new Error("No database entry found!");
 
-          const valid = crypto.timingSafeEqual(
-            Buffer.from(findOldPassword.passkey || " ".repeat(128)),
-            Buffer.from(oldPasskey)
+          const valid = await comparePasskey(
+            oldPasskey,
+            findOldPassword.passkey
           );
 
           if (!valid) throw new Error("Incorrect old password!");
@@ -797,7 +795,7 @@ export default {
             {
               needspasswordchange: false,
               ...passwordMetrics,
-              passkey: newPasskey
+              passkey: await hashPasskey(newPasskey)
             },
             { where: { unitid }, returning: true, transaction: ta }
           );

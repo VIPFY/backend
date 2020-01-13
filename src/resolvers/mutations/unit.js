@@ -19,7 +19,8 @@ import {
   parentAdminCheck,
   createNotification,
   concatName,
-  fetchSessions
+  fetchSessions,
+  hashPasskey
 } from "../../helpers/functions";
 import { uploadUserImage } from "../../services/aws";
 import { createAdminToken } from "../../helpers/auth";
@@ -455,7 +456,7 @@ export default {
                 {
                   needspasswordchange: true,
                   ...passwordMetrics,
-                  passkey: newPasskey
+                  passkey: await hashPasskey(newPasskey)
                 },
                 { where: { unitid }, returning: true, transaction }
               )
