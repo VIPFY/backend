@@ -19,14 +19,11 @@ import {
 import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
 import {
-  checkCompanyMembership,
   checkLicenceValidilty,
   checkOrbitMembership
 } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
 import freshdeskAPI from "../../services/freshdesk";
-import Axios from "axios";
-import freshdesk from "../../services/freshdesk";
 /* eslint-disable no-return-await */
 
 export default {
