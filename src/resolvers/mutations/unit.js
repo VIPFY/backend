@@ -717,6 +717,24 @@ export default {
 
         const promises = [];
 
+        if (data.firstname) {
+          promises.push(
+            models.Human.update(
+              { firstname: data.firstname },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
+        if (data.lastname) {
+          promises.push(
+            models.Human.update(
+              { lastname: data.lastname },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
         if (data.name) {
           const name = data.name.split(" ");
           const firstname = name[0];

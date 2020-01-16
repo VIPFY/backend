@@ -52,6 +52,7 @@ export default {
     ctx.models.sequelize.transaction(async ta => {
       try {
         const { models } = ctx;
+
         if (!privacy || !termsOfService) {
           throw new Error(
             "You have to confirm to our privacy agreement and our Terms of Service!"
@@ -61,7 +62,7 @@ export default {
         const isValid = email.match(emailRegex);
 
         if (!isValid) {
-          throw new Error("This is not a valid email");
+          throw new Error("This Email is not a valid!");
         }
 
         if (passwordMetrics.passwordStrength < 2) {
