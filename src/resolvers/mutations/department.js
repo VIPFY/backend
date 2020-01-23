@@ -12,8 +12,8 @@ import {
   createNotification,
   formatHumanName,
   selectCredit,
-  getNewPasswordData,
-  checkPlanValidity
+  checkPlanValidity,
+  hashPasskey
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
@@ -35,7 +35,11 @@ export default {
             hiredate,
             address,
             position,
-            phones
+            phones,
+            passkey,
+            passwordMetrics,
+            personalKey,
+            passwordsalt
           } = args;
           const {
             user: { unitid, company }
@@ -61,14 +65,36 @@ export default {
             throw new Error("You need at least one Email!");
           }
 
-          if (password.length > MAX_PASSWORD_LENGTH) {
+          if (password && password.length > MAX_PASSWORD_LENGTH) {
             throw new Error("Password too long");
           }
 
-          if (password.length < MIN_PASSWORD_LENGTH) {
+          if (password && password.length < MIN_PASSWORD_LENGTH) {
             throw new Error(
               `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
             );
+          }
+
+          if (passwordMetrics.passwordStrength < MIN_PASSWORD_LENGTH) {
+            throw new Error("Password too weak!");
+          }
+
+          if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
+            throw new Error("Password too long");
+          }
+
+          if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
+            throw new Error(
+              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+            );
+          }
+
+          if (passkey.length != 128) {
+            throw new Error("Incompatible passkey format, try updating VIPFY");
+          }
+
+          if (passwordsalt.length != 32) {
+            throw new Error("Incompatible salt format, try updating VIPFY");
           }
 
           const data = {};
@@ -81,8 +107,6 @@ export default {
             );
             data.profilepicture = profilepicture;
           }
-
-          const pwData = await getNewPasswordData(password);
 
           let unit = await models.Unit.create(data, { transaction: ta });
           unit = unit.get();
@@ -101,10 +125,13 @@ export default {
                 needspasswordchange:
                   needpasswordchange === false ? false : true,
                 firstlogin: true,
-                ...pwData,
                 position,
                 hiredate: hiredate != "" ? hiredate : null,
-                birthday: birthday != "" ? birthday : null
+                birthday: birthday != "" ? birthday : null,
+                passkey: await hashPasskey(passkey),
+                ...passwordMetrics,
+                passwordsalt,
+                passwordhash: ""
               },
               { transaction: ta }
             )
@@ -176,6 +203,16 @@ export default {
             )
           );
 
+          humanpromises.push(
+            models.Key.create(
+              {
+                ...personalKey,
+                unitid: unit.id
+              },
+              { transaction: ta }
+            )
+          );
+
           await Promise.all(humanpromises);
 
           const p4 = models.Human.findOne({ where: { unitid } });
@@ -191,22 +228,42 @@ export default {
           // brand new person, but better to be too careful
           resetCompanyMembershipCache(company, unit.id);
 
-          await sendEmail({
-            templateId: "d-e049cce50d20428d81f011e521605d4c",
-            fromName: "VIPFY",
-            personalizations: [
-              {
-                to: [{ email: emails[0].email, name: formatHumanName(name) }],
-                dynamic_template_data: {
-                  name: formatHumanName(name),
-                  creator: formatHumanName(requester),
-                  companyname: companyObj.name,
-                  email: emails[0].email,
-                  password
+          if (password) {
+            await sendEmail({
+              templateId: "d-e049cce50d20428d81f011e521605d4c",
+              fromName: "VIPFY",
+              personalizations: [
+                {
+                  to: [{ email: emails[0].email, name: formatHumanName(name) }],
+                  dynamic_template_data: {
+                    name: formatHumanName(name),
+                    creator: formatHumanName(requester),
+                    companyname: companyObj.name,
+                    email: emails[0].email,
+                    password
+                  }
                 }
-              }
-            ]
-          });
+              ]
+            });
+          } else {
+            // no password supplied to backend, this should be the encouraged case
+            // TODO VIP-958 change template to one without password
+            await sendEmail({
+              templateId: "d-e049cce50d20428d81f011e521605d4c",
+              fromName: "VIPFY",
+              personalizations: [
+                {
+                  to: [{ email: emails[0].email, name: formatHumanName(name) }],
+                  dynamic_template_data: {
+                    name: formatHumanName(name),
+                    creator: formatHumanName(requester),
+                    companyname: companyObj.name,
+                    email: emails[0].email
+                  }
+                }
+              ]
+            });
+          }
 
           await createNotification({
             receiver: unitid,

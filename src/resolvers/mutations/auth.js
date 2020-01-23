@@ -65,7 +65,7 @@ export default {
           throw new Error("This is not a valid email");
         }
 
-        if (passwordMetrics.passwordStrength < 2) {
+        if (passwordMetrics.passwordStrength < MIN_PASSWORD_LENGTH) {
           throw new Error("Password too weak!");
         }
 
@@ -81,6 +81,10 @@ export default {
 
         if (passkey.length != 128) {
           throw new Error("Incompatible passkey format, try updating VIPFY");
+        }
+
+        if (passwordsalt.length != 32) {
+          throw new Error("Incompatible salt format, try updating VIPFY");
         }
 
         // Check whether the email is already in use
