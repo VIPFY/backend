@@ -106,7 +106,6 @@ export const queries = `
 export const mutations = `
   # Checks whether an email already exists in our database
   logSSOError(eventdata: JSON): Boolean!
-  checkEmail(email: String): Response!
   readNotification(id: ID!): Boolean!
   readAllNotifications: Boolean!
 

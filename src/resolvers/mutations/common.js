@@ -6,22 +6,6 @@ import { checkVat } from "../../helpers/functions";
 /* eslint-disable consistent-return, no-unused-vars */
 
 export default {
-  checkEmail: async (parent, { email }, { models }) => {
-    if (!email) return { ok: true };
-
-    try {
-      const emailExists = await models.Email.findOne({ where: { email } });
-
-      if (emailExists) {
-        throw new Error("There already exists an account with this email");
-      }
-
-      return { ok: true };
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
-    }
-  },
-
   readNotification: requiresAuth.createResolver(
     async (_parent, { id }, { models, session }) => {
       try {

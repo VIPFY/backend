@@ -902,69 +902,6 @@ export default {
     })
   ),
 
-  forgotPassword: async (_p, { email }, ctx) =>
-    ctx.models.sequelize.transaction(async ta => {
-      try {
-        const { models } = ctx;
-        const emailExists = await models.Login.findOne({
-          where: { email },
-          raw: true
-        });
-
-        if (
-          !emailExists ||
-          emailExists.verified ||
-          emailExists.banned ||
-          emailExists.suspended == true
-        ) {
-          // Prevent an attacker from discovering information about our Users
-          return { ok: true };
-        }
-
-        const user = await models.Human.findOne({
-          where: { unitid: emailExists.unitid },
-          raw: true
-        });
-
-        // generate a new random password
-        const newPw = await randomPassword(3, 2);
-        const pwData = await getNewPasswordData(newPw);
-
-        const updatedHuman = await models.Human.update(
-          { ...pwData, needspasswordchange: true },
-          { where: { unitid: user.unitid }, returning: true, transaction: ta }
-        );
-
-        ctx.session.token = await createToken(emailExists, ctx.SECRET);
-
-        await createLog(
-          ctx,
-          "forgotPassword",
-          { updatedHuman: updatedHuman[1], oldUser: user },
-          ta
-        );
-
-        await sendEmail({
-          templateId: "d-9d74fbd6021449fcb59109bd8000a683",
-          fromName: "VIPFY",
-          personalizations: [
-            {
-              to: [{ email, name: formatHumanName(user) }],
-              dynamic_template_data: {
-                name: formatHumanName(user),
-                password: newPw,
-                email
-              }
-            }
-          ]
-        });
-
-        return { ok: true, email };
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }),
-
   forcePasswordChange: requiresRights(["view-security"]).createResolver(
     async (_p, { userids }, ctx) =>
       ctx.models.sequelize.transaction(async transaction => {

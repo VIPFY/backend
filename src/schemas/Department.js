@@ -98,25 +98,16 @@ export const queries = `
 `;
 
 export const mutations = `
-  updateCompanyPic(file: Upload!): String!
-  updateStatisticData(data: StatisticInput!): Response!
 
   editDepartmentName(departmentid: ID!, name: String!): Response!
-
-  addEmployee(unitid: ID!, departmentid: ID!): Response!
-  createEmployeeOLD(file: Upload, addpersonal:JSON!, addteams:[JSON]!, apps:[JSON]!): Boolean!
   createEmployee(name: HumanName!, emails: [EmailInput!]!, password: String!, needpasswordchange: Boolean, file: Upload, birthday: Date, hiredate: Date, address: AddressInput, position: String, phones: [PhoneInput]): SemiPublicUser!
   deleteUser(userid: ID!, autodelete: Boolean): Boolean!
-
-  # Saves data we fetched in the Business Advisor
-  saveProposalData(data: ProposalInput!): Response!
 
   # (un)makes user an admin of their company
   changeAdminStatus(unitid: ID!, admin: Boolean!): StatusResponse!
 
   # force the given users to change their password on next login
   forcePasswordChange(userids: [ID]!): Response!
-
   addPromocode(promocode: String!): Boolean!
   applyPromocode(promocode: String!): Response!
   banEmployee(userid: ID!): Response!
