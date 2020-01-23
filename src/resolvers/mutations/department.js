@@ -465,8 +465,62 @@ export default {
       })
   ),
 
-  changeAdminStatus: requiresRights(["edit-rights"]).createResolver(
-    async (_p, { unitid, admin }, ctx) =>
+  addAdmin: requiresRights(["edit-users"]).createResolver(
+    async (_p, { unitid, adminkey }, ctx) =>
+      ctx.models.sequelize.transaction(async transaction => {
+        try {
+          const { models, session } = ctx;
+          const {
+            user: { company }
+          } = decode(session.token);
+
+          const p1 = models.Right.create(
+            {
+              holder: unitid,
+              forunit: company,
+              type: "admin"
+            },
+            { transaction }
+          );
+          const p2 = models.Key.create(
+            {
+              publickey: adminkey.publickey,
+              privatekey: adminkey.privatekey,
+              encryptedby: adminkey.encryptedby,
+              unitid
+            },
+            { transaction }
+          );
+          const p3 = createLog(ctx, "adminAdd", {}, transaction);
+
+          await Promise.all([p1, p2, p3]);
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "You received admin privileges",
+              icon: "user-tie",
+              link: "profile",
+              changed: ["me"]
+            },
+            transaction,
+            {
+              company,
+              message: `User ${unitid} has received admin status`
+            }
+          );
+
+          return models.User.findByPk(unitid, { transaction });
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  ),
+  removeAdmin: requiresRights(["edit-users"]).createResolver(
+    async (_p, { unitid }, ctx) =>
       ctx.models.sequelize.transaction(async transaction => {
         try {
           const { models, session } = ctx;
@@ -478,59 +532,61 @@ export default {
             throw new Error("You can't take your own admin rights!");
           }
 
-          const data = {
-            holder: unitid,
-            forunit: company,
-            type: "admin"
-          };
-
-          if (admin) {
-            const p1 = await models.Right.create(data, { transaction });
-            const p2 = await createLog(ctx, "adminAdd", {}, transaction);
-
-            await Promise.all([p1, p2]);
-          } else {
-            const allAdmins = await models.sequelize.query(
-              `
+          const allAdmins = await models.sequelize.query(
+            `
               SELECT DISTINCT ON (dev.employee) uv.*
               FROM users_view uv
                 LEFT OUTER JOIN department_employee_view dev ON dev.employee = uv.id
               WHERE dev.id = :company AND uv.isadmin = true;
               `,
-              {
-                replacements: { company },
-                type: models.sequelize.QueryTypes.SELECT
-              }
-            );
-
-            if (allAdmins.length < 2) {
-              throw new Error("You can't take the last admins privileges");
+            {
+              replacements: { company },
+              type: models.sequelize.QueryTypes.SELECT,
+              transaction
             }
+          );
 
-            const p1 = models.Right.destroy({ where: data, transaction });
-            const p2 = createLog(ctx, "adminRemove", {}, transaction);
-
-            await Promise.all([p1, p2]);
+          if (allAdmins.length < 2) {
+            throw new Error("You can't take the last admins privileges");
           }
+
+          const p1 = models.Right.destroy({
+            where: {
+              holder: unitid,
+              forunit: company,
+              type: "admin"
+            },
+            transaction
+          });
+          const p2 = models.sequelize.query(
+            `
+            DELETE FROM key_data
+            WHERE
+              unitid = :unitid AND
+              publickey = (SELECT adminkey from department_data WHERE unitid = :company)
+          `,
+            { replacements: { unitid, company }, transaction }
+          );
+          const p3 = createLog(ctx, "adminRemove", {}, transaction);
+
+          await Promise.all([p1, p2, p3]);
 
           await createNotification(
             {
               receiver: unitid,
-              message: admin
-                ? "You received admin privileges"
-                : "Your admin privileges were revoked",
-              icon: admin ? "user-tie" : "user-minus",
+              message: "Your admin privileges were revoked",
+              icon: "user-minus",
               link: "profile",
               changed: ["me"]
             },
             transaction,
             {
               company,
-              message: `Admin Rights have been changed for user ${unitid}`
+              message: `Admin Rights were revoked for user ${unitid}`
             }
           );
 
-          return { id: unitid, status: admin };
+          return models.User.findByPk(unitid, { transaction });
         } catch (err) {
           throw new NormalError({
             message: err.message,
