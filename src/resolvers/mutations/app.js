@@ -1420,7 +1420,7 @@ export default {
             {
               key: {
                 ...oldorbit.key,
-                loginurl
+                domain: loginurl
               },
               alias,
               starttime,
