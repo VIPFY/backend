@@ -73,9 +73,6 @@ export const mutations = `
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!
   changePasswordEncrypted(oldPasskey: String!, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, newKey: KeyInput!, replaceKeys: [KeyInput!]!): LoginResponse!
 
-  # Send the user a new link for sign up
-  forgotPassword(email: String!): ForgotPwResponse!
-
   impersonate(userid: ID!): String!
   endImpersonation(token: String!): String!
 `;

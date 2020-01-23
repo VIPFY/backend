@@ -330,7 +330,6 @@ export const queries = `
   fetchCompanyServices: [CompanyService]
   fetchCompanyService(serviceid: ID!): CompanyService
 
-  fetchTempLicences(unitid: ID!): [TempLicence!]
   bulkUpdateLayout(layouts: [LayoutInput!]!): Boolean!
 
   fetchUseableApps: [AppDetails]
@@ -340,20 +339,12 @@ export const queries = `
 export const mutations = `
   updateLayout(layout: LayoutInput!): Licence!
   switchAppsLayout(app1: LayoutInput!, app2: LayoutInput!): [Licence!]!
-  # Admin: delete App from database
-  deleteApp(id: ID!): Response!
   sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
 
   createOwnApp(ssoData: SSOInput!, userids: [ID]): IDID
 
-  # Admin: toogle App between disabled and enabled
-  toggleAppStatus(id: ID!): Response!
-
   # Deletes a licence on a set date, if it is after the normal cancel period
   deleteLicenceAt(licenceid: ID!, time: Date!): Date!
-  deleteServiceLicenceAt(serviceid: ID!, licenceid: ID!, time: Date!): Date!
-  # Deletes a boughtPlan on a set date, if it is after the normal cancel period
-  deleteBoughtPlanAt(boughtplanid: ID!, time: Date!): Date!
 
   # Agree to all terms and conditions of a licence
   agreeToLicence(licenceid: ID!): Response!
@@ -362,7 +353,6 @@ export const mutations = `
 
   # Adds the data of an external App
   addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): BoughtPlan!
-  addExternalLicence(username: String!, password: String!, appid: ID!, boughtplanid: ID!, price: Float, loginurl: String, touser: ID): Response!
   addEncryptedExternalLicence(key: JSON!, appid: ID!, boughtplanid: ID!, price: Float, touser: ID): Licence!
 
   failedIntegration(data: SSOResult!): Boolean!
@@ -370,15 +360,8 @@ export const mutations = `
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!
 
-  # Updates the login data of an external app
-  updateCredentials(licenceid: ID!, username: String, password: String, loginurl: String): Boolean!
-
   createService(serviceData: JSON!, addedTeams: [JSON]!, addedEmployees: [JSON]!):Boolean!
   deleteService(serviceid: ID!): Boolean!
-  removeLicence(licenceid: ID!, oldname: String!): Boolean!
-
-  addExternalAccountLicence(username: String!, password: String!, appid: ID, boughtplanid: ID!, price: Float, loginurl: String, touser: ID, identifier: String, options: JSON): ID!
-  addEncryptedExternalAccountLicence(key: JSON!, appid: ID, boughtplanid: ID!, price: Float, touser: ID, identifier: String, options: JSON): Licence!
 
   updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
 

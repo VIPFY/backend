@@ -620,30 +620,6 @@ export default {
     }
   ),
 
-  fetchTempLicences: requiresRights(["view-licences"]).createResolver(
-    async (_p, { unitid: userId }, { models, session }) => {
-      try {
-        const {
-          user: { unitid, company }
-        } = decode(session.token);
-
-        await companyCheck(company, unitid, userId);
-
-        const tempLicences = await models.sequelize.query(
-          `SELECT lrd.*, ld.unitid as owner
-            FROM licenceright_data lrd LEFT OUTER JOIN licence_data ld on lrd.licenceid = ld.id
-            WHERE lrd.unitid = :userId AND lrd.licenceid = ld.id AND lrd.endtime > NOW();
-          `,
-          { replacements: { userId }, type: models.sequelize.QueryTypes.SELECT }
-        );
-
-        return tempLicences;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
-
   bulkUpdateLayout: requiresAuth.createResolver(
     async (_, { layouts }, { models, session }) =>
       models.sequelize.transaction(async ta => {
