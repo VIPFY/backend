@@ -612,49 +612,34 @@ export default {
     }
   ),
 
-  signOutEverywhere: requiresAuth.createResolver(
-    async (_p, _args, { session, redis }) => {
-      try {
-        const {
-          user: { unitid }
-        } = decode(session.token);
+  signOutEverywhere: requiresRights([
+    "myself",
+    "delete-session"
+  ]).createResolver(async (_p, { userid }, { session, redis }) => {
+    try {
+      let {
+        user: { unitid }
+      } = decode(session.token);
 
-        const sessions = await fetchSessions(redis, unitid);
-
-        const promises = [];
-
-        sessions.forEach(sessionID => {
-          promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`));
-        });
-        promises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
-        await Promise.all(promises);
-
-        return true;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
+      if (unitid != userid) {
+        unitid = userid;
       }
+
+      const sessions = await fetchSessions(redis, unitid);
+
+      const promises = [];
+
+      sessions.forEach(sessionItem => {
+        promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionItem}`));
+      });
+      promises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
+      await Promise.all(promises);
+
+      return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
-  ),
-
-  signOutUserEverywhere: requiresRights(["delete-session"]).createResolver(
-    async (_p, { userid }, { redis }) => {
-      try {
-        const sessions = await fetchSessions(redis, userid);
-
-        const promises = [];
-
-        sessions.forEach(session => {
-          promises.push(redis.del(`${REDIS_SESSION_PREFIX}${session}`));
-        });
-        promises.push(redis.del(`${USER_SESSION_ID_PREFIX}${userid}`));
-        await Promise.all(promises);
-
-        return true;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
-  ),
+  }),
 
   changePassword: requiresAuth.createResolver(
     async (_p, { pw, newPw, confirmPw }, ctx) =>
