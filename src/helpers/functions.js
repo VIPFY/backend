@@ -728,3 +728,17 @@ export const endSession = async (redis, userid, sessionID) => {
     throw new Error(err);
   }
 };
+
+/**
+ * Hashes passkey for storage in database
+ * @param {string} passkey
+ */
+export const hashPasskey = async passkey =>
+  // bcrypt is mostly used for handling salts and completely overkill. Passkeys are already hashed securely on frontend. Thus only two rounds are used
+  bcrypt.hash(passkey, 2);
+
+// just a dummy key to prevent users from finding out if hashed password is null
+const dummykey = "$2b$2$KVEGTwP0a6uoUEngbFKlYePNoPRm6XCb322222222221111111111";
+
+export const comparePasskey = async (data, hashed) =>
+  bcrypt.compare(data, hashed || dummykey);

@@ -161,12 +161,9 @@ export const queries = `
 
 export const mutations = `
   updateEmployee(user: EmployeeInput!): SemiPublicUser!
-  updateUser(user: UserInput!): Response!
-  updateProfilePic(file: Upload!): User!
   updateEmployeePic(file: Upload!, userid: ID!): SemiPublicUser!
 
   #Setup Finished
-  initialSetup(token: String!, data: SetupInput!): Boolean!
   setupFinished(country: String, vatoption: Int, vatnumber: String, placeId: String, ownAdress: String, username: String): Response!
 
   # Agree to Vipfy Terms of Service and Privacy Agreement

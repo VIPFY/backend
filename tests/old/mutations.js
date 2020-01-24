@@ -97,38 +97,6 @@ export const updateApp = `
   }
 `;
 
-export const toggleAppStatus = `
-  mutation ToggleAppStatus($id: Int!) {
-    toggleAppStatus(id: $id) {
-      ok
-    }
-  }
-`;
-
-export const deleteApp = `
-  mutation DeleteApp($id: Int!) {
-    deleteApp(id: $id) {
-      ok
-    }
-  }
-`;
-
-export const freezeAccount = `
-  mutation FreezeAccount($unitid: Int!) {
-    freezeAccount(unitid: $unitid) {
-      ok
-    }
-  }
-`;
-
-export const adminUpdateUser = `
-  mutation AdminUpdateUser($userData: UserInput!, $unitid: Int!) {
-    adminUpdateUser(user: $userData, unitid: $unitid) {
-      ok
-    }
-  }
-`;
-
 export const deleteUser = `
   mutation DeleteUser($unitid: Int!) {
     deleteUser(unitid: $unitid) {

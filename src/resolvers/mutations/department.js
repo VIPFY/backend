@@ -12,99 +12,14 @@ import {
   createNotification,
   formatHumanName,
   selectCredit,
-  getNewPasswordData,
-  checkPlanValidity
+  checkPlanValidity,
+  hashPasskey
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
 import { uploadUserImage, deleteUserImage } from "../../services/aws";
 
 export default {
-  /**
-   * Updates the statistics of a company like industry and sets the vatid.
-   *
-   * @param {object} data contains various data
-   *
-   * @returns {object}
-   */
-  updateStatisticData: requiresRights(["edit-departments"]).createResolver(
-    (_p, { data }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
-        try {
-          const { models, session } = ctx;
-          const {
-            user: { unitid: id, company: unitid }
-          } = decode(session.token);
-
-          const currentData = await models.Department.findOne({
-            where: { unitid },
-            attributes: ["statisticdata", "payingoptions"],
-            raw: true,
-            transaction: ta
-          });
-
-          const newData = await models.DepartmentData.update(
-            {
-              statisticdata: { ...currentData.statisticdata, ...data }
-            },
-            { where: { unitid }, transaction: ta, returning: true }
-          );
-
-          await createLog(
-            ctx,
-            "updateStatisticData",
-            { currentData, newData: newData[1] },
-            ta
-          );
-
-          return { ok: true };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
-  addEmployee: requiresRights(["create-employees"]).createResolver(
-    (_p, { unitid, departmentid }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
-        try {
-          const { models, session } = ctx;
-
-          const {
-            user: { company }
-          } = decode(session.token);
-
-          let parentUnit = await models.ParentUnit.create(
-            { parentunit: departmentid, childunit: unitid },
-            { transaction: ta }
-          );
-
-          parentUnit = parentUnit.get();
-
-          await createLog(
-            ctx,
-            "addEmployee",
-            { unitid, departmentid, parentUnit },
-            ta
-          );
-
-          // just in case. This mutation shouldn't change actual company membership
-          resetCompanyMembershipCache(departmentid, unitid);
-          resetCompanyMembershipCache(company, unitid);
-
-          return { ok: true };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
   createEmployee: requiresRights(["create-employees"]).createResolver(
     async (_p, args, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
@@ -120,7 +35,11 @@ export default {
             hiredate,
             address,
             position,
-            phones
+            phones,
+            passkey,
+            passwordMetrics,
+            personalKey,
+            passwordsalt
           } = args;
           const {
             user: { unitid, company }
@@ -146,14 +65,36 @@ export default {
             throw new Error("You need at least one Email!");
           }
 
-          if (password.length > MAX_PASSWORD_LENGTH) {
+          if (password && password.length > MAX_PASSWORD_LENGTH) {
             throw new Error("Password too long");
           }
 
-          if (password.length < MIN_PASSWORD_LENGTH) {
+          if (password && password.length < MIN_PASSWORD_LENGTH) {
             throw new Error(
               `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
             );
+          }
+
+          if (passwordMetrics.passwordStrength < MIN_PASSWORD_LENGTH) {
+            throw new Error("Password too weak!");
+          }
+
+          if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
+            throw new Error("Password too long");
+          }
+
+          if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
+            throw new Error(
+              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+            );
+          }
+
+          if (passkey.length != 128) {
+            throw new Error("Incompatible passkey format, try updating VIPFY");
+          }
+
+          if (passwordsalt.length != 32) {
+            throw new Error("Incompatible salt format, try updating VIPFY");
           }
 
           const data = {};
@@ -166,8 +107,6 @@ export default {
             );
             data.profilepicture = profilepicture;
           }
-
-          const pwData = await getNewPasswordData(password);
 
           let unit = await models.Unit.create(data, { transaction: ta });
           unit = unit.get();
@@ -186,10 +125,13 @@ export default {
                 needspasswordchange:
                   needpasswordchange === false ? false : true,
                 firstlogin: true,
-                ...pwData,
                 position,
                 hiredate: hiredate != "" ? hiredate : null,
-                birthday: birthday != "" ? birthday : null
+                birthday: birthday != "" ? birthday : null,
+                passkey: await hashPasskey(passkey),
+                ...passwordMetrics,
+                passwordsalt,
+                passwordhash: ""
               },
               { transaction: ta }
             )
@@ -261,6 +203,16 @@ export default {
             )
           );
 
+          humanpromises.push(
+            models.Key.create(
+              {
+                ...personalKey,
+                unitid: unit.id
+              },
+              { transaction: ta }
+            )
+          );
+
           await Promise.all(humanpromises);
 
           const p4 = models.Human.findOne({ where: { unitid } });
@@ -276,22 +228,42 @@ export default {
           // brand new person, but better to be too careful
           resetCompanyMembershipCache(company, unit.id);
 
-          await sendEmail({
-            templateId: "d-e049cce50d20428d81f011e521605d4c",
-            fromName: "VIPFY",
-            personalizations: [
-              {
-                to: [{ email: emails[0].email, name: formatHumanName(name) }],
-                dynamic_template_data: {
-                  name: formatHumanName(name),
-                  creator: formatHumanName(requester),
-                  companyname: companyObj.name,
-                  email: emails[0].email,
-                  password
+          if (password) {
+            await sendEmail({
+              templateId: "d-e049cce50d20428d81f011e521605d4c",
+              fromName: "VIPFY",
+              personalizations: [
+                {
+                  to: [{ email: emails[0].email, name: formatHumanName(name) }],
+                  dynamic_template_data: {
+                    name: formatHumanName(name),
+                    creator: formatHumanName(requester),
+                    companyname: companyObj.name,
+                    email: emails[0].email,
+                    password
+                  }
                 }
-              }
-            ]
-          });
+              ]
+            });
+          } else {
+            // no password supplied to backend, this should be the encouraged case
+            // TODO VIP-958 change template to one without password
+            await sendEmail({
+              templateId: "d-e049cce50d20428d81f011e521605d4c",
+              fromName: "VIPFY",
+              personalizations: [
+                {
+                  to: [{ email: emails[0].email, name: formatHumanName(name) }],
+                  dynamic_template_data: {
+                    name: formatHumanName(name),
+                    creator: formatHumanName(requester),
+                    companyname: companyObj.name,
+                    email: emails[0].email
+                  }
+                }
+              ]
+            });
+          }
 
           await createNotification({
             receiver: unitid,
@@ -493,39 +465,52 @@ export default {
       })
   ),
 
-  updateCompanyPic: requiresRights(["edit-departments"]).createResolver(
-    async (_p, { file }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+  addAdmin: requiresRights(["edit-users"]).createResolver(
+    async (_p, { unitid, adminkey }, ctx) =>
+      ctx.models.sequelize.transaction(async transaction => {
         try {
-          const parsedFile = await file;
-          const profilepicture = await uploadUserImage(
-            parsedFile,
-            userPicFolder
-          );
-
           const { models, session } = ctx;
           const {
-            user: { company: id }
+            user: { company }
           } = decode(session.token);
 
-          const oldUnit = await models.Unit.findOne({
-            where: { id },
-            raw: true
-          });
+          const p1 = models.Right.create(
+            {
+              holder: unitid,
+              forunit: company,
+              type: "admin"
+            },
+            { transaction }
+          );
+          const p2 = models.Key.create(
+            {
+              publickey: adminkey.publickey,
+              privatekey: adminkey.privatekey,
+              encryptedby: adminkey.encryptedby,
+              unitid
+            },
+            { transaction }
+          );
+          const p3 = createLog(ctx, "adminAdd", {}, transaction);
 
-          const updatedUnit = await models.Unit.update(
-            { profilepicture },
-            { where: { id }, returning: true, transaction: ta }
+          await Promise.all([p1, p2, p3]);
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "You received admin privileges",
+              icon: "user-tie",
+              link: "profile",
+              changed: ["me"]
+            },
+            transaction,
+            {
+              company,
+              message: `User ${unitid} has received admin status`
+            }
           );
 
-          await createLog(
-            ctx,
-            "updateCompanyPic",
-            { oldUnit, updatedUnit: updatedUnit[1] },
-            ta
-          );
-
-          return profilepicture;
+          return models.User.findByPk(unitid, { transaction });
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -534,60 +519,8 @@ export default {
         }
       })
   ),
-
-  /**
-   * Save the data collected by the Google Places API to our database
-   *
-   * @param {object} data Contains address, phone, website, company and icon
-   */
-  saveProposalData: async (_, { data }, { models, session }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { company }
-        } = decode(session.token);
-
-        const promises = [];
-
-        if (data.website) {
-          const p2 = models.Website.create(
-            {
-              website: data.website,
-              verified: true,
-              autogenerated: false,
-              unitid: company
-            },
-            { transaction: ta }
-          );
-
-          promises.push(p2);
-        }
-
-        if (data.international_phone_number) {
-          const p3 = models.Phone.create(
-            {
-              unitid: company,
-              number: data.international_phone_number,
-              verified: true,
-              tags: ["main"],
-              autogenerated: false
-            },
-            { transaction: ta }
-          );
-
-          promises.push(p3);
-        }
-
-        await Promise.all(promises);
-
-        return { ok: true };
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }),
-
-  changeAdminStatus: requiresRights(["edit-rights"]).createResolver(
-    async (_p, { unitid, admin }, ctx) =>
+  removeAdmin: requiresRights(["edit-users"]).createResolver(
+    async (_p, { unitid }, ctx) =>
       ctx.models.sequelize.transaction(async transaction => {
         try {
           const { models, session } = ctx;
@@ -599,59 +532,61 @@ export default {
             throw new Error("You can't take your own admin rights!");
           }
 
-          const data = {
-            holder: unitid,
-            forunit: company,
-            type: "admin"
-          };
-
-          if (admin) {
-            const p1 = await models.Right.create(data, { transaction });
-            const p2 = await createLog(ctx, "adminAdd", {}, transaction);
-
-            await Promise.all([p1, p2]);
-          } else {
-            const allAdmins = await models.sequelize.query(
-              `
+          const allAdmins = await models.sequelize.query(
+            `
               SELECT DISTINCT ON (dev.employee) uv.*
               FROM users_view uv
                 LEFT OUTER JOIN department_employee_view dev ON dev.employee = uv.id
               WHERE dev.id = :company AND uv.isadmin = true;
               `,
-              {
-                replacements: { company },
-                type: models.sequelize.QueryTypes.SELECT
-              }
-            );
-
-            if (allAdmins.length < 2) {
-              throw new Error("You can't take the last admins privileges");
+            {
+              replacements: { company },
+              type: models.sequelize.QueryTypes.SELECT,
+              transaction
             }
+          );
 
-            const p1 = models.Right.destroy({ where: data, transaction });
-            const p2 = createLog(ctx, "adminRemove", {}, transaction);
-
-            await Promise.all([p1, p2]);
+          if (allAdmins.length < 2) {
+            throw new Error("You can't take the last admins privileges");
           }
+
+          const p1 = models.Right.destroy({
+            where: {
+              holder: unitid,
+              forunit: company,
+              type: "admin"
+            },
+            transaction
+          });
+          const p2 = models.sequelize.query(
+            `
+            DELETE FROM key_data
+            WHERE
+              unitid = :unitid AND
+              publickey = (SELECT adminkey from department_data WHERE unitid = :company)
+          `,
+            { replacements: { unitid, company }, transaction }
+          );
+          const p3 = createLog(ctx, "adminRemove", {}, transaction);
+
+          await Promise.all([p1, p2, p3]);
 
           await createNotification(
             {
               receiver: unitid,
-              message: admin
-                ? "You received admin privileges"
-                : "Your admin privileges were revoked",
-              icon: admin ? "user-tie" : "user-minus",
+              message: "Your admin privileges were revoked",
+              icon: "user-minus",
               link: "profile",
               changed: ["me"]
             },
             transaction,
             {
               company,
-              message: `Admin Rights have been changed for user ${unitid}`
+              message: `Admin Rights were revoked for user ${unitid}`
             }
           );
 
-          return { id: unitid, status: admin };
+          return models.User.findByPk(unitid, { transaction });
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -794,280 +729,6 @@ export default {
         });
       }
     })
-  ),
-
-  createEmployeeOLD: requiresRights(["create-employees"]).createResolver(
-    async (_p, { file, addpersonal, addteams, apps }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
-        try {
-          const { wmail1, wmail2, password, name } = addpersonal;
-
-          const { models, session } = ctx;
-          const {
-            user: { unitid, company }
-          } = decode(session.token);
-
-          const isEmail = wmail1.indexOf("@");
-
-          if (isEmail < 0) {
-            throw new Error("Please enter a valid Email!");
-          }
-
-          const emailInUse = await models.Email.findOne({
-            where: { email: wmail1 }
-          });
-
-          if (emailInUse) throw new Error("Email already in use!");
-          /* if (password.length > MAX_PASSWORD_LENGTH) {
-            throw new Error("Password too long");
-          } */
-
-          // Check Password
-          if (password.length > MAX_PASSWORD_LENGTH) {
-            throw new Error("Password too long");
-          }
-          if (password.length < MIN_PASSWORD_LENGTH) {
-            throw new Error("Password too short");
-          }
-
-          const data = {};
-
-          if (file) {
-            const parsedFile = await file;
-            const profilepicture = await uploadUserImage(
-              parsedFile,
-              userPicFolder
-            );
-            data.profilepicture = profilepicture;
-          }
-
-          const pwData = await getNewPasswordData(password);
-
-          let unit = await models.Unit.create(data, { transaction: ta });
-          unit = unit.get();
-
-          const username = parseName(name);
-          const p1 = models.Human.create(
-            {
-              title: username.salutation || "",
-              firstname: username.firstName || "",
-              middlename: username.middleName || "",
-              lastname: username.lastName || "",
-              suffix: username.suffix || "",
-              unitid: unit.id,
-              needspasswordchange: true,
-              firstlogin: true,
-              ...pwData,
-              statisticdata: {
-                name
-              }
-            },
-            { transaction: ta, raw: true }
-          );
-
-          const p2 = models.Email.create(
-            { email: wmail1, unitid: unit.id, verified: true },
-            { transaction: ta }
-          );
-          let p2a = null;
-          if (wmail2) {
-            p2a = models.Email.create(
-              { email: wmail2, unitid: unit.id, verified: true },
-              { transaction: ta }
-            );
-          }
-          const teampromises = [];
-          teampromises.push(
-            models.ParentUnit.create(
-              { parentunit: company, childunit: unit.id },
-              { transaction: ta }
-            )
-          );
-          addteams.forEach(team =>
-            teampromises.push(
-              models.ParentUnit.create(
-                { parentunit: team.unitid.id, childunit: unit.id },
-                { transaction: ta }
-              )
-            )
-          );
-          Promise.all(teampromises);
-
-          const p4 = models.Human.findOne({ where: { unitid } });
-
-          const p5 = models.DepartmentData.findOne({
-            where: { unitid: company }
-          });
-
-          const p6 = models.Right.create(
-            {
-              holder: unit.id,
-              forunit: company,
-              type: "view-apps"
-            },
-            { transaction: ta }
-          );
-
-          // distribute licences
-
-          const licencepromises = [];
-
-          // Teamlicences
-
-          addteams.forEach(team => {
-            if (team.services) {
-              team.services.forEach(service =>
-                licencepromises.push(
-                  models.LicenceData.create(
-                    {
-                      unitid: unit.id,
-                      disabled: false,
-                      boughtplanid: service.id,
-                      agreed: true,
-                      key: {
-                        email: service.setup.email,
-                        password: service.setup.password,
-                        subdomain: service.setup.subdomain,
-                        external: true
-                      },
-                      options: service.setupfinished
-                        ? { teamlicence: team.unitid.id }
-                        : { teamlicence: team.unitid.id, nosetup: true }
-                    },
-                    { transaction: ta }
-                  )
-                )
-              );
-            }
-          });
-
-          await Promise.all(licencepromises);
-
-          // SingleLicences
-
-          const mainapppromise = apps.map(async app => {
-            const plan = await models.Plan.findOne({
-              where: { appid: app.id, options: { external: true } },
-              raw: true
-            });
-
-            if (!plan) {
-              throw new Error(
-                "This App is not integrated to handle external Accounts yet."
-              );
-            }
-            await checkPlanValidity(plan);
-
-            const boughtPlan = await models.BoughtPlan.create(
-              {
-                planid: plan.id,
-                alias: app.name,
-                disabled: false,
-                buyer: unitid,
-                payer: company,
-                usedby: company,
-                totalprice: 0,
-                key: {
-                  external: true,
-                  externaltotalprice: 0
-                }
-              },
-              { transaction: ta }
-            );
-
-            await models.LicenceData.create(
-              {
-                unitid: unit.id,
-                disabled: false,
-                boughtplanid: boughtPlan.id,
-                agreed: true,
-                key: {
-                  email: app.email,
-                  password: app.password,
-                  subdomain: app.subdomain,
-                  external: true
-                }
-              },
-              { transaction: ta }
-            );
-          });
-
-          await Promise.all(mainapppromise);
-
-          let human = null;
-          let newEmail = null;
-          let newEmail2 = null;
-          let requester = null;
-          let companyObj = null;
-          let rights = null;
-
-          if (p2a) {
-            [
-              human,
-              newEmail,
-              newEmail2,
-              requester,
-              companyObj,
-              rights
-            ] = await Promise.all([p1, p2, p2a, p4, p5, p6]);
-          } else {
-            [
-              human,
-              newEmail,
-              requester,
-              companyObj,
-              rights
-            ] = await Promise.all([p1, p2, p4, p5, p6]);
-          }
-          const humanData = human.get();
-          const newEmailData = newEmail.get();
-
-          await createLog(
-            ctx,
-            "addCreateEmployee",
-            { unit, humanData, newEmailData, rights },
-            ta
-          );
-
-          // brand new person, but better to be too careful
-          addteams.forEach(team =>
-            resetCompanyMembershipCache(team.unitid.id, unit.id)
-          );
-          resetCompanyMembershipCache(company, unit.id);
-
-          await sendEmail({
-            templateId: "d-e049cce50d20428d81f011e521605d4c",
-            fromName: "VIPFY",
-            personalizations: [
-              {
-                to: [{ email: wmail1, name: username.fullName }],
-                dynamic_template_data: {
-                  name: username.fullName,
-                  creator: formatHumanName(requester),
-                  companyname: companyObj.name,
-                  email: wmail1,
-                  password
-                }
-              }
-            ]
-          });
-
-          await createNotification({
-            receiver: unitid,
-            message: `${username.fullName} was successfully created`,
-            icon: "user-plus",
-            link: "employeemanager",
-            changed: []
-          });
-
-          return true;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
   ),
 
   deleteUser: requiresRights(["delete-employees"]).createResolver(

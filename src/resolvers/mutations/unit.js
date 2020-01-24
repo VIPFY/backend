@@ -19,7 +19,8 @@ import {
   parentAdminCheck,
   createNotification,
   concatName,
-  fetchSessions
+  fetchSessions,
+  hashPasskey
 } from "../../helpers/functions";
 import { uploadUserImage } from "../../services/aws";
 import { createAdminToken } from "../../helpers/auth";
@@ -27,53 +28,6 @@ import { sendEmail } from "../../helpers/email";
 /* eslint-disable no-unused-vars, prefer-destructuring */
 
 export default {
-  updateProfilePic: requiresAuth.createResolver(async (_p, { file }, ctx) =>
-    ctx.models.sequelize.transaction(async ta => {
-      try {
-        const { models, session } = ctx;
-
-        const {
-          user: { unitid }
-        } = decode(session.token);
-
-        const user = await models.User.findOne({
-          where: { id: unitid },
-          raw: true
-        });
-
-        const parsedFile = await file;
-
-        const profilepicture = await uploadUserImage(parsedFile, userPicFolder);
-
-        const updatedUnit = await models.Unit.update(
-          { profilepicture },
-          { where: { id: unitid }, returning: true, transaction: ta }
-        );
-
-        const notificationBody = {
-          receiver: unitid,
-          message: "Your profile picture was updated.",
-          icon: "user-check",
-          link: "profile"
-        };
-
-        await createLog(
-          ctx,
-          "updateProfilePic",
-          { user, updatedUnit: updatedUnit[1] },
-          ta
-        );
-
-        return { ...user, profilepicture };
-      } catch (err) {
-        throw new NormalError({
-          message: err.message,
-          internalData: { err }
-        });
-      }
-    })
-  ),
-
   updateEmployeePic: requiresRights(["edit-user"]).createResolver(
     async (_p, { file, userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
@@ -109,59 +63,6 @@ export default {
           const employee = await parentAdminCheck(user);
 
           return { ...employee, profilepicture };
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
-  updateUser: requiresRights(["edit-employees"]).createResolver(
-    async (_p, { user }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
-        try {
-          const { models, session } = ctx;
-
-          const {
-            user: { unitid }
-          } = decode(session.token);
-
-          const { password, statisticdata, ...human } = user;
-          let updatedHuman;
-          if (password) {
-            throw new Error("You can't update the password this way!");
-          }
-
-          const oldHuman = await models.Human.findOne({
-            where: { unitid },
-            raw: true
-          });
-
-          if (statisticdata) {
-            updatedHuman = await models.Human.update(
-              {
-                statisticdata: { ...oldHuman.statisticdata, ...statisticdata },
-                ...human
-              },
-              { where: { unitid }, returning: true, transaction: ta }
-            );
-          } else {
-            updatedHuman = await models.Human.update(
-              { ...human },
-              { where: { unitid }, returning: true, transaction: ta }
-            );
-          }
-
-          await createLog(
-            ctx,
-            "updateUser",
-            { updateArgs: user, oldHuman, updatedHuman: updatedHuman[1] },
-            ta
-          );
-
-          return { ok: true };
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -455,7 +356,7 @@ export default {
                 {
                   needspasswordchange: true,
                   ...passwordMetrics,
-                  passkey: newPasskey
+                  passkey: await hashPasskey(newPasskey)
                 },
                 { where: { unitid }, returning: true, transaction }
               )
