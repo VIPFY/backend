@@ -66,8 +66,7 @@ export const mutations = `
   signOut: Boolean!
   signOutSession(sessionID: String!): [SessionResponse!]!
   signOutUser(sessionID: String!, userid: ID!): [SessionResponse!]!
-  signOutEverywhere: Boolean!
-  signOutUserEverywhere(userid: ID!): Boolean!
+  signOutEverywhere(userid: ID!): Boolean!
 
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!
