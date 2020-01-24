@@ -609,6 +609,103 @@ export default {
     }
   },
 
+  initialSetup: async (_p, { token, data }, { models, SECRET }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const {
+          user: { unitid, company }
+        } = verify(token, SECRET);
+
+        const promises = [];
+
+        if (data.firstname) {
+          promises.push(
+            models.Human.update(
+              { firstname: data.firstname },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
+        if (data.lastname) {
+          promises.push(
+            models.Human.update(
+              { lastname: data.lastname },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
+        if (data.name) {
+          const name = data.name.split(" ");
+          const firstname = name[0];
+          let middlename = "";
+          let lastname = "";
+
+          if (name.length > 1) {
+            if (name.length > 2) {
+              lastname = name[name.length - 1];
+
+              name.pop();
+              name.shift();
+              middlename = name.join(" ");
+            } else {
+              lastname = name[1];
+            }
+          }
+
+          promises.push(
+            models.Human.update(
+              { firstname, middlename, lastname },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
+        if (data.position) {
+          promises.push(
+            models.Human.update(
+              { position: data.position },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
+        if (data.company) {
+          promises.push(
+            models.DepartmentData.update(
+              { name: data.name },
+              { where: { unitid: company }, transaction: ta }
+            )
+          );
+        }
+
+        if (data.sector) {
+          promises.push(
+            models.Human.update(
+              { statisticdata: { sector: data.sector } },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
+        if (data.country) {
+          promises.push(
+            models.Address.update(
+              { country: data.country },
+              { where: { unitid }, transaction: ta }
+            )
+          );
+        }
+
+        await Promise.all(promises);
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }),
+
   setVacationDays: requiresAuth.createResolver(
     async (_p, { year, days, userid }, { models, session }) => {
       try {

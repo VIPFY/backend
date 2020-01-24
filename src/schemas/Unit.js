@@ -113,6 +113,8 @@ export const types = `
 
   input SetupInput {
     name: String
+    firstname: String
+    lastname: String
     company: String
     position: String
     sector: String
