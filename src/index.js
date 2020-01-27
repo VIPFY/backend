@@ -171,7 +171,8 @@ const gqlserver = new ApolloServer({
     redis,
     userData: {
       browser: req.headers["user-agent"],
-      language: req.headers["accept-language"]
+      language: req.headers["accept-language"],
+      host: req.headers["x-user-host"]
     },
     session: req.session,
     sessionID: req.sessionID,

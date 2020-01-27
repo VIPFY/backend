@@ -604,6 +604,7 @@ export const parseSessions = async sessions => {
         id: parsedSession.session,
         system: parsedSession.browser,
         loggedInAt: parsedSession.loggedInAt,
+        host: parsedSession.host,
         location: {
           city: parsedSession.city,
           country: parsedSession.country
