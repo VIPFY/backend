@@ -13,6 +13,7 @@ export const types = `
     system: String
     location: Location
     loggedInAt: Date!
+    host: String!
   }
 
   type PasswordParams {
