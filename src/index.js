@@ -109,25 +109,6 @@ export const schema = makeExecutableSchema({ typeDefs, resolvers });
   traceResolvers(schema);
 } */
 
-// Enable our Frontend running on various ports to access the Backend
-const corsOptions = {
-  origin:
-    ENVIRONMENT == "production"
-      ? [
-          "https://vipfy.com",
-          "https://www.vipfy.com",
-          "https://dev.vipfy.com",
-          "https://vipfy.store",
-          "https://www.vipfy.store",
-          "https://dev.vipfy.store",
-          "http://localhost:3000",
-          "https://aws.vipfy.store"
-        ]
-      : ["http://localhost:3000", "http://localhost:9000"],
-  credentials: true // <-- REQUIRED backend setting for sessions
-};
-
-app.use(cors(corsOptions));
 app.use((req, res, next) => {
   let tries = 3;
   // Recursive Function to retry on a lost connection to Redis
@@ -182,20 +163,44 @@ const gqlserver = new ApolloServer({
     segment: req.segment
   }),
   debug: ENVIRONMENT == "development",
+  playground: ENVIRONMENT == "development",
   validationRules: [depthLimit(10)],
   upload: {
-    //Max allowed non-file multipart form field size in bytes; enough for your queries (default: 1 MB).
+    // Max allowed non-file multipart form field size in bytes; enough for your queries (default: 1 MB).
     // maxFieldSize: 5,
-    //Max allowed file size in bytes (default: Infinity).
+    // Max allowed file size in bytes (default: Infinity).
     maxFileSize: 20000000,
-    //Max allowed number of files (default: Infinity).
+    // Max allowed number of files (default: Infinity).
     maxFiles: 5
   },
   introspection: true,
   tracing: true
 });
 
-gqlserver.applyMiddleware({ app, path: "/graphql" });
+gqlserver.applyMiddleware({
+  app,
+  cors: {
+    origin:
+      ENVIRONMENT == "production"
+        ? [
+            "https://vipfy.com",
+            "https://www.vipfy.com",
+            "https://dev.vipfy.com",
+            "https://vipfy.store",
+            "https://www.vipfy.store",
+            "https://dev.vipfy.store",
+            "http://localhost:3000",
+            "https://aws.vipfy.store",
+            "https://aws2.vipfy.store"
+          ]
+        : [
+            "http://localhost:3000",
+            "https://aws2.vipfy.store",
+            "http://localhost:9000"
+          ],
+    credentials: true // <-- REQUIRED backend setting for sessions
+  }
+});
 
 if (USE_VOYAGER) {
   app.use("/voyager", voyagerMiddleware({ endpointUrl: "/graphql" }));
