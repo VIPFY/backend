@@ -1272,7 +1272,11 @@ export default {
     "edit-licences",
     "edit-licenceRights"
   ]).createResolver(
-    async (_p, { licenceid, userid, rights, tags, starttime, endtime }, ctx) =>
+    async (
+      _p,
+      { licenceid, userid, rights, tags, starttime, endtime, keyfragment },
+      ctx
+    ) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
@@ -1282,6 +1286,26 @@ export default {
           const { models, session } = ctx;
 
           await checkLicenceValidilty(models, company, licenceid);
+
+          const licence = await models.LicenceData.findOne({
+            where: { id: licenceid },
+            transaction: ta
+          });
+          if (licence.key.encrypted && keyfragment) {
+            console.log(
+              "ENC",
+              typeof licence.dataValues.key.encrypted,
+              Array.isArray(licence.dataValues.key.encrypted),
+              licence.dataValues.key.encrypted
+            );
+            licence.key = {
+              ...licence.key,
+              encrypted: [...licence.dataValues.key.encrypted, keyfragment]
+            };
+            await licence.save({ transaction: ta });
+          } else if (licence.key.encrypted && !keyfragment) {
+            throw new Error("can't add unencrypted user to encrypted licence");
+          }
 
           await models.LicenceRight.create(
             {
