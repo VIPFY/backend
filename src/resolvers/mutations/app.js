@@ -1292,12 +1292,6 @@ export default {
             transaction: ta
           });
           if (licence.key.encrypted && keyfragment) {
-            console.log(
-              "ENC",
-              typeof licence.dataValues.key.encrypted,
-              Array.isArray(licence.dataValues.key.encrypted),
-              licence.dataValues.key.encrypted
-            );
             licence.key = {
               ...licence.key,
               encrypted: [...licence.dataValues.key.encrypted, keyfragment]
