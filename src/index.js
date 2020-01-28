@@ -109,29 +109,6 @@ export const schema = makeExecutableSchema({ typeDefs, resolvers });
   traceResolvers(schema);
 } */
 
-// Enable our Frontend running on various ports to access the Backend
-const corsOptions = {
-  origin:
-    ENVIRONMENT == "production"
-      ? [
-          "https://vipfy.com",
-          "https://www.vipfy.com",
-          "https://dev.vipfy.com",
-          "https://vipfy.store",
-          "https://www.vipfy.store",
-          "https://dev.vipfy.store",
-          "http://localhost:3000",
-          "https://aws.vipfy.store",
-          "https://aws2.vipfy.store"
-        ]
-      : [
-          "http://localhost:3000",
-          "https://aws2.vipfy.store",
-          "http://localhost:9000"
-        ],
-  credentials: true // <-- REQUIRED backend setting for sessions
-};
-
 app.use((req, res, next) => {
   let tries = 3;
   // Recursive Function to retry on a lost connection to Redis
@@ -200,7 +177,30 @@ const gqlserver = new ApolloServer({
   tracing: true
 });
 
-gqlserver.applyMiddleware({ cors: corsOptions, app });
+gqlserver.applyMiddleware({
+  app,
+  cors: {
+    origin:
+      ENVIRONMENT == "production"
+        ? [
+            "https://vipfy.com",
+            "https://www.vipfy.com",
+            "https://dev.vipfy.com",
+            "https://vipfy.store",
+            "https://www.vipfy.store",
+            "https://dev.vipfy.store",
+            "http://localhost:3000",
+            "https://aws.vipfy.store",
+            "https://aws2.vipfy.store"
+          ]
+        : [
+            "http://localhost:3000",
+            "https://aws2.vipfy.store",
+            "http://localhost:9000"
+          ],
+    credentials: true // <-- REQUIRED backend setting for sessions
+  }
+});
 
 if (USE_VOYAGER) {
   app.use("/voyager", voyagerMiddleware({ endpointUrl: "/graphql" }));
