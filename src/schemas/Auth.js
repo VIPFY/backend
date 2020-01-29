@@ -55,6 +55,7 @@ export const queries = `
 
   fetchPwParams(email: String!): PasswordParams!
   fetchKey(id: ID!): Key
+  fetchKeys(publickey: ID!): [Key]
   fetchCurrentKey(unitid: ID): Key
 `;
 
