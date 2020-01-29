@@ -171,7 +171,6 @@ export const types = `
     agreed: Boolean
     disabled: Boolean
     key: JSON
-    emailprefix: String
     pending: Boolean
     alias: String
     assignments: [LicenceAssignment]

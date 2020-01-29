@@ -30,7 +30,6 @@ export const types = `
     ${basicFields}
     hiredate: Date
     position: String
-    resetoption: Int
     banned: Boolean!
     deleted: Boolean!
     suspended: Boolean!
