@@ -18,11 +18,6 @@ export const checkCompanyMembership = async (
   entityID,
   entityName = "Entity"
 ) => {
-  // sanity check
-  if (`${company}`.indexOf("-") !== -1) {
-    throw new Error("company must be a number");
-  }
-
   if (entityID == company) {
     return true;
   }
