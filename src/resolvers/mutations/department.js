@@ -247,9 +247,8 @@ export default {
             });
           } else {
             // no password supplied to backend, this should be the encouraged case
-            // TODO VIP-958 change template to one without password
             await sendEmail({
-              templateId: "d-e049cce50d20428d81f011e521605d4c",
+              templateId: "d-fc629636327e400ea14bda1340451eb6",
               fromName: "VIPFY",
               personalizations: [
                 {
