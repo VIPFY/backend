@@ -369,7 +369,7 @@ export const mutations = `
   createAccount(orbitid: ID!, alias: String, logindata: JSON!, starttime: Date, endtime: Date): Account!
   changeAccount(accountid: ID!, alias: String, logindata: JSON, starttime: Date, endtime: Date): Account
 
-  assignAccount(licenceid: ID!, userid: ID!, rights: LicenceRights, tags: [String], starttime: Date, endtime: Date): Boolean!
+  assignAccount(licenceid: ID!, userid: ID!, rights: LicenceRights, tags: [String], starttime: Date, endtime: Date, keyfragment: JSON): Boolean!
   terminateAssignAccount(assignmentid: ID!, endtime: Date, isNull: Boolean): LicenceAssignment
 
   createOrbit(planid: ID!, alias: String, options: JSON, starttime: Date, endtime: Date): BoughtPlan
