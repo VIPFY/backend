@@ -212,6 +212,22 @@ export default {
     }
   ),
 
+  fetchKeys: requiresAuth.createResolver(
+    async (_p, { publickey }, { models, session }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+        const keys = await models.Key.findAll({
+          where: { publickey, unitid }
+        });
+        return keys;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   fetchCurrentKey: requiresAuth.createResolver(
     async (_p, { unitid }, { models, session }) => {
       try {
