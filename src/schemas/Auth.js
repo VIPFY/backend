@@ -48,7 +48,7 @@ export const types = `
 
 export const queries = `
   #The token the user receives after registration to set his password
-  checkAuthToken(token: String!, email: String!): TokenResponse!
+  checkAuthToken(token: String!): TokenResponse!
   
   # Fetches all Sessions of a specific User
   fetchUsersSessions(userid: ID!): [SessionResponse!]!
@@ -62,7 +62,7 @@ export const mutations = `
   # Only an email is required for the signup
   signUp(email: String!, companyname: String!, privacy: Boolean!, termsOfService: Boolean!, isprivate: Boolean, passkey: String!, passwordMetrics: PasswordMetricsInput!, personalKey: KeyInput!, adminKey: KeyInput!, passwordsalt: String!): RegisterResponse!
   # After confirming the email, an user has to set a password
-  signUpConfirm(email: String!, password: String!, passwordConfirm: String!, token: String!): SignUpConfirmResponse!
+  signUpConfirm(token: String!): SignUpConfirmResponse!
   signIn(email: String!, password: String, passkey: String): LoginResponse!
   signOut: Boolean!
   signOutSession(sessionID: String!): [SessionResponse!]!

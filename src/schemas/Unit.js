@@ -175,7 +175,7 @@ export const mutations = `
   # take a token from a setup file and return a one-day JWT
   redeemSetupToken(setuptoken: String!): LoginResponse!
 
-  resendToken(email: String!): Boolean!
+  resendToken(token: String!): Boolean!
   setConsent(consent: Boolean!): User!
   setVacationDays(year: Int!, days: Int!, userid: ID!): Boolean!
   updateEmployeePassword(unitid: ID!, password: String!, logOut: Boolean): UserSecurityOverview!
