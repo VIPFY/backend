@@ -653,85 +653,6 @@ export default {
             },
             { transaction: ta }
           );
-          /* let licence = null;
-          if (!ssoData.manager) {
-            const boughtPlan = await models.BoughtPlan.create(
-              {
-                planid: plan.id,
-                alias: data.name,
-                disabled: false,
-                buyer: unitid,
-                payer: company,
-                usedby: company,
-                totalprice: 0,
-                key: {
-                  integrated: true,
-                  external: true,
-                  externaltotalprice: 0,
-                  loginurl: data.loginurl
-                },
-                stripeplan: null // Maybe we need one later
-              },
-              { transaction: ta }
-            );
-            if (userids) {
-              const licencepromises = [];
-              userids.forEach(u =>
-                licencepromises.push(
-                  models.LicenceData.create(
-                    {
-                      unitid: u,
-                      disabled: false,
-                      boughtplanid: boughtPlan.id,
-                      agreed: true,
-                      key: { ...data, external: true }
-                    },
-                    { transaction: ta }
-                  )
-                )
-              );
-              await Promise.all(licencepromises);
-              const notifypromises = [];
-              userids.forEach(u =>
-                notifypromises.push(
-                  createNotification(
-                    {
-                      receiver: u,
-                      message: `You have a new service`,
-                      icon: "business-time",
-                      link: `dashboard`,
-                      changed: ["ownLicences"]
-                    },
-                    ta
-                  )
-                )
-              );
-              await Promise.all(notifypromises);
-            } else {
-              licence = await models.LicenceData.create(
-                {
-                  unitid,
-                  disabled: false,
-                  boughtplanid: boughtPlan.id,
-                  agreed: true,
-                  key: { ...data, external: true }
-                },
-                { transaction: ta }
-              );
-              await createNotification(
-                {
-                  receiver: unitid,
-                  message: `You have a new service`,
-                  icon: "business-time",
-                  link: `dashboard`,
-                  changed: ["ownLicences"]
-                },
-                ta
-              );
-            }
-          }
-          return licence != null ? licence : { id: appOwned.dataValues.id }; */
-          console.log("OUTPUT", appOwned.id, plan.id);
           return { appid: appOwned.id, planid: plan.id };
         } catch (err) {
           throw new NormalError({
@@ -932,7 +853,7 @@ export default {
             appOwned = await models.App.create(
               {
                 ...data,
-                options: { universallogin: true, ...data },
+                options: { universallogin: true, pending: true, ...data },
                 disabled: false,
                 color: "#f5f5f5",
                 developer: company,
@@ -957,43 +878,6 @@ export default {
               },
               { transaction: ta }
             );
-
-            /* const boughtPlan = await models.BoughtPlan.create(
-              {
-                planid: plan.id,
-                alias: data.name,
-                disabled: true,
-                buyer: unitid,
-                payer: company,
-                usedby: company,
-                totalprice: 0,
-                key: {
-                  integrated: false,
-                  external: true,
-                  externaltotalprice: 0,
-                  loginurl: data.loginurl
-                },
-                stripeplan: null // Maybe we need one later
-              },
-              { transaction: ta }
-            );
-
-            licence = await models.LicenceData.create(
-              {
-                unitid,
-                disabled: false,
-                boughtplanid: boughtPlan.id,
-                agreed: true,
-                pending: true,
-                key: {
-                  ...data,
-                  external: true,
-                  appid: appOwned.dataValues.id,
-                  company
-                }
-              },
-              { transaction: ta }
-            ); */
           }
           await sendEmail({
             templateId: "d-58d4a9f85f8c47f88750d379d4fab23a",
