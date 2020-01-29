@@ -588,7 +588,7 @@ export default {
   ),
 
   createOwnApp: requiresRights(["create-licences"]).createResolver(
-    async (_p, { ssoData, userids }, { models, session }) =>
+    async (_p, { ssoData }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
@@ -653,7 +653,7 @@ export default {
             },
             { transaction: ta }
           );
-          let licence = null;
+          /* let licence = null;
           if (!ssoData.manager) {
             const boughtPlan = await models.BoughtPlan.create(
               {
@@ -730,7 +730,9 @@ export default {
               );
             }
           }
-          return licence != null ? licence : { id: appOwned.dataValues.id };
+          return licence != null ? licence : { id: appOwned.dataValues.id }; */
+          console.log("OUTPUT", appOwned.id, plan.id);
+          return { appid: appOwned.id, planid: plan.id };
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -930,7 +932,7 @@ export default {
             appOwned = await models.App.create(
               {
                 ...data,
-                options: { universallogin: true },
+                options: { universallogin: true, ...data },
                 disabled: false,
                 color: "#f5f5f5",
                 developer: company,
@@ -956,7 +958,7 @@ export default {
               { transaction: ta }
             );
 
-            const boughtPlan = await models.BoughtPlan.create(
+            /* const boughtPlan = await models.BoughtPlan.create(
               {
                 planid: plan.id,
                 alias: data.name,
@@ -991,7 +993,7 @@ export default {
                 }
               },
               { transaction: ta }
-            );
+            ); */
           }
           await sendEmail({
             templateId: "d-58d4a9f85f8c47f88750d379d4fab23a",
