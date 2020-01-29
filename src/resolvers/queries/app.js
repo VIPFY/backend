@@ -497,11 +497,14 @@ export default {
 
         return models.sequelize.query(
           `SELECT app_data.id as app,
-            COALESCE(array_agg(bpd.id), ARRAY[]::bigint[]) as orbitids
-          FROM app_data JOIN plan_data pd on app_data.id = pd.appid
-            JOIN boughtplan_data bpd on pd.id = bpd.planid
-          WHERE usedby = :company AND app_data.name != 'Vipfy' AND
-          (bpd.endtime is null or bpd.endtime > now()) GROUP BY app_data.id`,
+          COALESCE(array_agg(bpd.id), ARRAY[]::bigint[]) as orbitids
+        FROM app_data JOIN plan_data pd on app_data.id = pd.appid
+          LEFT JOIN boughtplan_data bpd on pd.id = bpd.planid
+        WHERE app_data.name != 'Vipfy' AND (
+          usedby = :company AND
+        (bpd.endtime is null or bpd.endtime > now())) OR
+        (app_data.owner = :company and app_data.options ? 'pending' )
+        GROUP BY app_data.id`,
           {
             replacements: { company },
             type: models.sequelize.QueryTypes.SELECT
@@ -523,12 +526,15 @@ export default {
       } = decode(session.token);
       try {
         const companyServices = await models.sequelize.query(
-          `Select app_data.id as app,
-            COALESCE(array_agg(bpd.id), ARRAY[]::bigint[]) as orbitids
-          from app_data join plan_data pd on app_data.id = pd.appid
-            join boughtplan_data bpd on pd.id = bpd.planid
-          where usedby = :company and
-          (bpd.endtime is null or bpd.endtime > now()) and
+          `SELECT app_data.id as app,
+          COALESCE(array_agg(bpd.id), ARRAY[]::bigint[]) as orbitids
+        FROM app_data JOIN plan_data pd on app_data.id = pd.appid
+          LEFT JOIN boughtplan_data bpd on pd.id = bpd.planid
+        WHERE app_data.name != 'Vipfy' AND ((
+          usedby = :company AND
+        (bpd.endtime is null or bpd.endtime > now())) OR
+        (app_data.owner = :company and app_data.options ? 'pending' ))
+        and
           app_data.id = :serviceid
           group by app_data.id`,
           {
