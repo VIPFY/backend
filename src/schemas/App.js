@@ -289,10 +289,14 @@ export const types = `
     emailEntered: Boolean!
     manager: Boolean
     userids: [ID]
+    alias: String
+    orbit: String
+    user: ID
   }
 
   type IDID {
-    id: ID!
+    appid: ID!
+    planid: ID!
   }
 
 `;
@@ -341,7 +345,7 @@ export const mutations = `
   switchAppsLayout(app1: LayoutInput!, app2: LayoutInput!): [Licence!]!
   sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
 
-  createOwnApp(ssoData: SSOInput!, userids: [ID]): IDID
+  createOwnApp(ssoData: SSOInput!): IDID
 
   # Deletes a licence on a set date, if it is after the normal cancel period
   deleteLicenceAt(licenceid: ID!, time: Date!): Date!
