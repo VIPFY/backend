@@ -78,7 +78,7 @@ export default {
     }
   ),
 
-  fetchLicences: requiresAuth.createResolver(
+  fetchLicences: requiresRights(["view-licences", "myself"]).createResolver(
     async (_, { licenceid }, { models, session }, info) => {
       try {
         const {
@@ -89,9 +89,9 @@ export default {
            boughtplan_data ON licence_view.boughtplanid = boughtplan_data.id
            JOIN plan_data ON boughtplan_data.planid = plan_data.id
            JOIN app_data ON plan_data.appid = app_data.id
-           WHERE licence_view.unitid = :unitid AND not app_data.disabled`;
+           WHERE not app_data.disabled`;
 
-        const replacements = { unitid };
+        const replacements = {};
 
         if (licenceid) {
           query += " AND licence_view.id = :licenceid";
@@ -102,6 +102,9 @@ export default {
           .query(query, { replacements })
           .spread(res => res);
 
+        const isAdmin = (await models.User.findOne({ where: { id: unitid } }))
+          .isadmin;
+
         const startTime = Date.now();
         if (
           info.fieldNodes[0].selectionSet.selections.find(
@@ -109,7 +112,7 @@ export default {
           ) !== undefined
         ) {
           const createLoginLinks = licences.map(async licence => {
-            if (licence.unitid != unitid) {
+            if (licence.unitid != unitid && !isAdmin) {
               throw new NormalError({
                 message: "This licence doesn't belong to this user!"
               });
@@ -120,7 +123,10 @@ export default {
               licence.key = null;
             }
 
-            if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
+            if (
+              Date.parse(licence.starttime) > startTime ||
+              (!licence.agreed && !isAdmin)
+            ) {
               licence.key = null;
             }
 
@@ -183,6 +189,63 @@ export default {
           message: `fetch Licence ${err.message}`,
           internalData: { err }
         });
+      }
+    }
+  ),
+
+  fetchLicenceAssignment: requiresAuth.createResolver(
+    async (_parent, { assignmentid }, { models, session }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+
+        const licences = await models.sequelize.query(
+          `SELECT licence_view.*, plan_data.appid FROM licence_view JOIN
+        boughtplan_data ON licence_view.boughtplanid = boughtplan_data.id
+        JOIN plan_data ON boughtplan_data.planid = plan_data.id
+        JOIN app_data ON plan_data.appid = app_data.id
+        WHERE licence_view.assignmentid = :assignmentid AND licence_view.unitid = :unitid AND not app_data.disabled`,
+          {
+            replacements: { assignmentid, unitid },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+
+        const startTime = Date.now();
+
+        licences.forEach(licence => {
+          licence.accountid = licence.id;
+          licence.id = licence.assignmentid;
+          if (licence.disabled) {
+            licence.agreed = false;
+            licence.key = null;
+          }
+
+          if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
+            licence.key = null;
+          }
+
+          if (licence.endtime && licence.endtime != "infinity") {
+            if (Date.parse(licence.endtime) < startTime) {
+              licence.key = null;
+            }
+          }
+
+          if (licence.options) {
+            if (licence.options.teamlicence) {
+              licence.teamlicence = licence.options.teamlicence;
+            }
+
+            if (licence.options.teamlicence) {
+              licence.teamaccount = licence.options.teamaccount;
+            }
+          }
+        });
+
+        return licences[0];
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   ),

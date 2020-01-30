@@ -311,6 +311,8 @@ export const queries = `
 
   # Returns all Licences of the current user, optionally limited to a single licence id
   fetchLicences(licenceid: ID): [Licence]!
+  
+  fetchLicenceAssignment(assignmentid: ID!): LicenceAssignment!
 
   # Returns all Licences of a current user that are not department licences
   fetchUsersOwnLicences(unitid: ID!): [Licence]
