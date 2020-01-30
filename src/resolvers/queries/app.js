@@ -550,6 +550,52 @@ export default {
     }
   ),
 
+  fetchTotalUsageMinutes: requiresRights(["view-usage"]).createResolver(
+    async (
+      _p,
+      { starttime, endtime, assignmentid, licenceid, boughtplanid, unitid },
+      { models }
+    ) => {
+      try {
+        if (
+          assignmentid === null &&
+          licenceid === null &&
+          boughtplanid === null &&
+          unitid === null
+        ) {
+          throw new Error("Please narrow your request");
+        }
+
+        const where = {
+          day: {
+            [models.Op.lte]: endtime || Infinity,
+            [models.Op.gte]: starttime || -Infinity
+          }
+        };
+
+        if (assignmentid !== undefined) where.assignmentid = assignmentid;
+        // if (licenceid !== null) where.licenceid = licenceid;
+        // if (boughtplanid !== null) where.boughtplanid = boughtplanid;
+        // if (unitid !== null) where.unitid = unitid;
+
+        const stats = await models.TimeTracking.findAll({
+          attributes: [
+            [
+              models.sequelize.fn("sum", models.sequelize.col("minutesspent")),
+              "total_minutes"
+            ]
+          ],
+          where,
+          raw: true
+        });
+        console.log("!", where, boughtplanid, stats);
+        return stats[0].total_minutes || 0;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   fetchCompanyServices: requiresRights(["view-licences"]).createResolver(
     async (_parent, _args, { models, session }) => {
       try {
