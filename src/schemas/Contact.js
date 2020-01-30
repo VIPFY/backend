@@ -76,6 +76,16 @@ export const types = `
     priority: Int
     tags: [String]
   }
+
+  input ContactInput {
+    email: String!
+    company: String!
+    message: String!
+    type: String!
+    name: String!
+    website: String
+    program: String
+  }
 `;
 
 export const queries = `
@@ -90,7 +100,7 @@ export const mutations = `
   # Without the id parameter, a new address will be generated. Otherwise it will be updated.
   updateAddress(id: ID, address: AddressInput): Address!
   deleteAddress(id: ID!, department: Boolean): Response!
-  contact(email: String!, company: String!, message: String!, type: String!, name: String!): Boolean!
+  contact(contactData: ContactInput!): Boolean!
 
   createPhone(phoneData: PhoneInput!, department: Boolean, userid: ID): Phone!
   updatePhone(id: ID, phone: PhoneInput, userid: ID): Phone!

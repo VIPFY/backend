@@ -571,13 +571,13 @@ export default {
     }
   },
 
-  contact: async (_p, args) => {
+  contact: async (_p, { contactData }) => {
     try {
       let replyId = "d-8f7a72b8b3b4409ebd02e12dbe6f9599";
 
-      if (args.type == "enterprise") {
+      if (contactData.type == "enterprise") {
         replyId = "d-730fe9fdc93242928cbbf19e7c306884";
-      } else if (args.type == "partners") {
+      } else if (contactData.type == "partners") {
         replyId = "d-6111bb578b044a4e87575dff53d95085";
       }
 
@@ -586,9 +586,9 @@ export default {
         fromName: "VIPFY",
         personalizations: [
           {
-            to: [{ email: args.email }],
+            to: [{ email: contactData.email }],
             cc: [{ email: "contact@vipfy.store" }],
-            dynamic_template_data: { name: args.name }
+            dynamic_template_data: { name: contactData.name }
           }
         ]
       });
@@ -599,7 +599,7 @@ export default {
         personalizations: [
           {
             to: [{ email: "contact@vipfy.store" }],
-            dynamic_template_data: args
+            dynamic_template_data: contactData
           }
         ]
       });
