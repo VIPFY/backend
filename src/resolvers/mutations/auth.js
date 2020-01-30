@@ -226,7 +226,7 @@ export default {
         const macLink = `https://download.vipfy.store/latest/darwin/x64/VIPFY-${setupToken}.dmg`;
         const verifyLink =
           process.env.ENVIRONMENT == "development"
-            ? `localhost:3000/verify-email/${verifyToken}`
+            ? `https://aws2.vipfy.store/verify-email/${verifyToken}`
             : `https://vipfy.store/verify-email/${verifyToken}`;
 
         await sendEmail({
@@ -1035,7 +1035,7 @@ export default {
         const macLink = `https://download.vipfy.store/latest/darwin/x64/VIPFY-${setupToken}.dmg`;
         const verifyLink =
           process.env.ENVIRONMENT == "development"
-            ? `localhost:3000/verify-email/${verifyToken}`
+            ? `https://aws2.vipfy.store/verify-email/${verifyToken}`
             : `https://vipfy.store/verify-email/${verifyToken}`;
 
         await sendEmail({
