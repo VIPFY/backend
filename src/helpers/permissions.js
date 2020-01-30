@@ -226,6 +226,19 @@ export const requiresRights = rights =>
               break;
             }
 
+            if (right == "myself" && args.assignmentid) {
+              const r = await models.sequelize.LicenceRight.findOne({
+                where: {
+                  unitid: holder,
+                  id: args.assignmentid,
+                  endtime: { [models.Op.lt]: models.sequelize.fn("NOW") }
+                }
+              });
+              if (r) {
+                break;
+              }
+            }
+
             const hasRight = await models.Right.findOne({
               where: models.sequelize.and(
                 { holder },
