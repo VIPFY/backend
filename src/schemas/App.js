@@ -333,15 +333,11 @@ export const queries = `
   fetchCompanyServices: [CompanyService]
   fetchCompanyService(serviceid: ID!): CompanyService
 
-  bulkUpdateLayout(layouts: [LayoutInput!]!): Boolean!
-
   fetchUseableApps: [AppDetails]
 
 `;
 
 export const mutations = `
-  updateLayout(layout: LayoutInput!): Licence!
-  switchAppsLayout(app1: LayoutInput!, app2: LayoutInput!): [Licence!]!
   sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
 
   createOwnApp(ssoData: SSOInput!): IDID
