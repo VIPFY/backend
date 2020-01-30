@@ -349,7 +349,7 @@ export const mutations = `
   # Agree to all terms and conditions of a licence
   agreeToLicence(licenceid: ID!): Response!
 
-  trackMinutesSpent(licenceid: ID!, minutes: Int!): Response!
+  trackMinutesSpent(assignmentid: ID!, minutes: Int!): Response!
 
   # Adds the data of an external App
   addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): BoughtPlan!

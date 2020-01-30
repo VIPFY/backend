@@ -67,7 +67,7 @@ export default {
   ),
 
   trackMinutesSpent: requiresAuth.createResolver(
-    async (_p, { licenceid, minutes }, { models, session }) => {
+    async (_p, { assignmentid, minutes }, { models, session }) => {
       try {
         if (minutes <= 0) {
           throw new Error("minutes must be positive");
@@ -77,21 +77,22 @@ export default {
           user: { unitid }
         } = decode(session.token);
         const licence = await models.Licence.findOne({
-          where: { id: licenceid, unitid },
+          where: { assignmentid, unitid },
           raw: true
         });
         if (!licence) {
           throw new Error("licence not found");
         }
         await models.sequelize.query(
-          `INSERT INTO timetracking_data (licenceid, unitid, boughtplanid, day, minutesspent)
-            VALUES (:licenceid, :unitid, :boughtplanid, now(), :minutesspent)
-            ON CONFLICT (licenceid, unitid, day)
+          `INSERT INTO timetracking_data (assignmentid, licenceid, unitid, boughtplanid, day, minutesspent)
+            VALUES (:assignmentid, :licenceid, :unitid, :boughtplanid, now(), :minutesspent)
+            ON CONFLICT (assignmentid, unitid, day)
             DO UPDATE SET minutesspent = timetracking_data.minutesspent + EXCLUDED.minutesspent
             `,
           {
             replacements: {
-              licenceid,
+              assignmentid,
+              licenceid: licence.id,
               unitid,
               boughtplanid: licence.boughtplanid,
               minutesspent: minutes
