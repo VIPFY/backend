@@ -143,7 +143,6 @@ export const types = `
   type Licence {
     ${basicLicenceFields}
     ${licenceFields}
-    sidebar: Int
     agreed: Boolean
     disabled: Boolean
     key: JSON

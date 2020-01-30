@@ -76,18 +76,20 @@ const specialKeys = {
 const postprocessors = {
   Department: async (value, fields, models) => {
     //logger.debug("postprocessing department", { value, fields, models });
-    if (fields.includes("domains")) {
-      value.domains = await models.sequelize.query(
-        `SELECT ld.id, ld.key->'domain' as domainname FROM licence_data ld INNER JOIN
-      boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
-      bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid;`,
-        {
-          replacements: { unitid: value.unitid },
-          type: models.sequelize.QueryTypes.SELECT,
-          raw: true
-        }
-      );
-    }
+
+    // TODO: fix this; disabled because ld.unitid doesn't exist anymore
+    // if (fields.includes("domains")) {
+    //   value.domains = await models.sequelize.query(
+    //     `SELECT ld.id, ld.key->'domain' as domainname FROM licence_data ld INNER JOIN
+    //   boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
+    //   bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid;`,
+    //     {
+    //       replacements: { unitid: value.unitid },
+    //       type: models.sequelize.QueryTypes.SELECT,
+    //       raw: true
+    //     }
+    //   );
+    // }
     return value;
   },
   Email: async (value, fields) => {
