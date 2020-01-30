@@ -68,29 +68,19 @@ export default {
     }
   ),
 
-  checkAuthToken: async (_, { email, token }, { models }) => {
+  checkAuthToken: async (_p, { token }, { models }) => {
     try {
       const validToken = await models.Token.findOne({
-        where: {
-          token,
-          type: "signUp",
-          email
-        },
+        where: { token, type: "signUp" },
         raw: true
       });
 
       if (!validToken) {
         throw new Error("Invalid Token");
       } else if (validToken.usedat) {
-        return {
-          ok: false,
-          used: true
-        };
+        return { ok: false, used: true };
       } else if (moment(validToken.expiresat).isBefore(moment())) {
-        return {
-          ok: false,
-          expired: true
-        };
+        return { ok: false, expired: true };
       } else {
         return { ok: true };
       }
