@@ -189,11 +189,8 @@ export default {
   fetchKey: requiresAuth.createResolver(
     async (_p, { id }, { models, session }) => {
       try {
-        const {
-          user: { unitid }
-        } = decode(session.token);
         const key = await models.Key.findOne({
-          where: { id, unitid }
+          where: { id }
         });
         return key;
       } catch (err) {
@@ -203,13 +200,10 @@ export default {
   ),
 
   fetchKeys: requiresAuth.createResolver(
-    async (_p, { publickey }, { models, session }) => {
+    async (_p, { publickey }, { models }) => {
       try {
-        const {
-          user: { unitid }
-        } = decode(session.token);
         const keys = await models.Key.findAll({
-          where: { publickey, unitid }
+          where: { publickey }
         });
         return keys;
       } catch (err) {
