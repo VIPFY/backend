@@ -467,7 +467,7 @@ export default {
                       WHEN ld.endtime < now() THEN to_char(ld.endtime, 'YYYY-MM-DD')
                       ELSE NULL END)) licenceenddates
           FROM timetracking_data tt
-            LEFT OUTER JOIN licence_data ld on tt.licenceid = ld.id
+            LEFT OUTER JOIN licence_view ld on tt.licenceid = ld.id
           WHERE day >= :starttime :: date
             AND day <= :endtime :: date
             AND ld.boughtplanid = :boughtplanid
