@@ -391,8 +391,7 @@ export default {
               INNER JOIN app_data a on p.appid = a.id
               LEFT OUTER JOIN (SELECT
                                 boughtplanid,
-                                count(*)
-                                  FILTER (WHERE unitid IS NOT NULL) as used,
+                                -1 as used,
                                 count(*)                            as total
                               FROM licence_data
                               WHERE endtime IS NULL OR endtime > now()
@@ -464,7 +463,7 @@ export default {
                   tt.unitid unit,
                   sum(minutesspent) totalminutes,
                   array_to_json(array_agg(CASE
-                      WHEN ld.id IS NULL OR ld.unitid != tt.unitid THEN 'unknown date'
+                      WHEN ld.id IS NULL THEN 'unknown date'
                       WHEN ld.endtime < now() THEN to_char(ld.endtime, 'YYYY-MM-DD')
                       ELSE NULL END)) licenceenddates
           FROM timetracking_data tt
