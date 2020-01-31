@@ -588,8 +588,8 @@ export default {
           where,
           raw: true
         });
-        console.log("!", where, boughtplanid, stats);
-        return stats[0].total_minutes || 0;
+
+return stats[0].total_minutes || 0;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
