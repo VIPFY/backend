@@ -558,10 +558,9 @@ export default {
     ) => {
       try {
         if (
-          assignmentid === null &&
-          licenceid === null &&
-          boughtplanid === null &&
-          unitid === null
+          [assignmentid, licenceid, boughtplanid, unitid].every(
+            v => v === null || v === undefined
+          )
         ) {
           throw new Error("Please narrow your request");
         }
