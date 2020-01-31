@@ -11,7 +11,6 @@ export const types = `
 `;
 
 export const queries = `
-  tutorialSteps: [Tutorial]!
 `;
 
 export const mutations = `
