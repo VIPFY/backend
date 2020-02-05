@@ -27,79 +27,93 @@ const createResolver = resolver => {
 
 // Check whether the user is authenticated
 export const requiresAuth = createResolver(
-  async (_parent, _args, { models, session, SECRET }, info) => {
-    try {
-      if (!session || !session.token) {
-        throw new Error("No valid token received!");
-      }
+  async (_parent, _args, { models, session, SECRET }, info) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        if (!session || !session.token) {
+          throw new Error("No valid token received!");
+        }
 
-      const {
-        user: { company, unitid }
-      } = verify(session.token, SECRET);
+        const {
+          user: { company, unitid }
+        } = verify(session.token, SECRET);
 
-      const valid = models.User.findOne({
-        where: { id: unitid },
-        raw: true
-      });
+        const valid = models.User.findOne({
+          where: { id: unitid },
+          raw: true
+        });
 
-      if (
-        !valid ||
-        valid.deleted ||
-        valid.companyban ||
-        valid.suspended ||
-        valid.banned
-      ) {
-        throw new Error("Login is currently not possible for you!");
-      }
+        if (
+          !valid ||
+          valid.deleted ||
+          valid.companyban ||
+          valid.suspended ||
+          valid.banned
+        ) {
+          throw new Error("Login is currently not possible for you!");
+        }
 
-      const vipfyPlans = await models.Plan.findAll({
-        where: { appid: 66 },
-        attributes: ["id"],
-        raw: true
-      });
+        const vipfyPlans = await models.Plan.findAll({
+          where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
+          attributes: ["id"],
+          raw: true
+        });
 
-      const planIds = vipfyPlans.map(plan => plan.id);
-
-      let vipfyPlan = await models.BoughtPlan.findOne({
-        where: {
-          payer: company,
-          endtime: {
-            [models.Op.or]: {
-              [models.Op.gt]: models.sequelize.fn("NOW"),
-              [models.Op.eq]: null
+        const planIds = vipfyPlans.map(plan => plan.id);
+        let vipfyPlan = await models.BoughtPlanPeriod.findOne(
+          {
+            where: {
+              payer: company,
+              endtime: {
+                [models.Op.or]: {
+                  [models.Op.gt]: models.sequelize.fn("NOW"),
+                  [models.Op.eq]: null
+                }
+              },
+              planid: { [models.Op.in]: planIds }
             }
           },
-          planid: { [models.Op.in]: planIds }
-        }
-      });
+          { transaction: ta }
+        );
 
-      if (!vipfyPlan) {
-        vipfyPlan = await models.BoughtPlan.create({
-          planid: 125,
-          payer: company,
-          usedby: company,
-          buyer: unitid,
-          totalprice: 0,
-          disabled: false
-        });
-      }
-    } catch (error) {
-      session.destroy(err => {
-        if (err) {
-          console.error(err);
-        }
-      });
+        if (!vipfyPlan) {
+          vipfyPlan = await models.BoughtPlan.create(
+            {
+              payer: company,
+              usedby: company,
+              disabled: false
+            },
+            { transaction: ta }
+          );
 
-      if (info.fieldName == "signOut") {
-        throw new NormalError({
-          message: error.message,
-          internalData: { error }
+          await models.BoughtPlanPeriod.create(
+            {
+              boughtplanid: vipfyPlan.id,
+              planid: "8c3741f0-3037-42e8-80c9-c1663c0000e2",
+              payer: company.id,
+              creator: unitid,
+              totalprice: 0
+            },
+            { transaction: ta }
+          );
+        }
+      } catch (error) {
+        session.destroy(err => {
+          if (err) {
+            console.error(err);
+          }
         });
-      } else {
-        throw new AuthError(error.message);
+
+        if (info.fieldName == "signOut") {
+          throw new NormalError({
+            message: error.message,
+            internalData: { error }
+          });
+        } else {
+          throw new AuthError(error.message);
+        }
       }
-    }
-  }
+    })
   // all other cases handled by auth middleware
 );
 

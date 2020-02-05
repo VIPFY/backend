@@ -23,7 +23,7 @@ export default async (unitid, throwErr) =>
               pd.id as planid,
               pd.currency,
               json_build_object('name', bd.alias,'data', bd.totalfeatures->>'users') as description
-        FROM boughtplan_data bd
+        FROM boughtplan_view bd
           INNER JOIN plan_data pd ON bd.planid = pd.id
           INNER JOIN app_data ad ON pd.appid = ad.id
         WHERE (bd.endtime IS NULL OR bd.endtime > DATE_TRUNC('month', NOW()))
@@ -176,7 +176,7 @@ export default async (unitid, throwErr) =>
         SELECT cuhv.*, array_agg(DISTINCT bpd.id) as spendablefor
         FROM creditsuserhas_view cuhv
           LEFT JOIN creditsspendableforplan_data csfpd ON cuhv.creditid = csfpd.creditid
-          RIGHT JOIN boughtplan_data bpd ON csfpd.planid = bpd.planid
+          RIGHT JOIN boughtplan_view bpd ON csfpd.planid = bpd.planid
         WHERE cuhv.unitid = :company
           AND bpd.payer = :company
         GROUP BY cuhv.amountremaining, cuhv.currency, cuhv.source, cuhv.unitid, cuhv.id, cuhv.expiresat, cuhv.createdat,

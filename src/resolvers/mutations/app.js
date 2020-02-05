@@ -1,12 +1,10 @@
 import { decode } from "jsonwebtoken";
-import * as Services from "@vipfy-private/services";
 import moment from "moment";
 import { NormalError } from "../../errors";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import {
   createLog,
   createNotification,
-  // checkPaymentData,
   checkPlanValidity,
   companyCheck,
   concatName
@@ -247,7 +245,7 @@ export default {
             });
           }
 
-          const oldBoughtPlan = await models.BoughtPlan.findOne({
+          const oldBoughtPlan = await models.BoughtPlanView.findOne({
             where: { id: args.boughtplanid },
             endtime: {
               [models.Op.or]: {
@@ -346,7 +344,6 @@ export default {
 
           await Promise.all(promises);
 
-          console.log("LICENCE", licence.dataValues);
           return licence;
         } catch (err) {
           await createNotification(
@@ -383,7 +380,7 @@ export default {
             `
         SELECT ld.*, pd.cancelperiod
         FROM licence_data ld
-            LEFT OUTER JOIN boughtplan_data bd on ld.boughtplanid = bd.id
+            LEFT OUTER JOIN boughtplan_view bd on ld.boughtplanid = bd.id
             INNER JOIN plan_data pd on bd.planid = pd.id
         WHERE ld.id = :licenceid
           AND (bd.endtime IS NULL OR bd.endtime > NOW())
@@ -473,7 +470,7 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid, company }
+            user: { company }
           } = decode(session.token);
           const { images, loginurl, ...data } = ssoData;
 
@@ -561,7 +558,7 @@ export default {
         const boughtPlans = await models.sequelize.query(
           `
             SELECT bd.*, pd.cancelperiod
-            FROM boughtplan_data bd
+            FROM boughtplan_view bd
                 INNER JOIN plan_data pd on bd.planid = pd.id
             WHERE (bd.endtime IS NULL OR bd.endtime > NOW())
               AND bd.payer = :company
@@ -654,7 +651,7 @@ export default {
           })
         );
 
-        //NOTIFY USERS
+        // NOTIFY USERS
         if (notifiyUsers) {
           await Promise.all(
             notifiyUsers.map(nu =>
@@ -812,7 +809,7 @@ export default {
             return false;
           }
 
-          const boughtplan = await models.BoughtPlan.findOne({
+          const boughtplan = await models.BoughtPlanView.findOne({
             where: { id: licence.boughtplanid },
             raw: true
           });
@@ -885,7 +882,7 @@ export default {
           await models.sequelize.query(
             `
             SELECT appid
-              FROM boughtplan_data bd JOIN plan_data pd on bd.planid = pd.id
+              FROM boughtplan_view bd JOIN plan_data pd on bd.planid = pd.id
               WHERE bd.id = :orbitid`,
             {
               replacements: { orbitid },

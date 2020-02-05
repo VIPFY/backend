@@ -86,7 +86,7 @@ export const checkLicenceValidilty = async (models, company, licenceid) => {
   const account = await models.sequelize.query(
     `
     SELECT l.id
-      FROM boughtplan_data bd
+      FROM boughtplan_view bd
           JOIN licence_data l on l.boughtplanid = bd.id
       WHERE (bd.endtime IS NULL OR bd.endtime > NOW())
         AND (l.endtime IS NULL OR l.endtime > NOW())
@@ -110,7 +110,7 @@ export const checkLicenceMembership = async (models, company, licenceid) => {
   const account = await models.sequelize.query(
     `
     SELECT l.id
-      FROM boughtplan_data bd
+      FROM boughtplan_view bd
           JOIN licence_data l on l.boughtplanid = bd.id
       WHERE bd.usedby = :company
         AND l.id = :licenceid`,
@@ -131,7 +131,7 @@ export const checkOrbitMembership = async (models, company, orbitid) => {
   const orbit = await models.sequelize.query(
     `
     SELECT id
-      FROM boughtplan_data 
+      FROM boughtplan_view 
       WHERE usedby = :company
         AND id = :orbitid`,
     {

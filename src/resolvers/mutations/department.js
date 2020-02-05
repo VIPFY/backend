@@ -619,7 +619,7 @@ export default {
 
           const p1 = models.sequelize.query(
             `SELECT bd.*, pd.name
-            FROM boughtplan_data bd
+            FROM boughtplan_view bd
                      LEFT JOIN plan_data pd on bd.planid = pd.id
                      LEFT JOIN app_data ad on pd.appid = ad.id
             WHERE appid = 66
