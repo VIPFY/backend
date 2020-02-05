@@ -84,7 +84,6 @@ export const types = `
     buytime: String
     alias: String
     endtime: String
-    description: String
     key: JSON
     buyer: Unit!
     payer: Unit!

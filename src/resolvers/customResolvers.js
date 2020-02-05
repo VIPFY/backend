@@ -81,7 +81,7 @@ const postprocessors = {
     // if (fields.includes("domains")) {
     //   value.domains = await models.sequelize.query(
     //     `SELECT ld.id, ld.key->'domain' as domainname FROM licence_data ld INNER JOIN
-    //   boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
+    //   boughtplan_view bpd on ld.boughtplanid = bpd.id WHERE
     //   bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid;`,
     //     {
     //       replacements: { unitid: value.unitid },

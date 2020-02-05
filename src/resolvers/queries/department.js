@@ -110,7 +110,7 @@ export default {
         } = decode(session.token);
 
         const vipfyPlans = await models.Plan.findAll({
-          where: { appid: 66 },
+          where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
           attributes: ["id"],
           raw: true
         });
@@ -118,7 +118,8 @@ export default {
         const planIds = vipfyPlans.map(plan => plan.id);
 
         // requiresAuth ensures that one exists
-        const vipfyPlan = await models.BoughtPlan.findOne({
+
+        return models.BoughtPlanView.findOne({
           where: {
             payer: company,
             endtime: {
@@ -129,10 +130,9 @@ export default {
             },
             buytime: { [models.Op.lt]: models.sequelize.fn("NOW") },
             planid: { [models.Op.in]: planIds }
-          }
+          },
+          raw: true
         });
-
-        return vipfyPlan;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

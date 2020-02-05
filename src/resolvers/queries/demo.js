@@ -12,7 +12,7 @@ export default {
         const licences = await models.Licence.findAll({ where: { unitid } });
         const ids = await licences.map(licence => licence.get("boughtplanid"));
 
-        const boughtPlans = await models.BoughtPlan.findAll({
+        const boughtPlans = await models.BoughtPlanView.findAll({
           attributes: ["planid"],
           where: { id: ids }
         });
@@ -52,7 +52,6 @@ export default {
 
         return filteredApps;
       } catch (err) {
-        console.log("------------>", err);
         throw new Error(err.message);
       }
     }

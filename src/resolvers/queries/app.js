@@ -86,8 +86,8 @@ export default {
         } = decode(session.token);
 
         let query = `SELECT licence_view.*, plan_data.appid FROM licence_view JOIN
-           boughtplan_data ON licence_view.boughtplanid = boughtplan_data.id
-           JOIN plan_data ON boughtplan_data.planid = plan_data.id
+           boughtplan_view ON licence_view.boughtplanid = boughtplan_view.id
+           JOIN plan_data ON boughtplan_view.planid = plan_data.id
            JOIN app_data ON plan_data.appid = app_data.id
            WHERE not app_data.disabled`;
 
@@ -149,7 +149,7 @@ export default {
             } else if (licence.key) {
               const domain = await models.sequelize.query(
                 `SELECT ld.id, ld.key FROM licence_view ld INNER JOIN
-                  boughtplan_data bpd on ld.boughtplanid = bpd.id WHERE
+                  boughtplan_view bpd on ld.boughtplanid = bpd.id WHERE
                   bpd.planid IN (25, 48, 49, 50, 51, 52, 53) AND ld.unitid = :unitid LIMIT 1;`,
                 {
                   replacements: { unitid },
@@ -202,8 +202,8 @@ export default {
 
         const licences = await models.sequelize.query(
           `SELECT licence_view.*, plan_data.appid FROM licence_view JOIN
-        boughtplan_data ON licence_view.boughtplanid = boughtplan_data.id
-        JOIN plan_data ON boughtplan_data.planid = plan_data.id
+        boughtplan_view ON licence_view.boughtplanid = boughtplan_view.id
+        JOIN plan_data ON boughtplan_view.planid = plan_data.id
         JOIN app_data ON plan_data.appid = app_data.id
         WHERE licence_view.assignmentid = :assignmentid AND licence_view.unitid = :unitid AND not app_data.disabled`,
           {
@@ -268,9 +268,7 @@ export default {
         const departmentIds = Object.values(departments).map(dp => dp.id);
 
         const departmentPlans = await models.DepartmentApp.findAll({
-          where: {
-            departmentid: departmentIds
-          },
+          where: { departmentid: departmentIds },
           raw: true
         });
 
@@ -278,7 +276,7 @@ export default {
           dp => dp.boughtplanid
         );
 
-        const boughtPlans = await models.BoughtPlan.findAll({
+        const boughtPlans = await models.BoughtPlanView.findAll({
           attributes: ["id"],
           where: { id: { [models.Op.notIn]: departmentPlanIds } },
           raw: true
@@ -329,8 +327,8 @@ export default {
       try {
         const licences = await models.sequelize.query(
           `SELECT licence_view.*, plan_data.appid FROM licence_view JOIN
-        boughtplan_data ON licence_view.boughtplanid = boughtplan_data.id
-        JOIN plan_data ON boughtplan_data.planid = plan_data.id
+        boughtplan_view ON licence_view.boughtplanid = boughtplan_view.id
+        JOIN plan_data ON boughtplan_view.planid = plan_data.id
         JOIN app_data ON plan_data.appid = app_data.id
         WHERE licence_view.unitid = :unitid AND not app_data.disabled`,
           { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
@@ -385,8 +383,8 @@ export default {
 
       const licences = await models.sequelize.query(
         `SELECT licence_view.*, plan_data.appid FROM licence_view JOIN
-        boughtplan_data ON licence_view.boughtplanid = boughtplan_data.id
-        JOIN plan_data ON boughtplan_data.planid = plan_data.id
+        boughtplan_view ON licence_view.boughtplanid = boughtplan_view.id
+        JOIN plan_data ON boughtplan_view.planid = plan_data.id
         JOIN app_data ON plan_data.appid = app_data.id
         WHERE licence_view.unitid = :unitid AND not app_data.disabled`,
         { replacements: { unitid }, type: models.sequelize.QueryTypes.SELECT }
@@ -437,7 +435,6 @@ export default {
               bp.id || '-' || :departmentid AS id,
               bp.usedby,
               bp.id                         AS boughtplan,
-              bp.description,
               bp.endtime,
               a.name                        AS appname,
               p.appid,
@@ -445,7 +442,7 @@ export default {
               a.logo                        AS applogo,
               COALESCE(l.used, 0)           AS licencesused,
               COALESCE(l.total, 0)          AS licencestotal
-            FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit =
+            FROM right_data AS r INNER JOIN boughtplan_view bp ON (r.forunit =
                         bp.usedby AND r.type = 'canuselicences' AND
                         r.holder = :departmentid)
                         OR bp.usedby = :departmentid
@@ -486,7 +483,7 @@ export default {
               COALESCE(l.minutesmedian, 0)   AS minutesmedian,
               COALESCE(l.minutesmin, 0)   AS minutesmin,
               COALESCE(l.minutesmax, 0)   AS minutesmax
-            FROM right_data AS r INNER JOIN boughtplan_data bp ON (r.forunit =
+            FROM right_data AS r INNER JOIN boughtplan_view bp ON (r.forunit =
                                                                   bp.usedby AND r.type = 'canuselicences' AND
                                                                   r.holder = :departmentid)
                                                                   OR bp.usedby = :departmentid
@@ -588,7 +585,7 @@ export default {
           raw: true
         });
 
-return stats[0].total_minutes || 0;
+        return stats[0].total_minutes || 0;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
@@ -604,9 +601,9 @@ return stats[0].total_minutes || 0;
 
         return models.sequelize.query(
           `SELECT app_data.id as app,
-          COALESCE(array_agg(bpd.id), ARRAY[]::bigint[]) as orbitids
+          COALESCE(array_agg(bpd.id), ARRAY[]::uuid[]) as orbitids
         FROM app_data JOIN plan_data pd on app_data.id = pd.appid
-          LEFT JOIN boughtplan_data bpd on pd.id = bpd.planid
+          LEFT JOIN boughtplan_view bpd on pd.id = bpd.planid
         WHERE app_data.name != 'Vipfy' AND (
           usedby = :company AND
         (bpd.endtime is null or bpd.endtime > now())) OR
@@ -636,7 +633,7 @@ return stats[0].total_minutes || 0;
           `SELECT app_data.id as app,
           COALESCE(array_agg(bpd.id), ARRAY[]::bigint[]) as orbitids
         FROM app_data JOIN plan_data pd on app_data.id = pd.appid
-          LEFT JOIN boughtplan_data bpd on pd.id = bpd.planid
+          LEFT JOIN boughtplan_view bpd on pd.id = bpd.planid
         WHERE app_data.name != 'Vipfy' AND ((
           usedby = :company AND
         (bpd.endtime is null or bpd.endtime > now())) OR
@@ -671,7 +668,7 @@ return stats[0].total_minutes || 0;
           `Select licence_data.unitid as id, licence_data.id as licence, licence_data.starttime,
             licence_data.endtime, licence_data.agreed, d2.alias
             from licence_data
-              join boughtplan_data d2 on licence_data.boughtplanid = d2.id
+              join boughtplan_view d2 on licence_data.boughtplanid = d2.id
               join plan_data plan on d2.planid = plan.id
             where 
               (licence_data.endtime is null or licence_data.endtime > now())
@@ -711,7 +708,7 @@ return stats[0].total_minutes || 0;
           `
           SELECT appid app, lv.options, sum(minutesspent) totalminutes
           FROM timetracking_data tt
-                JOIN boughtplan_data bp on tt.boughtplanid = bp.id
+                JOIN boughtplan_view bp on tt.boughtplanid = bp.id
                 JOIN plan_data pd on bp.planid = pd.id
                 JOIN department_employee_view dev ON tt.unitid = dev.employee
                 JOIN licence_view lv ON tt.licenceid = lv.id
@@ -793,11 +790,9 @@ return stats[0].total_minutes || 0;
         const res = await freshdeskAPI("GET", "tickets", {
           requester_id: user.supporttoken
         });
-        console.log("\x1b[1m%s\x1b[0m", "LOG res", res);
 
         return res.data;
       } catch (err) {
-        console.log("\x1b[1m%s\x1b[0m", "LOG err", err);
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }

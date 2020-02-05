@@ -2,7 +2,6 @@ import bcrypt from "bcrypt";
 import moment from "moment";
 import { decode } from "jsonwebtoken";
 import { parseName } from "humanparser";
-import crypto from "crypto";
 import {
   USER_SESSION_ID_PREFIX,
   REDIS_SESSION_PREFIX,
@@ -15,7 +14,6 @@ import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import {
   parentAdminCheck,
   createLog,
-  formatHumanName,
   parseAddress,
   createNotification,
   fetchSessions,
@@ -29,7 +27,6 @@ import {
 import { googleMapsClient } from "../../services/gcloud";
 import { NormalError } from "../../errors";
 import { sendEmail, emailRegex } from "../../helpers/email";
-import { randomPassword } from "../../helpers/passwordgen";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 import logger from "../../loggers";
 
@@ -148,20 +145,11 @@ export default {
           { transaction: ta }
         );
 
-        const endtime = moment()
-          .add(2, "months")
-          .toDate();
-
         const p6 = models.BoughtPlan.create(
           {
-            planid: 126,
-            alias: "Vipfy Standard",
-            payer: company.id,
-            usedby: company.id,
-            buyer: unit.id,
-            totalprice: 0,
             disabled: false,
-            endtime
+            usedby: company.id,
+            alias: "Vipfy Basic"
           },
           { transaction: ta }
         );
@@ -196,18 +184,12 @@ export default {
         );
 
         const p9 = models.Key.create(
-          {
-            ...personalKey,
-            unitid: unit.id
-          },
+          { ...personalKey, unitid: unit.id },
           { transaction: ta, returning: true }
         );
 
         const p10 = models.Key.create(
-          {
-            ...adminKey,
-            unitid: unit.id
-          },
+          { ...adminKey, unitid: unit.id },
           { transaction: ta, returning: true }
         );
 
@@ -221,6 +203,20 @@ export default {
           key1,
           key2
         ] = await Promise.all([p3, p4, p5, p6, p7, p8, p9, p10]);
+
+        await models.BoughtPlanPeriod.create(
+          {
+            boughtplanid: vipfyPlan.dataValues.id,
+            planid: "4465c808-9b46-42ae-a11f-1158fcaed391",
+            payer: company.id,
+            creator: unit.id,
+            totalprice: 0,
+            endtime: moment()
+              .add(2, "months")
+              .toDate()
+          },
+          { transaction: ta }
+        );
 
         const windowsLink = `https://download.vipfy.store/latest/win32/x64/VIPFY-${setupToken}.exe`;
         const macLink = `https://download.vipfy.store/latest/darwin/x64/VIPFY-${setupToken}.dmg`;
@@ -298,9 +294,7 @@ export default {
               lastname: name.lastName || "",
               suffix: name.suffix || "",
               firstlogin: false,
-              statisticdata: {
-                username
-              }
+              statisticdata: { username }
             },
             { where: { unitid }, transaction: ta, raw: true }
           );

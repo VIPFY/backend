@@ -551,7 +551,7 @@ export default {
             user: { company }
           } = decode(session.token);
 
-          const p1 = models.BoughtPlan.findOne({
+          const p1 = models.BoughtPlanView.findOne({
             where: { id: planid, payer: company },
             raw: true,
             transaction: ta
@@ -649,7 +649,7 @@ export default {
             user: { unitid, company }
           } = decode(session.token);
 
-          const oldBoughtPlan = await models.BoughtPlan.findOne(
+          const oldBoughtPlan = await models.BoughtPlanView.findOne(
             { where: { id: planid, payer: company } },
             { raw: true, transaction: ta }
           );
@@ -803,7 +803,7 @@ export default {
             user: { company }
           } = decode(session.token);
 
-          const p1 = models.BoughtPlan.findOne({
+          const p1 = models.BoughtPlanView.findOne({
             where: { id: planid, payer: company },
             raw: true
           });

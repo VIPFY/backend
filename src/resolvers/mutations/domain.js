@@ -428,7 +428,7 @@ export default {
           domainData.domain = oldDomain.domainname;
           let message;
 
-          const predecessor = await models.BoughtPlan.findOne(
+          const predecessor = await models.BoughtPlanView.findOne(
             { where: { id: oldDomain.boughtplanid } },
             { raw: true }
           );

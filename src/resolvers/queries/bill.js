@@ -12,7 +12,7 @@ export default {
           user: { company }
         } = decode(session.token);
 
-        const boughtPlans = await models.BoughtPlan.findAll({
+        const boughtPlans = await models.BoughtPlanView.findAll({
           where: { usedby: company }
         });
 
@@ -190,19 +190,19 @@ export default {
 
         let externalFilter = "";
         if (external) {
-          externalFilter = "AND boughtplan_data.key ->> 'external' = 'true'";
+          externalFilter = "AND boughtplan_view.key ->> 'external' = 'true'";
         }
 
         const data = await models.sequelize.query(
-          `SELECT boughtplan_data.*,
+          `SELECT boughtplan_view.*,
                 COALESCE(JSONB_AGG(to_jsonb(ld) - 'key' - 'options') FILTER (WHERE ld.id IS NOT NULL), '[]') as licences
-        FROM boughtplan_data
-                JOIN plan_data pd on boughtplan_data.planid = pd.id
-                LEFT OUTER JOIN licence_data ld ON (ld.boughtplanid = boughtplan_data.id)
+        FROM boughtplan_view
+                JOIN plan_data pd on boughtplan_view.planid = pd.id
+                LEFT OUTER JOIN licence_data ld ON (ld.boughtplanid = boughtplan_view.id)
         WHERE payer = :company
           AND appid = :appid
           ${externalFilter}
-        GROUP BY boughtplan_data.id
+        GROUP BY boughtplan_view.id
       `,
           {
             replacements: { company, appid },
@@ -230,19 +230,19 @@ export default {
 
         let externalFilter = "";
         if (external) {
-          externalFilter = "AND boughtplan_data.key ->> 'external' = 'true'";
+          externalFilter = "AND boughtplan_view.key ->> 'external' = 'true'";
         }
 
         const data = await models.sequelize.query(
-          `SELECT boughtplan_data.*,
+          `SELECT boughtplan_view.*,
                 COALESCE(JSONB_AGG(to_jsonb(ld) - 'key'), '[]') as licences
-        FROM boughtplan_data
-                JOIN plan_data pd on boughtplan_data.planid = pd.id
-                LEFT OUTER JOIN licence_data ld ON (ld.boughtplanid = boughtplan_data.id)
+        FROM boughtplan_view
+                JOIN plan_data pd on boughtplan_view.planid = pd.id
+                LEFT OUTER JOIN licence_data ld ON (ld.boughtplanid = boughtplan_view.id)
         WHERE payer = :company
           AND appid = :appid
           ${externalFilter}
-        GROUP BY boughtplan_data.id
+        GROUP BY boughtplan_view.id
       `,
           {
             replacements: { company, appid },

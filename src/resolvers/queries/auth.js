@@ -12,7 +12,6 @@ import {
 } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
-import { USER_SESSION_ID_PREFIX } from "../../constants";
 
 export default {
   me: requiresAuth.createResolver(async (_p, _args, { models, session }) => {
@@ -186,26 +185,18 @@ export default {
     }
   },
 
-  fetchKey: requiresAuth.createResolver(
-    async (_p, { id }, { models, session }) => {
-      try {
-        const key = await models.Key.findOne({
-          where: { id }
-        });
-        return key;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
+  fetchKey: requiresAuth.createResolver(async (_p, { id }, { models }) => {
+    try {
+      return models.Key.findOne({ where: { id } });
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
-  ),
+  }),
 
   fetchKeys: requiresAuth.createResolver(
     async (_p, { publickey }, { models }) => {
       try {
-        const keys = await models.Key.findAll({
-          where: { publickey }
-        });
-        return keys;
+        return models.Key.findAll({ where: { publickey } });
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
@@ -224,9 +215,11 @@ export default {
           order: [["createdat", "DESC"]],
           limit: 1
         });
+
         if (keys.length == 0) {
           return null;
         }
+
         return keys[0];
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
