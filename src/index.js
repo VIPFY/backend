@@ -240,7 +240,6 @@ if (ENVIRONMENT != "testing") {
   server.listen(PORT, "0.0.0.0", () => {
     if (process.env.LOGGING) {
       console.log(`Server running on port ${PORT} 🚀`);
-      console.error("U SHOULD SEE ME in index.js - I AM BEAUTIFUL!");
     }
   });
 }
