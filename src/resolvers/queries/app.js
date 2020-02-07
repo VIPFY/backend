@@ -181,7 +181,7 @@ export default {
 
           await Promise.all(createLoginLinks);
         }
-        console.log("LICENCES", licences);
+
         return licences;
       } catch (err) {
         console.error(`Licence Error ${err.message}`);

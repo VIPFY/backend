@@ -4,7 +4,7 @@ import { requiresRights } from "../../helpers/permissions";
 
 export default {
   fetchTeams: requiresRights(["view-teams", "view-licences"]).createResolver(
-    async (parent, { userid }, { models }) => {
+    async (_parent, { userid }, { models }) => {
       try {
         const teams = await models.sequelize.query(
           `SELECT * FROM team_view

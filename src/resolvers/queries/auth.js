@@ -151,7 +151,7 @@ export default {
 
   fetchPwParams: async (_p, { email }, ctx) => {
     try {
-      const emailExists = await ctx.models.Login.find({
+      const emailExists = await ctx.models.Login.findOne({
         where: {
           email,
           deleted: { [ctx.models.Op.or]: [null, false] },

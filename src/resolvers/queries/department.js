@@ -1,4 +1,3 @@
-import moment from "moment";
 import { decode } from "jsonwebtoken";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";

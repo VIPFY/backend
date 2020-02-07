@@ -44,6 +44,22 @@ redis.on("reconnecting", (...args) =>
 );
 
 const subscriber = new Redis(options);
+subscriber.on("error", (...args) =>
+  console.error("ioredis Subscriptions ERROR", ...args)
+);
+subscriber.on("connect", (...args) =>
+  console.log("ioredis Subscriptions connected", ...args)
+);
+subscriber.on("ready", (...args) =>
+  console.log("ioredis Subscriptions ready", ...args)
+);
+subscriber.on("close", (...args) =>
+  console.log("ioredis Subscriptions close", ...args)
+);
+subscriber.on("reconnecting", (...args) =>
+  console.log("ioredis Subscriptions reconnecting", ...args)
+);
+
 export const pubsub = new RedisPubSub({ publisher: redis, subscriber });
 
 // The location for uploaded files to be saved
