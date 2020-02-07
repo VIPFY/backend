@@ -181,7 +181,7 @@ export default {
 
           await Promise.all(createLoginLinks);
         }
-        console.log("LICENCES", licences);
+
         return licences;
       } catch (err) {
         console.error(`Licence Error ${err.message}`);
@@ -256,7 +256,7 @@ export default {
         const {
           user: { company }
         } = decode(session.token);
-        console.log("START fetchUsersOwnLicences");
+
         const departments = await models.sequelize.query(
           "Select id from getDepartments(:company)",
           {
@@ -264,36 +264,29 @@ export default {
             type: models.sequelize.QueryTypes.SELECT
           }
         );
-        console.log("LOG: departments", departments);
 
         const departmentIds = Object.values(departments).map(dp => dp.id);
-        console.log("LOG: departmentIds", departmentIds);
 
         const departmentPlans = await models.DepartmentApp.findAll({
           where: { departmentid: departmentIds },
           raw: true
         });
-        console.log("LOG: departmentPlans", departmentPlans);
 
         const departmentPlanIds = Object.values(departmentPlans).map(
           dp => dp.boughtplanid
         );
-        console.log("LOG: departmentPlanIds", departmentPlanIds);
 
         const boughtPlans = await models.BoughtPlanView.findAll({
           attributes: ["id"],
           where: { id: { [models.Op.notIn]: departmentPlanIds } },
           raw: true
         });
-        console.log("LOG: boughtPlans", boughtPlans);
 
         const bpIds = Object.values(boughtPlans).map(bp => bp.id);
-        console.log("LOG: bpIds", bpIds);
 
         const licences = await models.Licence.findAll({
           where: { unitid, boughtplanid: bpIds }
         });
-        console.log("LOG: licences", licences);
 
         const startTime = Date.now();
 
@@ -321,7 +314,7 @@ export default {
             }
           }
         });
-        console.log("END fetchUsersOwnLicences");
+
         return licences;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });

@@ -847,10 +847,7 @@ export default {
               }
             );
           }
-          console.log(
-            "UPDATE APP",
-            `options || jsonb '{"${speed}-${licenceid}-${moment.now()}": ${working}}'`
-          );
+
           await models.App.update(
             {
               options: models.sequelize.literal(
@@ -1223,7 +1220,6 @@ export default {
                 raw: true
               }
             );
-            console.error("OLDACCOUNTS", oldAccounts[1]);
 
             const oldassignments = await models.LicenceRight.update(
               {
@@ -1244,8 +1240,6 @@ export default {
                 raw: true
               }
             );
-
-            console.error("OLDASSIGNMENTS", oldassignments[1]);
 
             if (oldassignments[1]) {
               await Promise.all(
