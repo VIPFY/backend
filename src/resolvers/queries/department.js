@@ -1,4 +1,3 @@
-import moment from "moment";
 import { decode } from "jsonwebtoken";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
@@ -26,12 +25,13 @@ export default {
         const {
           user: { company }
         } = decode(session.token);
-
+        console.error("U SHOULD SEE ME - I AM BEAUTIFUL!");
         const departments = await models.sequelize
           .query("Select * from getDepartmentsData(:company)", {
             replacements: { company }
           })
           .spread(res => res);
+        console.error("FINISHED FETCHING DEPARTMENTS!");
 
         return departments;
       } catch (err) {
