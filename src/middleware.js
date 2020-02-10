@@ -30,7 +30,9 @@ export const sessionMiddleware = session({
   cookie: {
     httpOnly: true,
     maxAge: SESSION_LIFETIME,
-    secure: ENVIRONMENT == "production"
+    // Required Setting for Chrome in future Releases, see VIP-1030
+    secure: ENVIRONMENT == "production",
+    sameSite: "none"
   }
 });
 
@@ -120,7 +122,7 @@ export const loggingMiddleWare = (req, res, next) => {
       };
 
       if (parsedBody.data) {
-        //logger.log("verbose", eventtype, log);
+        // logger.log("verbose", eventtype, log);
       }
 
       if (user) {
