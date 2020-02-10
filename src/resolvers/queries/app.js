@@ -631,7 +631,7 @@ export default {
       try {
         const companyServices = await models.sequelize.query(
           `SELECT app_data.id as app,
-          COALESCE(array_agg(bpd.id), ARRAY[]::bigint[]) as orbitids
+          COALESCE(array_agg(bpd.id), ARRAY[]::uuid[]) as orbitids
         FROM app_data JOIN plan_data pd on app_data.id = pd.appid
           LEFT JOIN boughtplan_view bpd on pd.id = bpd.planid
         WHERE app_data.name != 'Vipfy' AND ((
