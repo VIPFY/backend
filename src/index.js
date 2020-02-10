@@ -4,7 +4,6 @@
  * establishes the connection to the database before starting the server
  */
 
-import cors from "cors";
 import express from "express";
 import fs from "fs";
 import https from "https";
@@ -137,6 +136,7 @@ app.use(loggingMiddleWare);
 /* if (USE_XRAY) {
   app.use(AWSXRay.express.openSegment("backend"));
 } */
+// eslint-disable-next-line
 let engine = undefined;
 if (ENVIRONMENT == "production") {
   engine = {
