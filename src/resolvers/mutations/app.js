@@ -109,112 +109,6 @@ export default {
   ),
 
   /**
-   * Adds an BoughtPlan to handle external accounts
-   *
-   * @param {string} alias A name to display the plan to the user
-   * @param {number} appid Id of the external app
-   * @param {float} price The price of the plan
-   * @param {string} loginurl The url to log the user into
-   *
-   * @returns {object}
-   */
-  addExternalBoughtPlan: requiresAuth.createResolver(
-    (_p, { alias, appid, price, loginurl }, context) =>
-      context.models.sequelize.transaction(async ta => {
-        const { models, session } = context;
-
-        const {
-          user: { unitid, company }
-        } = decode(session.token);
-
-        // let subscription = null;
-        // eslint-disable-next-line
-        let stripeplan = null;
-
-        try {
-          const plan = await models.Plan.findOne({
-            where: { appid, options: { external: true } },
-            raw: true
-          });
-
-          if (!plan) {
-            throw new Error(
-              "This App is not integrated to handle external Accounts yet."
-            );
-          }
-
-          await checkPlanValidity(plan);
-
-          // subscription = await checkPaymentData(
-          //   company,
-          //   plan.stripedata.id,
-          //   ta
-          // );
-
-          // const department = await models.Department.findOne({
-          //   where: { unitid },
-          //   raw: true
-          // });
-
-          // if (!subscription) {
-          //   subscription = await addSubscriptionItem(
-          //     department.payingoptions.stripe.subscription,
-          //     plan.stripedata.id
-          //   );
-
-          //   stripeplan = subscription.id;
-          // } else {
-          //   stripeplan = subscription.items.data[0].id;
-          // }
-
-          const boughtPlan = await models.BoughtPlan.create(
-            {
-              planid: plan.id,
-              alias,
-              disabled: false,
-              buyer: unitid,
-              payer: company,
-              usedby: company,
-              totalprice: 0,
-              key: {
-                external: true,
-                externaltotalprice: price,
-                loginurl
-              },
-              stripeplan
-            },
-            { transaction: ta }
-          );
-
-          await createLog(
-            context,
-            "addExternalBoughtPlan",
-            { appid, boughtPlan },
-            ta
-          );
-
-          return boughtPlan;
-        } catch (err) {
-          // if (subscription && stripeplan) {
-          //   const kind = stripeplan.split("_");
-          //   if (kind[0] == "sub") {
-          //     await abortSubscription(stripeplan);
-          //   } else {
-          //     await cancelPurchase(stripeplan, subscription.id);
-          //   }
-          // }
-
-          logger.error(err);
-
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
-  /**
    * Adds an external account of an app to the users personal Account
    *
    * @param {float} price Optional price of the external account
@@ -592,7 +486,7 @@ export default {
           boughtPlans.map(async boughtPlan => {
             const endtime = parsedTime;
 
-            await models.BoughtPlan.update(
+            await models.BoughtPlanPeriod.update(
               {
                 endtime
               },
@@ -1126,12 +1020,36 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { company }
+            user: { company, unitid }
           } = decode(ctx.session.token);
 
           const { models } = ctx;
 
           const orbit = await models.BoughtPlan.create(
+            {
+              payer: company,
+              usedby: company,
+              disabled: false,
+              alias,
+              key: {
+                ...options
+              }
+            },
+            { transaction: ta }
+          );
+
+          await models.BoughtPlanPeriod.create(
+            {
+              boughtplanid: orbit.id,
+              planid,
+              payer: company,
+              creator: unitid,
+              totalprice: 0
+            },
+            { transaction: ta }
+          );
+
+          /* const orbit = await models.BoughtPlan.create(
             {
               planid,
               key: {
@@ -1146,7 +1064,7 @@ export default {
               endtime
             },
             { transaction: ta }
-          );
+          ); */
 
           await createLog(
             ctx,
@@ -1177,7 +1095,7 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { company }
+            user: { company, unitid }
           } = decode(ctx.session.token);
 
           const { models } = ctx;
@@ -1201,9 +1119,16 @@ export default {
                 ...oldorbit.key,
                 domain: loginurl
               },
-              alias,
+              alias
+            },
+            { where: { id: orbitid }, transaction: ta }
+          );
+
+          await models.BoughtPlanPeriod.update(
+            {
               starttime,
-              endtime
+              endtime,
+              creator: unitid
             },
             { where: { id: orbitid }, transaction: ta }
           );

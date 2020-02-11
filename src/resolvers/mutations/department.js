@@ -860,7 +860,7 @@ export default {
                         }
                       );
 
-                      await models.BoughtPlan.update(
+                      await models.BoughtPlanPeriod.update(
                         {
                           endtime
                         },
