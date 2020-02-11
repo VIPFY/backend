@@ -1044,7 +1044,9 @@ export default {
               planid,
               payer: company,
               creator: unitid,
-              totalprice: 0
+              totalprice: 0,
+              starttime,
+              endtime
             },
             { transaction: ta }
           );
