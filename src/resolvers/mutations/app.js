@@ -486,11 +486,17 @@ export default {
           boughtPlans.map(async boughtPlan => {
             const endtime = parsedTime;
 
+            const oldperiod = await models.BoughtPlanPeriodView.findOne({
+              where: { boughtplanid: boughtPlan.id },
+              raw: true,
+              transaction: ta
+            });
+
             await models.BoughtPlanPeriod.update(
               {
                 endtime
               },
-              { where: { id: boughtPlan.id }, transaction: ta }
+              { where: { id: oldperiod.id }, transaction: ta }
             );
 
             const oldAccounts = await models.LicenceData.update(
@@ -1051,23 +1057,6 @@ export default {
             { transaction: ta }
           );
 
-          /* const orbit = await models.BoughtPlan.create(
-            {
-              planid,
-              key: {
-                ...options
-              },
-              alias,
-              disabled: false,
-              buyer: company,
-              payer: company,
-              usedby: company,
-              starttime,
-              endtime
-            },
-            { transaction: ta }
-          ); */
-
           await createLog(
             ctx,
             "createOrbit",
@@ -1126,13 +1115,19 @@ export default {
             { where: { id: orbitid }, transaction: ta }
           );
 
+          const oldperiod = await models.BoughtPlanPeriodView.findOne({
+            where: { boughtplanid: orbitid },
+            raw: true,
+            transaction: ta
+          });
+
           await models.BoughtPlanPeriod.update(
             {
               starttime,
               endtime,
               creator: unitid
             },
-            { where: { id: orbitid }, transaction: ta }
+            { where: { boughtplanid: orbitid }, transaction: ta }
           );
 
           if (endtime) {
@@ -1141,7 +1136,7 @@ export default {
                 endtime
               },
               {
-                where: { boughtplanid: orbitid, endtime: null },
+                where: { id: oldperiod.id },
                 returning: true,
                 transaction: ta,
                 raw: true
