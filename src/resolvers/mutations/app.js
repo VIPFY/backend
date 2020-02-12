@@ -700,7 +700,7 @@ export default {
 
           // Check if user is unitid of licence
 
-          const licence = await models.LicenceData.findOne({
+          const licence = await models.Licence.findOne({
             where: { unitid, id: licenceid },
             raw: true
           });
@@ -1071,7 +1071,13 @@ export default {
             ta
           );
 
-          return orbit;
+          const fullorbit = await models.BoughtPlanView.findOne({
+            where: { id: orbit.id },
+            raw: true,
+            transaction: ta
+          });
+
+          return fullorbit;
         } catch (err) {
           throw new NormalError({
             message: err.message,

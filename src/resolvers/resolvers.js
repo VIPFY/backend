@@ -82,7 +82,7 @@ export default {
   Account: find({ assignments: "[LicenceAssignment]" }),
   Address: find({}),
   App: find(developerAndSupport),
-  AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
+  AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "BoughtPlanView" }),
   AppDetails: find(developerAndSupport),
   AppUsage: find({ app: "App" }),
   Bill: find(unit),
@@ -93,7 +93,7 @@ export default {
     planid: "Plan",
     payer: "Unit"
   }),
-  BoughtplanUsagePerUser: find({ boughtplan: "BoughtPlan", unit: "User" }),
+  BoughtplanUsagePerUser: find({ boughtplan: "BoughtPlanView", unit: "User" }),
   Department: find({
     ...unit,
     adminkey: {
@@ -109,12 +109,12 @@ export default {
     childid: "Unit",
     employee: "User"
   }),
-  Domain: find({ boughtplanid: "BoughtPlan" }),
+  Domain: find({ boughtplanid: "BoughtPlanView" }),
   Email: find(unit),
   TempLicence: find({ licenceid: "Licence", unitid: "User", owner: "User" }),
   Licence: find({
     unitid: "User",
-    boughtplanid: "BoughtPlan",
+    boughtplanid: "BoughtPlanView",
     teamlicence: "Team",
     teamaccount: "Team",
     assignmentid: "LicenceAssignment",
@@ -122,7 +122,7 @@ export default {
   }),
   LicenceAssignment: find({
     unitid: "User",
-    boughtplanid: "BoughtPlan",
+    boughtplanid: "BoughtPlanView",
     teamlicence: "Team",
     teamaccount: "Team",
     vacationid: "Vacation"
@@ -161,11 +161,11 @@ export default {
   PlansRunning: find({ appid: "App" }),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
-  PublicLicence: find({ unitid: "User", boughtplanid: "BoughtPlan" }),
+  PublicLicence: find({ unitid: "User", boughtplanid: "BoughtPlanView" }),
   Review: find({ unitid: "User", appid: "App", answerto: "Review" }),
   ReviewHelpful: find({ unitid: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),
-  SimpleStats: find({ usedby: "Unit", boughtplan: "BoughtPlan" }),
+  SimpleStats: find({ usedby: "Unit", boughtplan: "BoughtPlanView" }),
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
   Team: find({
     unitid: "Unit",
@@ -182,7 +182,7 @@ export default {
   }),
   TeamBoughtPlan: find({
     departmentid: "Team",
-    boughtplanid: "BoughtPlan"
+    boughtplanid: "BoughtPlanView"
   }),
   Upload: GraphQLUpload,
   User: find({

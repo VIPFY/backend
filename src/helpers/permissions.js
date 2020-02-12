@@ -60,7 +60,7 @@ export const requiresAuth = createResolver(
         });
 
         const planIds = vipfyPlans.map(plan => plan.id);
-        let vipfyPlan = await models.BoughtPlanPeriod.findOne(
+        let vipfyPlan = await models.BoughtPlanPeriodView.findOne(
           {
             where: {
               payer: company,
