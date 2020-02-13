@@ -111,14 +111,16 @@ export default {
   }),
   Domain: find({ boughtplanid: "BoughtPlanView" }),
   Email: find(unit),
-  TempLicence: find({ licenceid: "Licence", unitid: "User", owner: "User" }),
-  Licence: find({
+  LicenceOld: find({
     unitid: "User",
     boughtplanid: "BoughtPlanView",
     teamlicence: "Team",
     teamaccount: "Team",
     assignmentid: "LicenceAssignment",
     vacationid: "Vacation"
+  }),
+  Licence: find({
+    boughtplanid: "BoughtPlanView"
   }),
   LicenceAssignment: find({
     unitid: "User",
@@ -161,7 +163,6 @@ export default {
   PlansRunning: find({ appid: "App" }),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
-  PublicLicence: find({ unitid: "User", boughtplanid: "BoughtPlanView" }),
   Review: find({ unitid: "User", appid: "App", answerto: "Review" }),
   ReviewHelpful: find({ unitid: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),
@@ -170,11 +171,8 @@ export default {
   Team: find({
     unitid: "Unit",
     employees: "[User]",
-    licences: "[Licence]",
+    licences: "[LicenceDataFiltered]",
     services: "[Orbit]"
-  }),
-  ServiceLicence: find({
-    licence: "Licence"
   }),
   CompanyService: find({
     app: "App",
