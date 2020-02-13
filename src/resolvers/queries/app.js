@@ -5,7 +5,11 @@ import moment from "moment";
 import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
-import { requiresAuth, requiresRights } from "../../helpers/permissions";
+import {
+  requiresAuth,
+  requiresRights,
+  requiresVipfyAdmin
+} from "../../helpers/permissions";
 import { companyCheck, concatName } from "../../helpers/functions";
 import freshdeskAPI from "../../services/freshdesk";
 
@@ -897,7 +901,7 @@ export default {
       }
     }
   ),
-  fetchExecutionApps: requiresAuth.createResolver(
+  fetchExecutionApps: requiresVipfyAdmin.createResolver(
     async (_p, { appid }, { models, session }) => {
       try {
         const apps = await models.sequelize.query(

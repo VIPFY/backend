@@ -1,7 +1,11 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
 import { NormalError } from "../../errors";
-import { requiresRights, requiresAuth } from "../../helpers/permissions";
+import {
+  requiresRights,
+  requiresAuth,
+  requiresVipfyAdmin
+} from "../../helpers/permissions";
 import {
   createLog,
   createNotification,
@@ -1665,7 +1669,7 @@ export default {
         }
       })
   ),
-  saveExecutionPlan: requiresAuth.createResolver(
+  saveExecutionPlan: requiresVipfyAdmin.createResolver(
     async (_p, { appid, key, script }, { models, session }) => {
       try {
         await models.sequelize.query(
