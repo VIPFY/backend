@@ -1664,5 +1664,40 @@ export default {
           });
         }
       })
+  ),
+  saveExecutionPlan: requiresAuth.createResolver(
+    async (_p, { appid, key, script }, { models, session }) => {
+      try {
+        await models.sequelize.query(
+          `
+          Update app_data set internaldata = jsonb_insert(internaldata, '{execute, -1}', :scriptblock)
+          WHERE id = :appid;
+        `,
+          {
+            replacements: {
+              appid,
+              scriptblock: JSON.stringify({ key, script })
+            },
+            raw: true
+          }
+        );
+        const app = await models.sequelize.query(
+          `
+          SELECT * 
+          FROM app_data
+          WHERE internaldata -> 'execute' is not null
+          ${appid ? " AND id = :appid" : ""};
+        `,
+          {
+            replacements: { appid },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+        return app[0];
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };

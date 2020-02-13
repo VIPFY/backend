@@ -40,6 +40,11 @@ export const types = `
     hasboughtplan: Boolean
   }
 
+  type ExecuteApp {
+    ${appFields}
+    internaldata: JSON
+  }
+
   type CompanyServiceNEW{
     id: ID!
     app: AppDetails!
@@ -107,6 +112,7 @@ export const types = `
     supportunit: ID
     hidden: Boolean
     image: Upload
+    internaldata: JSON
   }
 
   input SSOInput {
@@ -339,6 +345,7 @@ export const queries = `
 
   fetchUseableApps: [AppDetails]
 
+  fetchExecutionApps(appid: ID): [ExecuteApp]
 `;
 
 export const mutations = `
@@ -380,4 +387,6 @@ export const mutations = `
 
   createVacation(userid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
   editVacation(vacationid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
+
+  saveExecutionPlan(appid: ID!, key: String!, script: JSON!): ExecuteApp!
   `;
