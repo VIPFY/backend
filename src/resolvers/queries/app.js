@@ -5,7 +5,11 @@ import moment from "moment";
 import * as Services from "@vipfy-private/services";
 import dd24Api from "../../services/dd24";
 import { NormalError, PartnerError } from "../../errors";
-import { requiresAuth, requiresRights } from "../../helpers/permissions";
+import {
+  requiresAuth,
+  requiresRights,
+  requiresVipfyAdmin
+} from "../../helpers/permissions";
 import { companyCheck, concatName } from "../../helpers/functions";
 import freshdeskAPI from "../../services/freshdesk";
 
@@ -139,13 +143,13 @@ export default {
             if (licence.appid == 4) {
               // just forward the key for demo purposes, until pipedrive is implemented
             } else if (licence.key && licence.appid != 11) {
-              licence.key = await Services.getLoginData(
+              /*licence.key = await Services.getLoginData(
                 models,
                 licence.appid,
                 licence.id,
                 licence.boughtplanid,
                 undefined
-              );
+              );*/
             } else if (licence.key) {
               const domain = await models.sequelize.query(
                 `SELECT ld.id, ld.key FROM licence_view ld INNER JOIN
@@ -177,6 +181,106 @@ export default {
                 });
               }
             }
+          });
+
+          await Promise.all(createLoginLinks);
+        }
+
+        return licences;
+      } catch (err) {
+        console.error(`Licence Error ${err.message}`, err);
+        throw new NormalError({
+          message: `fetch Licence ${err.message}`,
+          internalData: { err }
+        });
+      }
+    }
+  ),
+
+  fetchPureLicenceData: requiresRights(["view-licences"]).createResolver(
+    async (_, { licenceid }, { models, session }, info) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+
+        const query = `SELECT null as unitid,
+        l.key,
+        l.id,
+        l.boughtplanid,
+        l.options,
+        null AS starttime,
+        null AS endtime,
+        l.agreed,
+        l.disabled,
+        l.pending,
+        false as view,
+        false as edit,
+        false as delete,
+        false as use,
+        null AS vacationstart,
+        null AS vacationend,
+        null as tags,
+        l.alias,
+        null as assignalias,
+        null as assignoptions,
+        0 as rightscount,
+        null as assignmentid,
+        null as vacationid, plan_data.appid FROM licence_data l JOIN
+           boughtplan_view ON l.boughtplanid = boughtplan_view.id
+           JOIN plan_data ON boughtplan_view.planid = plan_data.id
+           JOIN app_data a ON plan_data.appid = a.id
+           WHERE not a.disabled AND l.id = :licenceid`;
+
+        const replacements = { licenceid };
+
+        const licences = await models.sequelize
+          .query(query, { replacements })
+          .spread(res => res);
+
+        const isAdmin = (await models.User.findOne({ where: { id: unitid } }))
+          .isadmin;
+
+        const startTime = Date.now();
+        if (
+          info.fieldNodes[0].selectionSet.selections.find(
+            item => item.name.value == "key"
+          ) !== undefined
+        ) {
+          const createLoginLinks = licences.map(async licence => {
+            if (licence.unitid != unitid && !isAdmin) {
+              throw new NormalError({
+                message: "This licence doesn't belong to this user!"
+              });
+            }
+
+            if (licence.disabled) {
+              licence.agreed = false;
+              licence.key = null;
+            }
+
+            if (
+              Date.parse(licence.starttime) > startTime ||
+              (!licence.agreed && !isAdmin)
+            ) {
+              licence.key = null;
+            }
+
+            if (licence.endtime && licence.endtime != "infinity") {
+              if (Date.parse(licence.endtime) < startTime) {
+                licence.key = null;
+              }
+            }
+            /* if (licence.key && licence.appid != 11) {
+              console.log("GET LOGIN DATA");
+              licence.key = await Services.getLoginData(
+                models,
+                licence.appid,
+                licence.id,
+                licence.boughtplanid,
+                undefined
+              );
+            } */
           });
 
           await Promise.all(createLoginLinks);
@@ -792,6 +896,28 @@ export default {
         });
 
         return res.data;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+  fetchExecutionApps: requiresVipfyAdmin.createResolver(
+    async (_p, { appid }, { models, session }) => {
+      try {
+        const apps = await models.sequelize.query(
+          `
+          SELECT * 
+          FROM app_data
+          WHERE internaldata -> 'execute' is not null
+          ${appid ? " AND id = :appid" : ""};
+        `,
+          {
+            replacements: { appid },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+        return apps;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

@@ -1,7 +1,11 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
 import { NormalError } from "../../errors";
-import { requiresRights, requiresAuth } from "../../helpers/permissions";
+import {
+  requiresRights,
+  requiresAuth,
+  requiresVipfyAdmin
+} from "../../helpers/permissions";
 import {
   createLog,
   createNotification,
@@ -700,7 +704,7 @@ export default {
 
           // Check if user is unitid of licence
 
-          const licence = await models.LicenceData.findOne({
+          const licence = await models.Licence.findOne({
             where: { unitid, id: licenceid },
             raw: true
           });
@@ -1071,7 +1075,13 @@ export default {
             ta
           );
 
-          return orbit;
+          const fullorbit = await models.BoughtPlanView.findOne({
+            where: { id: orbit.id },
+            raw: true,
+            transaction: ta
+          });
+
+          return fullorbit;
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -1658,5 +1668,40 @@ export default {
           });
         }
       })
+  ),
+  saveExecutionPlan: requiresVipfyAdmin.createResolver(
+    async (_p, { appid, key, script }, { models, session }) => {
+      try {
+        await models.sequelize.query(
+          `
+          Update app_data set internaldata = jsonb_insert(internaldata, '{execute, -1}', :scriptblock)
+          WHERE id = :appid;
+        `,
+          {
+            replacements: {
+              appid,
+              scriptblock: JSON.stringify({ key, script })
+            },
+            raw: true
+          }
+        );
+        const app = await models.sequelize.query(
+          `
+          SELECT * 
+          FROM app_data
+          WHERE internaldata -> 'execute' is not null
+          ${appid ? " AND id = :appid" : ""};
+        `,
+          {
+            replacements: { appid },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+        return app[0];
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };

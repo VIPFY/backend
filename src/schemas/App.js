@@ -40,6 +40,11 @@ export const types = `
     hasboughtplan: Boolean
   }
 
+  type ExecuteApp {
+    ${appFields}
+    internaldata: JSON
+  }
+
   type CompanyServiceNEW{
     id: ID!
     app: AppDetails!
@@ -57,7 +62,6 @@ export const types = `
     buytime: String
     alias: String
     endtime: String
-    description: String
     key: JSON
     buyer: Unit!
     payer: Unit!
@@ -107,6 +111,7 @@ export const types = `
     supportunit: ID
     hidden: Boolean
     image: Upload
+    internaldata: JSON
   }
 
   input SSOInput {
@@ -311,6 +316,7 @@ export const queries = `
 
   # Returns all Licences of the current user, optionally limited to a single licence id
   fetchLicences(licenceid: ID): [Licence]!
+  fetchPureLicenceData(licenceid: ID): [Licence]!
   
   fetchLicenceAssignment(assignmentid: ID!): LicenceAssignment!
 
@@ -338,6 +344,7 @@ export const queries = `
 
   fetchUseableApps: [AppDetails]
 
+  fetchExecutionApps(appid: ID): [ExecuteApp]
 `;
 
 export const mutations = `
@@ -379,4 +386,6 @@ export const mutations = `
 
   createVacation(userid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
   editVacation(vacationid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
+
+  saveExecutionPlan(appid: ID!, key: String!, script: JSON!): ExecuteApp!
   `;
