@@ -139,13 +139,13 @@ export default {
             if (licence.appid == 4) {
               // just forward the key for demo purposes, until pipedrive is implemented
             } else if (licence.key && licence.appid != 11) {
-              licence.key = await Services.getLoginData(
+              /*licence.key = await Services.getLoginData(
                 models,
                 licence.appid,
                 licence.id,
                 licence.boughtplanid,
                 undefined
-              );
+              );*/
             } else if (licence.key) {
               const domain = await models.sequelize.query(
                 `SELECT ld.id, ld.key FROM licence_view ld INNER JOIN
@@ -184,7 +184,7 @@ export default {
 
         return licences;
       } catch (err) {
-        console.error(`Licence Error ${err.message}`);
+        console.error(`Licence Error ${err.message}`, err);
         throw new NormalError({
           message: `fetch Licence ${err.message}`,
           internalData: { err }
