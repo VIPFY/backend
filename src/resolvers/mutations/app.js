@@ -290,7 +290,7 @@ export default {
   ),
 
   deleteService: requiresRights([
-    "delete-licences, delete-boughtplans"
+    ["delete-licences, delete-boughtplans"]
   ]).createResolver(async (_p, { serviceid, time }, context) =>
     context.models.sequelize.transaction(async ta => {
       try {
@@ -784,8 +784,7 @@ export default {
   ),
 
   assignAccount: requiresRights([
-    "edit-licences",
-    "edit-licenceRights"
+    ["edit-licences", "edit-licenceRights"]
   ]).createResolver(
     async (
       _p,
@@ -1084,8 +1083,7 @@ export default {
   ),
 
   terminateAssignAccount: requiresRights([
-    "edit-licences",
-    "edit-licenceRights"
+    ["edit-licences", "edit-licenceRights"]
   ]).createResolver(async (_p, { assignmentid, endtime, isNull }, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
@@ -1158,8 +1156,7 @@ export default {
   ),
 
   createVacation: requiresRights([
-    "edit-licences",
-    "edit-licenceRights"
+    ["edit-licences", "edit-licenceRights"]
   ]).createResolver(
     async (_p, { userid, starttime, endtime, assignments }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
@@ -1281,8 +1278,7 @@ export default {
       })
   ),
   editVacation: requiresRights([
-    "edit-licences",
-    "edit-licenceRights"
+    ["edit-licences", "edit-licenceRights"]
   ]).createResolver(
     async (_p, { vacationid, starttime, endtime, assignments }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
