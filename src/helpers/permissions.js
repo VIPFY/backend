@@ -312,7 +312,14 @@ export const requiresVipfyAdmin = requiresAuth.createResolver(
         user: { unitid }
       } = decode(session.token);
 
-      if (unitid != 7 && unitid != 22 && unitid != 67) {
+      const vipfyAdmins = [
+        "f876804e-efd0-48b4-a5b2-807cbf66315f",
+        "98cdb502-51fc-4c0d-a5c7-ee274b6bb7b5",
+        "96d65748-7d36-459a-97d0-7f52a7a4bbf0",
+        "91bd25cb-65cc-4dca-b0c8-285dbf5919f3"
+      ];
+
+      if (!vipfyAdmins.find(id => id == unitid)) {
         throw new AdminError();
       }
     } catch (err) {
