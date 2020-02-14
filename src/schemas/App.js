@@ -291,7 +291,7 @@ export const queries = `
   fetchUnitApps(departmentid: ID!): [AppBoughtPlanResponse]!
 
   # Returns a single licence belonging to your company, requires admin rights
-  fetchLicence(licenceid: ID!): [Licence]!
+  fetchLicence(licenceid: ID!): Licence!
   
   fetchLicenceAssignment(assignmentid: ID!): LicenceAssignment!
 
