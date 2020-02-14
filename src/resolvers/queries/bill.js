@@ -44,8 +44,7 @@ export default {
   ),
 
   fetchBills: requiresRights([
-    "view-paymentdata",
-    "view-addresses"
+    ["view-paymentdata", "view-addresses"]
   ]).createResolver(async (parent, args, { models, session }) => {
     try {
       const {
@@ -186,9 +185,7 @@ export default {
   ),
 
   fetchAllBoughtPlansFromCompany: requiresRights([
-    "view-licences",
-    "view-apps",
-    "view-boughtplans"
+    ["view-licences", "view-apps", "view-boughtplans"]
   ]).createResolver(
     async (_parent, { appid, external }, { models, session }) => {
       try {
@@ -226,9 +223,7 @@ export default {
   ),
 
   fetchBoughtPlansOfCompany: requiresRights([
-    "view-licences",
-    "view-apps",
-    "view-boughtplans"
+    ["view-licences", "view-apps", "view-boughtplans"]
   ]).createResolver(
     async (_parent, { appid, external }, { models, session }) => {
       try {
