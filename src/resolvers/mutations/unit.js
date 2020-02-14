@@ -531,6 +531,20 @@ export default {
           throw new Error("You can't impersonate yourself!");
         }
 
+        if (decode(ctx.session.token).impersonator) {
+          throw new Error(
+            "You are already impersonating someone, impersonating recursively isn't allowed"
+          );
+        }
+
+        const targetIsAdmin = (
+          await ctx.models.User.findOne({ where: { id: userid } })
+        ).isadmin;
+
+        if (targetIsAdmin) {
+          throw new Error("You can't impersonate an administrator");
+        }
+
         const token = await createAdminToken({
           unitid: userid,
           company,
