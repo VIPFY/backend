@@ -85,7 +85,7 @@ export default {
   fetchLicence: requiresRights(["view-licences"]).createResolver(
     async (_parent, { licenceid }, { models }, _info) => {
       try {
-        const licence = await models.sequelize.LicenceDataFiltered.findOne({
+        const licence = await models.LicenceDataFiltered.findOne({
           where: { id: licenceid }
         });
 
