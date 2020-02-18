@@ -13,7 +13,7 @@ export default {
 
         return models.Notification.findAll({
           where: { readtime: { [models.Op.eq]: null }, receiver: unitid },
-          order: [["id", "DESC"]]
+          order: [["sendtime", "DESC"]]
         });
       } catch (err) {
         throw new NormalError({ message: err.message });
