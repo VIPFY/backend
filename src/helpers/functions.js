@@ -115,7 +115,9 @@ export const createLog = async (context, eventtype, eventdata, transaction) => {
       eventtype,
       eventdata,
       user: unitid,
-      sudoer: impersonator
+      sudoer: impersonator,
+      deviceid: context.deviceId,
+      hostname: context.userData.host
     },
     { transaction }
   );
