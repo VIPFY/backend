@@ -456,6 +456,7 @@ export default {
       const [emailExists] = await ctx.models.Login.findAll({
         where: {
           email,
+          companyban: { [ctx.models.Op.or]: [null, false] },
           deleted: { [ctx.models.Op.or]: [null, false] },
           banned: { [ctx.models.Op.or]: [null, false] },
           suspended: { [ctx.models.Op.or]: [null, false] }
