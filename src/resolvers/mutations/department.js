@@ -860,12 +860,20 @@ export default {
                         }
                       );
 
-                      await models.BoughtPlan.update(
+                      const oldperiod = await models.BoughtPlanPeriodView.findOne(
+                        {
+                          where: { boughtplanid: boughtplan[0].boughtplanid },
+                          raw: true,
+                          transaction: ta
+                        }
+                      );
+
+                      await models.BoughtPlanPeriod.update(
                         {
                           endtime
                         },
                         {
-                          where: { id: boughtplan[0].boughtplanid },
+                          where: { id: oldperiod.id },
                           transaction: ta
                         }
                       );

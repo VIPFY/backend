@@ -3,7 +3,7 @@ import { NormalError } from "../../errors";
 import { requiresRights } from "../../helpers/permissions";
 
 export default {
-  fetchTeams: requiresRights(["view-teams", "view-licences"]).createResolver(
+  fetchTeams: requiresRights([["view-teams", "view-licences"]]).createResolver(
     async (_parent, { userid }, { models }) => {
       try {
         const teams = await models.sequelize.query(
@@ -24,8 +24,7 @@ export default {
   ),
 
   fetchCompanyTeams: requiresRights([
-    "view-teams",
-    "view-licences"
+    ["view-teams", "view-licences"]
   ]).createResolver(async (_parent, _args, { models, session }) => {
     try {
       const {
@@ -48,7 +47,7 @@ export default {
     }
   }),
 
-  fetchTeam: requiresRights(["view-teams", "view-licences"]).createResolver(
+  fetchTeam: requiresRights([["view-teams", "view-licences"]]).createResolver(
     async (parent, { teamid }, { models }) => {
       try {
         const team = await models.sequelize.query(

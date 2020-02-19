@@ -5,12 +5,6 @@ export const types = `
     ok: Boolean!
   }
 
-  type TempAccessResponse {
-    ok: Boolean!
-    licences: [TempLicence!]
-    errors: [ID!]
-  }
-
   type TokenResponse {
     ok: Boolean!
     used: Boolean

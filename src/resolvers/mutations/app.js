@@ -1,7 +1,11 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
 import { NormalError } from "../../errors";
-import { requiresRights, requiresAuth } from "../../helpers/permissions";
+import {
+  requiresRights,
+  requiresAuth,
+  requiresVipfyAdmin
+} from "../../helpers/permissions";
 import {
   createLog,
   createNotification,
@@ -106,262 +110,6 @@ export default {
         });
       }
     }
-  ),
-
-  /**
-   * Adds an BoughtPlan to handle external accounts
-   *
-   * @param {string} alias A name to display the plan to the user
-   * @param {number} appid Id of the external app
-   * @param {float} price The price of the plan
-   * @param {string} loginurl The url to log the user into
-   *
-   * @returns {object}
-   */
-  addExternalBoughtPlan: requiresAuth.createResolver(
-    (_p, { alias, appid, price, loginurl }, context) =>
-      context.models.sequelize.transaction(async ta => {
-        const { models, session } = context;
-
-        const {
-          user: { unitid, company }
-        } = decode(session.token);
-
-        // let subscription = null;
-        // eslint-disable-next-line
-        let stripeplan = null;
-
-        try {
-          const plan = await models.Plan.findOne({
-            where: { appid, options: { external: true } },
-            raw: true
-          });
-
-          if (!plan) {
-            throw new Error(
-              "This App is not integrated to handle external Accounts yet."
-            );
-          }
-
-          await checkPlanValidity(plan);
-
-          // subscription = await checkPaymentData(
-          //   company,
-          //   plan.stripedata.id,
-          //   ta
-          // );
-
-          // const department = await models.Department.findOne({
-          //   where: { unitid },
-          //   raw: true
-          // });
-
-          // if (!subscription) {
-          //   subscription = await addSubscriptionItem(
-          //     department.payingoptions.stripe.subscription,
-          //     plan.stripedata.id
-          //   );
-
-          //   stripeplan = subscription.id;
-          // } else {
-          //   stripeplan = subscription.items.data[0].id;
-          // }
-
-          const boughtPlan = await models.BoughtPlan.create(
-            {
-              planid: plan.id,
-              alias,
-              disabled: false,
-              buyer: unitid,
-              payer: company,
-              usedby: company,
-              totalprice: 0,
-              key: {
-                external: true,
-                externaltotalprice: price,
-                loginurl
-              },
-              stripeplan
-            },
-            { transaction: ta }
-          );
-
-          await createLog(
-            context,
-            "addExternalBoughtPlan",
-            { appid, boughtPlan },
-            ta
-          );
-
-          return boughtPlan;
-        } catch (err) {
-          // if (subscription && stripeplan) {
-          //   const kind = stripeplan.split("_");
-          //   if (kind[0] == "sub") {
-          //     await abortSubscription(stripeplan);
-          //   } else {
-          //     await cancelPurchase(stripeplan, subscription.id);
-          //   }
-          // }
-
-          logger.error(err);
-
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
-  ),
-
-  /**
-   * Adds an external account of an app to the users personal Account
-   *
-   * @param {float} price Optional price of the external account
-   * @param {ID} appid Id of the external app
-   * @param {ID} boughtplanid Id of the bought plan the licence should belong to
-   * @param {ID} touser If the licence should belong to another user
-   *
-   * @returns {object}
-   */
-  addEncryptedExternalLicence: requiresAuth.createResolver(
-    (_p, args, context) =>
-      context.models.sequelize.transaction(async ta => {
-        const { models, session } = context;
-
-        const {
-          user: { unitid, company }
-        } = decode(session.token);
-
-        try {
-          let admin = null;
-
-          if (args.touser) {
-            admin = await companyCheck(company, unitid, args.touser);
-          } else {
-            admin = await models.User.findOne({
-              where: { id: unitid },
-              raw: true
-            });
-          }
-
-          const oldBoughtPlan = await models.BoughtPlanView.findOne({
-            where: { id: args.boughtplanid },
-            endtime: {
-              [models.Op.or]: {
-                [models.Op.gt]: models.sequelize.fn("NOW"),
-                [models.Op.eq]: null
-              }
-            },
-            raw: true
-          });
-
-          if (!oldBoughtPlan) {
-            throw new Error("Couldn't find a valid Plan!");
-          }
-
-          const plan = await models.Plan.findOne({
-            where: { id: oldBoughtPlan.planid, options: { external: true } },
-            raw: true
-          });
-
-          if (!plan) {
-            throw new Error(
-              "This App is not integrated to handle external Accounts yet."
-            );
-          }
-
-          await checkPlanValidity(plan);
-          let externaltotalprice = args.price;
-
-          if (oldBoughtPlan.key && oldBoughtPlan.key.externaltotalprice) {
-            externaltotalprice = oldBoughtPlan.key.externaltotalprice;
-          }
-
-          await models.BoughtPlan.update(
-            {
-              key: {
-                ...oldBoughtPlan.key,
-                externaltotalprice
-              }
-            },
-            {
-              where: { id: args.boughtplanid },
-              transaction: ta,
-              returning: true
-            }
-          );
-
-          const licence = await models.LicenceData.create(
-            {
-              unitid: args.touser || unitid,
-              disabled: false,
-              boughtplanid: args.boughtplanid,
-              agreed: true,
-              key: args.key
-            },
-            { transaction: ta }
-          );
-
-          const p1 = createLog(
-            context,
-            "addExternalLicence",
-            {
-              licence: licence.id,
-              oldBoughtPlan,
-              ...args
-            },
-            ta
-          );
-
-          const p2 = createNotification(
-            {
-              receiver: unitid,
-              message: `Integrated external Account`,
-              icon: "user-plus",
-              link: `marketplace/${args.appid}`,
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          const promises = [p1, p2];
-
-          if (args.toUser) {
-            const p3 = createNotification(
-              {
-                receiver: args.touser,
-                message: `${admin.firstname} ${admin.lastname} integrated an external Account for you.`,
-                icon: "user-plus",
-                link: `marketplace/${args.appid}`,
-                changed: ["ownLicences"]
-              },
-              ta
-            );
-
-            promises.push(p3);
-          }
-
-          await Promise.all(promises);
-
-          return licence;
-        } catch (err) {
-          await createNotification(
-            {
-              receiver: unitid,
-              message: "Integration of external Account failed",
-              icon: "bug",
-              link: `marketplace/${args.appid}`,
-              changed: []
-            },
-            ta
-          );
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
   ),
 
   deleteLicenceAt: requiresRights(["delete-licences"]).createResolver(
@@ -542,7 +290,7 @@ export default {
   ),
 
   deleteService: requiresRights([
-    "delete-licences, delete-boughtplans"
+    ["delete-licences, delete-boughtplans"]
   ]).createResolver(async (_p, { serviceid, time }, context) =>
     context.models.sequelize.transaction(async ta => {
       try {
@@ -592,11 +340,17 @@ export default {
           boughtPlans.map(async boughtPlan => {
             const endtime = parsedTime;
 
-            await models.BoughtPlan.update(
+            const oldperiod = await models.BoughtPlanPeriodView.findOne({
+              where: { boughtplanid: boughtPlan.id },
+              raw: true,
+              transaction: ta
+            });
+
+            await models.BoughtPlanPeriod.update(
               {
                 endtime
               },
-              { where: { id: boughtPlan.id }, transaction: ta }
+              { where: { id: oldperiod.id }, transaction: ta }
             );
 
             const oldAccounts = await models.LicenceData.update(
@@ -800,7 +554,7 @@ export default {
 
           // Check if user is unitid of licence
 
-          const licence = await models.LicenceData.findOne({
+          const licence = await models.Licence.findOne({
             where: { unitid, id: licenceid },
             raw: true
           });
@@ -1030,8 +784,7 @@ export default {
   ),
 
   assignAccount: requiresRights([
-    "edit-licences",
-    "edit-licenceRights"
+    ["edit-licences", "edit-licenceRights"]
   ]).createResolver(
     async (
       _p,
@@ -1126,22 +879,31 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { company }
+            user: { company, unitid }
           } = decode(ctx.session.token);
 
           const { models } = ctx;
 
           const orbit = await models.BoughtPlan.create(
             {
-              planid,
-              key: {
-                ...options
-              },
-              alias,
-              disabled: false,
-              buyer: company,
               payer: company,
               usedby: company,
+              disabled: false,
+              alias,
+              key: {
+                ...options
+              }
+            },
+            { transaction: ta }
+          );
+
+          await models.BoughtPlanPeriod.create(
+            {
+              boughtplanid: orbit.id,
+              planid,
+              payer: company,
+              creator: unitid,
+              totalprice: 0,
               starttime,
               endtime
             },
@@ -1162,7 +924,13 @@ export default {
             ta
           );
 
-          return orbit;
+          const fullorbit = await models.BoughtPlanView.findOne({
+            where: { id: orbit.id },
+            raw: true,
+            transaction: ta
+          });
+
+          return fullorbit;
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -1177,7 +945,7 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { company }
+            user: { company, unitid }
           } = decode(ctx.session.token);
 
           const { models } = ctx;
@@ -1201,11 +969,24 @@ export default {
                 ...oldorbit.key,
                 domain: loginurl
               },
-              alias,
-              starttime,
-              endtime
+              alias
             },
             { where: { id: orbitid }, transaction: ta }
+          );
+
+          const oldperiod = await models.BoughtPlanPeriodView.findOne({
+            where: { boughtplanid: orbitid },
+            raw: true,
+            transaction: ta
+          });
+
+          await models.BoughtPlanPeriod.update(
+            {
+              starttime,
+              endtime,
+              creator: unitid
+            },
+            { where: { boughtplanid: orbitid }, transaction: ta }
           );
 
           if (endtime) {
@@ -1214,7 +995,7 @@ export default {
                 endtime
               },
               {
-                where: { boughtplanid: orbitid, endtime: null },
+                where: { id: oldperiod.id },
                 returning: true,
                 transaction: ta,
                 raw: true
@@ -1302,8 +1083,7 @@ export default {
   ),
 
   terminateAssignAccount: requiresRights([
-    "edit-licences",
-    "edit-licenceRights"
+    ["edit-licences", "edit-licenceRights"]
   ]).createResolver(async (_p, { assignmentid, endtime, isNull }, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
@@ -1376,8 +1156,7 @@ export default {
   ),
 
   createVacation: requiresRights([
-    "edit-licences",
-    "edit-licenceRights"
+    ["edit-licences", "edit-licenceRights"]
   ]).createResolver(
     async (_p, { userid, starttime, endtime, assignments }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
@@ -1499,8 +1278,7 @@ export default {
       })
   ),
   editVacation: requiresRights([
-    "edit-licences",
-    "edit-licenceRights"
+    ["edit-licences", "edit-licenceRights"]
   ]).createResolver(
     async (_p, { vacationid, starttime, endtime, assignments }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
@@ -1736,5 +1514,40 @@ export default {
           });
         }
       })
+  ),
+  saveExecutionPlan: requiresVipfyAdmin.createResolver(
+    async (_p, { appid, key, script }, { models, session }) => {
+      try {
+        await models.sequelize.query(
+          `
+          Update app_data set internaldata = jsonb_insert(internaldata, '{execute, -1}', :scriptblock)
+          WHERE id = :appid;
+        `,
+          {
+            replacements: {
+              appid,
+              scriptblock: JSON.stringify({ key, script })
+            },
+            raw: true
+          }
+        );
+        const app = await models.sequelize.query(
+          `
+          SELECT * 
+          FROM app_data
+          WHERE internaldata -> 'execute' is not null
+          ${appid ? " AND id = :appid" : ""};
+        `,
+          {
+            replacements: { appid },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+        return app[0];
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   )
 };

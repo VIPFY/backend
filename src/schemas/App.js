@@ -30,14 +30,17 @@ const licenceFields = `
   options: JSON
   boughtplanid: BoughtPlan!
   pending: Boolean
-  dashboard: Int
-  tags: [String]
 `;
 
 export const types = `
   type App {
     ${appFields}
     hasboughtplan: Boolean
+  }
+
+  type ExecuteApp {
+    ${appFields}
+    internaldata: JSON
   }
 
   type CompanyServiceNEW{
@@ -57,7 +60,6 @@ export const types = `
     buytime: String
     alias: String
     endtime: String
-    description: String
     key: JSON
     buyer: Unit!
     payer: Unit!
@@ -107,6 +109,7 @@ export const types = `
     supportunit: ID
     hidden: Boolean
     image: Upload
+    internaldata: JSON
   }
 
   input SSOInput {
@@ -133,16 +136,10 @@ export const types = `
     afterdomain: String
   }
 
-  type ServiceLicence{
-    ${basicLicenceFields}
-    agreed: Boolean
-    alias: String
-    licence: Licence!
-  }
-
-  type Licence {
+  type LicenceOld {
     ${basicLicenceFields}
     ${licenceFields}
+    tags: [String]
     agreed: Boolean
     disabled: Boolean
     key: JSON
@@ -159,6 +156,15 @@ export const types = `
     rightscount: Int
     assignmentid: LicenceAssignment
     vacationid: Vacation
+  }
+
+  type Licence {
+    ${basicLicenceFields}
+    ${licenceFields}
+    agreed: Boolean
+    disabled: Boolean
+    key: JSON
+    alias: String
   }
 
   type Account {
@@ -178,6 +184,7 @@ export const types = `
   type LicenceAssignment {
     ${basicLicenceFields}
     ${licenceFields}
+    tags: [String]
     sidebar: Int
     agreed: Boolean
     disabled: Boolean
@@ -197,27 +204,6 @@ export const types = `
     assignmentid: ID
     assignoptions: JSON
     vacationid: Vacation
-  }
-
-  type PublicLicence {
-    ${basicLicenceFields}
-    ${licenceFields}
-    sidebar: Int
-    unitid: PublicUser
-  }
-
-  type TempLicence {
-    id: ID!
-    starttime: Date!
-    endtime: Date!
-    view: Boolean!
-    edit: Boolean!
-    delete: Boolean!
-    use: Boolean!
-    licenceid: PublicLicence!
-    unitid: SemiPublicUser!
-    owner: SemiPublicUser!
-    tags: [String]!
   }
   
   input LicenceRightInput {
@@ -244,11 +230,6 @@ export const types = `
     starttime: Date
     endtime: Date
     user: ID
-  }
-
-  input LayoutInput {
-    id: ID!
-    dashboard: Int
   }
 
   type SimpleStats {
@@ -309,16 +290,13 @@ export const queries = `
   # Returns all Apps a department is allowed to distribute Licences for
   fetchUnitApps(departmentid: ID!): [AppBoughtPlanResponse]!
 
-  # Returns all Licences of the current user, optionally limited to a single licence id
-  fetchLicences(licenceid: ID): [Licence]!
+  # Returns a single licence belonging to your company, requires admin rights
+  fetchLicence(licenceid: ID!): Licence!
   
   fetchLicenceAssignment(assignmentid: ID!): LicenceAssignment!
 
-  # Returns all Licences of a current user that are not department licences
-  fetchUsersOwnLicences(unitid: ID!): [Licence]
-
   # Returns all Licences of a defined user
-  fetchUserLicences(unitid: ID!): [Licence]
+  fetchUserLicences(unitid: ID!): [LicenceOld]
 
   # Returns all LicenceAssignments of a defined user
   fetchUserLicenceAssignments(unitid: ID): [LicenceAssignment]
@@ -332,12 +310,12 @@ export const queries = `
 
   fetchTotalUsageMinutes(starttime: Date, endtime: Date, assignmentid: ID, licenceid: ID, boughtplanid: ID, unitid: ID): Int
 
-  fetchServiceLicences(employees: [ID!], serviceid: ID!): [ServiceLicence]
   fetchCompanyServices: [CompanyService]
   fetchCompanyService(serviceid: ID!): CompanyService
 
   fetchUseableApps: [AppDetails]
 
+  fetchExecutionApps(appid: ID): [ExecuteApp]
 `;
 
 export const mutations = `
@@ -352,10 +330,6 @@ export const mutations = `
   agreeToLicence(licenceid: ID!): Response!
 
   trackMinutesSpent(assignmentid: ID!, minutes: Int!): Response!
-
-  # Adds the data of an external App
-  addExternalBoughtPlan(appid: ID!, alias: String, price: Float, loginurl: String): BoughtPlan!
-  addEncryptedExternalLicence(key: JSON!, appid: ID!, boughtplanid: ID!, price: Float, touser: ID): Licence!
 
   failedIntegration(data: SSOResult!): Boolean!
 
@@ -379,4 +353,6 @@ export const mutations = `
 
   createVacation(userid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
   editVacation(vacationid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
+
+  saveExecutionPlan(appid: ID!, key: String!, script: JSON!): ExecuteApp!
   `;

@@ -101,7 +101,7 @@ const postprocessors = {
     }
     return value;
   },
-  Licence: async (value, fields) => {
+  LicenceOld: async (value, fields) => {
     if (value) {
       if (value.options) {
         if (value.options.teamlicence) {
@@ -110,6 +110,14 @@ const postprocessors = {
         if (value.options.teamaccount) {
           value.teamaccount = value.options.teamaccount;
         }
+      }
+    }
+    return value;
+  },
+  Licence: async (value, fields) => {
+    if (value) {
+      if (value.disabled) {
+        value.key = null;
       }
     }
     return value;

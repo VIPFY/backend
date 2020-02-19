@@ -44,8 +44,7 @@ export default {
   ),
 
   fetchBills: requiresRights([
-    "view-paymentdata",
-    "view-addresses"
+    ["view-paymentdata", "view-addresses"]
   ]).createResolver(async (parent, args, { models, session }) => {
     try {
       const {
@@ -91,10 +90,18 @@ export default {
     }
   ),
 
-  fetchPlans: async (parent, { appid }, { models }) => {
+  fetchPlans: async (parent, { appid }, { models, session }) => {
     try {
+      const {
+        user: { company }
+      } = decode(session.token);
       const app = await models.App.findOne({
-        where: { id: appid, disabled: false, deprecated: false, owner: null }
+        where: {
+          id: appid,
+          disabled: false,
+          deprecated: false,
+          owner: { [models.Op.or]: [null, company] }
+        }
       });
 
       if (!app) {
@@ -178,9 +185,7 @@ export default {
   ),
 
   fetchAllBoughtPlansFromCompany: requiresRights([
-    "view-licences",
-    "view-apps",
-    "view-boughtplans"
+    ["view-licences", "view-apps", "view-boughtplans"]
   ]).createResolver(
     async (_parent, { appid, external }, { models, session }) => {
       try {
@@ -202,7 +207,7 @@ export default {
         WHERE payer = :company
           AND appid = :appid
           ${externalFilter}
-        GROUP BY boughtplan_view.id
+          GROUP BY boughtplan_view.id, boughtplan_view.buyer, boughtplan_view.planid, boughtplan_view.buytime, boughtplan_view.endtime, boughtplan_view.key, boughtplan_view.payer, boughtplan_view.totalprice, boughtplan_view.additionalfeatures, boughtplan_view.totalfeatures, boughtplan_view.stripeplan, boughtplan_view.planinputs, boughtplan_view.disabled, boughtplan_view.usedby, boughtplan_view.alias
       `,
           {
             replacements: { company, appid },
@@ -218,9 +223,7 @@ export default {
   ),
 
   fetchBoughtPlansOfCompany: requiresRights([
-    "view-licences",
-    "view-apps",
-    "view-boughtplans"
+    ["view-licences", "view-apps", "view-boughtplans"]
   ]).createResolver(
     async (_parent, { appid, external }, { models, session }) => {
       try {
@@ -242,7 +245,7 @@ export default {
         WHERE payer = :company
           AND appid = :appid
           ${externalFilter}
-        GROUP BY boughtplan_view.id
+        GROUP BY boughtplan_view.id, boughtplan_view.buyer, boughtplan_view.planid, boughtplan_view.buytime, boughtplan_view.endtime, boughtplan_view.key, boughtplan_view.payer, boughtplan_view.totalprice, boughtplan_view.additionalfeatures, boughtplan_view.totalfeatures, boughtplan_view.stripeplan, boughtplan_view.planinputs, boughtplan_view.disabled, boughtplan_view.usedby, boughtplan_view.alias
       `,
           {
             replacements: { company, appid },
