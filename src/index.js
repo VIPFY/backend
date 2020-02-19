@@ -76,10 +76,15 @@ if (USE_SSH) {
   server = http.createServer(app);
 }
 
-app.set(
-  "trust proxy",
-  "loopback, 172.31.0.0/20, 172.31.16.0/20, 172.31.32.0/20, 2a05:d014:e3c:9001::/64, 2a05:d014:e3c:9002::/64, 2a05:d014:e3c:9003::/64"
-);
+app.set("trust proxy", [
+  "loopback",
+  "172.31.0.0/20",
+  "172.31.16.0/20",
+  "172.31.32.0/20",
+  "2a05:d014:e3c:9001::/64",
+  "2a05:d014:e3c:9002::/64",
+  "2a05:d014:e3c:9003::/64"
+]);
 
 // TODO: we really want rate limiting with different limits per endpoint
 // but we have to build that ourselves, no such packet exists for graphql
@@ -157,6 +162,7 @@ const gqlserver = new ApolloServer({
     },
     session: req.session,
     sessionID: req.sessionID,
+    deviceId: req.headers["x-device"],
     logger,
     SECRET,
     ip: req.ip,
