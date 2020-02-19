@@ -1,5 +1,9 @@
 import { decode } from "jsonwebtoken";
-import { requiresRights, requiresAuth } from "../../helpers/permissions";
+import {
+  requiresRights,
+  requiresAuth,
+  requiresVipfyAdmin
+} from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
 export default {
@@ -138,30 +142,29 @@ export default {
     }
   ),
 
-  fetchVacationRequests: requiresRights([
-    "view-vacation-requests"
-  ]).createResolver(async (_p, args, { models, session }) => {
-    try {
-      const {
-        user: { unitid, company }
-      } = decode(session.token);
+  fetchVacationRequests: requiresVipfyAdmin.createResolver(
+    async (_p, args, { models, session }) => {
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(session.token);
 
-      const data = await models.sequelize.query(
-        `SELECT DISTINCT employee FROM department_employee_view
+        const data = await models.sequelize.query(
+          `SELECT DISTINCT employee FROM department_employee_view
        WHERE id = :company AND employee NOTNULL`,
-        {
-          replacements: { company },
-          type: models.sequelize.QueryTypes.SELECT
+          {
+            replacements: { company },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+
+        let employeeIDs = data.map(({ employee }) => employee);
+        if (args.userid && args.userid == unitid) {
+          employeeIDs = employeeIDs.filter(ID => ID == unitid);
         }
-      );
 
-      let employeeIDs = data.map(({ employee }) => employee);
-      if (args.userid && args.userid == unitid) {
-        employeeIDs = employeeIDs.filter(ID => ID == unitid);
-      }
-
-      const employees = await models.sequelize.query(
-        `
+        const employees = await models.sequelize.query(
+          `
         SELECT uv.id,
         uv.firstname,
         uv.middlename,
@@ -184,15 +187,16 @@ export default {
                         FROM vacation_year_days_data vydd
                         GROUP BY vydd.unitid) vacation_year_days_data ON uv.id = vacation_year_days_data.unitid
           WHERE uv.id IN (:employeeIDs)`,
-        {
-          replacements: { employeeIDs },
-          type: models.sequelize.QueryTypes.SELECT
-        }
-      );
+          {
+            replacements: { employeeIDs },
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
 
-      return employees;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
+        return employees;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
     }
-  })
+  )
 };
