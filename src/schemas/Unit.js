@@ -52,6 +52,8 @@ export const types = `
     vacations: [Vacation]
     supporttoken: String
     assignments: [LicenceAssignment]
+    pseudonymousid: ID
+    pseudonymousdeviceid: ID
   }
 
   type PublicUser {
