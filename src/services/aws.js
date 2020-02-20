@@ -2,7 +2,6 @@ import AWS from "aws-sdk";
 import fs from "fs";
 import moment from "moment";
 import { formatFilename } from "../helpers/functions";
-import { teamPicFolder, userPicFolder } from "../constants";
 
 const s3 = new AWS.S3({ region: "eu-central-1" });
 
@@ -28,7 +27,6 @@ const fileTypeCheck = createWrapper(file => {
       "image/png",
       "image/webp"
     ];
-
     const validFile = validFileExtensions.find(ext => ext == file.mimetype);
 
     if (!validFile) {
@@ -92,21 +90,13 @@ export const uploadUserImage = fileTypeCheck.createWrapper(
 );
 
 export const uploadTeamImage = fileTypeCheck.createWrapper(
-  async ({ stream, filename }, folder) => {
+  async ({ createReadStream, filename }, folder) => {
     const ourFilename = formatFilename(filename);
     const Key = `${folder}/${ourFilename}`;
     const Bucket = "userimages.vipfy.store";
 
     try {
-      const Body = stream;
-
-      const params = {
-        Key,
-        Body,
-        Bucket
-      };
-
-      await s3.upload(params).promise();
+      await s3.upload({ Key, Body: createReadStream, Bucket }).promise();
 
       return Key;
     } catch (err) {
@@ -116,21 +106,13 @@ export const uploadTeamImage = fileTypeCheck.createWrapper(
 );
 
 export const uploadAppImage = fileTypeCheck.createWrapper(
-  async ({ stream, filename }, folder, fileName) => {
+  async ({ createReadStream, filename }, folder, fileName) => {
     const ourFilename = fileName || formatFilename(filename);
     const Key = `${folder}/${ourFilename}`;
     const Bucket = "appimages.vipfy.store";
 
     try {
-      const Body = stream;
-
-      const params = {
-        Key,
-        Body,
-        Bucket
-      };
-
-      await s3.upload(params).promise();
+      await s3.upload({ Key, Body: createReadStream(), Bucket }).promise();
 
       return Key;
     } catch (err) {
@@ -140,35 +122,31 @@ export const uploadAppImage = fileTypeCheck.createWrapper(
 );
 
 export const deleteUserImage = async file => {
-  const params = {
-    Key: file,
-    Bucket: "userimages.vipfy.store"
-  };
+  const params = { Key: file, Bucket: "userimages.vipfy.store" };
   // Use the fucking callback because Amazon can't handle promises
   return s3.deleteObject(params, (err, data) => {
+    // an error occurred
     if (err) {
       throw new Error(err);
     }
-    // an error occurred
+    // successful response
     else {
-      console.log("I AM AMAZON S3", data);
-    } // successful response
+      console.log("\x1b[1m%s\x1b[0m", "I AM THE MIGHTY AMAZON S3", data);
+    }
   });
 };
 
 export const deleteAppImage = async file => {
-  const params = {
-    Key: file,
-    Bucket: "appimages.vipfy.store"
-  };
+  const params = { Key: file, Bucket: "appimages.vipfy.store" };
   return s3.deleteObject(params, (err, data) => {
+    // an error occurred
     if (err) {
       throw new Error(err);
     }
-    // an error occurred
+    // successful response
     else {
-      console.log("I AM AMAZON S3", data);
-    } // successful response
+      console.log("\x1b[1m%s\x1b[0m", "I AM THE MIGHTY AMAZON S3", data);
+    }
   });
 };
 
