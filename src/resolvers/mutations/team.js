@@ -265,7 +265,7 @@ export default {
           await Promise.all(
             deletejson.users.map(async user => {
               const deleteUserJson = user;
-              const userid = user.id;
+              const userid = user.userid;
 
               //START DELETE ONE EMPLOYEE
               const promises = [];
