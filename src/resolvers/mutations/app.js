@@ -241,7 +241,7 @@ export default {
                 loginurl,
                 logo,
                 icon,
-                options: { universallogin: true },
+                options: { type: "universalLogin" },
                 disabled: false,
                 developer: company,
                 supportunit: company,
@@ -254,7 +254,7 @@ export default {
               {
                 ...data,
                 loginurl,
-                options: { universallogin: true },
+                options: { type: "universalLogin" },
                 disabled: false,
                 developer: company,
                 supportunit: company,
@@ -464,7 +464,7 @@ export default {
               {
                 ...data,
                 options: {
-                  universallogin: true,
+                  type: "universalLogin",
                   pending: true,
                   account: {
                     ...data,
@@ -500,7 +500,7 @@ export default {
             appOwned = await models.App.create(
               {
                 ...data,
-                options: { universallogin: true, pending: true, ...data },
+                options: { type: "universalLogin", pending: true, ...data },
                 disabled: false,
                 color: "#f5f5f5",
                 developer: company,
