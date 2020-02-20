@@ -444,6 +444,20 @@ export default {
           } = decode(session.token);
           let appOwned = null;
           let licence = null;
+          let logo = undefined;
+          let icon = undefined;
+
+          if (data.squareImages && data.squareImages.length == 2) {
+            [logo, icon] = await Promise.all(
+              data.squareImages.map(async (upload, index) => {
+                const pic = await upload;
+                const filename = index == 0 ? "logo.png" : "icon.png";
+                console.log(pic, data.name, filename);
+                const name = await uploadAppImage(pic, data.name, filename);
+                return name;
+              })
+            );
+          }
 
           if (data.manager) {
             appOwned = await models.App.create(
@@ -461,7 +475,9 @@ export default {
                 color: "#f5f5f5",
                 developer: company,
                 supportunit: company,
-                owner: company
+                owner: company,
+                logo,
+                icon
               },
               { transaction: ta }
             );
@@ -476,8 +492,7 @@ export default {
                 price: 0.0,
                 options: { external: true, integrated: true },
                 payperiod: { years: 1 },
-                cancelperiod: { secs: 1 },
-                hidden: true
+                cancelperiod: { secs: 1 }
               },
               { transaction: ta }
             );
@@ -490,7 +505,9 @@ export default {
                 color: "#f5f5f5",
                 developer: company,
                 supportunit: company,
-                owner: company
+                owner: company,
+                logo,
+                icon
               },
               { transaction: ta }
             );
@@ -505,8 +522,7 @@ export default {
                 price: 0.0,
                 options: { external: true, integrated: true },
                 payperiod: { years: 1 },
-                cancelperiod: { secs: 1 },
-                hidden: true
+                cancelperiod: { secs: 1 }
               },
               { transaction: ta }
             );
@@ -533,7 +549,7 @@ export default {
             ]
           });
 
-          return true;
+          return appOwned.dataValues.id;
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -1518,7 +1534,28 @@ export default {
   saveExecutionPlan: requiresVipfyAdmin.createResolver(
     async (_p, { appid, key, script }, { models, session }) => {
       try {
-        await models.sequelize.query(
+        const jsonScript = JSON.parse(script);
+        const cleanedScript = [];
+        jsonScript.forEach(o => {
+          let cleanedargs = {};
+          switch (o.operation) {
+            case "click":
+              cleanedargs = { selector: o.args.selector };
+              cleanedScript.push({ operation: o.operation, args: cleanedargs });
+              break;
+            case "waitandfill":
+              cleanedargs = {
+                selector: o.args.selector,
+                fillkey: o.args.fillkey == "email" ? "username" : o.args.fillkey
+              };
+              cleanedScript.push({ operation: o.operation, args: cleanedargs });
+              break;
+            default:
+              throw new Error("Unknown script element");
+          }
+        });
+
+        const res1 = await models.sequelize.query(
           `
           Update app_data set internaldata = jsonb_insert(internaldata, '{execute, -1}', :scriptblock)
           WHERE id = :appid;
@@ -1526,11 +1563,31 @@ export default {
           {
             replacements: {
               appid,
-              scriptblock: JSON.stringify({ key, script })
+              scriptblock: JSON.stringify({
+                key,
+                script: JSON.stringify(cleanedScript)
+              })
             },
             raw: true
           }
         );
+        if (key == "Login") {
+          const res2 = await models.sequelize.query(
+            `
+            Update app_data set options = options || :scriptblock
+            WHERE id = :appid;
+          `,
+            {
+              replacements: {
+                appid,
+                scriptblock: JSON.stringify({
+                  execute: cleanedScript
+                })
+              },
+              raw: true
+            }
+          );
+        }
         const app = await models.sequelize.query(
           `
           SELECT * 
