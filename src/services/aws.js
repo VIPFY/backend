@@ -4,7 +4,7 @@ import moment from "moment";
 import { formatFilename } from "../helpers/functions";
 import { teamPicFolder, userPicFolder } from "../constants";
 
-const s3 = new AWS.S3({ region: "eu-central-1" });
+export const s3 = new AWS.S3({ region: "eu-central-1" });
 
 const createWrapper = wrapper => {
   const baseResolver = wrapper;

@@ -109,6 +109,8 @@ export const mutations = `
   readNotification(id: ID!): Boolean!
   readAllNotifications: Boolean!
 
+  sendUsageData(data: Upload!): Boolean!
+
   checkVat(vat: String!, cc: String!): String!
 
   # for uptime checks and dummy queries

@@ -14,40 +14,55 @@ import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
 
 export default {
-  me: requiresAuth.createResolver(async (_p, _args, { models, session }) => {
-    // they are logged in
-    if (session && session.token) {
-      try {
-        const {
-          user: { unitid }
-        } = decode(session.token);
+  me: requiresAuth.createResolver(
+    async (_p, _args, { models, session, deviceId }) => {
+      // they are logged in
+      if (session && session.token) {
+        try {
+          const {
+            user: { unitid }
+          } = decode(session.token);
 
-        const me = await models.User.findByPk(unitid);
-        const user = await parentAdminCheck(me);
+          const me = await models.User.findByPk(unitid);
+          const user = await parentAdminCheck(me);
 
-        if (me.dataValues.needstwofa) {
-          const hasTwoFa = await models.Login.findOne({
-            where: {
-              unitid: me.dataValues.id,
-              twofactor: { [models.Op.not]: null }
-            },
-            raw: true
-          });
+          if (me.dataValues.needstwofa) {
+            const hasTwoFa = await models.Login.findOne({
+              where: {
+                unitid: me.dataValues.id,
+                twofactor: { [models.Op.not]: null }
+              },
+              raw: true
+            });
 
-          if (hasTwoFa) {
-            user.dataValues.needstwofa = false;
+            if (hasTwoFa) {
+              user.dataValues.needstwofa = false;
+            }
           }
-        }
 
-        return user;
-      } catch (err) {
-        throw new NormalError({
-          message: `Me-Query-ERROR ${err.message}`,
-          internalData: { err }
-        });
-      }
-    } else throw new AuthError();
-  }),
+          const superSecretKey =
+            process.env.PSEUDONYMIZATION_SECRET || "yzSlffJLHor0UPCCLYCL";
+
+          user.dataValues.pseudonymousid = crypto
+            .createHmac("sha256", superSecretKey)
+            .update(me.dataValues.id)
+            .digest("hex");
+
+          user.dataValues.pseudonymousdeviceid = crypto
+            .createHmac("sha256", superSecretKey)
+            .update(deviceId)
+            .digest("hex");
+
+          return user.dataValues;
+        } catch (err) {
+          throw new NormalError({
+            message: `Me-Query-ERROR ${err.message}`,
+            internalData: { err }
+          });
+        }
+      } else throw new AuthError();
+    }
+  ),
 
   fetchSemiPublicUser: requiresRights(["view-users"]).createResolver(
     async (_parent, { userid }, { models }) => {
