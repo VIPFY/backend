@@ -271,6 +271,8 @@ export const types = `
     alias: String
     orbit: String
     user: ID
+    color: String
+    squareImages: [Upload]
   }
 
   type IDID {
@@ -331,7 +333,7 @@ export const mutations = `
 
   trackMinutesSpent(assignmentid: ID!, minutes: Int!): Response!
 
-  failedIntegration(data: SSOResult!): Boolean!
+  failedIntegration(data: SSOResult!): ID!
 
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!

@@ -4,7 +4,7 @@ import crypto from "crypto";
 import moment from "moment";
 import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
-import { checkVat } from "../../helpers/functions";
+import { checkVat, createLog } from "../../helpers/functions";
 import { s3 } from "../../services/aws";
 /* eslint-disable consistent-return, no-unused-vars */
 
@@ -66,16 +66,11 @@ export default {
   },
 
   logSSOError: requiresAuth.createResolver(
-    async (_parent, { eventdata }, { models, ip }) => {
+    async (_parent, { eventdata }, context) => {
       try {
         console.error(eventdata);
 
-        await models.Log.create({
-          ip,
-          eventtype: "logSSOError",
-          eventdata,
-          user: null
-        });
+        await createLog(context, "logSSOError", eventdata, null);
 
         return true;
       } catch (err) {
