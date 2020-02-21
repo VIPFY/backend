@@ -145,13 +145,12 @@ export default {
 
   updateApp: requiresVipfyAdmin.createResolver(
     async (
-      parent,
+      _p,
       { supportid, developerid, appid, app = {}, options },
       { models }
     ) => {
       await models.sequelize.transaction(async ta => {
         const tags = ["support"];
-
         try {
           if (app.image) {
             // eslint-disable-next-line prefer-const
