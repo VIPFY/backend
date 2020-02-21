@@ -7,7 +7,7 @@ test("test the test framework", () => {
   expect(true).toBeTruthy();
 });
 
-describe("calcualtePlanPrice Tests", () => {
+describe("calculatePlanPrice Tests", () => {
   test("test trivial inputs", () => {
     expect(calculatePlanPrice(0, [], {})).toBe(0);
     expect(calculatePlanPrice(1.34, [], {})).toBe(1.34);
@@ -141,35 +141,35 @@ describe("calcualtePlanPrice Tests", () => {
   });
 });
 
-describe("calcualtePlanPrice Tests", () => {
+describe("calculatePlanPrice Tests", () => {
   test("test trivial inputs", () => {
     expect(checkPlanInputsSchema({}, {})).toBeTruthy();
   });
 
-  test("", () => {
-    const schema = [
-      {
-        type: "name",
-        default: "companyname",
-        editable: false,
-        required: true,
-        name: "companyname"
-      },
-      {
-        type: "address",
-        default: "companyaddress.contact",
-        possibleValues: ["companyaddresses", "departmentaddresses"],
-        required: true,
-        name: "companyaddress"
-      },
-      {
-        type: "domainname",
-        possibleValues: ["company.domainlist.domainname"],
-        multiselect: true,
-        required: true,
-        name: "domains"
-      }
-    ];
-    // const input =
-  });
+  // test("", () => {
+  //   const schema = [
+  //     {
+  //       type: "name",
+  //       default: "companyname",
+  //       editable: false,
+  //       required: true,
+  //       name: "companyname"
+  //     },
+  //     {
+  //       type: "address",
+  //       default: "companyaddress.contact",
+  //       possibleValues: ["companyaddresses", "departmentaddresses"],
+  //       required: true,
+  //       name: "companyaddress"
+  //     },
+  //     {
+  //       type: "domainname",
+  //       possibleValues: ["company.domainlist.domainname"],
+  //       multiselect: true,
+  //       required: true,
+  //       name: "domains"
+  //     }
+  //   ];
+  //    const input =
+  // });
 });

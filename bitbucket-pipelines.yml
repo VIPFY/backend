@@ -1,0 +1,9 @@
+image: node:10.15.0
+
+pipelines:
+  default:
+    - step:
+        name: Check whether someone changed the Vipfy Admins
+        script:
+          - npm install
+          - npm test
