@@ -93,7 +93,7 @@ export const queries = `
   fetchEmployees: [DepartmentEmployee]!
   fetchVacationRequests(userid: ID): [VacationUser]!
 
-  fetchUserSecurityOverview: [UserSecurityOverview]!
+  fetchUserSecurityOverview(userid: ID): [UserSecurityOverview]!
   fetchVipfyPlan: BoughtPlan
 `;
 
