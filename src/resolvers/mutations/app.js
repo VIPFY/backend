@@ -1531,8 +1531,8 @@ export default {
         }
       })
   ),
-  saveExecutionPlan: requiresVipfyAdmin.createResolver(
-    async (_p, { appid, key, script }, { models, session }) => {
+  saveExecutionPlan: requiresVipfyAdmin().createResolver(
+    async (_p, { appid, key, script }, { models }) => {
       try {
         const jsonScript = JSON.parse(script);
         const cleanedScript = [];

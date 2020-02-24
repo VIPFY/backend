@@ -600,8 +600,8 @@ export default {
       }
     }
   ),
-  fetchExecutionApps: requiresVipfyAdmin.createResolver(
-    async (_p, { appid }, { models, session }) => {
+  fetchExecutionApps: requiresVipfyAdmin().createResolver(
+    async (_p, { appid }, { models }) => {
       try {
         const apps = await models.sequelize.query(
           `

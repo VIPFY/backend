@@ -257,7 +257,6 @@ export const requiresRights = rights =>
       if (!okay) {
         throw new RightsError();
       }
-      console.log("RIGHTS_CHECK OKAY");
     } catch (err) {
       if (err instanceof RightsError) {
         console.error(err);
@@ -305,28 +304,33 @@ export const requiresMessageGroupRights = rights =>
     }
   });
 
-export const requiresVipfyAdmin = requiresAuth.createResolver(
-  async (_parent, _args, { session }) => {
-    try {
-      const {
-        user: { unitid }
-      } = decode(session.token);
+export const requiresVipfyAdmin = myself =>
+  requiresAuth.createResolver(
+    async (_parent, { userid }, { models, session }) => {
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(session.token);
 
-      const vipfyAdmins = [
-        "f876804e-efd0-48b4-a5b2-807cbf66315f",
-        "98cdb502-51fc-4c0d-a5c7-ee274b6bb7b5",
-        "96d65748-7d36-459a-97d0-7f52a7a4bbf0",
-        "91bd25cb-65cc-4dca-b0c8-285dbf5919f3"
-      ];
+        const vipfyAdmins = [
+          "f876804e-efd0-48b4-a5b2-807cbf66315f",
+          "98cdb502-51fc-4c0d-a5c7-ee274b6bb7b5",
+          "96d65748-7d36-459a-97d0-7f52a7a4bbf0",
+          "91bd25cb-65cc-4dca-b0c8-285dbf5919f3"
+        ];
 
-      if (!vipfyAdmins.find(id => id == unitid)) {
+        if (!vipfyAdmins.find(id => id == unitid)) {
+          if (userid && myself) {
+            await checkCompanyMembership(models, company, userid, "user");
+          } else {
+            throw new AdminError();
+          }
+        }
+      } catch (err) {
         throw new AdminError();
       }
-    } catch (err) {
-      throw new AdminError();
     }
-  }
-);
+  );
 
 export const requiresMachineToken = createResolver(
   async (_parent, _args, { token }) => {

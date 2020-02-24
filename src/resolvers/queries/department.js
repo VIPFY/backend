@@ -148,7 +148,7 @@ export default {
     }
   ),
 
-  fetchVacationRequests: requiresVipfyAdmin.createResolver(
+  fetchVacationRequests: requiresVipfyAdmin(true).createResolver(
     async (_p, args, { models, session }) => {
       try {
         const {
