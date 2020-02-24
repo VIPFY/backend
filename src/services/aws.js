@@ -3,7 +3,7 @@ import fs from "fs";
 import moment from "moment";
 import { formatFilename } from "../helpers/functions";
 
-const s3 = new AWS.S3({ region: "eu-central-1" });
+export const s3 = new AWS.S3({ region: "eu-central-1" });
 
 const createWrapper = wrapper => {
   const baseResolver = wrapper;

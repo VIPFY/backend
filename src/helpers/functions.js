@@ -44,7 +44,7 @@ export const parentAdminCheck = async user => {
 };
 
 export const formatFilename = filename => {
-  const date = moment().format("DDMMYYYY");
+  const date = moment().format("YYYYMMDD");
   const randomString = Math.random()
     .toString(36)
     .substring(2, 7);

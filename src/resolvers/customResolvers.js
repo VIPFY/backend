@@ -164,9 +164,9 @@ const postprocessors = {
   }
 };
 
-const postprocess = async (datatype, value, fields, models) => {
+const postprocess = async (datatype, value, fields, models, ctx) => {
   if (datatype in postprocessors) {
-    return postprocessors[datatype](value, fields, models);
+    return postprocessors[datatype](value, fields, models, ctx);
   } else {
     return value;
   }
@@ -226,11 +226,11 @@ export const find = data => {
             if (requiresPostprocessing && loadMultiple) {
               return await Promise.all(
                 result.map(v =>
-                  postprocess(data[search].datatype, v, fields, models)
+                  postprocess(data[search].datatype, v, fields, models, ctx)
                 )
               );
             } else if (requiresPostprocessing) {
-              return await postprocess(datatype, result, fields, models);
+              return await postprocess(datatype, result, fields, models, ctx);
             } else {
               return result;
             }
@@ -275,7 +275,7 @@ export const find = data => {
 
           if (requiresPostprocessing) {
             return await Promise.all(
-              result.map(v => postprocess(datatype, v, fields, models))
+              result.map(v => postprocess(datatype, v, fields, models, ctx))
             );
           } else {
             return result;
@@ -295,7 +295,7 @@ export const find = data => {
           }
 
           if (requiresPostprocessing) {
-            return await postprocess(datatype, result, fields, models);
+            return await postprocess(datatype, result, fields, models, ctx);
           } else {
             return result;
           }
