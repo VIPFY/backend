@@ -1,12 +1,7 @@
 import moment from "moment";
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
-import {
-  requiresRights,
-  requiresAuth,
-  requiresMachineToken,
-  requiresVipfyAdmin
-} from "../../helpers/permissions";
+import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import {
   createLog,
   createNotification,

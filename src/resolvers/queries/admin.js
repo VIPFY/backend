@@ -8,7 +8,7 @@ import { getAuthStats } from "../../helpers/auth";
 import { version as serverVersion } from "../../../package.json";
 
 export default {
-  adminFetchAllApps: requiresVipfyAdmin.createResolver(
+  adminFetchAllApps: requiresVipfyAdmin().createResolver(
     async (_parent, { limit, offset, sortOptions }, { models }) => {
       try {
         return await models.AppDetails.findAll({
@@ -23,7 +23,7 @@ export default {
     }
   ),
 
-  admin: requiresVipfyAdmin.createResolver(
+  admin: requiresVipfyAdmin().createResolver(
     async (_parent, _args, { models, session }) => {
       // they are logged in
       if (session && session.token) {
@@ -45,7 +45,7 @@ export default {
     }
   ),
 
-  adminFetchAppById: requiresVipfyAdmin.createResolver(
+  adminFetchAppById: requiresVipfyAdmin().createResolver(
     async (parent, { id }, { models }) => {
       try {
         return await models.AppDetails.findOne({ where: { id } });
@@ -55,7 +55,7 @@ export default {
     }
   ),
 
-  allUsers: requiresVipfyAdmin.createResolver(
+  allUsers: requiresVipfyAdmin().createResolver(
     async (parent, { limit, offset }, { models }) => {
       try {
         const users = await models.User.findAll({
@@ -78,7 +78,7 @@ export default {
     }
   ),
 
-  allCompanies: requiresVipfyAdmin.createResolver(
+  allCompanies: requiresVipfyAdmin().createResolver(
     async (parent, { limit, offset }, { models }) => {
       try {
         const companies = await models.Department.findAll({
@@ -93,7 +93,7 @@ export default {
     }
   ),
 
-  fetchServerStats: requiresVipfyAdmin.createResolver(async () => ({
+  fetchServerStats: requiresVipfyAdmin().createResolver(async () => ({
     data: {
       caches: { auth: getAuthStats(), services: serviceStats() },
 

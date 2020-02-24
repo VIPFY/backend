@@ -13,8 +13,8 @@ const processMultipleFiles = async (upload, folder) => {
 };
 
 export default {
-  uploadAppImages: requiresVipfyAdmin.createResolver(
-    async (parent, { images, appid }, { models }) => {
+  uploadAppImages: requiresVipfyAdmin().createResolver(
+    async (_p, { images, appid }, { models }) => {
       try {
         const app = await models.App.findOne({
           where: { id: appid, owner: null },
@@ -36,8 +36,8 @@ export default {
     }
   ),
 
-  deleteImage: requiresVipfyAdmin.createResolver(
-    async (parent, { id, image, type }, { models }) => {
+  deleteImage: requiresVipfyAdmin().createResolver(
+    async (_p, { id, image, type }, { models }) => {
       try {
         if (type == "app") {
           const { name, images } = await models.App.findOne({
@@ -62,7 +62,7 @@ export default {
     }
   ),
 
-  createApp: requiresVipfyAdmin.createResolver(
+  createApp: requiresVipfyAdmin().createResolver(
     async (_parent, { app, options }, context) =>
       context.models.sequelize.transaction(async ta => {
         try {
@@ -143,7 +143,7 @@ export default {
       })
   ),
 
-  updateApp: requiresVipfyAdmin.createResolver(
+  updateApp: requiresVipfyAdmin().createResolver(
     async (
       _p,
       { supportid, developerid, appid, app = {}, options },
