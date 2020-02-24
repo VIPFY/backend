@@ -107,7 +107,7 @@ export default {
 
         const filename = `clicks-${pseudonymousid}-${moment()
           .utc()
-          .valueOf()}.gz`;
+          .valueOf()}.lzma`;
 
         const { stream } = await data;
 
