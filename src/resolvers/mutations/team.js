@@ -834,6 +834,14 @@ export default {
             }
           );
 
+          await createNotification({
+            receiver: unitid,
+            message: `You have removed an team orbit`,
+            icon: "user-friends",
+            link: "teammanager",
+            changed: ["ownTeams", "ownLicences"]
+          });
+
           await createLog(
             ctx,
             "removeTeamOrbitFromTeam",
