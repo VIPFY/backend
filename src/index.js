@@ -8,6 +8,7 @@ import express from "express";
 import fs from "fs";
 import https from "https";
 import http from "http";
+import { performance } from "perf_hooks";
 
 // To create the GraphQl functions
 import { ApolloServer, makeExecutableSchema } from "apollo-server-express";
@@ -23,6 +24,7 @@ import logger from "./loggers";
 import { formatError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
 import { redis } from "./constants";
+import { version as serverVersion } from "../package.json";
 
 // const RateLimit = require("express-rate-limit");
 // const RedisStore = require("rate-limit-redis");
@@ -235,6 +237,41 @@ app.post("/download", async (req, res) => {
     logger.error(err);
     return res.status(500).send({ error: err });
   }
+});
+
+app.get("/health_ujgz1pra68", async (_req, res) => {
+  const t0 = performance.now();
+  res.set("Cache-Control", "no-cache");
+  const result = {
+    postgres: false,
+    redis: false,
+    time: 0,
+    version: serverVersion
+  };
+  const seq = await models.sequelize.query("SELECT 1 as one;", {
+    type: models.sequelize.QueryTypes.SELECT
+  });
+  result.postgres = seq[0].one == 1;
+
+  const testId = `healthcheck-${Math.random()
+    .toString(36)
+    .substring(7)}`;
+  const testValue = Math.random()
+    .toString(36)
+    .substring(7);
+  const r1 = await redis.set(testId, testValue);
+  const r2 = await redis.get(testId);
+  const r3 = await redis.del(testId);
+  result.redis = r1 == "OK" && r2 == testValue && r3 == 1;
+
+  result.time = performance.now() - t0;
+
+  if (!result.postgres || !result.redis || result.time > 30000) {
+    res.status(503);
+    console.error("health check error", { result, seq, r1, r2, r3 });
+  }
+
+  res.json(result);
 });
 
 /* if (USE_XRAY) {
