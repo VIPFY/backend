@@ -24,6 +24,7 @@ import logger from "./loggers";
 import { formatError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
 import { redis } from "./constants";
+import { version as serverVersion } from "../package.json";
 
 // const RateLimit = require("express-rate-limit");
 // const RedisStore = require("rate-limit-redis");
@@ -241,7 +242,12 @@ app.post("/download", async (req, res) => {
 app.get("/health_ujgz1pra68", async (_req, res) => {
   const t0 = performance.now();
   res.set("Cache-Control", "no-cache");
-  const result = { postgres: false, redis: false, time: 0 };
+  const result = {
+    postgres: false,
+    redis: false,
+    time: 0,
+    version: serverVersion
+  };
   const seq = await models.sequelize.query("SELECT 1 as one;", {
     type: models.sequelize.QueryTypes.SELECT
   });
