@@ -11,7 +11,8 @@ import {
   createNotification,
   checkPlanValidity,
   companyCheck,
-  concatName
+  concatName,
+  formatFilename
 } from "../../helpers/functions";
 // import {
 //   addSubscriptionItem,
@@ -228,7 +229,7 @@ export default {
             const [logo, icon] = await Promise.all(
               images.map(async (upload, index) => {
                 const pic = await upload;
-                const filename = index == 0 ? "logo.png" : "icon.png";
+                const filename = formatFilename(index == 0 ? "logo" : "icon");
 
                 const name = await uploadAppImage(pic, ssoData.name, filename);
                 return name;
@@ -451,7 +452,7 @@ export default {
             [logo, icon] = await Promise.all(
               data.squareImages.map(async (upload, index) => {
                 const pic = await upload;
-                const filename = index == 0 ? "logo.png" : "icon.png";
+                const filename = formatFilename(index == 0 ? "logo" : "icon");
                 console.log(pic, data.name, filename);
                 const name = await uploadAppImage(pic, data.name, filename);
                 return name;
