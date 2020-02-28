@@ -123,7 +123,6 @@ export const uploadAppImage = fileTypeCheck.createWrapper(
 
 export const deleteUserImage = async file => {
   const params = { Key: file, Bucket: "userimages.vipfy.store" };
-  // Use the fucking callback because Amazon can't handle promises
   return s3.deleteObject(params).promise();
 };
 
