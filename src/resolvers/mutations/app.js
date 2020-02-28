@@ -644,7 +644,10 @@ export default {
     async (_p, { orbitid, alias, logindata, starttime, endtime }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models } = ctx;
+          const { models, session } = ctx;
+          const {
+            user: { unitid }
+          } = decode(session.token);
 
           await models.sequelize.query(
             `
@@ -676,20 +679,32 @@ export default {
             raw: true
           });
 
-          await createLog(
-            ctx,
-            "createAccount",
-            {
-              orbitid,
-              alias,
-              logindata,
-              starttime,
-              endtime,
-              account,
-              newAccount
-            },
-            ta
-          );
+          await Promise.all([
+            createLog(
+              ctx,
+              "createAccount",
+              {
+                orbitid,
+                alias,
+                logindata,
+                starttime,
+                endtime,
+                account,
+                newAccount
+              },
+              ta
+            ),
+            createNotification(
+              {
+                receiver: unitid,
+                message: `A new account has been created`,
+                icon: "business-time",
+                link: "dashboard",
+                changed: ["ownLicences"]
+              },
+              ta
+            )
+          ]);
 
           return newAccount;
         } catch (err) {
