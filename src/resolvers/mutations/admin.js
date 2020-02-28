@@ -2,7 +2,7 @@ import { decode } from "jsonwebtoken";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { createProduct } from "../../services/stripe";
 import { NormalError } from "../../errors";
-import { createLog } from "../../helpers/functions";
+import { createLog, formatFilename } from "../../helpers/functions";
 import { uploadAppImage, deleteAppImage } from "../../services/aws";
 
 const processMultipleFiles = async (upload, folder) => {
@@ -81,7 +81,7 @@ export default {
           const [logo, icon] = await Promise.all(
             app.images.map(async (upload, index) => {
               const pic = await upload;
-              const filename = index == 0 ? "logo.png" : "icon.png";
+              const filename = formatFilename(index == 0 ? "logo" : "icon");
 
               const name = await uploadAppImage(pic, app.name, filename);
               return name;
@@ -192,7 +192,11 @@ export default {
             }
 
             const logo = await app.logo.logo;
-            const appLogo = await uploadAppImage(logo, folder, "logo.png");
+            const appLogo = await uploadAppImage(
+              logo,
+              folder,
+              formatFilename("logo")
+            );
             app.logo = appLogo;
           }
 
@@ -209,7 +213,11 @@ export default {
             }
 
             const icon = await app.icon.icon;
-            const appIcon = await uploadAppImage(icon, folder, "icon.png");
+            const appIcon = await uploadAppImage(
+              icon,
+              folder,
+              formatFilename("icon")
+            );
             app.icon = appIcon;
           }
 
