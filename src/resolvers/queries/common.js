@@ -11,9 +11,10 @@ export default {
           user: { unitid }
         } = decode(session.token);
 
-        return models.Notification.findAll({
+        return await models.Notification.findAll({
           where: { readtime: { [models.Op.eq]: null }, receiver: unitid },
-          order: [["sendtime", "DESC"]]
+          order: [["sendtime", "DESC"]],
+          raw: true
         });
       } catch (err) {
         throw new NormalError({ message: err.message });
