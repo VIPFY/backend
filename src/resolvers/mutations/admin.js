@@ -191,7 +191,7 @@ export default {
               await deleteAppImage(oldLogo, folder);
             }
 
-            const logo = await app.logo.logo;
+            const logo = await (app.logo.logo || app.logo);
             const appLogo = await uploadAppImage(
               logo,
               folder,
@@ -212,7 +212,7 @@ export default {
               await deleteAppImage(oldIcon, folder);
             }
 
-            const icon = await app.icon.icon;
+            const icon = await (app.icon.icon || app.icon);
             const appIcon = await uploadAppImage(
               icon,
               folder,
