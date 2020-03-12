@@ -55,9 +55,7 @@ export default {
         throw new Error("Prefix doesn't match with provided country");
       }
 
-      const vatNumber = vat.substr(2).trim();
-
-      const checkedData = await checkVat(cc, vatNumber);
+      const checkedData = await checkVat(vat);
 
       return checkedData.name;
     } catch (err) {

@@ -13,7 +13,8 @@ import {
   formatHumanName,
   selectCredit,
   checkPlanValidity,
-  hashPasskey
+  hashPasskey,
+  checkVat
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
@@ -290,11 +291,7 @@ export default {
     (_p, { departmentid, name }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models, session } = ctx;
-
-          const {
-            user: { unitid }
-          } = decode(session.token);
+          const { models } = ctx;
 
           const updatedDepartment = await models.DepartmentData.update(
             { name },
@@ -730,6 +727,47 @@ export default {
     })
   ),
 
+  setVatID: requiresRights(["edit-company"]).createResolver(
+    async (_p, { vatID }, { models, session }) => {
+      try {
+        const {
+          user: { company: companyID }
+        } = decode(session.token);
+
+        const company = await models.Department.findOne({
+          where: { unitid: companyID },
+          raw: true
+        });
+
+        let legalinformation;
+        const sanitizedVatID = vatID.replace(/[\s]*/g, "");
+
+        if (company.legalinformation) {
+          if (company.legalinformation.vatID) {
+            throw new Error("Please contact support to update your vatID");
+          } else {
+            legalinformation = {
+              ...company.legalinformation,
+              vatID: sanitizedVatID
+            };
+          }
+        } else {
+          legalinformation = { vatID: sanitizedVatID };
+        }
+
+        await checkVat(sanitizedVatID);
+
+        await models.DepartmentData.update(
+          { legalinformation },
+          { where: { unitid: companyID } }
+        );
+        return { ...company, legalinformation };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   deleteUser: requiresRights(["delete-employees"]).createResolver(
     async (_p, { userid, autodelete }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
@@ -748,8 +786,6 @@ export default {
               transaction: ta
             }
           );
-
-          //oldUser all informations
 
           //START DELETE ONE EMPLOYEE
           const promises = [];
