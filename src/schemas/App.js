@@ -357,4 +357,6 @@ export const mutations = `
   editVacation(vacationid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
 
   saveExecutionPlan(appid: ID!, key: String!, script: JSON!): ExecuteApp!
+
+  saveCookies(cookies: JSON): Boolean
   `;

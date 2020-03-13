@@ -512,7 +512,8 @@ export default {
           ok: true,
           twofactor: secret.otpauth_url,
           unitid: emailExists.unitid,
-          token
+          token,
+          config: emailExists.config
         };
       } else {
         // User doesn't have the property unitid, so we have to pass emailExists
@@ -522,7 +523,7 @@ export default {
 
         await createLog(ctx, "signIn", { user: emailExists, email }, null);
 
-        return { ok: true, token };
+        return { ok: true, token, config: emailExists.config };
       }
     } catch (err) {
       logger.log(err);
