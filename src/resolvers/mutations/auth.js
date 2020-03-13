@@ -522,7 +522,7 @@ export default {
 
         await createLog(ctx, "signIn", { user: emailExists, email }, null);
 
-        return { ok: true, token, config: emailExists.config };
+        return { ok: true, token };
       }
     } catch (err) {
       logger.log(err);

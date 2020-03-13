@@ -59,7 +59,6 @@ export const types = `
     token: String
     twofactor: String
     unitid: ID
-    config: JSON
   }
 
 # The user gets the email where the new auth is send back
