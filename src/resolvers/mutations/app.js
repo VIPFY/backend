@@ -1552,7 +1552,8 @@ export default {
               cleanedScript.push({ operation: o.operation, args: cleanedargs });
               break;
             default:
-              throw new Error("Unknown script element");
+              cleanedScript.push({ operation: o.operation, args: o.args });
+            //throw new Error("Unknown script element");
           }
         });
 
@@ -1605,6 +1606,33 @@ export default {
         return app[0];
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+  saveCookies: requiresAuth.createResolver(
+    async (_p, { cookies }, { models, session }) => {
+      const {
+        user: { unitid }
+      } = decode(session.token);
+      try {
+        await models.sequelize.query(
+          `
+          Update human_data set config = config || :cookies
+          WHERE unitid = :unitid;
+        `,
+          {
+            replacements: {
+              unitid,
+              cookies: JSON.stringify({ cookies })
+            },
+            raw: true
+          }
+        );
+
+        return true;
+      } catch (err) {
+        console.log("ERROR", err);
+        return false;
       }
     }
   )
