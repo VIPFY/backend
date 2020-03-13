@@ -131,7 +131,7 @@ export default {
   ),
 
   deleteAddress: requiresRights(["delete-address"]).createResolver(
-    async (parent, { id, department }, ctx) =>
+    async (_parent, { id, department }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const { models, session } = ctx;
@@ -158,9 +158,15 @@ export default {
             }
           }
 
-          const oldAddress = await models.Phone.findOne({
+          const oldAddress = await models.Address.findOne({
             where: { id, unitid }
           });
+
+          const billingAddress = oldAddress.tags.find(tag => tag == "billing");
+
+          if (billingAddress) {
+            throw new Error("You can't delete your billing address!");
+          }
 
           const p1 = models.Address.destroy({
             where: { id, unitid },

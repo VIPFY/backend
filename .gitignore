@@ -2,7 +2,8 @@ node_modules/
 Vipfy-4c183d5274a4.json
 server.log
 dist/
-src/logs/
+src/logs/**
+src/helpers/play.js
 coverage/
 package-lock.json
 .env.dev

@@ -59,7 +59,7 @@ export default {
                 name: data.card.name,
                 email,
                 ip: data.client_ip,
-                vatId: legalinformation.vatId ? legalinformation.vatId : ""
+                vatID: legalinformation.vatID || ""
               },
               address: {
                 address_city: data.card.address_city,

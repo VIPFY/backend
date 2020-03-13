@@ -289,8 +289,8 @@ export default async (unitid, throwErr) =>
           buyer: {
             company: company.name,
             // taxId:
-            //   company.legalinformation && company.legalinformation.vatId
-            //     ? company.legalinformation.vatId
+            //   company.legalinformation && company.legalinformation.vatID
+            //     ? company.legalinformation.vatID
             //     : "",
             address: { street, zip, city, country },
             phone,

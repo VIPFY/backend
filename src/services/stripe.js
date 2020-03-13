@@ -73,7 +73,7 @@ export const createCustomer = async ({ customer, address, source }) => {
         ip: customer.ip
       },
       tax_info: {
-        tax_id: customer.vatId,
+        tax_id: customer.vatID,
         type: "vat"
       },
       shipping: {
