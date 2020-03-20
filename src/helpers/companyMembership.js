@@ -147,7 +147,7 @@ export const checkOrbitMembership = async (models, company, orbitid) => {
   }
 };
 
-export const resetCompanyMembershipCache = async (company, entityid) => {
+export const resetCompanyMembershipCache = async (company, entityID) => {
   // sanity check
   if (`${company}`.indexOf("-") !== -1) {
     throw new Error("company must be a number");

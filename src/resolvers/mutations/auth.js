@@ -86,14 +86,15 @@ export default {
         }
 
         // Check whether the email is already in use
-        const emailInUse = await models.Email.findOne({
+        const userExists = await models.User.findOne({
           where: { email },
           raw: true
         });
 
-        if (emailInUse) {
+        if (userExists) {
           throw new Error("Email already in use!");
         }
+
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
