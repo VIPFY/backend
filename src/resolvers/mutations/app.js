@@ -958,7 +958,11 @@ export default {
   ),
 
   changeOrbit: requiresRights(["edit-licences"]).createResolver(
-    async (_p, { orbitid, alias, loginurl, starttime, endtime }, ctx) =>
+    async (
+      _p,
+      { orbitid, alias, loginurl, starttime, endtime, selfhosting },
+      ctx
+    ) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
@@ -984,7 +988,8 @@ export default {
             {
               key: {
                 ...oldorbit.key,
-                domain: loginurl
+                domain: loginurl,
+                selfhosting
               },
               alias
             },
