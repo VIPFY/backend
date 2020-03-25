@@ -351,7 +351,7 @@ export const mutations = `
   terminateAssignAccount(assignmentid: ID!, endtime: Date, isNull: Boolean): LicenceAssignment
 
   createOrbit(planid: ID!, alias: String, options: JSON, starttime: Date, endtime: Date): BoughtPlan
-  changeOrbit(orbitid: ID!, alias: String, loginurl: String, starttime: Date, endtime: Date): Orbit!
+  changeOrbit(orbitid: ID!, alias: String, loginurl: String, starttime: Date, endtime: Date, selfhosting: Boolean): Orbit!
 
   createVacation(userid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
   editVacation(vacationid: ID!, starttime: Date, endtime: Date, assignments: [JSON]): Vacation
