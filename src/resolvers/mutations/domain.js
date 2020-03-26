@@ -508,7 +508,7 @@ export default {
             } else {
               totalprice += 20;
             }
-
+            //TODO: fix it with new BoughtPlanPeriods!!
             const bpOld = models.BoughtPlan.update(
               { endtime, planid: 25 },
               {
@@ -555,7 +555,7 @@ export default {
               cancelledDomain = await cancelSubscription(
                 predecessor.stripeplan
               );
-
+              //TODO: fix it with new BoughtPlanPeriods and PlanIDs!!
               p1 = models.BoughtPlan.update(
                 {
                   endtime: new Date(cancelledDomain.current_period_end * 1000),

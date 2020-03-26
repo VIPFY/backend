@@ -375,7 +375,7 @@ export default {
                           }
                         );
 
-                        await models.BoughtPlan.update(
+                        await models.BoughtPlanPeriod.update(
                           {
                             endtime
                           },
@@ -815,7 +815,7 @@ export default {
             noAccountLeft
           ) {
             promises.push(
-              models.BoughtPlan.update(
+              models.BoughtPlanPeriod.update(
                 {
                   endtime
                 },
@@ -993,7 +993,7 @@ export default {
 
                     console.log("BOUGHTPLAN", boughtplan);
 
-                    await models.BoughtPlan.update(
+                    await models.BoughtPlanPeriod.update(
                       {
                         endtime
                       },
