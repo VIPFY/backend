@@ -792,29 +792,9 @@ export default {
                   raw: true,
                   transaction: ta
                 });
-
-                const licences = await models.sequelize.query(
-                  `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
-                  {
-                    replacements: { licenceid: licenceRight.licenceid },
-                    type: models.sequelize.QueryTypes.SELECT,
-                    transaction: ta
-                  }
-                );
-
-                if (licences.length == 0) {
-                  await models.LicenceData.update(
-                    { endtime: models.Op.sequelize.fn("NOW") },
-                    {
-                      where: { id: licenceRight.licenceid },
-                      transaction: ta
-                    }
-                  );
-
-                  const otherlicences = await models.sequelize.query(
-                    `Select distinct (lva.*)
-                    from licence_view lva left outer join licence_view lvb on lva.boughtplanid = lvb.boughtplanid
-                    where lvb.id = :licenceid and lva.starttime < now() and lva.endtime > now();`,
+                if (licenceRight) {
+                  const licences = await models.sequelize.query(
+                    `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
                     {
                       replacements: { licenceid: licenceRight.licenceid },
                       type: models.sequelize.QueryTypes.SELECT,
@@ -822,9 +802,19 @@ export default {
                     }
                   );
 
-                  if (otherlicences.length == 0) {
-                    const boughtplan = await models.sequelize.query(
-                      `SELECT boughtplanid FROM licence_view WHERE id = :licenceid`,
+                  if (licences.length == 0) {
+                    await models.LicenceData.update(
+                      { endtime: models.Op.sequelize.fn("NOW") },
+                      {
+                        where: { id: licenceRight.licenceid },
+                        transaction: ta
+                      }
+                    );
+
+                    const otherlicences = await models.sequelize.query(
+                      `Select distinct (lva.*)
+                    from licence_view lva left outer join licence_view lvb on lva.boughtplanid = lvb.boughtplanid
+                    where lvb.id = :licenceid and lva.starttime < now() and lva.endtime > now();`,
                       {
                         replacements: { licenceid: licenceRight.licenceid },
                         type: models.sequelize.QueryTypes.SELECT,
@@ -832,21 +822,32 @@ export default {
                       }
                     );
 
-                    const oldperiod = await models.BoughtPlanPeriodView.findOne(
-                      {
-                        where: { boughtplanid: boughtplan[0].boughtplanid },
-                        raw: true,
-                        transaction: ta
-                      }
-                    );
+                    if (otherlicences.length == 0) {
+                      const boughtplan = await models.sequelize.query(
+                        `SELECT boughtplanid FROM licence_view WHERE id = :licenceid`,
+                        {
+                          replacements: { licenceid: licenceRight.licenceid },
+                          type: models.sequelize.QueryTypes.SELECT,
+                          transaction: ta
+                        }
+                      );
 
-                    await models.BoughtPlanPeriod.update(
-                      { endtime: models.Op.sequelize.fn("NOW") },
-                      {
-                        where: { id: oldperiod.id },
-                        transaction: ta
-                      }
-                    );
+                      const oldperiod = await models.BoughtPlanPeriodView.findOne(
+                        {
+                          where: { boughtplanid: boughtplan[0].boughtplanid },
+                          raw: true,
+                          transaction: ta
+                        }
+                      );
+
+                      await models.BoughtPlanPeriod.update(
+                        { endtime: models.Op.sequelize.fn("NOW") },
+                        {
+                          where: { id: oldperiod.id },
+                          transaction: ta
+                        }
+                      );
+                    }
                   }
                 }
               })
