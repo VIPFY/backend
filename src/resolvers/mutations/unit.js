@@ -537,12 +537,20 @@ export default {
           );
         }
 
-        const targetIsAdmin = (
-          await ctx.models.User.findOne({ where: { id: userid } })
-        ).isadmin;
+        const target = await ctx.models.User.findOne({ where: { id: userid } });
 
-        if (targetIsAdmin) {
+        if (target.isadmin) {
           throw new Error("You can't impersonate an administrator");
+        }
+
+        if (
+          target.companyban ||
+          target.deleted ||
+          target.banned ||
+          target.suspended
+        ) {
+          // this might be useful to allow, but currently requiresAuth won't accept you anyways
+          throw new Error("You can't impersonate this user");
         }
 
         const token = await createAdminToken({
