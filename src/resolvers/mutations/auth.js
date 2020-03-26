@@ -86,7 +86,7 @@ export default {
         }
 
         // Check whether the email is already in use
-        const userExists = await models.User.findOne({
+        const userExists = await models.Email.findOne({
           where: { email },
           raw: true
         });
