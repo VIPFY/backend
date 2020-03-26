@@ -599,7 +599,6 @@ export default {
     try {
       const { user, impersonator } = decode(ctx.session.token);
 
-      await companyCheck(user.company, impersonator, user.unitid);
       const listName = `${IMPERSONATE_PREFIX}${impersonator}`;
       const sessionIDs = await ctx.redis.lrange(listName, 0, -1);
 
