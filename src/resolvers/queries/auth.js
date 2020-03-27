@@ -8,7 +8,8 @@ import {
   concatName,
   check2FARights,
   fetchSessions,
-  parseSessions
+  parseSessions,
+  generateFakeKey
 } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
@@ -177,16 +178,7 @@ export default {
       });
 
       if (!emailExists || !emailExists.passwordsalt) {
-        // generate fake salt in an attempt to make it less obvious if the user exists
-        // this is vulnerable against timing attacks
-        // make fake salt deterministic, otherwise calling this twice will reveal if the user exists
-        const crypt = crypto.createHmac(
-          "sha256",
-          "eAiJzhVOvT0PeSTDkeWrbLICTE7aeTQ1"
-        );
-        crypt.update(email);
-        const salt = crypt.digest("hex").substring(0, 32);
-        return { id: email, salt, ops: 2, mem: 67108864 };
+        return generateFakeKey(email);
       }
 
       return {
@@ -240,5 +232,29 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
+
+  fetchRecoveryKey: async (_p, { email }, { models }) => {
+    try {
+      const emailExists = await models.Login.findOne({
+        where: {
+          email,
+          deleted: { [models.Op.or]: [null, false] },
+          banned: { [models.Op.or]: [null, false] },
+          suspended: { [models.Op.or]: [null, false] }
+        },
+        raw: true
+      });
+
+      if (!emailExists || !emailExists.recoveryprivatekey) {
+        const { salt } = await generateFakeKey(email);
+
+        return salt;
+      }
+
+      return emailExists.recoveryprivatekey;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };

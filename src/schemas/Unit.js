@@ -54,6 +54,8 @@ export const types = `
     assignments: [LicenceAssignment]
     pseudonymousid: ID
     pseudonymousdeviceid: ID
+    recoverypublickey: String
+    recoveryprivatekey: String  
   }
 
   type PublicUser {
@@ -169,7 +171,6 @@ export const mutations = `
 
   # Agree to Vipfy Terms of Service and Privacy Agreement
   agreeTos: Response!
-
   requestVacation(startDate: Date!, endDate: Date!, days: Int!): VacationRequestResponse!
   deleteVacationRequest(id: ID!): Boolean!
   requestHalfVacationDay(day: Date!): VacationRequestResponse!

@@ -44,6 +44,12 @@ export const types = `
     passwordlength: Int!
     passwordstrength: Int!
   }
+
+  input RecoveryKeyInput {
+    privatekey: String!
+    publickey: String!
+    encryptedby: String
+  }
 `;
 
 export const queries = `
@@ -53,6 +59,7 @@ export const queries = `
   # Fetches all Sessions of a specific User
   fetchUsersSessions(userid: ID!): [SessionResponse!]!
 
+  fetchRecoveryKey(email: String!): String!
   fetchPwParams(email: String!): PasswordParams!
   fetchKey(id: ID!): Key
   fetchKeys(publickey: ID!): [Key]
@@ -69,6 +76,9 @@ export const mutations = `
   signOutSession(sessionID: String!): [SessionResponse!]!
   signOutUser(sessionID: String!, userid: ID!): [SessionResponse!]!
   signOutEverywhere(userid: ID!): Boolean!
+
+  saveRecoveryKey(keyData: RecoveryKeyInput): User!
+  recoverPassword(keyData: RecoveryKeyInput, email: String!): Boolean!
 
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!

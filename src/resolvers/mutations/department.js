@@ -930,7 +930,7 @@ export default {
           await models.Unit.update(
             { deleted: true },
             { where: { id: userid } },
-            { transaction: ta, returning: true }
+            { transaction: ta }
           );
 
           await createLog(ctx, "fireEmployee", { userid }, ta);

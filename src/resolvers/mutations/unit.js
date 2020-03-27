@@ -1,4 +1,4 @@
-import { decode, verify } from "jsonwebtoken";
+import { decode } from "jsonwebtoken";
 import iplocate from "node-iplocate";
 import moment from "moment";
 import "moment-feiertage";

@@ -1053,5 +1053,60 @@ export default {
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
-    })
+    }),
+
+  saveRecoveryKey: requiresAuth.createResolver(
+    async (_p, { keyData: { privatekey, publickey } }, { models, session }) => {
+      try {
+        const {
+          user: { unitid }
+        } = decode(session.token);
+
+        const user = await models.User.findOne({
+          where: { id: unitid },
+          raw: true
+        });
+
+        if (!user || user.recoverypublickey) {
+          throw new Error("The user already has a recovery key!");
+        }
+
+        await models.Human.update(
+          { recoverypublickey: publickey, recoveryprivatekey: privatekey },
+          { where: { unitid } }
+        );
+
+        return {
+          ...user,
+          recoverypublickey: publickey,
+          recoveryprivatekey: privatekey
+        };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  recoverPassword: async (_p, { keyData, email }, { models }) => {
+    try {
+      const { privatekey, publickey } = keyData;
+      const user = await models.Login.findOne({
+        where: { email },
+        raw: true
+      });
+      console.log("\x1b[1m%s\x1b[0m", "LOG user", user);
+      if (
+        privatekey != user.recoveryprivatekey ||
+        publickey != user.recoverypublickey
+      ) {
+        throw new Error("Keys don't match!");
+      }
+      console.log("HEY, seems like the Keys Match :-D");
+      throw new Error("DEBUG");
+
+      return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };

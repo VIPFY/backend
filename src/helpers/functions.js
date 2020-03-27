@@ -5,6 +5,7 @@ import zxcvbn from "zxcvbn";
 import iplocate from "node-iplocate";
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
+import crypto from "crypto";
 import { createSubscription } from "../services/stripe";
 import { NormalError, RightsError } from "../errors";
 import {
@@ -753,3 +754,21 @@ const dummykey = "$2b$2$KVEGTwP0a6uoUEngbFKlYePNoPRm6XCb322222222221111111111";
 
 export const comparePasskey = async (data, hashed) =>
   bcrypt.compare(data, hashed || dummykey);
+
+/**
+ * Generate fake salt in an attempt to make it less obvious if the user exists.
+ * This is vulnerable against timing attacks. Make fake salt deterministic,
+ * otherwise calling this twice will reveal if the user exists.
+ * @param {string} email
+ * @returns {Object} PasswordParams
+ * @property {string} id
+ * @property {string} salt
+ * @property {number} ops
+ * @property {number} mem
+ */
+export function generateFakeKey(email) {
+  const crypt = crypto.createHmac("sha256", "eAiJzhVOvT0PeSTDkeWrbLICTE7aeTQ1");
+  crypt.update(email);
+  const salt = crypt.digest("hex").substring(0, 32);
+  return { id: email, salt, ops: 2, mem: 67108864 };
+}
