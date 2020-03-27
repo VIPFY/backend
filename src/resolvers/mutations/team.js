@@ -248,7 +248,7 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company }
+            user: { unitid, company }
           } = decode(session.token);
 
           await teamCheck(company, teamid);
@@ -459,6 +459,17 @@ export default {
               )
             );
           }
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `A team has been removed`,
+              icon: "business-time",
+              link: `teammanager`,
+              changed: ["employees"]
+            },
+            ta
+          );
 
           return true;
         } catch (err) {

@@ -880,6 +880,17 @@ export default {
 
           await resetCompanyMembershipCache(company, unitid.id);
 
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `An employee has been removed`,
+              icon: "business-time",
+              link: `employeemanager`,
+              changed: ["employees"]
+            },
+            ta
+          );
+
           return true;
         } catch (err) {
           throw new NormalError({
