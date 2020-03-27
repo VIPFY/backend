@@ -275,8 +275,7 @@ export default {
               price: 0.0,
               options: { external: true, integrated: true },
               payperiod: { years: 1 },
-              cancelperiod: { secs: 1 },
-              hidden: true
+              cancelperiod: { secs: 1 }
             },
             { transaction: ta }
           );
@@ -1111,6 +1110,23 @@ export default {
                 )
               );
             }
+            await models.DepartmentApp.update(
+              {
+                endtime
+              },
+              {
+                where: {
+                  boughtplanid: orbitid,
+                  endtime: {
+                    [models.Op.or]: {
+                      [models.Op.gt]: endtime,
+                      [models.Op.eq]: Infinity
+                    }
+                  }
+                },
+                transaction: ta
+              }
+            );
           }
 
           await createLog(
