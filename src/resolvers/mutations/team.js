@@ -30,17 +30,14 @@ export default {
             user: { unitid, company }
           } = decode(session.token);
 
-          const { name, picture, ...teamdata } = team;
+          const { name, profilepicture, ...teamdata } = team;
           const unitArgs = {};
-          if (picture) {
-            const parsedFile = await picture;
+          if (profilepicture) {
+            const parsedFile = await profilepicture;
 
-            const profilepicture = await uploadTeamImage(
-              parsedFile,
-              teamPicFolder
-            );
+            const pic = await uploadTeamImage(parsedFile, teamPicFolder);
 
-            unitArgs.profilepicture = profilepicture;
+            unitArgs.profilepicture = pic;
           }
 
           const unit = await models.Unit.create(unitArgs, { transaction: ta });
@@ -61,7 +58,7 @@ export default {
 
           const [department, parentUnit] = await Promise.all([p1, p2]);
 
-          //add employees
+          // add employees
 
           const employeepromises = [];
           let counter = 0;
@@ -234,6 +231,7 @@ export default {
 
           return unit.dataValues.id;
         } catch (err) {
+          console.error("\x1b[1m%s\x1b[0m", "LOG err", err);
           throw new NormalError({
             message: err.message,
             internalData: { err }
