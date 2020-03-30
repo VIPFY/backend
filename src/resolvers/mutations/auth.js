@@ -739,6 +739,10 @@ export default {
             throw new Error("Password too weak!");
           }
 
+          if (oldPasskey == newPasskey) {
+            throw new Error("You can't use the same password again!");
+          }
+
           if (oldPasskey.length != 128 || newPasskey.length != 128) {
             throw new Error("Incompatible passkey format, try updating VIPFY");
           }
