@@ -378,7 +378,7 @@ export default {
                             endtime
                           },
                           {
-                            where: { id: boughtplan[0].boughtplanid },
+                            where: { boughtplanid: boughtplan[0].boughtplanid },
                             transaction: ta
                           }
                         );
@@ -756,7 +756,7 @@ export default {
                     promises.push(
                       models.LicenceRight.update(
                         {
-                          endtime
+                          endtime: endtime || new Date()
                         },
                         {
                           where: { id: as.id },
@@ -806,7 +806,7 @@ export default {
                 promises.push(
                   models.LicenceData.update(
                     {
-                      endtime
+                      endtime: endtime || new Date()
                     },
                     {
                       where: { id: a.id },
@@ -822,15 +822,15 @@ export default {
 
           if (
             deletejson.orbit &&
-            deletejson.teams.every(t => t.bool) &&
+            deletejson.teams.every(t => t && t.bool) &&
             noAccountLeft
           ) {
             promises.push(
               models.BoughtPlanPeriod.update(
                 {
-                  endtime
+                  endtime: endtime || new Date()
                 },
-                { where: { id: orbitid }, transaction: ta }
+                { where: { boughtplanid: orbitid }, transaction: ta }
               )
             );
           }
@@ -1009,7 +1009,7 @@ export default {
                         endtime
                       },
                       {
-                        where: { id: boughtplan[0].boughtplanid },
+                        where: { boughtplanid: boughtplan[0].boughtplanid },
                         transaction: ta
                       }
                     );
