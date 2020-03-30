@@ -748,47 +748,15 @@ export default {
           // Delete all accounts
           let noAccountLeft = true;
           deletejson.accounts.forEach(a => {
-            // Delete all assignments of a
-            Promise.all(
-              a.assignments.map(async as => {
-                if (as.bool) {
-                  promises.push(
-                    models.LicenceRight.update(
-                      {
-                        endtime
-                      },
-                      {
-                        where: { id: as.id },
-                        transaction: ta
-                      }
-                    )
-                  );
-                } else {
-                  // Remove team tag and assignoption
-                  const checkassignment = await models.LicenceRight.findOne({
-                    where: { id: as.id },
-                    raw: true,
-                    transaction: ta
-                  });
-                  if (
-                    checkassignment.tags &&
-                    checkassignment.tags.includes("teamlicence") &&
-                    checkassignment.options &&
-                    checkassignment.options.teamlicence == teamid
-                  ) {
-                    let newtags = checkassignment.tags;
-                    newtags.splice(
-                      checkassignment.tags.findIndex(e => e == "teamlicence"),
-                      1
-                    );
+            if (a) {
+              // Delete all assignments of a
+              Promise.all(
+                a.assignments.map(async as => {
+                  if (as.bool) {
                     promises.push(
                       models.LicenceRight.update(
                         {
-                          tags: newtags,
-                          options: {
-                            ...checkassignment.options,
-                            teamlicence: undefined
-                          }
+                          endtime
                         },
                         {
                           where: { id: as.id },
@@ -796,25 +764,59 @@ export default {
                         }
                       )
                     );
+                  } else {
+                    // Remove team tag and assignoption
+                    const checkassignment = await models.LicenceRight.findOne({
+                      where: { id: as.id },
+                      raw: true,
+                      transaction: ta
+                    });
+                    if (
+                      checkassignment.tags &&
+                      checkassignment.tags.includes("teamlicence") &&
+                      checkassignment.options &&
+                      checkassignment.options.teamlicence == teamid
+                    ) {
+                      let newtags = checkassignment.tags;
+                      newtags.splice(
+                        checkassignment.tags.findIndex(e => e == "teamlicence"),
+                        1
+                      );
+                      promises.push(
+                        models.LicenceRight.update(
+                          {
+                            tags: newtags,
+                            options: {
+                              ...checkassignment.options,
+                              teamlicence: undefined
+                            }
+                          },
+                          {
+                            where: { id: as.id },
+                            transaction: ta
+                          }
+                        )
+                      );
+                    }
                   }
-                }
-              })
-            );
-
-            if (a.bool && a.assignments.every(as => as.bool)) {
-              promises.push(
-                models.LicenceData.update(
-                  {
-                    endtime
-                  },
-                  {
-                    where: { id: a.id },
-                    transaction: ta
-                  }
-                )
+                })
               );
-            } else {
-              noAccountLeft = false;
+
+              if (a.bool && a.assignments.every(as => as.bool)) {
+                promises.push(
+                  models.LicenceData.update(
+                    {
+                      endtime
+                    },
+                    {
+                      where: { id: a.id },
+                      transaction: ta
+                    }
+                  )
+                );
+              } else {
+                noAccountLeft = false;
+              }
             }
           });
 
