@@ -2,9 +2,13 @@ import { duration } from "moment";
 import { RedisPubSub } from "graphql-redis-subscriptions";
 import Redis from "ioredis";
 
+const NOTIFICATION_CHANNEL = process.env.NOTIFICATION_CHANNEL
+  ? `${process.env.NOTIFICATION_CHANNEL}.`
+  : "";
+
 // Subscription which will listen when an user gets send a new message
-export const NEW_MESSAGE = "NEW_MESSAGE";
-export const NEW_NOTIFICATION = "NEW_NOTIFICATION";
+export const NEW_MESSAGE = `${NOTIFICATION_CHANNEL}NEW_MESSAGE`;
+export const NEW_NOTIFICATION = `${NOTIFICATION_CHANNEL}NEW_NOTIFICATION`;
 
 const options = {
   host: process.env.REDIS_HOST,
