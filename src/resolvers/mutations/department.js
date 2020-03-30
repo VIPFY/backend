@@ -875,27 +875,19 @@ export default {
           ]);
 
           await Promise.all([
-            createNotification({
-              receiver: unitid,
-              message: `User ${userid} was removed from the company`,
-              icon: "user-minus",
-              link: "employeemanager",
-              changed: ["employees"]
-            }),
+            createNotification(
+              {
+                receiver: unitid,
+                message: `User ${userid} was removed from the company`,
+                icon: "user-minus",
+                link: "employeemanager",
+                changed: ["employees"]
+              },
+              ta
+            ),
             createLog(ctx, "deleteUser", { oldUser }, ta),
             resetCompanyMembershipCache(company, unitid.id)
           ]);
-
-          await createNotification(
-            {
-              receiver: unitid,
-              message: `An employee has been removed`,
-              icon: "business-time",
-              link: `employeemanager`,
-              changed: ["employees"]
-            },
-            ta
-          );
 
           return true;
         } catch (err) {
