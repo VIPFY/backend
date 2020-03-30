@@ -14,9 +14,7 @@ export default {
           user: { company }
         } = decode(session.token);
 
-        return await models.Department.findOne({
-          where: { unitid: company }
-        });
+        return await models.Department.findOne({ where: { unitid: company } });
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

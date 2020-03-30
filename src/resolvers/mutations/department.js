@@ -886,6 +886,17 @@ export default {
             resetCompanyMembershipCache(company, unitid.id)
           ]);
 
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `An employee has been removed`,
+              icon: "business-time",
+              link: `employeemanager`,
+              changed: ["employees"]
+            },
+            ta
+          );
+
           return true;
         } catch (err) {
           throw new NormalError({
@@ -969,5 +980,61 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     })
+  ),
+
+  updateCompanyPic: requiresRights(["edit-department"]).createResolver(
+    async (_p, { file }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        try {
+          const { models } = ctx;
+          const {
+            user: { company, unitid }
+          } = decode(ctx.session.token);
+
+          const parsedFile = await file;
+          const profilepicture = await uploadUserImage(
+            parsedFile,
+            userPicFolder
+          );
+
+          const oldUnit = await models.Department.findOne({
+            where: { unitid: company },
+            raw: true,
+            transaction: ta
+          });
+          console.log("\x1b[1m%s\x1b[0m", "LOG oldUnit", oldUnit);
+          const [, updatedUnit] = await models.Unit.update(
+            { profilepicture },
+            { where: { id: company }, returning: true, transaction: ta }
+          );
+
+          await Promise.all([
+            createLog(ctx, "updateCompanyPic", { oldUnit, updatedUnit }, ta),
+            createNotification(
+              {
+                receiver: unitid,
+                show: true,
+                message:
+                  "You successfully updated the companies profile picture",
+                icon: "image",
+                changed: ["company"],
+                link: "vacation"
+              },
+              ta,
+              {
+                company,
+                message: `User ${unitid} updated the companies profile picture`
+              }
+            )
+          ]);
+
+          return { ...oldUnit, profilepicture };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };
