@@ -1,5 +1,4 @@
 import { decode } from "jsonwebtoken";
-import { parseName } from "humanparser";
 import {
   userPicFolder,
   MAX_PASSWORD_LENGTH,
@@ -12,13 +11,12 @@ import {
   createNotification,
   formatHumanName,
   selectCredit,
-  checkPlanValidity,
   hashPasskey,
   checkVat
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
-import { uploadUserImage, deleteUserImage } from "../../services/aws";
+import { uploadUserImage } from "../../services/aws";
 
 export default {
   createEmployee: requiresRights(["create-employees"]).createResolver(
@@ -876,20 +874,20 @@ export default {
             )
           ]);
 
-          await createLog(ctx, "deleteUser", { oldUser }, ta);
-
-          await resetCompanyMembershipCache(company, unitid.id);
-
-          await createNotification(
-            {
-              receiver: unitid,
-              message: `An employee has been removed`,
-              icon: "business-time",
-              link: `employeemanager`,
-              changed: ["employees"]
-            },
-            ta
-          );
+          await Promise.all([
+            createNotification(
+              {
+                receiver: unitid,
+                message: `User ${userid} was removed from the company`,
+                icon: "user-minus",
+                link: "employeemanager",
+                changed: ["employees"]
+              },
+              ta
+            ),
+            createLog(ctx, "deleteUser", { oldUser }, ta),
+            resetCompanyMembershipCache(company, unitid.id)
+          ]);
 
           return true;
         } catch (err) {
