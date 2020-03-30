@@ -991,12 +991,12 @@ export default {
             userPicFolder
           );
 
-          const oldUnit = await models.Unit.findOne({
-            where: { id: company },
+          const oldUnit = await models.Department.findOne({
+            where: { unitid: company },
             raw: true,
             transaction: ta
           });
-
+          console.log("\x1b[1m%s\x1b[0m", "LOG oldUnit", oldUnit);
           const [, updatedUnit] = await models.Unit.update(
             { profilepicture },
             { where: { id: company }, returning: true, transaction: ta }
