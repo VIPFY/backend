@@ -974,5 +974,61 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     })
+  ),
+
+  updateCompanyPic: requiresRights(["edit-department"]).createResolver(
+    async (_p, { file }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        try {
+          const { models } = ctx;
+          const {
+            user: { company, unitid }
+          } = decode(ctx.session.token);
+
+          const parsedFile = await file;
+          const profilepicture = await uploadUserImage(
+            parsedFile,
+            userPicFolder
+          );
+
+          const oldUnit = await models.Unit.findOne({
+            where: { id: company },
+            raw: true,
+            transaction: ta
+          });
+
+          const [, updatedUnit] = await models.Unit.update(
+            { profilepicture },
+            { where: { id: company }, returning: true, transaction: ta }
+          );
+
+          await Promise.all([
+            createLog(ctx, "updateCompanyPic", { oldUnit, updatedUnit }, ta),
+            createNotification(
+              {
+                receiver: unitid,
+                show: true,
+                message:
+                  "You successfully updated the companies profile picture",
+                icon: "image",
+                changed: ["company"],
+                link: "vacation"
+              },
+              ta,
+              {
+                company,
+                message: `User ${unitid} updated the companies profile picture`
+              }
+            )
+          ]);
+
+          return { ...oldUnit, profilepicture };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };

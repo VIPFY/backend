@@ -113,6 +113,7 @@ export const mutations = `
   applyPromocode(promocode: String!): Response!
   banEmployee(userid: ID!): Response!
   unbanEmployee(userid: ID!): Response!
+  updateCompanyPic(file: Upload!): Department!
 
   approveVacationRequest(userid: ID!, requestid: ID!): Boolean!
   declineVacationRequest(userid: ID!, requestid: ID!): Boolean!
