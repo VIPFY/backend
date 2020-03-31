@@ -199,10 +199,7 @@ export default {
           department,
           parentUnit,
           vipfyPlan,
-          setuptoken,
-          verifytoken,
-          key1,
-          key2
+          ..._notNeeded
         ] = await Promise.all([p3, p4, p5, p6, p7, p8, p9, p10]);
 
         await models.BoughtPlanPeriod.create(
@@ -213,7 +210,7 @@ export default {
             creator: unit.id,
             totalprice: 0,
             endtime: moment()
-              .add(2, "months")
+              .add(1, "months")
               .toDate()
           },
           { transaction: ta }
