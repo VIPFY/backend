@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import moment from "moment";
-import { decode } from "jsonwebtoken";
+import { decode, verify } from "jsonwebtoken";
 import { parseName } from "humanparser";
 import {
   USER_SESSION_ID_PREFIX,
@@ -1087,24 +1087,49 @@ export default {
     }
   ),
 
-  recoverPassword: async (_p, { keyData, email }, { models }) => {
+  recoverPassword: async (_p, { token, secret, email }, ctx) => {
     try {
-      const { privatekey, publickey } = keyData;
-      const user = await models.Login.findOne({
-        where: { email },
+      const { models, redis, SECRET } = ctx;
+      // check whether the token is still valid
+      await verify(token, SECRET);
+      const savedSecret = await redis.get(email);
+
+      if (secret != savedSecret) {
+        throw new Error("Recovery code does not match!");
+      }
+
+      const [emailExists] = await models.Login.findAll({
+        where: {
+          email,
+          companyban: { [ctx.models.Op.or]: [null, false] },
+          deleted: { [ctx.models.Op.or]: [null, false] },
+          banned: { [ctx.models.Op.or]: [null, false] },
+          suspended: { [ctx.models.Op.or]: [null, false] }
+        },
         raw: true
       });
-      console.log("\x1b[1m%s\x1b[0m", "LOG user", user);
-      if (
-        privatekey != user.recoveryprivatekey ||
-        publickey != user.recoverypublickey
-      ) {
-        throw new Error("Keys don't match!");
-      }
-      console.log("HEY, seems like the Keys Match :-D");
-      throw new Error("DEBUG");
 
-      return true;
+      if (!emailExists) {
+        throw new Error("User does not exist");
+      }
+
+      await checkAuthentification(emailExists.unitid, emailExists.company);
+      await models.Human.update(
+        { needspasswordchange: true },
+        { where: { unitid: emailExists.unitid } }
+      );
+
+      emailExists.sessionID = ctx.sessionID;
+      const sessionToken = await createSession(emailExists, ctx);
+
+      await createLog(
+        ctx,
+        "recoverPassword",
+        { user: emailExists, email },
+        null
+      );
+
+      return { ok: true, token: sessionToken, config: emailExists.config };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }

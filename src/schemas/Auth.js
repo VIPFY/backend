@@ -23,6 +23,12 @@ export const types = `
     mem: Int!
   }
 
+  type RecoveryChallenge {
+    encryptedKey: String!
+    publicKey: String!
+    token: String!
+  }
+
   type Key {
     id: ID!
     unitid: PublicUser!
@@ -59,7 +65,7 @@ export const queries = `
   # Fetches all Sessions of a specific User
   fetchUsersSessions(userid: ID!): [SessionResponse!]!
 
-  fetchRecoveryKey(email: String!): String!
+  fetchRecoveryChallenge(email: String!): RecoveryChallenge!
   fetchPwParams(email: String!): PasswordParams!
   fetchKey(id: ID!): Key
   fetchKeys(publickey: ID!): [Key]
@@ -78,7 +84,7 @@ export const mutations = `
   signOutEverywhere(userid: ID!): Boolean!
 
   saveRecoveryKey(keyData: RecoveryKeyInput): User!
-  recoverPassword(keyData: RecoveryKeyInput, email: String!): Boolean!
+  recoverPassword(token: String!,secret: String!, email: String!): LoginResponse!
 
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!

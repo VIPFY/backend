@@ -1,5 +1,7 @@
-import { decode } from "jsonwebtoken";
+import { decode, sign } from "jsonwebtoken";
 import crypto from "crypto";
+import { SodiumPlus, X25519PublicKey } from "sodium-plus";
+import cryptoRandomString from "crypto-random-string";
 import moment from "moment";
 import Speakeasy from "speakeasy";
 import QRCode from "qrcode";
@@ -234,7 +236,7 @@ export default {
     }
   ),
 
-  fetchRecoveryKey: async (_p, { email }, { models }) => {
+  fetchRecoveryChallenge: async (_p, { email }, { models, SECRET, redis }) => {
     try {
       const emailExists = await models.Login.findOne({
         where: {
@@ -249,10 +251,32 @@ export default {
       if (!emailExists || !emailExists.recoveryprivatekey) {
         const { salt } = await generateFakeKey(email);
 
-        return salt;
+        const token = await sign({ data: cryptoRandomString(10) }, salt, {
+          expiresIn: "1h"
+        });
+
+        return { encryptedKey: salt, token };
       }
 
-      return emailExists.recoveryprivatekey;
+      const sodium = await SodiumPlus.auto();
+      const secret = cryptoRandomString(32);
+
+      const buffer = await sodium.crypto_box_seal(
+        secret,
+        new X25519PublicKey(Buffer.from(emailExists.recoverypublickey, "hex"))
+      );
+
+      const token = sign({ encryptedSecret: buffer.toString("hex") }, SECRET, {
+        expiresIn: "1h"
+      });
+
+      await redis.set(email, secret, "EX", 3600);
+
+      return {
+        encryptedKey: emailExists.recoveryprivatekey,
+        publicKey: emailExists.recoverypublickey,
+        token
+      };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }

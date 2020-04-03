@@ -35,29 +35,29 @@ if (
 }
 export const redis = new Redis(options);
 
-redis.on("error", (...args) => console.error("ioredis ERROR", ...args));
-redis.on("connect", (...args) => console.log("ioredis connected", ...args));
-redis.on("ready", (...args) => console.log("ioredis ready", ...args));
-redis.on("close", (...args) => console.log("ioredis close", ...args));
-redis.on("reconnecting", (...args) =>
-  console.log("ioredis reconnecting", ...args)
+redis.on("error", error => console.error("ioredis ERROR", error || ""));
+redis.on("connect", args => console.log("ioredis connected", args || ""));
+redis.on("ready", args => console.log("ioredis ready", args || ""));
+redis.on("close", args => console.log("ioredis close", args || ""));
+redis.on("reconnecting", args =>
+  console.log("ioredis reconnecting", args || "")
 );
 
 const subscriber = new Redis(options);
-subscriber.on("error", (...args) =>
-  console.error("ioredis Subscriptions ERROR", ...args)
+subscriber.on("error", error =>
+  console.error("ioredis Subscriptions ERROR", error || "")
 );
-subscriber.on("connect", (...args) =>
-  console.log("ioredis Subscriptions connected", ...args)
+subscriber.on("connect", args =>
+  console.log("ioredis Subscriptions connected", args || "")
 );
-subscriber.on("ready", (...args) =>
-  console.log("ioredis Subscriptions ready", ...args)
+subscriber.on("ready", args =>
+  console.log("ioredis Subscriptions ready", args || "")
 );
-subscriber.on("close", (...args) =>
-  console.log("ioredis Subscriptions close", ...args)
+subscriber.on("close", args =>
+  console.log("ioredis Subscriptions close", args || "")
 );
-subscriber.on("reconnecting", (...args) =>
-  console.log("ioredis Subscriptions reconnecting", ...args)
+subscriber.on("reconnecting", args =>
+  console.log("ioredis Subscriptions reconnecting", args || "")
 );
 
 export const pubsub = new RedisPubSub({ publisher: redis, subscriber });
