@@ -207,7 +207,7 @@ export default {
         WHERE payer = :company
           AND appid = :appid
           ${externalFilter}
-          GROUP BY boughtplan_view.id, boughtplan_view.buyer, boughtplan_view.planid, boughtplan_view.buytime, boughtplan_view.endtime, boughtplan_view.key, boughtplan_view.payer, boughtplan_view.totalprice, boughtplan_view.additionalfeatures, boughtplan_view.totalfeatures, boughtplan_view.stripeplan, boughtplan_view.planinputs, boughtplan_view.disabled, boughtplan_view.usedby, boughtplan_view.alias
+          GROUP BY boughtplan_view.id, boughtplan_view.buyer, boughtplan_view.planid, boughtplan_view.buytime, boughtplan_view.endtime, boughtplan_view.key, boughtplan_view.payer, boughtplan_view.totalprice, boughtplan_view.additionalfeatures, boughtplan_view.totalfeatures, boughtplan_view.stripeplan, boughtplan_view.planinputs, boughtplan_view.disabled, boughtplan_view.usedby, boughtplan_view.alias, boughtplan_view.starttime
       `,
           {
             replacements: { company, appid },
@@ -245,7 +245,7 @@ export default {
         WHERE payer = :company
           AND appid = :appid
           ${externalFilter}
-        GROUP BY boughtplan_view.id, boughtplan_view.buyer, boughtplan_view.planid, boughtplan_view.buytime, boughtplan_view.endtime, boughtplan_view.key, boughtplan_view.payer, boughtplan_view.totalprice, boughtplan_view.additionalfeatures, boughtplan_view.totalfeatures, boughtplan_view.stripeplan, boughtplan_view.planinputs, boughtplan_view.disabled, boughtplan_view.usedby, boughtplan_view.alias
+        GROUP BY boughtplan_view.id, boughtplan_view.buyer, boughtplan_view.planid, boughtplan_view.buytime, boughtplan_view.endtime, boughtplan_view.key, boughtplan_view.payer, boughtplan_view.totalprice, boughtplan_view.additionalfeatures, boughtplan_view.totalfeatures, boughtplan_view.stripeplan, boughtplan_view.planinputs, boughtplan_view.disabled, boughtplan_view.usedby, boughtplan_view.alias, boughtplan_view.starttime
       `,
           {
             replacements: { company, appid },
