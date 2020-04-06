@@ -13,6 +13,11 @@ import {
 } from "./companyMembership";
 import { AuthError, AdminError, RightsError, NormalError } from "../errors";
 
+/**
+ * Recursively wraps a function with passed functions
+ *
+ * @param {function} resolver The function which will be wrapped
+ */
 const createResolver = resolver => {
   const baseResolver = resolver;
   baseResolver.createResolver = childResolver => {
@@ -25,7 +30,9 @@ const createResolver = resolver => {
   return baseResolver;
 };
 
-// Check whether the user is authenticated
+/**
+ * Checks whether the user is authenticated
+ */
 export const requiresAuth = createResolver(
   async (_parent, _args, { models, session, SECRET }, info) => {
     try {
@@ -76,8 +83,8 @@ export const requiresAuth = createResolver(
         await models.sequelize.transaction(async ta => {
           vipfyPlan = await models.BoughtPlan.create(
             {
-              payer: company,
               usedby: company,
+              alias: "VIPFY Basic",
               disabled: false
             },
             { transaction: ta }
@@ -87,7 +94,7 @@ export const requiresAuth = createResolver(
             {
               boughtplanid: vipfyPlan.id,
               planid: "8c3741f0-3037-42e8-80c9-c1663c0000e2",
-              payer: company.id,
+              payer: company,
               creator: unitid,
               totalprice: 0
             },
@@ -95,6 +102,7 @@ export const requiresAuth = createResolver(
           );
         });
       }
+
       return "authenticated!";
     } catch (error) {
       session.destroy(err => {

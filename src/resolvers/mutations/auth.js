@@ -150,7 +150,7 @@ export default {
           {
             disabled: false,
             usedby: company.id,
-            alias: "Vipfy Basic"
+            alias: "Vipfy Premium"
           },
           { transaction: ta }
         );

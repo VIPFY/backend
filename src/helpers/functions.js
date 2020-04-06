@@ -282,12 +282,11 @@ export const checkPlanValidity = async plan => {
  */
 export const checkVat = async vat => {
   try {
-    console.log("\x1b[1m%s\x1b[0m", "LOG vat", vat);
     const [cc, vatNumber] = vat
       .trim()
       .split(/(^[A-Za-z]{2})/g)
       .filter(v => v != "");
-    console.log("\x1b[1m%s\x1b[0m", "LOG cc, vatNumber", cc, vatNumber);
+
     const res = await soap
       .createClientAsync(
         "http://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl"
@@ -300,7 +299,7 @@ export const checkVat = async vat => {
             throw new Error(err);
           })
       );
-    console.log("\x1b[1m%s\x1b[0m", "LOG res", res);
+
     if (res.valid === true) {
       return res;
     } else {
