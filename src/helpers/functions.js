@@ -28,7 +28,7 @@ export const getDate = () => new Date().toUTCString();
  *
  * @param {object} user
  */
-export const parentAdminCheck = async user => {
+export const parentAdminCheck = async (user) => {
   await models.sequelize
     .query(
       `Select DISTINCT (id) from department_employee_view where
@@ -39,12 +39,12 @@ export const parentAdminCheck = async user => {
         type: models.sequelize.QueryTypes.SELECT
       }
     )
-    .then(roots => roots.map(root => (user.company = root.id)));
+    .then((roots) => roots.map((root) => (user.company = root.id)));
 
   return user;
 };
 
-export const formatFilename = filename => {
+export const formatFilename = (filename) => {
   const date = moment().format("YYYYMMDD");
   const randomString = Math.random()
     .toString(36)
@@ -124,7 +124,7 @@ export const createLog = async (context, eventtype, eventdata, transaction) => {
   );
 };
 
-export const formatHumanName = human =>
+export const formatHumanName = (human) =>
   `${human.firstname} ${human.lastname} ${human.suffix}`;
 
 /**
@@ -183,7 +183,7 @@ export const createNotification = async (
 
       const adminIDs = admins
         .map(({ employee }) => employee)
-        .filter(ID => {
+        .filter((ID) => {
           if (notificationBody.receiver) {
             return ID != notificationBody.receiver;
           } else {
@@ -239,10 +239,10 @@ export const createNotification = async (
  *
  * @param {string} password
  */
-export const computePasswordScore = password =>
+export const computePasswordScore = (password) =>
   zxcvbn(password.substring(0, 50)).score;
 
-export const getNewPasswordData = async password => {
+export const getNewPasswordData = async (password) => {
   const passwordhash = await bcrypt.hash(password, 12);
   const passwordstrength = computePasswordScore(password);
   const passwordlength = password.length;
@@ -257,7 +257,7 @@ export const getNewPasswordData = async password => {
  *
  * @returns {boolean}
  */
-export const checkPlanValidity = async plan => {
+export const checkPlanValidity = async (plan) => {
   if (plan.enddate && plan.enddate < Date.now()) {
     throw new Error(`The plan ${plan.name} has already expired!`);
   }
@@ -281,23 +281,23 @@ export const checkPlanValidity = async plan => {
  *
  * @returns {object}
  */
-export const checkVat = async vat => {
+export const checkVat = async (vat) => {
   try {
     console.log("\x1b[1m%s\x1b[0m", "LOG vat", vat);
     const [cc, vatNumber] = vat
       .trim()
       .split(/(^[A-Za-z]{2})/g)
-      .filter(v => v != "");
+      .filter((v) => v != "");
     console.log("\x1b[1m%s\x1b[0m", "LOG cc, vatNumber", cc, vatNumber);
     const res = await soap
       .createClientAsync(
         "http://ec.europa.eu/taxation_customs/vies/checkVatService.wsdl"
       )
-      .then(client =>
+      .then((client) =>
         client
           .checkVatAsync({ countryCode: cc, vatNumber })
-          .then(result => result[0])
-          .catch(err => {
+          .then((result) => result[0])
+          .catch((err) => {
             throw new Error(err);
           })
       );
@@ -351,13 +351,13 @@ export const selectCredit = async (code, unitid) => {
  *
  * @returns {object} addressData
  */
-export const parseAddress = addressComponents => {
+export const parseAddress = (addressComponents) => {
   const address = {};
   const street = [];
   const addressData = {};
 
-  addressComponents.forEach(comp => {
-    comp.types.every(type => {
+  addressComponents.forEach((comp) => {
+    comp.types.every((type) => {
       switch (type) {
         case "country":
           addressData.country = comp.short_name;
@@ -491,7 +491,7 @@ export const companyCheck = async (company, unitid, employee) => {
 
 export const groupBy = (list, keyGetter) => {
   const map = {};
-  list.forEach(item => {
+  list.forEach((item) => {
     const key = keyGetter(item);
     const collection = map[key];
 
@@ -521,7 +521,7 @@ export const teamCheck = async (parentunit, childunit) => {
   }
 };
 
-export const checkMailExistance = async email => {
+export const checkMailExistance = async (email) => {
   try {
     const emailExists = await models.Email.findOne({ where: { email } });
 
@@ -535,7 +535,7 @@ export const checkMailExistance = async email => {
   }
 };
 
-export const checkMailPossible = email => {
+export const checkMailPossible = (email) => {
   const tester = /^[-!#$%&'*+\/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-*\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
   // Thanks to:
   // http://fightingforalostcause.net/misc/2006/compare-email-regex.php
@@ -554,7 +554,7 @@ export const checkMailPossible = email => {
   if (parts[0].length > 64) return false;
 
   const domainParts = parts[1].split(".");
-  if (domainParts.some(part => part.length > 63)) {
+  if (domainParts.some((part) => part.length > 63)) {
     return false;
   }
 
@@ -606,9 +606,9 @@ export const check2FARights = async (userid, unitid, company) => {
  *
  * @param {string[]} sessions
  */
-export const parseSessions = async sessions => {
+export const parseSessions = async (sessions) => {
   try {
-    const parsedSessions = sessions.map(item => {
+    const parsedSessions = sessions.map((item) => {
       const parsedSession = JSON.parse(item);
 
       return {
@@ -651,20 +651,19 @@ export const fetchSessions = async (redis, userid) => {
  * Creates and returns a token for the session and saves the current session
  *
  * @param {object} user The User which should be saved in the token
- * @param {number} user.unitid In this context the user has an unitid instead of an id!
+ * @param {number} [user.unitid] In this context the user has an unitid instead of an id!
  * @param {object} ctx The context which includes the current session
- * @param {object} ctx.redis The Redis instance
+ * @param {object} [ctx.redis] The Redis instance
  */
 export const createSession = async (user, ctx) => {
   try {
     const token = await createToken(user, process.env.SECRET);
-
     ctx.session.token = token;
 
     // Should normally not be needed, but somehow it takes too long to
     // update the session and it creates an Auth Error in the next step
     // without it.
-    await ctx.session.save(err => {
+    await ctx.session.save((err) => {
       if (err) {
         console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
       }
@@ -721,7 +720,7 @@ export const createSession = async (user, ctx) => {
 export const endSession = async (redis, userid, sessionID) => {
   try {
     const sessions = await fetchSessions(redis, userid);
-    const signOutSession = sessions.find(item => {
+    const signOutSession = sessions.find((item) => {
       const parsedSession = JSON.parse(item);
       return parsedSession.session == sessionID;
     });
@@ -731,7 +730,7 @@ export const endSession = async (redis, userid, sessionID) => {
       redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`)
     ]);
 
-    return sessions.filter(item => {
+    return sessions.filter((item) => {
       const parsedSession = JSON.parse(item);
 
       return parsedSession.session != sessionID;
@@ -745,7 +744,7 @@ export const endSession = async (redis, userid, sessionID) => {
  * Hashes passkey for storage in database
  * @param {string} passkey
  */
-export const hashPasskey = async passkey =>
+export const hashPasskey = async (passkey) =>
   // bcrypt is mostly used for handling salts and completely overkill. Passkeys are already hashed securely on frontend. Thus only two rounds are used
   bcrypt.hash(passkey, 2);
 

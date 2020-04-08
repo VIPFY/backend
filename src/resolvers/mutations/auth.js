@@ -47,7 +47,7 @@ export default {
     },
     ctx
   ) =>
-    ctx.models.sequelize.transaction(async ta => {
+    ctx.models.sequelize.transaction(async (ta) => {
       try {
         const { models } = ctx;
 
@@ -277,7 +277,7 @@ export default {
     { country, vatoption, vatnumber, placeId, ownAdress, username },
     { models, session }
   ) =>
-    models.sequelize.transaction(async ta => {
+    models.sequelize.transaction(async (ta) => {
       try {
         const {
           user: { unitid, company }
@@ -354,7 +354,7 @@ export default {
     }),
 
   signUpConfirm: async (_p, { token }, ctx) =>
-    ctx.models.sequelize.transaction(async ta => {
+    ctx.models.sequelize.transaction(async (ta) => {
       const { models } = ctx;
       try {
         const tokenExists = await models.Token.findOne({
@@ -540,7 +540,7 @@ export default {
 
         if (session.token) {
           const sessions = await fetchSessions(redis, unitid);
-          const signOutSession = sessions.find(item => {
+          const signOutSession = sessions.find((item) => {
             const parsedSession = JSON.parse(item);
             return parsedSession.session == sessionID;
           });
@@ -551,7 +551,7 @@ export default {
             signOutSession // This is the value
           );
 
-          await session.destroy(err => {
+          await session.destroy((err) => {
             if (err) {
               console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
             }
@@ -609,7 +609,7 @@ export default {
 
       const promises = [];
 
-      sessions.forEach(sessionItem => {
+      sessions.forEach((sessionItem) => {
         promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionItem}`));
       });
       promises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
@@ -623,7 +623,7 @@ export default {
 
   changePassword: requiresAuth.createResolver(
     async (_p, { pw, newPw, confirmPw }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const { models, session, redis } = ctx;
 
@@ -695,7 +695,7 @@ export default {
 
           const sessions = await fetchSessions(redis, unitid);
 
-          const sessionPromises = sessions.map(sessionString =>
+          const sessionPromises = sessions.map((sessionString) =>
             redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
           );
 
@@ -720,7 +720,7 @@ export default {
       { oldPasskey, newPasskey, passwordMetrics, newKey, replaceKeys },
       ctx
     ) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const { models, session, redis } = ctx;
 
@@ -784,7 +784,7 @@ export default {
           const [updatedUser, basicUser, key] = await Promise.all([p1, p2, p3]);
 
           await Promise.all(
-            replaceKeys.map(k =>
+            replaceKeys.map((k) =>
               models.Key.update(
                 {
                   id: k.id,
@@ -827,7 +827,7 @@ export default {
 
           const sessions = await fetchSessions(redis, unitid);
 
-          const sessionPromises = sessions.map(sessionString =>
+          const sessionPromises = sessions.map((sessionString) =>
             redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
           );
 
@@ -847,7 +847,7 @@ export default {
   ),
 
   agreeTos: requiresAuth.createResolver(async (_p, _args, ctx) =>
-    ctx.models.sequelize.transaction(async ta => {
+    ctx.models.sequelize.transaction(async (ta) => {
       try {
         const { models, session } = ctx;
         const {
@@ -873,7 +873,7 @@ export default {
 
   forcePasswordChange: requiresRights(["view-security"]).createResolver(
     async (_p, { userids }, ctx) =>
-      ctx.models.sequelize.transaction(async transaction => {
+      ctx.models.sequelize.transaction(async (transaction) => {
         try {
           const { models, session } = ctx;
           const {
@@ -988,7 +988,7 @@ export default {
   },
 
   resendToken: async (_p, { token }, { models }) =>
-    models.sequelize.transaction(async ta => {
+    models.sequelize.transaction(async (ta) => {
       try {
         const oldToken = await models.Token.findOne({
           where: { token, type: "signUp", usedat: null },
@@ -1113,11 +1113,7 @@ export default {
         throw new Error("User does not exist");
       }
 
-      await checkAuthentification(emailExists.unitid, emailExists.company);
-      await models.Human.update(
-        { needspasswordchange: true },
-        { where: { unitid: emailExists.unitid } }
-      );
+      // await checkAuthentification(emailExists.unitid, emailExists.company);
 
       emailExists.sessionID = ctx.sessionID;
       const sessionToken = await createSession(emailExists, ctx);
@@ -1129,9 +1125,141 @@ export default {
         null
       );
 
-      return { ok: true, token: sessionToken, config: emailExists.config };
+      const userKeys = await models.Key.findAll({
+        where: { unitid: emailExists.unitid },
+        order: [["createdat", "DESC"]],
+        limit: 1
+      });
+      if (!userKeys || userKeys.length == 0) {
+        userKeys[0] = null;
+      }
+
+      return {
+        token: sessionToken,
+        config: emailExists.config,
+        currentKey: userKeys[0]
+      };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
-  }
+  },
+
+  updateRecoveredPassword: requiresAuth.createResolver(
+    async (_p, { recoveryData }, ctx) =>
+      ctx.models.sequelize.transaction(async (ta) => {
+        try {
+          const {
+            email,
+            secret,
+            token,
+            newPasskey,
+            passwordMetrics,
+            newKey,
+            replaceKeys
+          } = recoveryData;
+
+          const { models, redis, SECRET } = ctx;
+          // check whether the token is still valid
+          const {
+            user: { unitid }
+          } = await verify(token, SECRET);
+          const savedSecret = await redis.get(email);
+
+          if (!savedSecret || secret != savedSecret) {
+            throw new Error("Recovery code does not match!");
+          }
+
+          if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
+            throw new Error("Password too long");
+          }
+
+          if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
+            throw new Error(
+              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+            );
+          }
+
+          if (passwordMetrics.passwordStrength < 2) {
+            throw new Error("Password too weak!");
+          }
+
+          if (newPasskey.length != 128) {
+            throw new Error("Incompatible passkey format, try updating VIPFY");
+          }
+
+          const p1 = models.Human.update(
+            { ...passwordMetrics, passkey: await hashPasskey(newPasskey) },
+            { where: { unitid }, returning: true, transaction: ta }
+          );
+
+          const p2 = models.User.findOne({ where: { id: unitid }, raw: true });
+
+          delete newKey.id;
+          delete newKey.createdat;
+          delete newKey.unitid;
+          const p3 = models.Key.create(
+            { ...newKey, unitid },
+            { transaction: ta }
+          );
+
+          const [updatedUser, basicUser, key] = await Promise.all([p1, p2, p3]);
+
+          await Promise.all(
+            replaceKeys.map((k) =>
+              models.Key.update(
+                {
+                  id: k.id,
+                  privatekey: k.privatekey,
+                  encryptedby:
+                    k.encryptedby == "new" ? key.publickey : k.encryptedby
+                },
+                {
+                  where: { id: k.id, unitid, publickey: k.publickey },
+                  transaction: ta
+                }
+              )
+            )
+          );
+
+          const promises = [
+            createLog(
+              ctx,
+              "updateRecoveredPassword",
+              { updatedUser: updatedUser[1] },
+              ta
+            ),
+            createNotification(
+              {
+                receiver: unitid,
+                message: "You set a new password",
+                icon: "lock-alt",
+                link: "profile",
+                changed: [""]
+              },
+              ta
+            )
+          ];
+
+          await Promise.all(promises);
+
+          // todo: simpler way to get company, since we don't return user anymore
+          const user = await parentAdminCheck(basicUser);
+          user.unitid = user.id;
+          const sessions = await fetchSessions(redis, unitid);
+          const sessionPromises = sessions.map((sessionString) =>
+            redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
+          );
+
+          sessionPromises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
+          await Promise.all(sessionPromises);
+
+          return createSession(user, ctx);
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
+  )
 };

@@ -56,6 +56,30 @@ export const types = `
     publickey: String!
     encryptedby: String
   }
+
+  input PasswordRecoveryInput {
+    email: String!
+    secret: String!
+    token: String!
+    newPasskey: String!
+    passwordMetrics: PasswordMetricsInput!
+    newKey: KeyInput!
+    replaceKeys: [KeyInput!]!
+  }
+
+  type RecoveryResponse {
+    token: String!
+    currentKey: RecoveryKey
+    config: JSON
+  }
+
+  type RecoveryKey {
+    id: ID!
+    unitid: PublicUser!
+    privatekey: String!
+    publickey: String!
+    createdat: Date!
+  }
 `;
 
 export const queries = `
@@ -84,11 +108,12 @@ export const mutations = `
   signOutEverywhere(userid: ID!): Boolean!
 
   saveRecoveryKey(keyData: RecoveryKeyInput): User!
-  recoverPassword(token: String!,secret: String!, email: String!): LoginResponse!
+  recoverPassword(token: String!, secret: String!, email: String!): RecoveryResponse!
 
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!
   changePasswordEncrypted(oldPasskey: String!, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, newKey: KeyInput!, replaceKeys: [KeyInput!]!): LoginResponse!
+  updateRecoveredPassword(recoveryData: PasswordRecoveryInput!): String!
 
   impersonate(userid: ID!): String!
   endImpersonation(token: String!): String!

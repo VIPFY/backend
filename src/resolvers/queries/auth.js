@@ -219,6 +219,7 @@ export default {
           // eslint-disable-next-line prefer-destructuring
           unitid = decode(session.token).user.unitid;
         }
+
         const keys = await models.Key.findAll({
           where: { unitid },
           order: [["createdat", "DESC"]],

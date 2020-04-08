@@ -17,7 +17,7 @@ const RedisStore = connectRedis(session);
 const {
   SECRET,
   SECRET_THREE,
-  ENVIRONMENT,
+  ENVIRONMENT = "development",
   SESSION_LIFETIME = 1000 * 60 * 60 * 9 // One work day with breaks
 } = process.env;
 
@@ -31,7 +31,7 @@ export const sessionMiddleware = session({
     httpOnly: true,
     maxAge: SESSION_LIFETIME,
     // Required Setting for Chrome in future Releases, see VIP-1030
-    secure: ENVIRONMENT == "production",
+    secure: ENVIRONMENT.toLowerCase() == "production",
     sameSite: "none"
   }
 });
