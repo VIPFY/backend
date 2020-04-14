@@ -814,7 +814,7 @@ export default {
             user: { unitid, company }
           } = decode(ctx.session.token);
 
-          const { models, session } = ctx;
+          const { models } = ctx;
 
           await checkLicenceValidilty(models, company, licenceid);
 
@@ -822,6 +822,7 @@ export default {
             where: { id: licenceid },
             transaction: ta
           });
+
           if (licence.key.encrypted && keyfragment) {
             licence.key = {
               ...licence.key,
@@ -832,54 +833,53 @@ export default {
             throw new Error("can't add unencrypted user to encrypted licence");
           }
 
-          await models.LicenceRight.create(
-            {
-              ...rights,
-              ...tags,
-              licenceid,
-              unitid: userid,
-              transaction: ta,
-              starttime,
-              endtime
-            },
-            ta
-          );
-
-          await createNotification(
-            {
-              receiver: userid,
-              message: `You have been assigned to an account`,
-              icon: "business-time",
-              link: `dashboard`,
-              changed: ["ownLicences"]
-            },
-            ta
-          );
-
-          await createNotification(
-            {
-              receiver: unitid,
-              message: `You have assigned an account`,
-              icon: "business-time",
-              link: `dashboard`,
-              changed: ["companyServices"]
-            },
-            ta
-          );
-
-          await createLog(
-            ctx,
-            "assignAccount",
-            {
-              licenceid,
-              userid,
-              rights,
-              tags,
-              starttime,
-              endtime
-            },
-            ta
-          );
+          await Promise.all([
+            models.LicenceRight.create(
+              {
+                ...rights,
+                ...tags,
+                licenceid,
+                unitid: userid,
+                transaction: ta,
+                starttime,
+                endtime
+              },
+              ta
+            ),
+            createNotification(
+              {
+                receiver: userid,
+                message: "You have been assigned to an account",
+                icon: "business-time",
+                link: `dashboard`,
+                changed: ["ownLicences"]
+              },
+              ta
+            ),
+            createNotification(
+              {
+                receiver: unitid,
+                message: `You have assigned an account to user ${unitid}`,
+                icon: "business-time",
+                link: `dashboard`,
+                changed: ["companyServices"]
+              },
+              ta
+            ),
+            createLog(
+              ctx,
+              "assignAccount",
+              {
+                licenceid,
+                userid,
+                rights,
+                tags,
+                starttime,
+                endtime
+              },
+              ta
+            )
+          ]);
 
           return true;
         } catch (err) {
@@ -941,13 +941,11 @@ export default {
             ta
           );
 
-          const fullorbit = await models.BoughtPlanView.findOne({
+          return models.BoughtPlanView.findOne({
             where: { id: orbit.id },
             raw: true,
             transaction: ta
           });
-
-          return fullorbit;
         } catch (err) {
           throw new NormalError({
             message: err.message,

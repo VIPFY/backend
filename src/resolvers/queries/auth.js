@@ -250,13 +250,16 @@ export default {
       });
 
       if (!emailExists || !emailExists.recoveryprivatekey) {
-        const { salt } = await generateFakeKey(email);
+        const [{ salt }, { salt: publicKey }] = await Promise.all([
+          generateFakeKey(email),
+          generateFakeKey("asdfasd4adfga3de")
+        ]);
 
-        const token = await sign({ data: cryptoRandomString(10) }, salt, {
+        const token = sign({ data: cryptoRandomString(10) }, salt, {
           expiresIn: "1h"
         });
 
-        return { encryptedKey: salt, token };
+        return { encryptedKey: salt, publicKey, token };
       }
 
       const sodium = await SodiumPlus.auto();

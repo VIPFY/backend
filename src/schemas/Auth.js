@@ -61,6 +61,7 @@ export const types = `
     email: String!
     secret: String!
     token: String!
+    recoveryKeys: RecoveryKeyInput!
     newPasskey: String!
     passwordMetrics: PasswordMetricsInput!
     newKey: KeyInput!
