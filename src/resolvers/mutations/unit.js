@@ -2,7 +2,11 @@ import { decode, verify } from "jsonwebtoken";
 import iplocate from "node-iplocate";
 import moment from "moment";
 import "moment-feiertage";
-import { requiresAuth, requiresRights } from "../../helpers/permissions";
+import {
+  requiresAuth,
+  requiresRights,
+  requiresVipfyManagement
+} from "../../helpers/permissions";
 import {
   userPicFolder,
   MIN_PASSWORD_LENGTH,
@@ -630,7 +634,7 @@ export default {
     }
   },
 
-  setVacationDays: requiresAuth.createResolver(
+  setVacationDays: requiresVipfyManagement().createResolver(
     async (_p, { year, days, userid }, { models, session }) => {
       try {
         const {

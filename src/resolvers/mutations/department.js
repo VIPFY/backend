@@ -4,7 +4,11 @@ import {
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH
 } from "../../constants";
-import { requiresAuth, requiresRights } from "../../helpers/permissions";
+import {
+  requiresAuth,
+  requiresRights,
+  requiresVipfyManagement
+} from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import {
   createLog,
@@ -899,79 +903,86 @@ export default {
       })
   ),
 
-  approveVacationRequest: requiresRights([
-    "edit-vacation-requests"
-  ]).createResolver(async (_p, { userid, requestid }, { models, session }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { company }
-        } = decode(session.token);
+  approveVacationRequest: requiresVipfyManagement().createResolver(
+    async (_p, { userid, requestid }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(session.token);
 
-        const res = await models.VacationRequest.update(
-          { status: "CONFIRMED", decided: models.sequelize.fn("NOW") },
-          { where: { unitid: userid, id: requestid } }
-        );
+          const res = await models.VacationRequest.update(
+            { status: "CONFIRMED", decided: models.sequelize.fn("NOW") },
+            { where: { unitid: userid, id: requestid } }
+          );
 
-        if (res[0] == 0) {
-          throw new Error("Could not update request");
+          if (res[0] == 0) {
+            throw new Error("Could not update request");
+          }
+
+          await createNotification(
+            {
+              receiver: userid,
+              show: true,
+              message: "Your vacation request was confirmed",
+              icon: "umbrella-beach",
+              changed: ["vacationRequest"],
+              link: "vacation"
+            },
+            ta,
+            {
+              company,
+              message: `User ${userid} vacation request was confirmed`
+            }
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
-
-        await createNotification(
-          {
-            receiver: userid,
-            show: true,
-            message: "Your vacation request was confirmed",
-            icon: "umbrella-beach",
-            changed: ["vacationRequest"],
-            link: "vacation"
-          },
-          ta,
-          { company, message: `User ${userid} vacation request was confirmed` }
-        );
-
-        return true;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    })
+      })
   ),
 
-  declineVacationRequest: requiresRights([
-    "edit-vacation-requests"
-  ]).createResolver(async (_p, { userid, requestid }, { models, session }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { company }
-        } = decode(session.token);
-        const res = await models.VacationRequest.update(
-          { status: "REJECTED", decided: models.sequelize.fn("NOW") },
-          { where: { unitid: userid, id: requestid }, transaction: ta }
-        );
+  declineVacationRequest: requiresVipfyManagement().createResolver(
+    async (_p, { userid, requestid }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(session.token);
+          const res = await models.VacationRequest.update(
+            { status: "REJECTED", decided: models.sequelize.fn("NOW") },
+            { where: { unitid: userid, id: requestid }, transaction: ta }
+          );
 
-        if (res[0] == 0) {
-          throw new Error("Could not update request");
+          if (res[0] == 0) {
+            throw new Error("Could not update request");
+          }
+
+          await createNotification(
+            {
+              receiver: userid,
+              show: true,
+              message: "Your vacation request was declined",
+              icon: "umbrella-beach",
+              changed: ["vacationRequest"],
+              link: "vacation"
+            },
+            ta,
+            { company, message: `User ${userid} vacation request was declined` }
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
-
-        await createNotification(
-          {
-            receiver: userid,
-            show: true,
-            message: "Your vacation request was declined",
-            icon: "umbrella-beach",
-            changed: ["vacationRequest"],
-            link: "vacation"
-          },
-          ta,
-          { company, message: `User ${userid} vacation request was declined` }
-        );
-
-        return true;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    })
+      })
   ),
 
   updateCompanyPic: requiresRights(["edit-department"]).createResolver(
@@ -994,7 +1005,7 @@ export default {
             raw: true,
             transaction: ta
           });
-          console.log("\x1b[1m%s\x1b[0m", "LOG oldUnit", oldUnit);
+
           const [, updatedUnit] = await models.Unit.update(
             { profilepicture },
             { where: { id: company }, returning: true, transaction: ta }
