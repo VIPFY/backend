@@ -2,7 +2,7 @@ import { decode } from "jsonwebtoken";
 import {
   requiresRights,
   requiresAuth,
-  requiresVipfyAdmin
+  requiresVipfyManagement
 } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
@@ -146,7 +146,7 @@ export default {
     }
   ),
 
-  fetchVacationRequests: requiresVipfyAdmin(true).createResolver(
+  fetchVacationRequests: requiresVipfyManagement().createResolver(
     async (_p, args, { models, session }) => {
       try {
         const {

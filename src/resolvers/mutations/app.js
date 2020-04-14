@@ -610,7 +610,7 @@ export default {
       })
   ),
 
-  //Not used at the moment - maybe for late use
+  // Not used at the moment - maybe for late use
   updateLicenceSpeed: requiresAuth.createResolver(
     async (_p, { licenceid, speed, working, oldspeed }, { models, session }) =>
       models.sequelize.transaction(async ta => {
@@ -1366,6 +1366,7 @@ export default {
         }
       })
   ),
+
   editVacation: requiresRights([
     ["edit-licences", "edit-licenceRights"]
   ]).createResolver(
@@ -1532,78 +1533,80 @@ export default {
       })
   ),
 
-  sendSupportRequest: requiresAuth.createResolver(
-    async (_p, args, { models, session }) =>
-      ctx.models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid, company: companyID }
-          } = decode(session.token);
-          const { topic, description, component, internal } = args;
+  sendSupportRequest: requiresAuth.createResolver(async (_p, args, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      try {
+        const { models, session } = ctx;
 
-          const p1 = models.User.findOne({
-            where: { id: unitid },
-            raw: true,
-            transaction: ta
+        const {
+          user: { unitid, company: companyID }
+        } = decode(session.token);
+        const { topic, description, component, internal } = args;
+
+        const p1 = models.User.findOne({
+          where: { id: unitid },
+          raw: true,
+          transaction: ta
+        });
+
+        const p2 = models.Department.findOne({
+          where: { unitid: companyID },
+          raw: true,
+          transaction: ta
+        });
+
+        const [user, company] = await Promise.all([p1, p2]);
+
+        if (!company.supportid) {
+          const { data } = await freshdeskAPI("POST", "companies", {
+            name: `25${company.name}-${company.unitid}`
           });
 
-          const p2 = models.Department.findOne({
-            where: { unitid: companyID },
-            raw: true,
-            transaction: ta
-          });
+          await models.DepartmentData.update(
+            { supportid: data.id },
+            { where: { unitid: company.unitid } }
+          );
 
-          const [user, company] = await Promise.all([p1, p2]);
-
-          if (!company.supportid) {
-            const { data } = await freshdeskAPI("POST", "companies", {
-              name: `25${company.name}-${company.unitid}`
-            });
-
-            await models.DepartmentData.update(
-              { supportid: data.id },
-              { where: { unitid: company.unitid } }
-            );
-
-            company.supportid = data.id;
-          }
-
-          if (!user.supporttoken) {
-            const { data } = await freshdeskAPI("POST", "contacts", {
-              name: concatName(user),
-              email: user.emails[0],
-              company_id: company.supportid
-            });
-
-            await models.Human.update(
-              { supporttoken: data.id },
-              { where: { unitid } }
-            );
-
-            user.supporttoken = data.id;
-
-            freshdeskAPI("PUT", `contacts/${data.id}/send_invite`);
-          }
-
-          await freshdeskAPI("POST", "tickets", {
-            requester_id: user.supporttoken,
-            subject: `${component} - ${topic}`,
-            type: internal ? "VIPFY" : "External App",
-            description,
-            source: 1,
-            status: 2,
-            priority: 2
-          });
-
-          return true;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          company.supportid = data.id;
         }
-      })
+
+        if (!user.supporttoken) {
+          const { data } = await freshdeskAPI("POST", "contacts", {
+            name: concatName(user),
+            email: user.emails[0],
+            company_id: company.supportid
+          });
+
+          await models.Human.update(
+            { supporttoken: data.id },
+            { where: { unitid } }
+          );
+
+          user.supporttoken = data.id;
+
+          freshdeskAPI("PUT", `contacts/${data.id}/send_invite`);
+        }
+
+        await freshdeskAPI("POST", "tickets", {
+          requester_id: user.supporttoken,
+          subject: `${component} - ${topic}`,
+          type: internal ? "VIPFY" : "External App",
+          description,
+          source: 1,
+          status: 2,
+          priority: 2
+        });
+
+        return true;
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    })
   ),
+
   saveExecutionPlan: requiresVipfyAdmin().createResolver(
     async (_p, { appid, key, script }, { models }) => {
       try {

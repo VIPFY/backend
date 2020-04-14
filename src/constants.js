@@ -80,3 +80,10 @@ export const MIN_PASSWORD_LENGTH = 10;
 
 // ssh -N -L 6379:master.prod1.n21sml.euc1.cache.amazonaws.com:6379 nv@bastion.internal.vipfy.store
 // ssh -N -L 5431:dev1.c1mg5mgfkmoa.eu-central-1.rds.amazonaws.com:5432 nv@bastion.internal.vipfy.store
+
+export const vipfyManagement = [
+  "f876804e-efd0-48b4-a5b2-807cbf66315f", // Pascal
+  "98cdb502-51fc-4c0d-a5c7-ee274b6bb7b5", // Markus
+  "96d65748-7d36-459a-97d0-7f52a7a4bbf0", // Nils
+  "91bd25cb-65cc-4dca-b0c8-285dbf5919f3" // Jannis
+];
