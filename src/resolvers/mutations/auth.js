@@ -1129,7 +1129,7 @@ export default {
         order: [["createdat", "DESC"]],
         limit: 1
       });
-      console.log("\x1b[1m%s\x1b[0m", "LOG userKeys", userKeys);
+
       if (!userKeys || userKeys.length == 0) {
         userKeys[0] = null;
       }
@@ -1209,13 +1209,11 @@ export default {
           );
 
           const [updatedUser, basicUser, key] = await Promise.all([p1, p2, p3]);
-          // Axst3Dec0cUIKhH46h42GXOsSfOP3de/+eUy1ZyKNmI=
 
           await Promise.all(
             replaceKeys.map(k =>
               models.Key.update(
                 {
-                  id: k.id,
                   privatekey: k.privatekey,
                   encryptedby:
                     k.encryptedby == "new" ? key.publickey : k.encryptedby
