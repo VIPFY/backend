@@ -221,7 +221,7 @@ export default {
         }
 
         const keys = await models.Key.findAll({
-          where: { unitid },
+          where: { unitid, encryptedby: null },
           order: [["createdat", "DESC"]],
           limit: 1
         });
