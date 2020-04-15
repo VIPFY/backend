@@ -1,24 +1,26 @@
 import { decode } from "jsonwebtoken";
-import { parseName } from "humanparser";
 import {
   userPicFolder,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH
 } from "../../constants";
-import { requiresAuth, requiresRights } from "../../helpers/permissions";
+import {
+  requiresAuth,
+  requiresRights,
+  requiresVipfyManagement
+} from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import {
   createLog,
   createNotification,
   formatHumanName,
   selectCredit,
-  checkPlanValidity,
   hashPasskey,
   checkVat
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
-import { uploadUserImage, deleteUserImage } from "../../services/aws";
+import { uploadUserImage } from "../../services/aws";
 
 export default {
   createEmployee: requiresRights(["create-employees"]).createResolver(
@@ -778,83 +780,21 @@ export default {
             user: { unitid, company }
           } = decode(session.token);
 
-          const oldUser = await models.sequelize.query(
-            `SELECT * FROM users_view WHERE id = :userid`,
-            {
-              replacements: { userid },
-              type: models.sequelize.QueryTypes.SELECT,
-              transaction: ta
-            }
-          );
+          const oldUser = await models.User.findOne({
+            where: { id: userid },
+            transaction: ta,
+            raw: true
+          });
 
-          //START DELETE ONE EMPLOYEE
-          const promises = [];
-
-          if (oldUser.assignments) {
-            // Delete all assignments of oldUser
+          if (oldUser.assignments && autodelete) {
             await Promise.all(
               oldUser.assignments.map(async asid => {
-                if (as.bool) {
-                  promises.push(
-                    models.LicenceRight.update(
-                      {
-                        endtime
-                      },
-                      {
-                        where: { id: asid },
-                        transaction: ta
-                      }
-                    )
-                  );
-                } else {
-                  // Remove team tag and assignoption
-                  const checkassignment = await models.LicenceRight.findOne({
-                    where: { id: asid },
-                    raw: true,
-                    transaction: ta
-                  });
-                  if (
-                    checkassignment.tags &&
-                    checkassignment.tags.includes("teamlicence") &&
-                    checkassignment.options &&
-                    checkassignment.options.teamlicence == teamid
-                  ) {
-                    let newtags = checkassignment.tags;
-                    newtags.splice(
-                      checkassignment.tags.findIndex(e => e == "teamlicence"),
-                      1
-                    );
-                    promises.push(
-                      models.LicenceRight.update(
-                        {
-                          tags: newtags,
-                          options: {
-                            ...checkassignment.options,
-                            teamlicence: undefined
-                          }
-                        },
-                        {
-                          where: { id: asid },
-                          transaction: ta
-                        }
-                      )
-                    );
-                  }
-                }
-              })
-            );
-            await Promise.all(promises);
-
-            //Check for other assignments
-            if (autodelete) {
-              await Promise.all(
-                oldUser.assignments.map(async asid => {
-                  const licenceRight = await models.LicenceRight.findOne({
-                    where: { id: asid },
-                    raw: true,
-                    transaction: ta
-                  });
-
+                const licenceRight = await models.LicenceRight.findOne({
+                  where: { id: asid },
+                  raw: true,
+                  transaction: ta
+                });
+                if (licenceRight) {
                   const licences = await models.sequelize.query(
                     `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
                     {
@@ -866,9 +806,7 @@ export default {
 
                   if (licences.length == 0) {
                     await models.LicenceData.update(
-                      {
-                        endtime
-                      },
+                      { endtime: models.Op.sequelize.fn("NOW") },
                       {
                         where: { id: licenceRight.licenceid },
                         transaction: ta
@@ -905,9 +843,7 @@ export default {
                       );
 
                       await models.BoughtPlanPeriod.update(
-                        {
-                          endtime
-                        },
+                        { endtime: models.Op.sequelize.fn("NOW") },
                         {
                           where: { id: oldperiod.id },
                           transaction: ta
@@ -915,27 +851,47 @@ export default {
                       );
                     }
                   }
-                })
-              );
-            }
+                }
+              })
+            );
           }
 
-          //Delete from teams
+          await Promise.all([
+            models.ParentUnit.destroy({
+              where: { childunit: userid },
+              transaction: ta
+            }),
+            models.Unit.update(
+              { deleted: true },
+              { where: { id: userid }, transaction: ta }
+            ),
+            models.Human.update(
+              {
+                firstname: "redacted",
+                middlename: "redacted",
+                lastname: "redacted",
+                sex: null,
+                birthday: null,
+                statisticdata: null
+              },
+              { where: { unitid: userid }, transaction: ta }
+            )
+          ]);
 
-          await models.ParentUnit.destroy({
-            where: { childunit: userid },
-            transaction: ta
-          });
-
-          await models.Unit.update(
-            { deleted: true },
-            { where: { id: userid } },
-            { transaction: ta }
-          );
-
-          await createLog(ctx, "fireEmployee", { userid }, ta);
-
-          resetCompanyMembershipCache(company, unitid.id);
+          await Promise.all([
+            createNotification(
+              {
+                receiver: unitid,
+                message: `User ${userid} was removed from the company`,
+                icon: "user-minus",
+                link: "employeemanager",
+                changed: ["employees"]
+              },
+              ta
+            ),
+            createLog(ctx, "deleteUser", { oldUser }, ta),
+            resetCompanyMembershipCache(company, unitid.id)
+          ]);
 
           return true;
         } catch (err) {
@@ -947,78 +903,141 @@ export default {
       })
   ),
 
-  approveVacationRequest: requiresRights([
-    "edit-vacation-requests"
-  ]).createResolver(async (_p, { userid, requestid }, { models, session }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { company }
-        } = decode(session.token);
+  approveVacationRequest: requiresVipfyManagement().createResolver(
+    async (_p, { userid, requestid }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(session.token);
 
-        const res = await models.VacationRequest.update(
-          { status: "CONFIRMED", decided: models.sequelize.fn("NOW") },
-          { where: { unitid: userid, id: requestid } }
-        );
+          const res = await models.VacationRequest.update(
+            { status: "CONFIRMED", decided: models.sequelize.fn("NOW") },
+            { where: { unitid: userid, id: requestid } }
+          );
 
-        if (res[0] == 0) {
-          throw new Error("Could not update request");
+          if (res[0] == 0) {
+            throw new Error("Could not update request");
+          }
+
+          await createNotification(
+            {
+              receiver: userid,
+              show: true,
+              message: "Your vacation request was confirmed",
+              icon: "umbrella-beach",
+              changed: ["vacationRequest"],
+              link: "vacation"
+            },
+            ta,
+            {
+              company,
+              message: `User ${userid} vacation request was confirmed`
+            }
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
-
-        await createNotification(
-          {
-            receiver: userid,
-            show: true,
-            message: "Your vacation request was confirmed",
-            icon: "umbrella-beach",
-            changed: ["vacationRequest"],
-            link: "vacation"
-          },
-          ta,
-          { company, message: `User ${userid} vacation request was confirmed` }
-        );
-
-        return true;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    })
+      })
   ),
 
-  declineVacationRequest: requiresRights([
-    "edit-vacation-requests"
-  ]).createResolver(async (_p, { userid, requestid }, { models, session }) =>
-    models.sequelize.transaction(async ta => {
-      try {
-        const {
-          user: { company }
-        } = decode(session.token);
-        const res = await models.VacationRequest.update(
-          { status: "REJECTED", decided: models.sequelize.fn("NOW") },
-          { where: { unitid: userid, id: requestid }, transaction: ta }
-        );
+  declineVacationRequest: requiresVipfyManagement().createResolver(
+    async (_p, { userid, requestid }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { company }
+          } = decode(session.token);
+          const res = await models.VacationRequest.update(
+            { status: "REJECTED", decided: models.sequelize.fn("NOW") },
+            { where: { unitid: userid, id: requestid }, transaction: ta }
+          );
 
-        if (res[0] == 0) {
-          throw new Error("Could not update request");
+          if (res[0] == 0) {
+            throw new Error("Could not update request");
+          }
+
+          await createNotification(
+            {
+              receiver: userid,
+              show: true,
+              message: "Your vacation request was declined",
+              icon: "umbrella-beach",
+              changed: ["vacationRequest"],
+              link: "vacation"
+            },
+            ta,
+            { company, message: `User ${userid} vacation request was declined` }
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
         }
+      })
+  ),
 
-        await createNotification(
-          {
-            receiver: userid,
-            show: true,
-            message: "Your vacation request was declined",
-            icon: "umbrella-beach",
-            changed: ["vacationRequest"],
-            link: "vacation"
-          },
-          ta,
-          { company, message: `User ${userid} vacation request was declined` }
-        );
+  updateCompanyPic: requiresRights(["edit-department"]).createResolver(
+    async (_p, { file }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        try {
+          const { models } = ctx;
+          const {
+            user: { company, unitid }
+          } = decode(ctx.session.token);
 
-        return true;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    })
+          const parsedFile = await file;
+          const profilepicture = await uploadUserImage(
+            parsedFile,
+            userPicFolder
+          );
+
+          const oldUnit = await models.Department.findOne({
+            where: { unitid: company },
+            raw: true,
+            transaction: ta
+          });
+
+          const [, updatedUnit] = await models.Unit.update(
+            { profilepicture },
+            { where: { id: company }, returning: true, transaction: ta }
+          );
+
+          await Promise.all([
+            createLog(ctx, "updateCompanyPic", { oldUnit, updatedUnit }, ta),
+            createNotification(
+              {
+                receiver: unitid,
+                show: true,
+                message:
+                  "You successfully updated the companies profile picture",
+                icon: "image",
+                changed: ["company"],
+                link: "vacation"
+              },
+              ta,
+              {
+                company,
+                message: `User ${unitid} updated the companies profile picture`
+              }
+            )
+          ]);
+
+          return { ...oldUnit, profilepicture };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err }
+          });
+        }
+      })
   )
 };

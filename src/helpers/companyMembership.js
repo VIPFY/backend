@@ -35,7 +35,7 @@ export const checkCompanyMembership = async (
     }
   }
 
-  const cacheKey = `${company}-${entityID}`;
+  const cacheKey = `${company}/${entityID}`;
   const cacheItem = companyMembershipCache.get(cacheKey);
   if (cacheItem !== undefined) {
     // found in cache
@@ -147,12 +147,8 @@ export const checkOrbitMembership = async (models, company, orbitid) => {
   }
 };
 
-export const resetCompanyMembershipCache = async (company, entityid) => {
-  // sanity check
-  if (`${company}`.indexOf("-") !== -1) {
-    throw new Error("company must be a number");
-  }
-  const cacheKey = `${company}-${entityID}`;
+export const resetCompanyMembershipCache = async (company, entityID) => {
+  const cacheKey = `${company}/${entityID}`;
   companyMembershipCache.del(cacheKey);
 };
 

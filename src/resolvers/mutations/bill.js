@@ -596,6 +596,8 @@ export default {
             payingoptions.stripe.subscription
           );
 
+          //TODO: fix it with new BoughtPlanPeriods!!
+
           const p4 = models.BoughtPlan.update(
             {
               endtime: new Date(cancelledSubscription.current_period_end * 1000)
@@ -698,7 +700,7 @@ export default {
             features,
             internaldescription: plan.internaldescription
           });
-
+          //TODO: fix it with new BoughtPlanPeriods!!
           const closedBoughtPlan = await models.BoughtPlan.update(
             {
               endtime: Date.now(),
@@ -846,7 +848,7 @@ export default {
             department.payingoptions.stripe.subscription,
             plan.stripedata.id
           );
-
+          //TODO: fix it with new BoughtPlanPeriods!!
           const updatedBoughtPlan = await models.BoughtPlan.update(
             { endtime: null },
             { where: { id: boughtPlan.id }, transaction: ta, returning: true }

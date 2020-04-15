@@ -155,17 +155,18 @@ export default {
     }
   ),
 
-  fetchUsersSessions: requiresRights(["show-sessions"]).createResolver(
-    async (_p, { userid }, { redis }) => {
-      try {
-        const sessions = await fetchSessions(redis, userid);
+  fetchUsersSessions: requiresRights([
+    "show-sessions",
+    "myself"
+  ]).createResolver(async (_p, { userid }, { redis }) => {
+    try {
+      const sessions = await fetchSessions(redis, userid);
 
-        return parseSessions(sessions);
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
+      return parseSessions(sessions);
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
-  ),
+  }),
 
   fetchPwParams: async (_p, { email }, ctx) => {
     try {

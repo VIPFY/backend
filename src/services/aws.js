@@ -96,7 +96,7 @@ export const uploadTeamImage = fileTypeCheck.createWrapper(
     const Bucket = "userimages.vipfy.store";
 
     try {
-      await s3.upload({ Key, Body: createReadStream, Bucket }).promise();
+      await s3.upload({ Key, Body: createReadStream(), Bucket }).promise();
 
       return Key;
     } catch (err) {

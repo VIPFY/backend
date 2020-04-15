@@ -2,7 +2,7 @@ import { decode } from "jsonwebtoken";
 import {
   requiresRights,
   requiresAuth,
-  requiresVipfyAdmin
+  requiresVipfyManagement
 } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
@@ -14,9 +14,7 @@ export default {
           user: { company }
         } = decode(session.token);
 
-        return await models.Department.findOne({
-          where: { unitid: company }
-        });
+        return await models.Department.findOne({ where: { unitid: company } });
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
@@ -148,7 +146,7 @@ export default {
     }
   ),
 
-  fetchVacationRequests: requiresVipfyAdmin(true).createResolver(
+  fetchVacationRequests: requiresVipfyManagement(true).createResolver(
     async (_p, args, { models, session }) => {
       try {
         const {

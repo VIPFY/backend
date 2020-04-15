@@ -12,7 +12,13 @@ import {
   checkOrbitMembership
 } from "./companyMembership";
 import { AuthError, AdminError, RightsError, NormalError } from "../errors";
+import { vipfyManagement } from "../constants";
 
+/**
+ * Recursively wraps a function with passed functions
+ *
+ * @param {function} resolver The function which will be wrapped
+ */
 const createResolver = resolver => {
   const baseResolver = resolver;
   baseResolver.createResolver = childResolver => {
@@ -25,7 +31,9 @@ const createResolver = resolver => {
   return baseResolver;
 };
 
-// Check whether the user is authenticated
+/**
+ * Checks whether the user is authenticated
+ */
 export const requiresAuth = createResolver(
   async (_parent, _args, { models, session, SECRET }, info) => {
     try {
@@ -76,8 +84,8 @@ export const requiresAuth = createResolver(
         await models.sequelize.transaction(async ta => {
           vipfyPlan = await models.BoughtPlan.create(
             {
-              payer: company,
               usedby: company,
+              alias: "VIPFY Basic",
               disabled: false
             },
             { transaction: ta }
@@ -87,7 +95,7 @@ export const requiresAuth = createResolver(
             {
               boughtplanid: vipfyPlan.id,
               planid: "8c3741f0-3037-42e8-80c9-c1663c0000e2",
-              payer: company.id,
+              payer: company,
               creator: unitid,
               totalprice: 0
             },
@@ -95,6 +103,7 @@ export const requiresAuth = createResolver(
           );
         });
       }
+
       return "authenticated!";
     } catch (error) {
       session.destroy(err => {
@@ -304,6 +313,27 @@ export const requiresMessageGroupRights = rights =>
     }
   });
 
+export const requiresVipfyManagement = myself =>
+  requiresAuth.createResolver(
+    async (_parent, { userid }, { models, session }) => {
+      try {
+        const {
+          user: { unitid, company }
+        } = decode(session.token);
+
+        if (!vipfyManagement.find(id => id == unitid)) {
+          if (userid && myself) {
+            await checkCompanyMembership(models, company, userid, "user");
+          } else {
+            throw new AdminError();
+          }
+        }
+      } catch (err) {
+        throw new AdminError();
+      }
+    }
+  );
+
 export const requiresVipfyAdmin = myself =>
   requiresAuth.createResolver(
     async (_parent, { userid }, { models, session }) => {
@@ -313,10 +343,9 @@ export const requiresVipfyAdmin = myself =>
         } = decode(session.token);
 
         const vipfyAdmins = [
-          "f876804e-efd0-48b4-a5b2-807cbf66315f",
-          "98cdb502-51fc-4c0d-a5c7-ee274b6bb7b5",
-          "96d65748-7d36-459a-97d0-7f52a7a4bbf0",
-          "91bd25cb-65cc-4dca-b0c8-285dbf5919f3"
+          ...vipfyManagement,
+          "b65a0528-59b1-4137-887f-faf3d6a07fd7",
+          "84c3382a-63c1-479f-85cd-d16e9988aa8a"
         ];
 
         if (!vipfyAdmins.find(id => id == unitid)) {

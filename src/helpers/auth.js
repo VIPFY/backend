@@ -7,6 +7,14 @@ import {
   flushCompanyMembershipCache
 } from "./companyMembership";
 
+/**
+ * Creates a token for the user
+ *
+ * @exports
+ * @param {object} user
+ * @param {string} SECRET
+ * @param {string} expiresIn
+ */
 export const createToken = async (user, SECRET, expiresIn = "1w") => {
   try {
     const newToken = await jwt.sign(

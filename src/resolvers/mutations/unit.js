@@ -2,7 +2,11 @@ import { decode } from "jsonwebtoken";
 import iplocate from "node-iplocate";
 import moment from "moment";
 import "moment-feiertage";
-import { requiresAuth, requiresRights } from "../../helpers/permissions";
+import {
+  requiresAuth,
+  requiresRights,
+  requiresVipfyManagement
+} from "../../helpers/permissions";
 import {
   userPicFolder,
   MIN_PASSWORD_LENGTH,
@@ -541,12 +545,20 @@ export default {
           );
         }
 
-        const targetIsAdmin = (
-          await ctx.models.User.findOne({ where: { id: userid } })
-        ).isadmin;
+        const target = await ctx.models.User.findOne({ where: { id: userid } });
 
-        if (targetIsAdmin) {
+        if (target.isadmin) {
           throw new Error("You can't impersonate an administrator");
+        }
+
+        if (
+          target.companyban ||
+          target.deleted ||
+          target.banned ||
+          target.suspended
+        ) {
+          // this might be useful to allow, but currently requiresAuth won't accept you anyways
+          throw new Error("You can't impersonate this user");
         }
 
         const token = await createAdminToken({
@@ -603,7 +615,6 @@ export default {
     try {
       const { user, impersonator } = decode(ctx.session.token);
 
-      await companyCheck(user.company, impersonator, user.unitid);
       const listName = `${IMPERSONATE_PREFIX}${impersonator}`;
       const sessionIDs = await ctx.redis.lrange(listName, 0, -1);
 
@@ -627,7 +638,7 @@ export default {
     }
   },
 
-  setVacationDays: requiresAuth.createResolver(
+  setVacationDays: requiresVipfyManagement().createResolver(
     async (_p, { year, days, userid }, { models, session }) => {
       try {
         const {

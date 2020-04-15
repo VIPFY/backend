@@ -275,8 +275,7 @@ export default {
               price: 0.0,
               options: { external: true, integrated: true },
               payperiod: { years: 1 },
-              cancelperiod: { secs: 1 },
-              hidden: true
+              cancelperiod: { secs: 1 }
             },
             { transaction: ta }
           );
@@ -298,7 +297,7 @@ export default {
         const { models, session } = context;
 
         const {
-          user: { company }
+          user: { unitid, company }
         } = decode(session.token);
 
         const parsedTime = moment(time).valueOf();
@@ -319,108 +318,148 @@ export default {
         );
 
         if (boughtPlans.length < 1) {
-          throw new Error("BoughtPlan doesn't exist or isn't active anymore!");
-        }
+          const pendingApps = await models.sequelize.query(
+            `
+              SELECT id, options
+              FROM app_data
+              WHERE owner = :company
+                and id = :serviceid`,
+            {
+              replacements: { company, serviceid },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+          if (pendingApps.length < 1) {
+            throw new Error(
+              "BoughtPlan doesn't exist or isn't active anymore!"
+            );
+          }
 
-        const app = await models.App.findOne({
-          where: { id: serviceid },
-          raw: true,
-          transaction: ta
-        });
+          const newoptions = {
+            ...pendingApps[0].options,
+            pending: undefined,
+            removed: true
+          };
 
-        if (app.owner == company) {
           await models.App.update(
-            { disabled: true },
+            {
+              options: newoptions,
+              disabled: true,
+              hidden: true
+            },
             { where: { id: serviceid }, transaction: ta }
           );
-        }
+        } else {
+          const app = await models.App.findOne({
+            where: { id: serviceid },
+            raw: true,
+            transaction: ta
+          });
 
-        const notifiyUsers = [];
-
-        await Promise.all(
-          boughtPlans.map(async boughtPlan => {
-            const endtime = parsedTime;
-
-            const oldperiod = await models.BoughtPlanPeriodView.findOne({
-              where: { boughtplanid: boughtPlan.id },
-              raw: true,
-              transaction: ta
-            });
-
-            await models.BoughtPlanPeriod.update(
-              {
-                endtime
-              },
-              { where: { id: oldperiod.id }, transaction: ta }
+          if (app.owner == company) {
+            await models.App.update(
+              { disabled: true },
+              { where: { id: serviceid }, transaction: ta }
             );
+          }
 
-            const oldAccounts = await models.LicenceData.update(
-              {
-                endtime
-              },
-              {
-                where: { boughtplanid: boughtPlan.id, endtime: null },
-                returning: true,
-                transaction: ta,
-                raw: true
-              }
-            );
+          const notifiyUsers = [];
 
-            const oldassignments = await models.LicenceRight.update(
-              {
-                endtime
-              },
-              {
-                where: {
-                  licenceid: oldAccounts[1].map(oa => oa.id),
-                  endtime: {
-                    [models.Op.or]: {
-                      [models.Op.gt]: endtime,
-                      [models.Op.eq]: Infinity
-                    }
-                  }
-                },
-                returning: true,
-                transaction: ta,
-                raw: true
-              }
-            );
-
-            if (oldassignments[1]) {
-              oldassignments[1].forEach(oas => {
-                if (!notifiyUsers.find(nu => nu == oas.unitid)) {
-                  notifiyUsers.push(oas.unitid);
-                }
-              });
-            }
-
-            await models.DepartmentApp.update(
-              {
-                endtime
-              },
-              {
-                where: { boughtplanid: boughtPlan.id, endtime: Infinity },
-                transaction: ta
-              }
-            );
-          })
-        );
-
-        // NOTIFY USERS
-        if (notifiyUsers) {
           await Promise.all(
-            notifiyUsers.map(nu =>
-              createNotification(
+            boughtPlans.map(async boughtPlan => {
+              const endtime = parsedTime;
+
+              const oldperiod = await models.BoughtPlanPeriodView.findOne({
+                where: { boughtplanid: boughtPlan.id },
+                raw: true,
+                transaction: ta
+              });
+
+              await models.BoughtPlanPeriod.update(
                 {
-                  receiver: nu,
-                  message: `An account has been updated`,
-                  icon: "business-time",
-                  link: `dashboard`,
-                  changed: ["ownLicences"]
+                  endtime
                 },
-                ta
+                { where: { id: oldperiod.id }, transaction: ta }
+              );
+
+              const oldAccounts = await models.LicenceData.update(
+                {
+                  endtime
+                },
+                {
+                  where: { boughtplanid: boughtPlan.id, endtime: null },
+                  returning: true,
+                  transaction: ta,
+                  raw: true
+                }
+              );
+
+              const oldassignments = await models.LicenceRight.update(
+                {
+                  endtime
+                },
+                {
+                  where: {
+                    licenceid: oldAccounts[1].map(oa => oa.id),
+                    endtime: {
+                      [models.Op.or]: {
+                        [models.Op.gt]: endtime,
+                        [models.Op.eq]: Infinity
+                      }
+                    }
+                  },
+                  returning: true,
+                  transaction: ta,
+                  raw: true
+                }
+              );
+
+              if (oldassignments[1]) {
+                oldassignments[1].forEach(oas => {
+                  if (!notifiyUsers.find(nu => nu == oas.unitid)) {
+                    notifiyUsers.push(oas.unitid);
+                  }
+                });
+              }
+
+              await models.DepartmentApp.update(
+                {
+                  endtime
+                },
+                {
+                  where: { boughtplanid: boughtPlan.id, endtime: Infinity },
+                  transaction: ta
+                }
+              );
+            })
+          );
+
+          // NOTIFY USERS
+          if (notifiyUsers) {
+            await Promise.all(
+              notifiyUsers.map(nu =>
+                createNotification(
+                  {
+                    receiver: nu,
+                    message: `An account has been updated`,
+                    icon: "business-time",
+                    link: `dashboard`,
+                    changed: ["ownLicences"]
+                  },
+                  ta
+                )
               )
-            )
+            );
+          }
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `An service has been removed`,
+              icon: "business-time",
+              link: `dashboard`,
+              changed: ["companyServices"]
+            },
+            ta
           );
         }
 
@@ -550,6 +589,17 @@ export default {
             ]
           });
 
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `A pending service has been added`,
+              icon: "business-time",
+              link: `dashboard`,
+              changed: ["companyServices"]
+            },
+            ta
+          );
+
           return appOwned.dataValues.id;
         } catch (err) {
           throw new NormalError({
@@ -560,7 +610,7 @@ export default {
       })
   ),
 
-  //Not used at the moment - maybe for late use
+  // Not used at the moment - maybe for late use
   updateLicenceSpeed: requiresAuth.createResolver(
     async (_p, { licenceid, speed, working, oldspeed }, { models, session }) =>
       models.sequelize.transaction(async ta => {
@@ -956,7 +1006,11 @@ export default {
   ),
 
   changeOrbit: requiresRights(["edit-licences"]).createResolver(
-    async (_p, { orbitid, alias, loginurl, starttime, endtime }, ctx) =>
+    async (
+      _p,
+      { orbitid, alias, loginurl, starttime, endtime, selfhosting },
+      ctx
+    ) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
@@ -982,7 +1036,8 @@ export default {
             {
               key: {
                 ...oldorbit.key,
-                domain: loginurl
+                domain: loginurl,
+                selfhosting
               },
               alias
             },
@@ -1053,6 +1108,23 @@ export default {
                 )
               );
             }
+            await models.DepartmentApp.update(
+              {
+                endtime
+              },
+              {
+                where: {
+                  boughtplanid: orbitid,
+                  endtime: {
+                    [models.Op.or]: {
+                      [models.Op.gt]: endtime,
+                      [models.Op.eq]: Infinity
+                    }
+                  }
+                },
+                transaction: ta
+              }
+            );
           }
 
           await createLog(
@@ -1292,6 +1364,7 @@ export default {
         }
       })
   ),
+
   editVacation: requiresRights([
     ["edit-licences", "edit-licenceRights"]
   ]).createResolver(
@@ -1458,78 +1531,80 @@ export default {
       })
   ),
 
-  sendSupportRequest: requiresAuth.createResolver(
-    async (_p, args, { models, session }) =>
-      ctx.models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid, company: companyID }
-          } = decode(session.token);
-          const { topic, description, component, internal } = args;
+  sendSupportRequest: requiresAuth.createResolver(async (_p, args, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      try {
+        const { models, session } = ctx;
 
-          const p1 = models.User.findOne({
-            where: { id: unitid },
-            raw: true,
-            transaction: ta
+        const {
+          user: { unitid, company: companyID }
+        } = decode(session.token);
+        const { topic, description, component, internal } = args;
+
+        const p1 = models.User.findOne({
+          where: { id: unitid },
+          raw: true,
+          transaction: ta
+        });
+
+        const p2 = models.Department.findOne({
+          where: { unitid: companyID },
+          raw: true,
+          transaction: ta
+        });
+
+        const [user, company] = await Promise.all([p1, p2]);
+
+        if (!company.supportid) {
+          const { data } = await freshdeskAPI("POST", "companies", {
+            name: `25${company.name}-${company.unitid}`
           });
 
-          const p2 = models.Department.findOne({
-            where: { unitid: companyID },
-            raw: true,
-            transaction: ta
-          });
+          await models.DepartmentData.update(
+            { supportid: data.id },
+            { where: { unitid: company.unitid } }
+          );
 
-          const [user, company] = await Promise.all([p1, p2]);
-
-          if (!company.supportid) {
-            const { data } = await freshdeskAPI("POST", "companies", {
-              name: `25${company.name}-${company.unitid}`
-            });
-
-            await models.DepartmentData.update(
-              { supportid: data.id },
-              { where: { unitid: company.unitid } }
-            );
-
-            company.supportid = data.id;
-          }
-
-          if (!user.supporttoken) {
-            const { data } = await freshdeskAPI("POST", "contacts", {
-              name: concatName(user),
-              email: user.emails[0],
-              company_id: company.supportid
-            });
-
-            await models.Human.update(
-              { supporttoken: data.id },
-              { where: { unitid } }
-            );
-
-            user.supporttoken = data.id;
-
-            freshdeskAPI("PUT", `contacts/${data.id}/send_invite`);
-          }
-
-          await freshdeskAPI("POST", "tickets", {
-            requester_id: user.supporttoken,
-            subject: `${component} - ${topic}`,
-            type: internal ? "VIPFY" : "External App",
-            description,
-            source: 1,
-            status: 2,
-            priority: 2
-          });
-
-          return true;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
+          company.supportid = data.id;
         }
-      })
+
+        if (!user.supporttoken) {
+          const { data } = await freshdeskAPI("POST", "contacts", {
+            name: concatName(user),
+            email: user.emails[0],
+            company_id: company.supportid
+          });
+
+          await models.Human.update(
+            { supporttoken: data.id },
+            { where: { unitid } }
+          );
+
+          user.supporttoken = data.id;
+
+          freshdeskAPI("PUT", `contacts/${data.id}/send_invite`);
+        }
+
+        await freshdeskAPI("POST", "tickets", {
+          requester_id: user.supporttoken,
+          subject: `${component} - ${topic}`,
+          type: internal ? "VIPFY" : "External App",
+          description,
+          source: 1,
+          status: 2,
+          priority: 2
+        });
+
+        return true;
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err }
+        });
+      }
+    })
   ),
+
   saveExecutionPlan: requiresVipfyAdmin().createResolver(
     async (_p, { appid, key, script }, { models }) => {
       try {

@@ -86,14 +86,15 @@ export default {
         }
 
         // Check whether the email is already in use
-        const emailInUse = await models.Email.findOne({
+        const userExists = await models.Email.findOne({
           where: { email },
           raw: true
         });
 
-        if (emailInUse) {
+        if (userExists) {
           throw new Error("Email already in use!");
         }
+
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
@@ -149,7 +150,7 @@ export default {
           {
             disabled: false,
             usedby: company.id,
-            alias: "Vipfy Basic"
+            alias: "Vipfy Premium"
           },
           { transaction: ta }
         );
@@ -198,10 +199,7 @@ export default {
           department,
           parentUnit,
           vipfyPlan,
-          setuptoken,
-          verifytoken,
-          key1,
-          key2
+          ..._notNeeded
         ] = await Promise.all([p3, p4, p5, p6, p7, p8, p9, p10]);
 
         await models.BoughtPlanPeriod.create(
@@ -212,7 +210,7 @@ export default {
             creator: unit.id,
             totalprice: 0,
             endtime: moment()
-              .add(2, "months")
+              .add(1, "months")
               .toDate()
           },
           { transaction: ta }
@@ -743,6 +741,10 @@ export default {
 
           if (passwordMetrics.passwordStrength < 2) {
             throw new Error("Password too weak!");
+          }
+
+          if (oldPasskey == newPasskey) {
+            throw new Error("You can't use the same password again!");
           }
 
           if (oldPasskey.length != 128 || newPasskey.length != 128) {

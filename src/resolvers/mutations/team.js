@@ -30,17 +30,14 @@ export default {
             user: { unitid, company }
           } = decode(session.token);
 
-          const { name, picture, ...teamdata } = team;
+          const { name, profilepicture, ...teamdata } = team;
           const unitArgs = {};
-          if (picture) {
-            const parsedFile = await picture;
+          if (profilepicture) {
+            const parsedFile = await profilepicture;
 
-            const profilepicture = await uploadTeamImage(
-              parsedFile,
-              teamPicFolder
-            );
+            const pic = await uploadTeamImage(parsedFile, teamPicFolder);
 
-            unitArgs.profilepicture = profilepicture;
+            unitArgs.profilepicture = pic;
           }
 
           const unit = await models.Unit.create(unitArgs, { transaction: ta });
@@ -61,7 +58,7 @@ export default {
 
           const [department, parentUnit] = await Promise.all([p1, p2]);
 
-          //add employees
+          // add employees
 
           const employeepromises = [];
           let counter = 0;
@@ -234,6 +231,7 @@ export default {
 
           return unit.dataValues.id;
         } catch (err) {
+          console.error("\x1b[1m%s\x1b[0m", "LOG err", err);
           throw new NormalError({
             message: err.message,
             internalData: { err }
@@ -248,7 +246,7 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company }
+            user: { unitid, company }
           } = decode(session.token);
 
           await teamCheck(company, teamid);
@@ -375,12 +373,12 @@ export default {
                           }
                         );
 
-                        await models.BoughtPlan.update(
+                        await models.BoughtPlanPeriod.update(
                           {
                             endtime
                           },
                           {
-                            where: { id: boughtplan[0].boughtplanid },
+                            where: { boughtplanid: boughtplan[0].boughtplanid },
                             transaction: ta
                           }
                         );
@@ -459,6 +457,17 @@ export default {
               )
             );
           }
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `A team has been removed`,
+              icon: "business-time",
+              link: `teammanager`,
+              changed: ["employees"]
+            },
+            ta
+          );
 
           return true;
         } catch (err) {
@@ -739,47 +748,15 @@ export default {
           // Delete all accounts
           let noAccountLeft = true;
           deletejson.accounts.forEach(a => {
-            // Delete all assignments of a
-            Promise.all(
-              a.assignments.map(async as => {
-                if (as.bool) {
-                  promises.push(
-                    models.LicenceRight.update(
-                      {
-                        endtime
-                      },
-                      {
-                        where: { id: as.id },
-                        transaction: ta
-                      }
-                    )
-                  );
-                } else {
-                  // Remove team tag and assignoption
-                  const checkassignment = await models.LicenceRight.findOne({
-                    where: { id: as.id },
-                    raw: true,
-                    transaction: ta
-                  });
-                  if (
-                    checkassignment.tags &&
-                    checkassignment.tags.includes("teamlicence") &&
-                    checkassignment.options &&
-                    checkassignment.options.teamlicence == teamid
-                  ) {
-                    let newtags = checkassignment.tags;
-                    newtags.splice(
-                      checkassignment.tags.findIndex(e => e == "teamlicence"),
-                      1
-                    );
+            if (a) {
+              // Delete all assignments of a
+              Promise.all(
+                a.assignments.map(async as => {
+                  if (as.bool) {
                     promises.push(
                       models.LicenceRight.update(
                         {
-                          tags: newtags,
-                          options: {
-                            ...checkassignment.options,
-                            teamlicence: undefined
-                          }
+                          endtime: endtime || new Date()
                         },
                         {
                           where: { id: as.id },
@@ -787,39 +764,73 @@ export default {
                         }
                       )
                     );
+                  } else {
+                    // Remove team tag and assignoption
+                    const checkassignment = await models.LicenceRight.findOne({
+                      where: { id: as.id },
+                      raw: true,
+                      transaction: ta
+                    });
+                    if (
+                      checkassignment.tags &&
+                      checkassignment.tags.includes("teamlicence") &&
+                      checkassignment.options &&
+                      checkassignment.options.teamlicence == teamid
+                    ) {
+                      let newtags = checkassignment.tags;
+                      newtags.splice(
+                        checkassignment.tags.findIndex(e => e == "teamlicence"),
+                        1
+                      );
+                      promises.push(
+                        models.LicenceRight.update(
+                          {
+                            tags: newtags,
+                            options: {
+                              ...checkassignment.options,
+                              teamlicence: undefined
+                            }
+                          },
+                          {
+                            where: { id: as.id },
+                            transaction: ta
+                          }
+                        )
+                      );
+                    }
                   }
-                }
-              })
-            );
-
-            if (a.bool && a.assignments.every(as => as.bool)) {
-              promises.push(
-                models.LicenceData.update(
-                  {
-                    endtime
-                  },
-                  {
-                    where: { id: a.id },
-                    transaction: ta
-                  }
-                )
+                })
               );
-            } else {
-              noAccountLeft = false;
+
+              if (a.bool && a.assignments.every(as => as.bool)) {
+                promises.push(
+                  models.LicenceData.update(
+                    {
+                      endtime: endtime || new Date()
+                    },
+                    {
+                      where: { id: a.id },
+                      transaction: ta
+                    }
+                  )
+                );
+              } else {
+                noAccountLeft = false;
+              }
             }
           });
 
           if (
             deletejson.orbit &&
-            deletejson.teams.every(t => t.bool) &&
+            deletejson.teams.every(t => t && t.bool) &&
             noAccountLeft
           ) {
             promises.push(
-              models.BoughtPlan.update(
+              models.BoughtPlanPeriod.update(
                 {
-                  endtime
+                  endtime: endtime || new Date()
                 },
-                { where: { id: orbitid }, transaction: ta }
+                { where: { boughtplanid: orbitid }, transaction: ta }
               )
             );
           }
@@ -993,12 +1004,12 @@ export default {
 
                     console.log("BOUGHTPLAN", boughtplan);
 
-                    await models.BoughtPlan.update(
+                    await models.BoughtPlanPeriod.update(
                       {
                         endtime
                       },
                       {
-                        where: { id: boughtplan[0].boughtplanid },
+                        where: { boughtplanid: boughtplan[0].boughtplanid },
                         transaction: ta
                       }
                     );
