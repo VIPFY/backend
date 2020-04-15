@@ -180,7 +180,7 @@ export default {
       });
 
       if (!emailExists || !emailExists.passwordsalt) {
-        return generateFakeKey(email);
+        return generateFakeKey(email, true);
       }
 
       return {

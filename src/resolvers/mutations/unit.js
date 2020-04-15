@@ -282,6 +282,7 @@ export default {
         unitid,
         newPasskey,
         passwordMetrics,
+        recoveryPrivateKey,
         logOut,
         newKey,
         deprecateAllExistingKeys,
@@ -354,8 +355,11 @@ export default {
             promises.push(
               models.Human.update(
                 {
-                  needspasswordchange: true,
                   ...passwordMetrics,
+                  needspasswordchange: true,
+                  recoveryprivatekey: employee.recoveryprivatekey
+                    ? recoveryPrivateKey
+                    : null,
                   passkey: await hashPasskey(newPasskey)
                 },
                 { where: { unitid }, returning: true, transaction }

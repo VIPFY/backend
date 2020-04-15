@@ -61,7 +61,7 @@ export const types = `
     email: String!
     secret: String!
     token: String!
-    recoveryKeys: RecoveryKeyInput!
+    recoveryPrivateKey: String!
     newPasskey: String!
     passwordMetrics: PasswordMetricsInput!
     newKey: KeyInput!
@@ -113,7 +113,7 @@ export const mutations = `
 
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!
-  changePasswordEncrypted(oldPasskey: String!, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, newKey: KeyInput!, replaceKeys: [KeyInput!]!): LoginResponse!
+  changePasswordEncrypted(oldPasskey: String!, newPasskey: String!, recoveryPrivateKey: String!, passwordMetrics: PasswordMetricsInput!, newKey: KeyInput!, replaceKeys: [KeyInput!]!): LoginResponse!
   updateRecoveredPassword(recoveryData: PasswordRecoveryInput!): String!
 
   impersonate(userid: ID!): String!

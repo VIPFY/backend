@@ -181,5 +181,5 @@ export const mutations = `
   setConsent(consent: Boolean!): User!
   setVacationDays(year: Int!, days: Int!, userid: ID!): Boolean!
   updateEmployeePassword(unitid: ID!, password: String!, logOut: Boolean): UserSecurityOverview!
-  updateEmployeePasswordEncrypted(unitid: ID!, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, logOut: Boolean, newKey: KeyInput!, deprecateAllExistingKeys: Boolean!, licenceUpdates: [licenceKeyUpdateInput!]!): UserSecurityOverview!
+  updateEmployeePasswordEncrypted(unitid: ID!, recoveryPrivateKey: String!, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, logOut: Boolean, newKey: KeyInput!, deprecateAllExistingKeys: Boolean!, licenceUpdates: [licenceKeyUpdateInput!]!): UserSecurityOverview!
 `;

@@ -47,7 +47,7 @@ export default {
     },
     ctx
   ) =>
-    ctx.models.sequelize.transaction(async (ta) => {
+    ctx.models.sequelize.transaction(async ta => {
       try {
         const { models } = ctx;
 
@@ -277,7 +277,7 @@ export default {
     { country, vatoption, vatnumber, placeId, ownAdress, username },
     { models, session }
   ) =>
-    models.sequelize.transaction(async (ta) => {
+    models.sequelize.transaction(async ta => {
       try {
         const {
           user: { unitid, company }
@@ -354,7 +354,7 @@ export default {
     }),
 
   signUpConfirm: async (_p, { token }, ctx) =>
-    ctx.models.sequelize.transaction(async (ta) => {
+    ctx.models.sequelize.transaction(async ta => {
       const { models } = ctx;
       try {
         const tokenExists = await models.Token.findOne({
@@ -540,7 +540,7 @@ export default {
 
         if (session.token) {
           const sessions = await fetchSessions(redis, unitid);
-          const signOutSession = sessions.find((item) => {
+          const signOutSession = sessions.find(item => {
             const parsedSession = JSON.parse(item);
             return parsedSession.session == sessionID;
           });
@@ -551,7 +551,7 @@ export default {
             signOutSession // This is the value
           );
 
-          await session.destroy((err) => {
+          await session.destroy(err => {
             if (err) {
               console.error("\x1b[1m%s\x1b[0m", "ERR:", err);
             }
@@ -609,7 +609,7 @@ export default {
 
       const promises = [];
 
-      sessions.forEach((sessionItem) => {
+      sessions.forEach(sessionItem => {
         promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionItem}`));
       });
       promises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
@@ -623,7 +623,7 @@ export default {
 
   changePassword: requiresAuth.createResolver(
     async (_p, { pw, newPw, confirmPw }, ctx) =>
-      ctx.models.sequelize.transaction(async (ta) => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const { models, session, redis } = ctx;
 
@@ -695,7 +695,7 @@ export default {
 
           const sessions = await fetchSessions(redis, unitid);
 
-          const sessionPromises = sessions.map((sessionString) =>
+          const sessionPromises = sessions.map(sessionString =>
             redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
           );
 
@@ -717,10 +717,17 @@ export default {
   changePasswordEncrypted: requiresAuth.createResolver(
     async (
       _p,
-      { oldPasskey, newPasskey, passwordMetrics, newKey, replaceKeys },
+      {
+        oldPasskey,
+        newPasskey,
+        recoveryPrivateKey,
+        passwordMetrics,
+        newKey,
+        replaceKeys
+      },
       ctx
     ) =>
-      ctx.models.sequelize.transaction(async (ta) => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const { models, session, redis } = ctx;
 
@@ -762,8 +769,11 @@ export default {
 
           const p1 = models.Human.update(
             {
-              needspasswordchange: false,
               ...passwordMetrics,
+              needspasswordchange: false,
+              recoveryprivatekey: findOldPassword.recoveryprivatekey
+                ? recoveryPrivateKey
+                : null,
               passkey: await hashPasskey(newPasskey)
             },
             { where: { unitid }, returning: true, transaction: ta }
@@ -774,17 +784,14 @@ export default {
           delete newKey.createdat;
           delete newKey.unitid;
           const p3 = models.Key.create(
-            {
-              ...newKey,
-              unitid
-            },
+            { ...newKey, unitid },
             { transaction: ta }
           );
 
           const [updatedUser, basicUser, key] = await Promise.all([p1, p2, p3]);
 
           await Promise.all(
-            replaceKeys.map((k) =>
+            replaceKeys.map(k =>
               models.Key.update(
                 {
                   id: k.id,
@@ -827,7 +834,7 @@ export default {
 
           const sessions = await fetchSessions(redis, unitid);
 
-          const sessionPromises = sessions.map((sessionString) =>
+          const sessionPromises = sessions.map(sessionString =>
             redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
           );
 
@@ -847,7 +854,7 @@ export default {
   ),
 
   agreeTos: requiresAuth.createResolver(async (_p, _args, ctx) =>
-    ctx.models.sequelize.transaction(async (ta) => {
+    ctx.models.sequelize.transaction(async ta => {
       try {
         const { models, session } = ctx;
         const {
@@ -873,7 +880,7 @@ export default {
 
   forcePasswordChange: requiresRights(["view-security"]).createResolver(
     async (_p, { userids }, ctx) =>
-      ctx.models.sequelize.transaction(async (transaction) => {
+      ctx.models.sequelize.transaction(async transaction => {
         try {
           const { models, session } = ctx;
           const {
@@ -988,7 +995,7 @@ export default {
   },
 
   resendToken: async (_p, { token }, { models }) =>
-    models.sequelize.transaction(async (ta) => {
+    models.sequelize.transaction(async ta => {
       try {
         const oldToken = await models.Token.findOne({
           where: { token, type: "signUp", usedat: null },
@@ -1146,13 +1153,13 @@ export default {
 
   updateRecoveredPassword: requiresAuth.createResolver(
     async (_p, { recoveryData }, ctx) =>
-      ctx.models.sequelize.transaction(async (ta) => {
+      ctx.models.sequelize.transaction(async ta => {
         try {
           const {
             email,
             secret,
             token,
-            recoveryKeys,
+            recoveryPrivateKey,
             newPasskey,
             passwordMetrics,
             newKey,
@@ -1192,8 +1199,7 @@ export default {
             {
               ...passwordMetrics,
               passkey: await hashPasskey(newPasskey),
-              recoverypublickey: recoveryKeys.publickey,
-              recoveryprivatekey: recoveryKeys.privatekey
+              recoveryprivatekey: recoveryPrivateKey
             },
             { where: { unitid }, returning: true, transaction: ta }
           );
@@ -1211,7 +1217,7 @@ export default {
           const [updatedUser, basicUser, key] = await Promise.all([p1, p2, p3]);
 
           await Promise.all(
-            replaceKeys.map((k) =>
+            replaceKeys.map(k =>
               models.Key.update(
                 {
                   privatekey: k.privatekey,
@@ -1251,7 +1257,7 @@ export default {
           const user = await parentAdminCheck(basicUser);
           user.unitid = user.id;
           const sessions = await fetchSessions(redis, unitid);
-          const sessionPromises = sessions.map((sessionString) =>
+          const sessionPromises = sessions.map(sessionString =>
             redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
           );
 
