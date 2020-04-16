@@ -42,6 +42,7 @@ type Notification {
   icon: String
   link: String
   changed: [String]
+  options: JSON
 }
 
 type Newsletter {

@@ -231,6 +231,46 @@ export const createNotification = async (
   }
 };
 
+export const updateNotification = async (
+  notificationBody,
+  transaction,
+  informAdmins,
+  notificationid
+) => {
+  try {
+    const updatetime = getDate();
+    const sendtime = getDate();
+
+    notificationBody.options = notificationBody.options || {};
+
+    notificationBody.options.updatetime = updatetime;
+    let notification = {
+      dataValues: { ...notificationBody, id: notificationid }
+    };
+
+    // Filter the case where only admins should be informed
+    if (notificationBody.receiver) {
+      if (notificationBody.show !== false) {
+        [, [notification]] = await models.Notification.update(
+          {
+            ...notificationBody,
+            options: { ...notificationBody.options, type: "update" },
+            sendtime
+          },
+          { where: { id: notificationid }, transaction, returning: true }
+        );
+      }
+
+      pubsub.publish(NEW_NOTIFICATION, {
+        newNotification: notification
+      });
+    }
+    return notification;
+  } catch (err) {
+    return new NormalError({ message: err.message });
+  }
+};
+
 /**
  * Computes the strength of the password on a scale from 0 to 4, with 0 being the weakest
  *
