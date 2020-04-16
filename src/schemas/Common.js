@@ -50,16 +50,6 @@ type Newsletter {
   activeuntil: String
 }
 
-type Log {
-  id: ID!
-  time: String!
-  eventtype: String!
-  eventdata: JSON!
-  ip: String
-  user: User!
-  sudoer: User!
-}
-
 type Token {
   id: ID!
   email: Email!
