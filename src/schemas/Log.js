@@ -1,5 +1,3 @@
-
-
 export const types = `
 type Log {
   id: ID!
@@ -12,9 +10,6 @@ type Log {
   user: ID! ,
   sudoer: ID!
 }`;
-
-
-
 
 export const queries = `
   # Returns all logs.
