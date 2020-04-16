@@ -344,8 +344,10 @@ export const requiresVipfyAdmin = myself =>
 
         const vipfyAdmins = [
           ...vipfyManagement,
-          "b65a0528-59b1-4137-887f-faf3d6a07fd7",
-          "84c3382a-63c1-479f-85cd-d16e9988aa8a"
+          "b65a0528-59b1-4137-887f-faf3d6a07fd7", // Lisa
+          "84c3382a-63c1-479f-85cd-d16e9988aa8a", // Eva
+          "582a705d-d650-4727-8db6-28d231b465dd", // Anna
+          "c3e93aaa-b90d-4acd-b843-9a6632cb93de" // Osama
         ];
 
         if (!vipfyAdmins.find(id => id == unitid)) {
