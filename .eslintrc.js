@@ -1,6 +1,6 @@
 module.exports = {
   plugins: ["import"],
-  extends: ["airbnb-base", "plugin:prettier/recommended"],
+  extends: ["airbnb-base", "plugin:prettier/recommended", "prettier"],
   env: {
     node: true,
     es6: true
@@ -16,7 +16,7 @@ module.exports = {
     "object-curly-newline": "off",
     eqeqeq: "off",
     "func-names": "off",
-    "arrow-parens": "off",
+    arrowParens: "avoid",
     camelcase: "off",
     "no-console": "off",
     "comma-dangle": "off",

@@ -1,4 +1,4 @@
-import { decode, verify } from "jsonwebtoken";
+import { decode } from "jsonwebtoken";
 import iplocate from "node-iplocate";
 import moment from "moment";
 import "moment-feiertage";
@@ -286,6 +286,7 @@ export default {
         unitid,
         newPasskey,
         passwordMetrics,
+        recoveryPrivateKey,
         logOut,
         newKey,
         deprecateAllExistingKeys,
@@ -354,12 +355,21 @@ export default {
               );
             }
 
+            if (employee.recoveryprivatekey && !recoveryPrivateKey) {
+              throw new Error(
+                "The users recoverykey also needs to be updated!"
+              );
+            }
+
             const promises = [];
             promises.push(
               models.Human.update(
                 {
-                  needspasswordchange: true,
                   ...passwordMetrics,
+                  needspasswordchange: true,
+                  recoveryprivatekey: employee.recoveryprivatekey
+                    ? recoveryPrivateKey
+                    : null,
                   passkey: await hashPasskey(newPasskey)
                 },
                 { where: { unitid }, returning: true, transaction }

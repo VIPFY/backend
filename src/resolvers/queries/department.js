@@ -146,7 +146,7 @@ export default {
     }
   ),
 
-  fetchVacationRequests: requiresVipfyManagement().createResolver(
+  fetchVacationRequests: requiresVipfyManagement(true).createResolver(
     async (_p, args, { models, session }) => {
       try {
         const {

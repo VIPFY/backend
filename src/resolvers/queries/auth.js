@@ -1,5 +1,7 @@
-import { decode } from "jsonwebtoken";
+import { decode, sign } from "jsonwebtoken";
 import crypto from "crypto";
+import { SodiumPlus, X25519PublicKey } from "sodium-plus";
+import cryptoRandomString from "crypto-random-string";
 import moment from "moment";
 import Speakeasy from "speakeasy";
 import QRCode from "qrcode";
@@ -8,7 +10,8 @@ import {
   concatName,
   check2FARights,
   fetchSessions,
-  parseSessions
+  parseSessions,
+  generateFakeKey
 } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
@@ -178,16 +181,7 @@ export default {
       });
 
       if (!emailExists || !emailExists.passwordsalt) {
-        // generate fake salt in an attempt to make it less obvious if the user exists
-        // this is vulnerable against timing attacks
-        // make fake salt deterministic, otherwise calling this twice will reveal if the user exists
-        const crypt = crypto.createHmac(
-          "sha256",
-          "eAiJzhVOvT0PeSTDkeWrbLICTE7aeTQ1"
-        );
-        crypt.update(email);
-        const salt = crypt.digest("hex").substring(0, 32);
-        return { id: email, salt, ops: 2, mem: 67108864 };
+        return generateFakeKey(email, true);
       }
 
       return {
@@ -226,8 +220,9 @@ export default {
           // eslint-disable-next-line prefer-destructuring
           unitid = decode(session.token).user.unitid;
         }
+
         const keys = await models.Key.findAll({
-          where: { unitid },
+          where: { unitid, encryptedby: null },
           order: [["createdat", "DESC"]],
           limit: 1
         });
@@ -241,5 +236,54 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
+
+  fetchRecoveryChallenge: async (_p, { email }, { models, SECRET, redis }) => {
+    try {
+      const emailExists = await models.Login.findOne({
+        where: {
+          email,
+          deleted: { [models.Op.or]: [null, false] },
+          banned: { [models.Op.or]: [null, false] },
+          suspended: { [models.Op.or]: [null, false] }
+        },
+        raw: true
+      });
+
+      if (!emailExists || !emailExists.recoveryprivatekey) {
+        const [{ salt }, { salt: publicKey }] = await Promise.all([
+          generateFakeKey(email),
+          generateFakeKey("asdfasd4adfga3de")
+        ]);
+
+        const token = sign({ data: cryptoRandomString(10) }, salt, {
+          expiresIn: "1h"
+        });
+
+        return { encryptedKey: salt, publicKey, token };
+      }
+
+      const sodium = await SodiumPlus.auto();
+      const secret = cryptoRandomString(32);
+
+      const buffer = await sodium.crypto_box_seal(
+        secret,
+        new X25519PublicKey(Buffer.from(emailExists.recoverypublickey, "hex"))
+      );
+
+      const token = sign({ encryptedSecret: buffer.toString("hex") }, SECRET, {
+        expiresIn: "1h"
+      });
+
+      await redis.set(email, secret, "EX", 3600);
+
+      return {
+        encryptedKey: emailExists.recoveryprivatekey,
+        publicKey: emailExists.recoverypublickey,
+        token
+      };
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }
 };

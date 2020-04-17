@@ -23,6 +23,12 @@ export const types = `
     mem: Int!
   }
 
+  type RecoveryChallenge {
+    encryptedKey: String!
+    publicKey: String!
+    token: String!
+  }
+
   type Key {
     id: ID!
     unitid: PublicUser!
@@ -44,6 +50,37 @@ export const types = `
     passwordlength: Int!
     passwordstrength: Int!
   }
+
+  input RecoveryKeyInput {
+    privatekey: String!
+    publickey: String!
+    encryptedby: String
+  }
+
+  input PasswordRecoveryInput {
+    email: String!
+    secret: String!
+    token: String!
+    recoveryPrivateKey: String!
+    newPasskey: String!
+    passwordMetrics: PasswordMetricsInput!
+    newKey: KeyInput!
+    replaceKeys: [KeyInput!]!
+  }
+
+  type RecoveryResponse {
+    token: String!
+    currentKey: RecoveryKey
+    config: JSON
+  }
+
+  type RecoveryKey {
+    id: ID!
+    unitid: PublicUser!
+    privatekey: String!
+    publickey: String!
+    createdat: Date!
+  }
 `;
 
 export const queries = `
@@ -53,6 +90,7 @@ export const queries = `
   # Fetches all Sessions of a specific User
   fetchUsersSessions(userid: ID!): [SessionResponse!]!
 
+  fetchRecoveryChallenge(email: String!): RecoveryChallenge!
   fetchPwParams(email: String!): PasswordParams!
   fetchKey(id: ID!): Key
   fetchKeys(publickey: ID!): [Key]
@@ -70,9 +108,13 @@ export const mutations = `
   signOutUser(sessionID: String!, userid: ID!): [SessionResponse!]!
   signOutEverywhere(userid: ID!): Boolean!
 
+  saveRecoveryKey(keyData: RecoveryKeyInput): User!
+  recoverPassword(token: String!, secret: String!, email: String!): RecoveryResponse!
+
   # Let an active user change his password
   changePassword(pw: String!, newPw: String!, confirmPw: String): LoginResponse!
-  changePasswordEncrypted(oldPasskey: String!, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, newKey: KeyInput!, replaceKeys: [KeyInput!]!): LoginResponse!
+  changePasswordEncrypted(oldPasskey: String!, newPasskey: String!, recoveryPrivateKey: String, passwordMetrics: PasswordMetricsInput!, newKey: KeyInput!, replaceKeys: [KeyInput!]!): LoginResponse!
+  updateRecoveredPassword(recoveryData: PasswordRecoveryInput!): String!
 
   impersonate(userid: ID!): String!
   endImpersonation(token: String!): String!

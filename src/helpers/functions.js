@@ -5,6 +5,7 @@ import zxcvbn from "zxcvbn";
 import iplocate from "node-iplocate";
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
+import crypto from "crypto";
 import { createSubscription } from "../services/stripe";
 import { NormalError, RightsError } from "../errors";
 import {
@@ -689,14 +690,13 @@ export const fetchSessions = async (redis, userid) => {
  * Creates and returns a token for the session and saves the current session
  *
  * @param {object} user The User which should be saved in the token
- * @param {number} user.unitid In this context the user has an unitid instead of an id!
+ * @param {number} [user.unitid] In this context the user has an unitid instead of an id!
  * @param {object} ctx The context which includes the current session
- * @param {object} ctx.redis The Redis instance
+ * @param {object} [ctx.redis] The Redis instance
  */
 export const createSession = async (user, ctx) => {
   try {
     const token = await createToken(user, process.env.SECRET);
-
     ctx.session.token = token;
 
     // Should normally not be needed, but somehow it takes too long to
@@ -792,3 +792,28 @@ const dummykey = "$2b$2$KVEGTwP0a6uoUEngbFKlYePNoPRm6XCb322222222221111111111";
 
 export const comparePasskey = async (data, hashed) =>
   bcrypt.compare(data, hashed || dummykey);
+
+/**
+ * Generate fake salt in an attempt to make it less obvious if the user exists.
+ * This is vulnerable against timing attacks. Make fake salt deterministic,
+ * otherwise calling this twice will reveal if the user exists.
+ * @param {string} email
+ * @returns {Object} PasswordParams
+ * @property {string} id
+ * @property {string} salt
+ * @property {number} ops
+ * @property {number} mem
+ * @param {boolean} short If only the 32 characters are needed
+ */
+export function generateFakeKey(email, short) {
+  const crypt = crypto.createHmac("sha256", "eAiJzhVOvT0PeSTDkeWrbLICTE7aeTQ1");
+  crypt.update(email);
+  const salt = crypt.digest("hex");
+
+  return {
+    id: email,
+    salt: short ? salt.substring(0, 32) : salt,
+    ops: 2,
+    mem: 67108864
+  };
+}

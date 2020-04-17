@@ -118,7 +118,7 @@ export const schema = makeExecutableSchema({ typeDefs, resolvers });
 app.use((req, res, next) => {
   let tries = 3;
   // Recursive Function to retry on a lost connection to Redis
-  const lookupSession = error => {
+  const lookupSession = (error) => {
     if (error) {
       return next(error);
     }

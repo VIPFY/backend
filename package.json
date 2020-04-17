@@ -1,8 +1,21 @@
 {
   "name": "vipfy_graphql_server",
-  "author": "Gh05d",
-  "license": "propriatary",
   "version": "0.12.0-dev",
+  "author": {
+    "name": "Pascal Clanget",
+    "email": "pc@vipfy.store"
+  },
+  "contributors": [
+    {
+      "name": "Jannis Froese",
+      "email": "jf@vipfy.store"
+    },
+    {
+      "name": "Nils Vossebein",
+      "email": "nv@vipfy.store"
+    }
+  ],
+  "license": "propriatary",
   "description": "A GraphQL server backend for Vipfy",
   "main": "dist/index.js",
   "scripts": {
@@ -57,7 +70,7 @@
     "aws-sdk": "^2.441.0",
     "aws-xray-sdk": "^2.3.1",
     "axios": "^0.19.0",
-    "bcrypt": "^3.0.2",
+    "bcrypt": "^3.0.8",
     "body-parser": "^1.18.3",
     "connect-redis": "^3.4.2",
     "cors": "^2.8.5",
@@ -66,7 +79,6 @@
     "dataloader-sequelize": "^1.7.10",
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^13.0.0",
-    "eslint-config-prettier": "^6.7.0",
     "eslint-plugin-import": "^2.13.0",
     "express": "^4.16.4",
     "express-rate-limit": "^3.4.1",
@@ -81,7 +93,7 @@
     "graphql-tools": "^4.0.4",
     "graphql-upload": "^8.0.5",
     "graphql-voyager": "^1.0.0-rc.27",
-    "handlebars": "^4.1.2",
+    "handlebars": "^4.7.5",
     "humanparser": "^1.10.0",
     "ini": "^1.3.5",
     "ioredis": "^4.9.0",
@@ -102,6 +114,7 @@
     "one-by-one": "^3.2.7",
     "parse5": "^5.1.0",
     "pg": "^7.10.0",
+    "prettier": "^1.19.1",
     "puppeteer": "^1.14.0",
     "qrcode": "^1.4.1",
     "querystring": "^0.2.0",
@@ -115,6 +128,8 @@
     "sequelize": "^4.38.0",
     "shx": "^0.3.2",
     "soap": "^0.31.0",
+    "sodium-native": "^3.0.1",
+    "sodium-plus": "^0.7.0",
     "speakeasy": "^2.0.0",
     "stripe": "^6.10.0",
     "subscriptions-transport-ws": "^0.9.16",
@@ -123,11 +138,11 @@
     "uuid": "^3.3.2",
     "validate-vat": "^0.5.1",
     "winston": "^3.2.1",
-    "zxcvbn": "^4.4.2",
-    "prettier": "^1.19.1"
+    "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
-    "eslint-plugin-prettier": "^3.1.1",
+    "eslint-config-prettier": "^6.10.1",
+    "eslint-plugin-prettier": "^3.1.3",
     "graphql-tester": "github:sazzer/graphql-tester"
   },
   "repository": {
