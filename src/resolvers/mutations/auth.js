@@ -769,6 +769,10 @@ export default {
 
           if (!valid) throw new Error("Incorrect old password!");
 
+          if (findOldPassword.recoveryprivatekey && !recoveryPrivateKey) {
+            throw new Error("You did not your new recovery key!");
+          }
+
           const p1 = models.Human.update(
             {
               ...passwordMetrics,

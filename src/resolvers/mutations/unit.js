@@ -355,6 +355,12 @@ export default {
               );
             }
 
+            if (employee.recoveryprivatekey && !recoveryPrivateKey) {
+              throw new Error(
+                "The users recoverykey also needs to be updated!"
+              );
+            }
+
             const promises = [];
             promises.push(
               models.Human.update(
