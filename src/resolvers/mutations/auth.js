@@ -150,7 +150,8 @@ export default {
           {
             disabled: false,
             usedby: company.id,
-            alias: "Vipfy Premium"
+            alias: "Vipfy Premium",
+            key: { vipfyTrial: true }
           },
           { transaction: ta }
         );
@@ -199,7 +200,7 @@ export default {
           department,
           parentUnit,
           vipfyPlan,
-          ..._notNeeded
+          ..._notNeeded // eslint-disable-line
         ] = await Promise.all([p3, p4, p5, p6, p7, p8, p9, p10]);
 
         await models.BoughtPlanPeriod.create(

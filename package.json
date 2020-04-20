@@ -114,7 +114,6 @@
     "one-by-one": "^3.2.7",
     "parse5": "^5.1.0",
     "pg": "^7.10.0",
-    "prettier": "^1.19.1",
     "puppeteer": "^1.14.0",
     "qrcode": "^1.4.1",
     "querystring": "^0.2.0",
@@ -141,6 +140,7 @@
     "zxcvbn": "^4.4.2"
   },
   "devDependencies": {
+    "prettier": "^1.19.1",
     "eslint-config-prettier": "^6.10.1",
     "eslint-plugin-prettier": "^3.1.3",
     "graphql-tester": "github:sazzer/graphql-tester"

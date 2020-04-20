@@ -4,7 +4,7 @@ import {
   requiresAuth,
   requiresVipfyManagement
 } from "../../helpers/permissions";
-import { NormalError } from "../../errors";
+import { NormalError, VIPFYPlanError } from "../../errors";
 
 export default {
   fetchCompany: requiresAuth.createResolver(
@@ -111,6 +111,8 @@ export default {
 
   fetchVipfyPlan: requiresAuth.createResolver(
     async (_p, _args, { models, session }) => {
+      let expiredPlan = {};
+
       try {
         const {
           user: { company }
@@ -118,29 +120,46 @@ export default {
 
         const vipfyPlans = await models.Plan.findAll({
           where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
-          attributes: ["id"],
+          attributes: ["id", "options"],
           raw: true
         });
 
-        const planIds = vipfyPlans.map(plan => plan.id);
-
-        // requiresAuth ensures that one exists
-
-        return models.BoughtPlanView.findOne({
+        // requiresAuth ensures that at least one exists
+        const [
+          currentPlan,
+          oldPlan,
+          ..._oldVipfyPlans // eslint-disable-line no-unused-vars
+        ] = await models.BoughtPlanView.findAll({
           where: {
             payer: company,
-            endtime: {
-              [models.Op.or]: {
-                [models.Op.gt]: models.sequelize.fn("NOW"),
-                [models.Op.eq]: null
-              }
-            },
-            buytime: { [models.Op.lt]: models.sequelize.fn("NOW") },
-            planid: { [models.Op.in]: planIds }
+            planid: vipfyPlans.map(plan => plan.id)
           },
-          raw: true
+          order: [["starttime", "DESC"]]
         });
+
+        if (oldPlan) {
+          const { key, endtime, planid, id: boughtPlanID } = oldPlan.get();
+
+          const isPremiumPlan = vipfyPlans
+            .filter(plan => plan.options.users)
+            .find(({ id }) => id == planid);
+
+          if (isPremiumPlan && key.needsCustomerAction) {
+            expiredPlan = {
+              id: boughtPlanID,
+              endtime,
+              features: { ...isPremiumPlan.options }
+            };
+            throw new Error(402);
+          }
+        }
+
+        return currentPlan;
       } catch (err) {
+        if (err.message == 402) {
+          throw new VIPFYPlanError({ data: { expiredPlan } });
+        }
+
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
