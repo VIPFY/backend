@@ -4,13 +4,13 @@ export const types = `
 type Log {
   id: ID!
   time: Date,
-  eventtype: String!,
+  eventtype: String,
   eventdata: JSON,
-  ip: String!,
-  deviceid: ID!,
-  hostname: String!,
-  user: ID! ,
-  sudoer: ID!
+  ip: String,
+  deviceid: ID,
+  hostname: String,
+  user: ID ,
+  sudoer: ID
 }`;
 
 
