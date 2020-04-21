@@ -82,6 +82,156 @@ export default {
     }
   ),
 
+  fetchAppByDomain: requiresRights(["view-apps"]).createResolver(
+    async (_parent, { domain, hostname }, { models, session }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
+
+        let app = null;
+
+        if (hostname) {
+          const boughtplan = await models.sequelize.query(
+            `Select appid from boughtplan_view join plan_data on planid = plan_data.id
+            where key -> 'domain' is not null
+                    AND :domain ilike '%' || substring(lower(key ->> 'domain') from E'[^//]*\\//(.+)$') || '%'
+            AND usedby = :company;`,
+            {
+              replacements: { domain, company },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+          if (boughtplan[0]) {
+            app = await models.AppDetails.findOne({
+              where: {
+                id: boughtplan[0].id,
+                disabled: false,
+                deprecated: false,
+                owner: { [models.Op.or]: [null, company] }
+              }
+            });
+          }
+        }
+
+        if (domain && !app) {
+          app = await models.AppDetails.findOne({
+            where: {
+              domains: { [models.Op.contains]: [domain] },
+              disabled: false,
+              deprecated: false,
+              owner: { [models.Op.or]: [null, company] }
+            }
+          });
+        }
+
+        return app;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchLicenceAssignmentsByDomain: requiresRights(["view-apps"]).createResolver(
+    async (_parent, { domain, hostname }, { models, session }) => {
+      try {
+        const {
+          user: { company, unitid }
+        } = decode(session.token);
+
+        let apps = [];
+
+        if (hostname) {
+          const boughtplan = await models.sequelize.query(
+            `Select appid from boughtplan_view join plan_data on planid = plan_data.id
+            where key -> 'domain' is not null
+                    AND :domain ilike '%' || substring(lower(key ->> 'domain') from E'[^//]*\\//(.+)$') || '%'
+            AND usedby = :company;`,
+            {
+              replacements: { domain, company },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+          if (boughtplan && boughtplan[0]) {
+            apps = await models.AppDetails.findAll(
+              {
+                where: {
+                  id: boughtplan[0].id,
+                  disabled: false,
+                  deprecated: false,
+                  owner: { [models.Op.or]: [null, company] }
+                }
+              },
+              { plain: true }
+            );
+          }
+        }
+
+        if (domain && !apps.length > 0) {
+          apps = await models.AppDetails.findAll(
+            {
+              where: {
+                domains: { [models.Op.contains]: [domain] },
+                disabled: false,
+                deprecated: false,
+                owner: { [models.Op.or]: [null, company] }
+              }
+            },
+            { plain: true }
+          );
+        }
+        if (apps.length > 0) {
+          const licences = await models.sequelize.query(
+            `Select licence_view.*, plan_data.appid from licence_view
+            join boughtplan_view on boughtplanid = boughtplan_view.id
+            join plan_data on planid = plan_data.id
+              where unitid = :unitid and plan_data.appid in(:apps)`,
+            {
+              replacements: { unitid, apps: apps.map((a) => a.id) },
+              type: models.sequelize.QueryTypes.SELECT
+            }
+          );
+          const startTime = Date.now();
+
+          licences.forEach((licence) => {
+            licence.accountid = licence.id;
+            licence.id = licence.assignmentid;
+            if (licence.disabled) {
+              licence.agreed = false;
+              licence.key = null;
+            }
+
+            if (Date.parse(licence.starttime) > startTime || !licence.agreed) {
+              licence.key = null;
+            }
+
+            if (licence.endtime && licence.endtime != "infinity") {
+              if (Date.parse(licence.endtime) < startTime) {
+                licence.key = null;
+              }
+            }
+
+            if (licence.options) {
+              if (licence.options.teamlicence) {
+                licence.teamlicence = licence.options.teamlicence;
+              }
+
+              if (licence.options.teamlicence) {
+                licence.teamaccount = licence.options.teamaccount;
+              }
+            }
+          });
+
+          return licences;
+        }
+
+        return null;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   fetchLicence: requiresRights(["view-licences"]).createResolver(
     async (_parent, { licenceid }, { models }, _info) => {
       try {
@@ -120,7 +270,7 @@ export default {
 
         const startTime = Date.now();
 
-        licences.forEach(licence => {
+        licences.forEach((licence) => {
           licence.accountid = licence.id;
           licence.id = licence.assignmentid;
           if (licence.disabled) {
@@ -170,7 +320,7 @@ export default {
 
         const startTime = Date.now();
 
-        licences.forEach(licence => {
+        licences.forEach((licence) => {
           if (licence.disabled) {
             licence.agreed = false;
             licence.key = null;
@@ -226,7 +376,7 @@ export default {
 
       const startTime = Date.now();
 
-      licences.forEach(licence => {
+      licences.forEach((licence) => {
         licence.accountid = licence.id;
         licence.id = licence.assignmentid;
         if (licence.disabled) {
@@ -390,7 +540,7 @@ export default {
       try {
         if (
           [assignmentid, licenceid, boughtplanid, unitid].every(
-            v => v === null || v === undefined
+            (v) => v === null || v === undefined
           )
         ) {
           throw new Error("Please narrow your request");
@@ -617,6 +767,29 @@ export default {
           }
         );
         return apps;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchOrbitsOfPlan: requiresAuth.createResolver(
+    async (_p, { planid }, { models, session }) => {
+      try {
+        const {
+          user: { company }
+        } = decode(session.token);
+        const orbits = await models.sequelize.query(
+          `
+          SELECT * from orbits_view where usedby=:company and planid=:planid;
+        `,
+          {
+            replacements: { company, planid },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT
+          }
+        );
+        return orbits;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

@@ -18,6 +18,7 @@ const appFields = `
   deprecated: Boolean!
   hidden: Boolean!
   owner: Department
+  domains: [String]
 `;
 
 const basicLicenceFields = `
@@ -289,6 +290,9 @@ export const queries = `
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
 
+  fetchAppByDomain(domain: String, hostname: String): AppDetails
+  fetchLicenceAssignmentsByDomain(domain: String, hostname: String): [LicenceAssignment]
+
   # Returns all Apps a department is allowed to distribute Licences for
   fetchUnitApps(departmentid: ID!): [AppBoughtPlanResponse]!
 
@@ -318,6 +322,8 @@ export const queries = `
   fetchUseableApps: [AppDetails]
 
   fetchExecutionApps(appid: ID): [ExecuteApp]
+
+  fetchOrbitsOfPlan(planid: ID!): [Orbit]
 `;
 
 export const mutations = `
