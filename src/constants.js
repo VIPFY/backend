@@ -81,9 +81,39 @@ export const MIN_PASSWORD_LENGTH = 10;
 // ssh -N -L 6379:master.prod1.n21sml.euc1.cache.amazonaws.com:6379 nv@bastion.internal.vipfy.store
 // ssh -N -L 5431:dev1.c1mg5mgfkmoa.eu-central-1.rds.amazonaws.com:5432 nv@bastion.internal.vipfy.store
 
-export const vipfyManagement = [
+export const VIPFY_MANAGEMENT = [
   "f876804e-efd0-48b4-a5b2-807cbf66315f", // Pascal
   "98cdb502-51fc-4c0d-a5c7-ee274b6bb7b5", // Markus
   "96d65748-7d36-459a-97d0-7f52a7a4bbf0", // Nils
   "91bd25cb-65cc-4dca-b0c8-285dbf5919f3" // Jannis
+];
+
+export const EU_COUNTRIES = [
+  { value: "AT", name: "Austria" },
+  { value: "BE", name: "Belgium" },
+  { value: "BG", name: "Bulgaria" },
+  { value: "HR", name: "Croatia" },
+  { value: "CY", name: "Cyprus" },
+  { value: "CZ", name: "Czech Republic" },
+  { value: "DK", name: "Denmark" },
+  { value: "EE", name: "Estonia" },
+  { value: "FI", name: "Finland" },
+  { value: "FR", name: "France" },
+  { value: "DE", name: "Germany" },
+  { value: "GR", name: "Greece" },
+  { value: "HU", name: "Hungary" },
+  { value: "IE", name: "Ireland" },
+  { value: "IT", name: "Italy" },
+  { value: "LV", name: "Latvia" },
+  { value: "LT", name: "Lithuania" },
+  { value: "LU", name: "Luxembourg" },
+  { value: "MT", name: "Malta" },
+  { value: "NL", name: "Netherlands" },
+  { value: "PL", name: "Poland" },
+  { value: "PT", name: "Portugal" },
+  { value: "RO", name: "Romania" },
+  { value: "SK", name: "Slovakia" },
+  { value: "SI", name: "Slovenia" },
+  { value: "ES", name: "Spain" },
+  { value: "SE", name: "Sweden" }
 ];

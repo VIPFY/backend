@@ -1,4 +1,5 @@
 import { decode } from "jsonwebtoken";
+import iplocate from "node-iplocate";
 import {
   requiresRights,
   requiresAuth,
@@ -139,9 +140,8 @@ export default {
 
         if (oldPlan) {
           const { key, endtime, planid, id: boughtPlanID } = oldPlan.get();
-
           const isPremiumPlan = vipfyPlans
-            .filter(plan => plan.options.users)
+            .filter(plan => plan.options.users === null)
             .find(({ id }) => id == planid);
 
           if (isPremiumPlan && key.needsCustomerAction) {
@@ -160,6 +160,18 @@ export default {
           throw new VIPFYPlanError({ data: { expiredPlan } });
         }
 
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchVIPFYPlans: requiresAuth.createResolver(
+    async (_p, _args, { models }) => {
+      try {
+        return await models.Plan.findAll({
+          where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" }
+        });
+      } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }

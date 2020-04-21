@@ -331,7 +331,7 @@ export const requiresVipfyManagement = myself =>
           user: { unitid, company }
         } = decode(session.token);
 
-        if (!vipfyManagement.find(id => id == unitid)) {
+        if (!VIPFY_MANAGEMENT.find(id => id == unitid)) {
           if (userid && myself) {
             await checkCompanyMembership(models, company, userid, "user");
           } else {
@@ -353,7 +353,7 @@ export const requiresVipfyAdmin = myself =>
         } = decode(session.token);
 
         const vipfyAdmins = [
-          ...vipfyManagement,
+          ...VIPFY_MANAGEMENT,
           "b65a0528-59b1-4137-887f-faf3d6a07fd7", // Lisa
           "84c3382a-63c1-479f-85cd-d16e9988aa8a", // Eva
           "582a705d-d650-4727-8db6-28d231b465dd", // Anna

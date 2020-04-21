@@ -95,6 +95,7 @@ export const queries = `
 
   fetchUserSecurityOverview(userid: ID): [UserSecurityOverview]!
   fetchVipfyPlan: BoughtPlan
+  fetchVIPFYPlans: [Plan!]!
 `;
 
 export const mutations = `

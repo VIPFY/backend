@@ -1,12 +1,14 @@
 import bcrypt from "bcrypt";
 import moment from "moment";
+import iplocate from "node-iplocate";
 import { decode, verify } from "jsonwebtoken";
 import { parseName } from "humanparser";
 import {
   USER_SESSION_ID_PREFIX,
   REDIS_SESSION_PREFIX,
   MAX_PASSWORD_LENGTH,
-  MIN_PASSWORD_LENGTH
+  MIN_PASSWORD_LENGTH,
+  EU_COUNTRIES
 } from "../../constants";
 import { createToken, checkAuthentification } from "../../helpers/auth";
 import { createToken as createSetupToken } from "../../helpers/token";
@@ -49,7 +51,7 @@ export default {
   ) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
-        const { models } = ctx;
+        const { models, ip } = ctx;
 
         if (!privacy || !termsOfService) {
           throw new Error(
@@ -95,6 +97,15 @@ export default {
           throw new Error("Email already in use!");
         }
 
+        const { country_code } = await iplocate(
+          // In development using the ip is not possible
+          process.env.ENVIRONMENT == "production" ? ip : "82.192.202.122"
+        );
+
+        const isEUR = EU_COUNTRIES.find(
+          ({ value }) => value.toLowerCase() == country_code.toLowerCase()
+        );
+
         const unit = await models.Unit.create({}, { transaction: ta });
         const p1 = models.Human.create(
           {
@@ -129,6 +140,7 @@ export default {
         const p4 = models.DepartmentData.create(
           {
             unitid: company.id,
+            currency: isEUR ? "EUR" : "USD",
             iscompany: true,
             isprivate,
             name,
@@ -206,7 +218,7 @@ export default {
         await models.BoughtPlanPeriod.create(
           {
             boughtplanid: vipfyPlan.dataValues.id,
-            planid: "4465c808-9b46-42ae-a11f-1158fcaed391",
+            planid: "c382fa7e-d83a-4516-ad40-55c91a3701d4",
             payer: company.id,
             creator: unit.id,
             totalprice: 0,
