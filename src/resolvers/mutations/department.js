@@ -25,248 +25,270 @@ import { uploadUserImage } from "../../services/aws";
 export default {
   createEmployee: requiresRights(["create-employees"]).createResolver(
     async (_p, args, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
-        try {
-          const { models, session } = ctx;
-          const {
-            name,
-            emails,
-            password,
-            needpasswordchange,
-            file,
-            birthday,
-            hiredate,
-            address,
-            position,
-            phones,
-            passkey,
-            passwordMetrics,
-            personalKey,
-            passwordsalt
-          } = args;
-          const {
-            user: { unitid, company }
-          } = decode(session.token);
+      ctx.models.sequelize
+        .transaction(async (ta) => {
+          try {
+            const { models, session } = ctx;
+            const {
+              name,
+              emails,
+              password,
+              needpasswordchange,
+              file,
+              birthday,
+              hiredate,
+              address,
+              position,
+              phones,
+              passkey,
+              passwordMetrics,
+              personalKey,
+              passwordsalt
+            } = args;
+            const {
+              user: { unitid, company }
+            } = decode(session.token);
 
-          let noemail = true;
-          for await (const email of emails) {
-            if (email.email != "") {
-              noemail = false;
-              const isEmail = email.email.indexOf("@");
+            let noemail = true;
+            for await (const email of emails) {
+              if (email.email != "") {
+                noemail = false;
+                const isEmail = email.email.indexOf("@");
 
-              if (isEmail < 0) {
-                throw new Error("Please enter a valid Email!");
+                if (isEmail < 0) {
+                  throw new Error("Please enter a valid Email!");
+                }
+
+                const emailInUse = await models.Email.findOne({
+                  where: { email: email.email }
+                });
+                if (emailInUse) throw new Error("Email already in use!");
               }
-
-              const emailInUse = await models.Email.findOne({
-                where: { email: email.email }
-              });
-              if (emailInUse) throw new Error("Email already in use!");
             }
-          }
-          if (noemail) {
-            throw new Error("You need at least one Email!");
-          }
+            if (noemail) {
+              throw new Error("You need at least one Email!");
+            }
 
-          if (password && password.length > MAX_PASSWORD_LENGTH) {
-            throw new Error("Password too long");
-          }
+            if (password && password.length > MAX_PASSWORD_LENGTH) {
+              throw new Error("Password too long");
+            }
 
-          if (password && password.length < MIN_PASSWORD_LENGTH) {
-            throw new Error(
-              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
-            );
-          }
+            if (password && password.length < MIN_PASSWORD_LENGTH) {
+              throw new Error(
+                `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+              );
+            }
 
-          if (passwordMetrics.passwordStrength < MIN_PASSWORD_LENGTH) {
-            throw new Error("Password too weak!");
-          }
+            if (passwordMetrics.passwordStrength < MIN_PASSWORD_LENGTH) {
+              throw new Error("Password too weak!");
+            }
 
-          if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
-            throw new Error("Password too long");
-          }
+            if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
+              throw new Error("Password too long");
+            }
 
-          if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
-            throw new Error(
-              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
-            );
-          }
+            if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
+              throw new Error(
+                `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+              );
+            }
 
-          if (passkey.length != 128) {
-            throw new Error("Incompatible passkey format, try updating VIPFY");
-          }
+            if (passkey.length != 128) {
+              throw new Error(
+                "Incompatible passkey format, try updating VIPFY"
+              );
+            }
 
-          if (passwordsalt.length != 32) {
-            throw new Error("Incompatible salt format, try updating VIPFY");
-          }
+            if (passwordsalt.length != 32) {
+              throw new Error("Incompatible salt format, try updating VIPFY");
+            }
 
-          const data = {};
+            const data = {};
 
-          if (file) {
-            const parsedFile = await file;
-            const profilepicture = await uploadUserImage(
-              parsedFile,
-              userPicFolder
-            );
-            data.profilepicture = profilepicture;
-          }
+            if (file) {
+              const parsedFile = await file;
+              const profilepicture = await uploadUserImage(
+                parsedFile,
+                userPicFolder
+              );
+              data.profilepicture = profilepicture;
+            }
 
-          let unit = await models.Unit.create(data, { transaction: ta });
-          unit = unit.get();
+            let unit = await models.Unit.create(data, { transaction: ta });
+            unit = unit.get();
 
-          const humanpromises = [];
+            const humanpromises = [];
 
-          humanpromises.push(
-            models.Human.create(
-              {
-                firstname: name.firstname,
-                middlename: name.middlename,
-                lastname: name.lastname,
-                title: name.title,
-                suffix: name.suffix,
-                unitid: unit.id,
-                needspasswordchange:
-                  needpasswordchange === false ? false : true,
-                firstlogin: true,
-                position,
-                hiredate: hiredate != "" ? hiredate : null,
-                birthday: birthday != "" ? birthday : null,
-                passkey: await hashPasskey(passkey),
-                ...passwordMetrics,
-                passwordsalt,
-                passwordhash: ""
-              },
-              { transaction: ta }
-            )
-          );
-
-          // Create Emails
-          emails.forEach(
-            (email, index) =>
-              email &&
-              email.email &&
-              email.email != "" &&
-              humanpromises.push(
-                models.Email.create(
-                  {
-                    email: email.email,
-                    unitid: unit.id,
-                    verified: true,
-                    priority: index
-                  },
-                  { transaction: ta }
-                )
-              )
-          );
-
-          // Create Adress
-
-          if (address) {
-            const { zip, street, city, ...normalData } = address;
-            const addressData = { street, zip, city };
             humanpromises.push(
-              models.Address.create(
-                { ...normalData, address: addressData, unitid: unit.id },
+              models.Human.create(
+                {
+                  firstname: name.firstname,
+                  middlename: name.middlename,
+                  lastname: name.lastname,
+                  title: name.title,
+                  suffix: name.suffix,
+                  unitid: unit.id,
+                  needspasswordchange:
+                    needpasswordchange === false ? false : true,
+                  firstlogin: true,
+                  position,
+                  hiredate: hiredate != "" ? hiredate : null,
+                  birthday: birthday != "" ? birthday : null,
+                  passkey: await hashPasskey(passkey),
+                  ...passwordMetrics,
+                  passwordsalt,
+                  passwordhash: ""
+                },
                 { transaction: ta }
               )
             );
-          }
 
-          // Create Phones
-          if (phones) {
-            phones.forEach(
-              phoneData =>
-                phoneData &&
-                phoneData.number &&
-                phoneData.number != "" &&
+            // Create Emails
+            emails.forEach(
+              (email, index) =>
+                email &&
+                email.email &&
+                email.email != "" &&
                 humanpromises.push(
-                  models.Phone.create(
-                    { ...phoneData, unitid: unit.id },
+                  models.Email.create(
+                    {
+                      email: email.email,
+                      unitid: unit.id,
+                      verified: true,
+                      priority: index
+                    },
                     { transaction: ta }
                   )
                 )
             );
-          }
 
-          humanpromises.push(
-            models.ParentUnit.create(
-              { parentunit: company, childunit: unit.id },
-              { transaction: ta }
-            )
-          );
+            // Create Adress
 
-          humanpromises.push(
-            models.Right.create(
-              {
-                holder: unit.id,
-                forunit: company,
-                type: "view-apps"
-              },
-              { transaction: ta }
-            )
-          );
+            if (address) {
+              const { zip, street, city, ...normalData } = address;
+              const addressData = { street, zip, city };
+              humanpromises.push(
+                models.Address.create(
+                  { ...normalData, address: addressData, unitid: unit.id },
+                  { transaction: ta }
+                )
+              );
+            }
 
-          humanpromises.push(
-            models.Key.create(
-              {
-                ...personalKey,
-                unitid: unit.id
-              },
-              { transaction: ta }
-            )
-          );
+            // Create Phones
+            if (phones) {
+              phones.forEach(
+                (phoneData) =>
+                  phoneData &&
+                  phoneData.number &&
+                  phoneData.number != "" &&
+                  humanpromises.push(
+                    models.Phone.create(
+                      { ...phoneData, unitid: unit.id },
+                      { transaction: ta }
+                    )
+                  )
+              );
+            }
 
-          await Promise.all(humanpromises);
+            humanpromises.push(
+              models.ParentUnit.create(
+                { parentunit: company, childunit: unit.id },
+                { transaction: ta }
+              )
+            );
 
-          const p4 = models.Human.findOne({ where: { unitid } });
-
-          const p5 = models.DepartmentData.findOne({
-            where: { unitid: company }
-          });
-
-          const [requester, companyObj] = await Promise.all([p4, p5]);
-
-          await createLog(ctx, "addCreateEmployee", { unit }, ta);
-
-          // brand new person, but better to be too careful
-          resetCompanyMembershipCache(company, unit.id);
-
-          if (password) {
-            await sendEmail({
-              templateId: "d-e049cce50d20428d81f011e521605d4c",
-              fromName: "VIPFY",
-              personalizations: [
+            humanpromises.push(
+              models.Right.create(
                 {
-                  to: [{ email: emails[0].email, name: formatHumanName(name) }],
-                  dynamic_template_data: {
-                    name: formatHumanName(name),
-                    creator: formatHumanName(requester),
-                    companyname: companyObj.name,
-                    email: emails[0].email,
-                    password
-                  }
-                }
-              ]
-            });
-          } else {
-            // no password supplied to backend, this should be the encouraged case
-            await sendEmail({
-              templateId: "d-fc629636327e400ea14bda1340451eb6",
-              fromName: "VIPFY",
-              personalizations: [
+                  holder: unit.id,
+                  forunit: company,
+                  type: "view-apps"
+                },
+                { transaction: ta }
+              )
+            );
+
+            humanpromises.push(
+              models.Key.create(
                 {
-                  to: [{ email: emails[0].email, name: formatHumanName(name) }],
-                  dynamic_template_data: {
-                    name: formatHumanName(name),
-                    creator: formatHumanName(requester),
-                    companyname: companyObj.name,
-                    email: emails[0].email
+                  ...personalKey,
+                  unitid: unit.id
+                },
+                { transaction: ta }
+              )
+            );
+
+            await Promise.all(humanpromises);
+
+            const p4 = models.Human.findOne({ where: { unitid } });
+
+            const p5 = models.DepartmentData.findOne({
+              where: { unitid: company }
+            });
+
+            const [requester, companyObj] = await Promise.all([p4, p5]);
+
+            await createLog(ctx, "addCreateEmployee", { unit }, ta);
+
+            // brand new person, but better to be too careful
+            resetCompanyMembershipCache(company, unit.id);
+
+            if (password) {
+              await sendEmail({
+                templateId: "d-e049cce50d20428d81f011e521605d4c",
+                fromName: "VIPFY",
+                personalizations: [
+                  {
+                    to: [
+                      { email: emails[0].email, name: formatHumanName(name) }
+                    ],
+                    dynamic_template_data: {
+                      name: formatHumanName(name),
+                      creator: formatHumanName(requester),
+                      companyname: companyObj.name,
+                      email: emails[0].email,
+                      password
+                    }
                   }
-                }
-              ]
+                ]
+              });
+            } else {
+              // no password supplied to backend, this should be the encouraged case
+              await sendEmail({
+                templateId: "d-fc629636327e400ea14bda1340451eb6",
+                fromName: "VIPFY",
+                personalizations: [
+                  {
+                    to: [
+                      { email: emails[0].email, name: formatHumanName(name) }
+                    ],
+                    dynamic_template_data: {
+                      name: formatHumanName(name),
+                      creator: formatHumanName(requester),
+                      companyname: companyObj.name,
+                      email: emails[0].email
+                    }
+                  }
+                ]
+              });
+            }
+
+            const user = await models.User.findOne({
+              where: { id: unit.id },
+              transaction: ta,
+              raw: true
+            });
+
+            return { unitid, name, user };
+          } catch (err) {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err }
             });
           }
-
+        })
+        .then(async ({ unitid, name, user }) => {
           await createNotification({
             receiver: unitid,
             message: `${formatHumanName(name)} was successfully created`,
@@ -274,24 +296,13 @@ export default {
             link: "employeemanager",
             changed: ["employees"]
           });
-
-          return await models.User.findOne({
-            where: { id: unit.id },
-            transaction: ta,
-            raw: true
-          });
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
+          return user;
+        })
   ),
 
   editDepartmentName: requiresRights(["edit-department"]).createResolver(
     (_p, { departmentid, name }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const { models } = ctx;
 
@@ -323,7 +334,7 @@ export default {
 
   banEmployee: requiresRights(["edit-employees"]).createResolver(
     async (_p, { userid }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         const { models, session } = ctx;
         const {
           user: { unitid, company }
@@ -395,7 +406,7 @@ export default {
 
   unbanEmployee: requiresRights(["edit-employees"]).createResolver(
     async (_p, { userid }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         const { models, session } = ctx;
 
         const {
@@ -465,7 +476,7 @@ export default {
 
   addAdmin: requiresRights(["edit-users"]).createResolver(
     async (_p, { unitid, adminkey }, ctx) =>
-      ctx.models.sequelize.transaction(async transaction => {
+      ctx.models.sequelize.transaction(async (transaction) => {
         try {
           const { models, session } = ctx;
           const {
@@ -519,7 +530,7 @@ export default {
   ),
   removeAdmin: requiresRights(["edit-users"]).createResolver(
     async (_p, { unitid }, ctx) =>
-      ctx.models.sequelize.transaction(async transaction => {
+      ctx.models.sequelize.transaction(async (transaction) => {
         try {
           const { models, session } = ctx;
           const {
@@ -600,7 +611,7 @@ export default {
    */
   addPromocode: requiresAuth.createResolver(
     async (_p, { promocode }, { models, session }) =>
-      models.sequelize.transaction(async ta => {
+      models.sequelize.transaction(async (ta) => {
         try {
           const {
             user: { unitid, company }
@@ -672,7 +683,7 @@ export default {
   ),
 
   applyPromocode: requiresAuth.createResolver(async (_p, { promocode }, ctx) =>
-    ctx.models.sequelize.transaction(async ta => {
+    ctx.models.sequelize.transaction(async (ta) => {
       try {
         const { models, session } = ctx;
 
@@ -772,7 +783,7 @@ export default {
 
   deleteUser: requiresRights(["delete-employees"]).createResolver(
     async (_p, { userid, autodelete }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const { models, session } = ctx;
 
@@ -788,7 +799,7 @@ export default {
 
           if (oldUser.assignments && autodelete) {
             await Promise.all(
-              oldUser.assignments.map(async asid => {
+              oldUser.assignments.map(async (asid) => {
                 const licenceRight = await models.LicenceRight.findOne({
                   where: { id: asid },
                   raw: true,
@@ -905,7 +916,7 @@ export default {
 
   approveVacationRequest: requiresVipfyManagement().createResolver(
     async (_p, { userid, requestid }, { models, session }) =>
-      models.sequelize.transaction(async ta => {
+      models.sequelize.transaction(async (ta) => {
         try {
           const {
             user: { company }
@@ -948,7 +959,7 @@ export default {
 
   declineVacationRequest: requiresVipfyManagement().createResolver(
     async (_p, { userid, requestid }, { models, session }) =>
-      models.sequelize.transaction(async ta => {
+      models.sequelize.transaction(async (ta) => {
         try {
           const {
             user: { company }
@@ -987,7 +998,7 @@ export default {
 
   updateCompanyPic: requiresRights(["edit-department"]).createResolver(
     async (_p, { file }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const { models } = ctx;
           const {
