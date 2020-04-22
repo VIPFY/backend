@@ -1065,7 +1065,7 @@ export default {
                 endtime
               },
               {
-                where: { id: oldperiod.id },
+                where: { boughtplanid: oldperiod.boughtplanid },
                 returning: true,
                 transaction: ta,
                 raw: true
@@ -1094,7 +1094,7 @@ export default {
 
             if (oldassignments[1]) {
               await Promise.all(
-                oldassignments[1].map(oas =>
+                oldassignments[1].map((oas) =>
                   createNotification(
                     {
                       receiver: oas.unitid,
@@ -1103,7 +1103,7 @@ export default {
                       link: `dashboard`,
                       changed: ["ownLicences"]
                     },
-                    ta
+                    null
                   )
                 )
               );
