@@ -3,4 +3,6 @@ export const queries = `
 `;
 
 export const mutations = `
+  triggerTestJob: Boolean!
+  respondToNotification(id: ID!, data: JSON!): Boolean!
 `;

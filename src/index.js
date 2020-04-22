@@ -23,8 +23,9 @@ import { loggingMiddleWare, sessionMiddleware } from "./middleware";
 import logger from "./loggers";
 import { formatError } from "./errors";
 import { attachmentLink } from "./services/gcloud";
-import { redis } from "./constants";
+import { redis, jobQueue } from "./constants";
 import { version as serverVersion } from "../package.json";
+import { updateNotification } from "./helpers/functions";
 
 // const RateLimit = require("express-rate-limit");
 // const RedisStore = require("rate-limit-redis");
@@ -40,7 +41,7 @@ const {
   SECRET,
   USE_VOYAGER,
   USE_SSH,
-  PROXY_LEVELS
+  PROXY_LEVELS,
 } = process.env;
 
 /* const USE_XRAY =
@@ -70,7 +71,7 @@ if (USE_SSH) {
     ),
     cert: fs.readFileSync(
       SSL_CERT || "/etc/letsencrypt/live/vipfy.com/cert.pem"
-    )
+    ),
   };
 
   server = https.createServer(httpsOptions, app);
@@ -85,7 +86,7 @@ app.set("trust proxy", [
   "172.31.32.0/20",
   "2a05:d014:e3c:9001::/64",
   "2a05:d014:e3c:9002::/64",
-  "2a05:d014:e3c:9003::/64"
+  "2a05:d014:e3c:9003::/64",
 ]);
 
 // TODO: we really want rate limiting with different limits per endpoint
@@ -147,7 +148,7 @@ app.use(loggingMiddleWare);
 let engine = undefined;
 if (ENVIRONMENT == "production") {
   engine = {
-    privateVariables: ["pw", "password"] // TODO
+    privateVariables: ["pw", "password"], // TODO
   };
 }
 
@@ -160,7 +161,7 @@ const gqlserver = new ApolloServer({
     userData: {
       browser: req.headers["user-agent"],
       language: req.headers["accept-language"],
-      host: req.headers["x-user-host"]
+      host: req.headers["x-user-host"],
     },
     session: req.session,
     sessionID: req.sessionID,
@@ -168,7 +169,7 @@ const gqlserver = new ApolloServer({
     logger,
     SECRET,
     ip: req.ip,
-    segment: req.segment
+    segment: req.segment,
   }),
   debug: ENVIRONMENT == "development",
   playground: ENVIRONMENT == "development",
@@ -179,10 +180,10 @@ const gqlserver = new ApolloServer({
     // Max allowed file size in bytes (default: Infinity).
     maxFileSize: 20000000,
     // Max allowed number of files (default: Infinity).
-    maxFiles: 5
+    maxFiles: 5,
   },
   introspection: true,
-  tracing: true
+  tracing: true,
 });
 
 gqlserver.applyMiddleware({
@@ -199,15 +200,15 @@ gqlserver.applyMiddleware({
             "https://dev.vipfy.store",
             "http://localhost:3000",
             "https://aws.vipfy.store",
-            "https://aws2.vipfy.store"
+            "https://aws2.vipfy.store",
           ]
         : [
             "http://localhost:3000",
             "https://aws2.vipfy.store",
-            "http://localhost:9000"
+            "http://localhost:9000",
           ],
-    credentials: true // <-- REQUIRED backend setting for sessions
-  }
+    credentials: true, // <-- REQUIRED backend setting for sessions
+  },
 });
 
 if (USE_VOYAGER) {
@@ -246,10 +247,10 @@ app.get("/health_ujgz1pra68", async (_req, res) => {
     postgres: false,
     redis: false,
     time: 0,
-    version: serverVersion
+    version: serverVersion,
   };
   const seq = await models.sequelize.query("SELECT 1 as one;", {
-    type: models.sequelize.QueryTypes.SELECT
+    type: models.sequelize.QueryTypes.SELECT,
   });
   result.postgres = seq[0].one == 1;
 
@@ -272,6 +273,38 @@ app.get("/health_ujgz1pra68", async (_req, res) => {
   }
 
   res.json(result);
+});
+
+jobQueue.on("global:failed", async (jobid, err) => {
+  const job = await jobQueue.getJob(jobid);
+  await updateNotification(
+    {
+      receiver: job.data.unitid,
+      message: `Job ${job.data.jobtitle} failed`,
+      options: {
+        failed: true,
+      },
+    },
+    null,
+    false,
+    job.data.notification
+  );
+});
+
+jobQueue.on("global:stalled", async (jobid, err) => {
+  const job = await jobQueue.getJob(jobid);
+  await updateNotification(
+    {
+      receiver: job.data.unitid,
+      message: `Job ${job.data.jobtitle} stalled`,
+      options: {
+        failed: true,
+      },
+    },
+    null,
+    false,
+    job.data.notification
+  );
 });
 
 /* if (USE_XRAY) {
