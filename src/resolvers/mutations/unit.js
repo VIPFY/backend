@@ -289,7 +289,8 @@ export default {
         logOut,
         newKey,
         deprecateAllExistingKeys,
-        licenceUpdates
+        licenceUpdates,
+        recoveryPrivateKey
       },
       ctx
     ) => {
@@ -359,9 +360,8 @@ export default {
               models.Human.update(
                 {
                   ...passwordMetrics,
-                  passkey: await hashPasskey(newPasskey),
-                  recoveryprivatekey: null,
-                  recoverypublickey: null
+                  recoveryprivatekey: recoveryPrivateKey,
+                  passkey: await hashPasskey(newPasskey)
                 },
                 { where: { unitid }, returning: true, transaction }
               )
