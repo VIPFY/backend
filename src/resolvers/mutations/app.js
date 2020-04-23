@@ -214,7 +214,7 @@ export default {
     }
   ),
 
-  createOwnApp: requiresRights(["create-licences"]).createResolver(
+  createOwnApp: requiresRights(["myself", "create-licences"]).createResolver(
     async (_p, { ssoData }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
