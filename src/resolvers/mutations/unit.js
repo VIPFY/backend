@@ -286,7 +286,6 @@ export default {
         unitid,
         newPasskey,
         passwordMetrics,
-        recoveryPrivateKey,
         logOut,
         newKey,
         deprecateAllExistingKeys,
@@ -355,22 +354,14 @@ export default {
               );
             }
 
-            if (employee.recoveryprivatekey && !recoveryPrivateKey) {
-              throw new Error(
-                "The users recoverykey also needs to be updated!"
-              );
-            }
-
             const promises = [];
             promises.push(
               models.Human.update(
                 {
                   ...passwordMetrics,
-                  needspasswordchange: true,
-                  recoveryprivatekey: employee.recoveryprivatekey
-                    ? recoveryPrivateKey
-                    : null,
-                  passkey: await hashPasskey(newPasskey)
+                  passkey: await hashPasskey(newPasskey),
+                  recoveryprivatekey: null,
+                  recoverypublickey: null
                 },
                 { where: { unitid }, returning: true, transaction }
               )
@@ -380,39 +371,33 @@ export default {
             delete newKey.createdat;
             delete newKey.unitid;
             promises.push(
-              models.Key.create(
-                {
-                  ...newKey,
-                  unitid
-                },
-                { transaction }
-              )
+              models.Key.create({ ...newKey, unitid }, { transaction })
             );
 
             promises.push(
-              models.LicenceData.findAll({
-                attributes: ["id", "key"],
+              models.LicenceAssignment.findAll({
+                attributes: ["id"],
                 where: {
-                  id: { [models.Op.in]: licenceUpdates.map(u => u.licence) }
+                  // licence is in reality an assignment
+                  assignmentid: licenceUpdates.map(u => u.licence)
                 },
                 transaction
               })
             );
 
-            console.log("a", Promise.all, promises);
-            // let human = await promises[0];
-            // console.log("human", human);
-            // let key = await promises[1];
-            // console.log("key", key);
-            // let licences = await promises[2];
-            let [human, key, licences] = await Promise.all(promises);
-            console.log("b", licences);
-
+            const [_human, key, assignments] = await Promise.all(promises);
+            const licences = await models.LicenceData.findAll({
+              attributes: ["id", "key"],
+              where: { id: assignments.map(u => u.id) },
+              transaction
+            });
             promises.length = 0;
+
             for (const u of licenceUpdates) {
               if (u.new.key == "new") {
-                u.new.key = key.id;
+                u.new.key = key.publickey;
               }
+
               for (const l of licences) {
                 if (l.key.encrypted) {
                   l.key = {
@@ -425,6 +410,7 @@ export default {
                       ) {
                         return e;
                       }
+
                       return u.new;
                     })
                   };
@@ -436,8 +422,8 @@ export default {
               licences.map(l => l.save({ fields: ["key"], transaction }))
             );
 
-            const employeeName = concatName(employee);
-            const adminName = concatName(isAdmin);
+            // const employeeName = concatName(employee);
+            // const adminName = concatName(isAdmin);
 
             // await sendEmail({
             //   templateId: "d-9beb3ea901d64894a8227c295aa8548e",
@@ -470,8 +456,8 @@ export default {
             return {
               id: unitid,
               ...passwordMetrics,
-              needspasswordchange: true,
-              unitid: unitid
+              needspasswordchange: false,
+              unitid
             };
           } catch (error) {
             console.log(error);
