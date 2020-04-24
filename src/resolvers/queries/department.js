@@ -2,7 +2,7 @@ import { decode } from "jsonwebtoken";
 import {
   requiresRights,
   requiresAuth,
-  requiresVipfyManagement
+  requiresVipfyManagement,
 } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 
@@ -11,7 +11,7 @@ export default {
     async (_parent, _args, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         return await models.Department.findOne({ where: { unitid: company } });
@@ -25,12 +25,12 @@ export default {
     async (_parent, _args, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         const departments = await models.sequelize
           .query("Select * from getDepartmentsData(:company)", {
-            replacements: { company }
+            replacements: { company },
           })
           .spread(res => res);
 
@@ -45,7 +45,7 @@ export default {
     async (_parent, _args, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         const employees = await models.sequelize.query(
@@ -53,7 +53,7 @@ export default {
          WHERE id = :company AND employee NOTNULL`,
           {
             replacements: { company },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
 
@@ -66,11 +66,11 @@ export default {
 
   fetchUserSecurityOverview: requiresRights([
     "view-security",
-    "myself"
+    "myself",
   ]).createResolver(async (_p, { userid }, { models, session }) => {
     try {
       const {
-        user: { company }
+        user: { company },
       } = decode(session.token);
 
       let query = `SELECT human_data.*,
@@ -100,7 +100,7 @@ export default {
 
       const res = await models.sequelize.query(query, {
         replacements: { company, userid },
-        type: models.sequelize.QueryTypes.SELECT
+        type: models.sequelize.QueryTypes.SELECT,
       });
 
       return res;
@@ -113,13 +113,13 @@ export default {
     async (_p, _args, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         const vipfyPlans = await models.Plan.findAll({
           where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
           attributes: ["id"],
-          raw: true
+          raw: true,
         });
 
         const planIds = vipfyPlans.map(plan => plan.id);
@@ -132,13 +132,13 @@ export default {
             endtime: {
               [models.Op.or]: {
                 [models.Op.gt]: models.sequelize.fn("NOW"),
-                [models.Op.eq]: null
-              }
+                [models.Op.eq]: null,
+              },
             },
             buytime: { [models.Op.lt]: models.sequelize.fn("NOW") },
-            planid: { [models.Op.in]: planIds }
+            planid: { [models.Op.in]: planIds },
           },
-          raw: true
+          raw: true,
         });
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -150,7 +150,7 @@ export default {
     async (_p, args, { models, session }) => {
       try {
         const {
-          user: { unitid, company }
+          user: { unitid, company },
         } = decode(session.token);
 
         const data = await models.sequelize.query(
@@ -158,7 +158,7 @@ export default {
        WHERE id = :company AND employee NOTNULL`,
           {
             replacements: { company },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
 
@@ -193,7 +193,7 @@ export default {
           WHERE uv.id IN (:employeeIDs)`,
           {
             replacements: { employeeIDs },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
 
@@ -202,5 +202,5 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
 };
