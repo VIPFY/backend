@@ -186,6 +186,7 @@ export const createNotification = async (
           {
             replacements: { teamid: informTeams.teamid },
             type: models.sequelize.QueryTypes.SELECT,
+            transaction,
           }
         );
 
@@ -217,6 +218,7 @@ export const createNotification = async (
           {
             replacements: { teamid: informTeams.teams },
             type: models.sequelize.QueryTypes.SELECT,
+            transaction,
           }
         );
 
@@ -251,6 +253,7 @@ export const createNotification = async (
           {
             replacements: { company: informAdmins.company },
             type: models.sequelize.QueryTypes.SELECT,
+            transaction,
           }
         );
         admins
@@ -275,24 +278,24 @@ export const createNotification = async (
 
     const promises = [];
 
+    //console.log("TEST NOTIFICATION", receivers, notificationBody);
     receivers.forEach(r => {
       promises.push(
         (async () => {
           let notification = {
-            dataValues: {
-              ...notificationBody,
-              message: r.message,
-              receiver: r.receiver,
-              options: Object.assign(
-                notificationBody && notificationBody.options
-                  ? {
-                      ...notificationBody.options,
-                    }
-                  : {},
-                { level: r.level }
-              ),
-              sendtime,
-            },
+            ...notificationBody,
+            message: r.message,
+            receiver: r.receiver,
+            options: Object.assign(
+              notificationBody && notificationBody.options
+                ? {
+                    ...notificationBody.options,
+                  }
+                : {},
+              { level: r.level }
+            ),
+            sendtime,
+            id: `${sendtime}-${r.receiver}`,
           };
 
           if (!r.level || r.level > 1) {

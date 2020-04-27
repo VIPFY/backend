@@ -289,6 +289,7 @@ export const queries = `
 
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
+  fetchAppByIdName(id: ID!): AppDetails
 
   fetchAppByDomain(domain: String, hostname: String): AppDetails
   fetchLicenceAssignmentsByDomain(domain: String, hostname: String): [LicenceAssignment]

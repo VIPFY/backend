@@ -82,6 +82,27 @@ export default {
     }
   ),
 
+  fetchAppByIdName: requiresAuth.createResolver(
+    async (_parent, { id }, { models, session }) => {
+      try {
+        const {
+          user: { company },
+        } = decode(session.token);
+
+        const app = await models.AppDetails.findOne({
+          where: {
+            id,
+            owner: { [models.Op.or]: [null, company] },
+          },
+        });
+
+        return app;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
   fetchAppByDomain: requiresRights(["view-apps"]).createResolver(
     async (_parent, { domain, hostname }, { models, session }) => {
       try {
@@ -804,7 +825,33 @@ export default {
         } = decode(session.token);
         const orbits = await models.sequelize.query(
           `
-          SELECT * from orbits_view where usedby=:company and id=:orbitid;
+          SELECT boughtplan_view.id,
+          boughtplan_view.buyer,
+          boughtplan_view.planid,
+          boughtplan_view.buytime,
+          boughtplan_view.endtime,
+          boughtplan_view.key,
+          boughtplan_view.disabled,
+          boughtplan_view.payer,
+          boughtplan_view.totalprice,
+          boughtplan_view.usedby,
+          boughtplan_view.additionalfeatures,
+          boughtplan_view.totalfeatures,
+          boughtplan_view.alias,
+          boughtplan_view.stripeplan,
+          boughtplan_view.planinputs,
+          COALESCE(array_agg(DISTINCT d3.departmentid), ARRAY[]::uuid[]) AS teams,
+          COALESCE(array_agg(DISTINCT licence_data.id), ARRAY[]::uuid[]) AS accounts
+         FROM ((boughtplan_view
+           LEFT JOIN licence_data ON ((boughtplan_view.id = licence_data.boughtplanid)))
+           LEFT JOIN departmentapps_data d3 ON (((boughtplan_view.id = d3.boughtplanid)
+           AND (d3.endtime > now()) AND
+           (d3.starttime <= now()) AND (NOT (EXISTS ( SELECT 1
+                 FROM departmentapps_data dd
+                WHERE ((dd.boughtplanid = d3.boughtplanid) AND
+                (dd.departmentid = d3.departmentid) AND
+                usedby=:company and id=:orbitid)))))))
+        GROUP BY boughtplan_view.id, boughtplan_view.buyer, boughtplan_view.planid, boughtplan_view.buytime, boughtplan_view.endtime, boughtplan_view.key, boughtplan_view.disabled, boughtplan_view.payer, boughtplan_view.totalprice, boughtplan_view.usedby, boughtplan_view.additionalfeatures, boughtplan_view.totalfeatures, boughtplan_view.alias, boughtplan_view.stripeplan, boughtplan_view.planinputs;
         `,
           {
             replacements: { orbitid, company },

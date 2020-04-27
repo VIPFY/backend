@@ -114,7 +114,7 @@ export default {
               ],
             },
             ta,
-            { company },
+            { company, level: 2 },
             { teamid, level: 3 }
           );
 
