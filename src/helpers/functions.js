@@ -289,7 +289,7 @@ export const createNotification = async (
                       ...notificationBody.options,
                     }
                   : {},
-                (level: r.level)
+                { level: r.level }
               ),
               sendtime,
             },
