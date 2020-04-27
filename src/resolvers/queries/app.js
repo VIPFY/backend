@@ -8,7 +8,7 @@ import { NormalError, PartnerError } from "../../errors";
 import {
   requiresAuth,
   requiresRights,
-  requiresVipfyAdmin
+  requiresVipfyAdmin,
 } from "../../helpers/permissions";
 import { companyCheck, concatName } from "../../helpers/functions";
 import freshdeskAPI from "../../services/freshdesk";
@@ -18,7 +18,7 @@ export default {
     async (_P, { limit, offset, sortOptions }, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         const allApps = await models.AppDetails.findAll({
@@ -41,15 +41,15 @@ export default {
             "developername",
             "supportunit",
             "color",
-            "hidden"
+            "hidden",
           ],
           where: {
             disabled: false,
             deprecated: false,
             hidden: false,
-            owner: { [models.Op.or]: [null, company] }
+            owner: { [models.Op.or]: [null, company] },
           },
-          order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
+          order: sortOptions ? [[sortOptions.name, sortOptions.order]] : "",
         });
 
         return allApps;
@@ -63,7 +63,7 @@ export default {
     async (_parent, { id }, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         const app = await models.AppDetails.findOne({
@@ -71,8 +71,8 @@ export default {
             id,
             disabled: false,
             deprecated: false,
-            owner: { [models.Op.or]: [null, company] }
-          }
+            owner: { [models.Op.or]: [null, company] },
+          },
         });
 
         return app;
@@ -86,7 +86,7 @@ export default {
     async (_parent, { domain, hostname }, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         let app = null;
@@ -99,7 +99,7 @@ export default {
             AND usedby = :company;`,
             {
               replacements: { domain, company },
-              type: models.sequelize.QueryTypes.SELECT
+              type: models.sequelize.QueryTypes.SELECT,
             }
           );
           if (boughtplan[0]) {
@@ -108,8 +108,8 @@ export default {
                 id: boughtplan[0].id,
                 disabled: false,
                 deprecated: false,
-                owner: { [models.Op.or]: [null, company] }
-              }
+                owner: { [models.Op.or]: [null, company] },
+              },
             });
           }
         }
@@ -120,8 +120,8 @@ export default {
               domains: { [models.Op.contains]: [domain] },
               disabled: false,
               deprecated: false,
-              owner: { [models.Op.or]: [null, company] }
-            }
+              owner: { [models.Op.or]: [null, company] },
+            },
           });
         }
 
@@ -136,7 +136,7 @@ export default {
     async (_parent, { domain, hostname }, { models, session }) => {
       try {
         const {
-          user: { company, unitid }
+          user: { company, unitid },
         } = decode(session.token);
 
         let apps = [];
@@ -149,7 +149,7 @@ export default {
             AND usedby = :company;`,
             {
               replacements: { domain, company },
-              type: models.sequelize.QueryTypes.SELECT
+              type: models.sequelize.QueryTypes.SELECT,
             }
           );
           if (boughtplan && boughtplan[0]) {
@@ -159,8 +159,8 @@ export default {
                   id: boughtplan[0].id,
                   disabled: false,
                   deprecated: false,
-                  owner: { [models.Op.or]: [null, company] }
-                }
+                  owner: { [models.Op.or]: [null, company] },
+                },
               },
               { plain: true }
             );
@@ -174,8 +174,8 @@ export default {
                 domains: { [models.Op.contains]: [domain] },
                 disabled: false,
                 deprecated: false,
-                owner: { [models.Op.or]: [null, company] }
-              }
+                owner: { [models.Op.or]: [null, company] },
+              },
             },
             { plain: true }
           );
@@ -187,13 +187,13 @@ export default {
             join plan_data on planid = plan_data.id
               where unitid = :unitid and plan_data.appid in(:apps)`,
             {
-              replacements: { unitid, apps: apps.map((a) => a.id) },
-              type: models.sequelize.QueryTypes.SELECT
+              replacements: { unitid, apps: apps.map(a => a.id) },
+              type: models.sequelize.QueryTypes.SELECT,
             }
           );
           const startTime = Date.now();
 
-          licences.forEach((licence) => {
+          licences.forEach(licence => {
             licence.accountid = licence.id;
             licence.id = licence.assignmentid;
             if (licence.disabled) {
@@ -236,14 +236,14 @@ export default {
     async (_parent, { licenceid }, { models }, _info) => {
       try {
         const licence = await models.LicenceDataFiltered.findOne({
-          where: { id: licenceid }
+          where: { id: licenceid },
         });
 
         return licence;
       } catch (err) {
         throw new NormalError({
           message: `fetch Licence ${err.message}`,
-          internalData: { err }
+          internalData: { err },
         });
       }
     }
@@ -253,7 +253,7 @@ export default {
     async (_parent, { assignmentid }, { models, session }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid },
         } = decode(session.token);
 
         const licences = await models.sequelize.query(
@@ -264,13 +264,13 @@ export default {
         WHERE licence_view.assignmentid = :assignmentid AND licence_view.unitid = :unitid AND not app_data.disabled`,
           {
             replacements: { assignmentid, unitid },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
 
         const startTime = Date.now();
 
-        licences.forEach((licence) => {
+        licences.forEach(licence => {
           licence.accountid = licence.id;
           licence.id = licence.assignmentid;
           if (licence.disabled) {
@@ -320,7 +320,7 @@ export default {
 
         const startTime = Date.now();
 
-        licences.forEach((licence) => {
+        licences.forEach(licence => {
           if (licence.disabled) {
             licence.agreed = false;
             licence.key = null;
@@ -356,7 +356,7 @@ export default {
 
   fetchUserLicenceAssignments: requiresRights([
     "view-apps",
-    "myself"
+    "myself",
   ]).createResolver(async (_parent, args, { models, session }) => {
     try {
       let unitid = args.unitid;
@@ -376,7 +376,7 @@ export default {
 
       const startTime = Date.now();
 
-      licences.forEach((licence) => {
+      licences.forEach(licence => {
         licence.accountid = licence.id;
         licence.id = licence.assignmentid;
         if (licence.disabled) {
@@ -443,7 +443,7 @@ export default {
             WHERE not a.disabled;`,
           {
             replacements: { departmentid },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
 
@@ -484,7 +484,7 @@ export default {
                               l ON (l.boughtplanid = bp.id);`,
           {
             replacements: { departmentid },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
 
@@ -499,7 +499,7 @@ export default {
     async (_p, { starttime, endtime, boughtplanid }, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
         const stats = await models.sequelize.query(
           `
@@ -521,7 +521,7 @@ export default {
           {
             replacements: { starttime, endtime, boughtplanid, company },
             raw: true,
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
         return stats;
@@ -540,7 +540,7 @@ export default {
       try {
         if (
           [assignmentid, licenceid, boughtplanid, unitid].every(
-            (v) => v === null || v === undefined
+            v => v === null || v === undefined
           )
         ) {
           throw new Error("Please narrow your request");
@@ -549,8 +549,8 @@ export default {
         const where = {
           day: {
             [models.Op.lte]: endtime || Infinity,
-            [models.Op.gte]: starttime || -Infinity
-          }
+            [models.Op.gte]: starttime || -Infinity,
+          },
         };
 
         if (assignmentid !== undefined) where.assignmentid = assignmentid;
@@ -562,11 +562,11 @@ export default {
           attributes: [
             [
               models.sequelize.fn("sum", models.sequelize.col("minutesspent")),
-              "total_minutes"
-            ]
+              "total_minutes",
+            ],
           ],
           where,
-          raw: true
+          raw: true,
         });
 
         return stats[0].total_minutes || 0;
@@ -580,7 +580,7 @@ export default {
     async (_parent, _args, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         return models.sequelize.query(
@@ -595,13 +595,13 @@ export default {
         GROUP BY app_data.id`,
           {
             replacements: { company },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
       } catch (err) {
         throw new NormalError({
           message: `company Services: ${err.message}`,
-          internalData: { err }
+          internalData: { err },
         });
       }
     }
@@ -610,7 +610,7 @@ export default {
   fetchCompanyService: requiresRights(["view-licences"]).createResolver(
     async (_parent, { serviceid }, { models, session }) => {
       const {
-        user: { company }
+        user: { company },
       } = decode(session.token);
       try {
         const companyServices = await models.sequelize.query(
@@ -627,7 +627,7 @@ export default {
           group by app_data.id`,
           {
             replacements: { company, serviceid },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
         let returnValue;
@@ -647,7 +647,7 @@ export default {
   fetchTotalAppUsage: requiresRights(["view-usage"]).createResolver(
     async (_p, { starttime, endtime }, { models, session }) => {
       const {
-        user: { company }
+        user: { company },
       } = decode(session.token);
       try {
         let interval = "";
@@ -672,7 +672,7 @@ export default {
           {
             replacements: { company },
             raw: true,
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
 
@@ -687,7 +687,7 @@ export default {
     async (_P, { limit, offset, sortOptions }, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         const allApps = await models.AppDetails.findAll({
@@ -710,15 +710,15 @@ export default {
             "developername",
             "supportunit",
             "color",
-            "hidden"
+            "hidden",
           ],
           where: {
             disabled: false,
             deprecated: false,
             hidden: false,
-            owner: { [models.Op.or]: [null, company] }
+            owner: { [models.Op.or]: [null, company] },
           },
-          order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
+          order: sortOptions ? [[sortOptions.name, sortOptions.order]] : "",
         });
 
         return allApps;
@@ -731,7 +731,7 @@ export default {
     async (_p, _args, { models, session }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid },
         } = decode(session.token);
 
         const user = await models.User.findOne({ where: { id: unitid } });
@@ -741,7 +741,7 @@ export default {
         }
 
         const res = await freshdeskAPI("GET", "tickets", {
-          requester_id: user.supporttoken
+          requester_id: user.supporttoken,
         });
 
         return res.data;
@@ -763,7 +763,7 @@ export default {
           {
             replacements: { appid },
             raw: true,
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
         return apps;
@@ -777,7 +777,7 @@ export default {
     async (_p, { planid }, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
         const orbits = await models.sequelize.query(
           `
@@ -786,7 +786,7 @@ export default {
           {
             replacements: { company, planid },
             raw: true,
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
         return orbits;
@@ -794,5 +794,28 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
+
+  fetchOrbit: requiresAuth.createResolver(
+    async (_p, { orbitid }, { models, session }) => {
+      try {
+        const {
+          user: { company },
+        } = decode(session.token);
+        const orbits = await models.sequelize.query(
+          `
+          SELECT * from orbits_view where usedby=:company and id=:orbitid;
+        `,
+          {
+            replacements: { orbitid, company },
+            raw: true,
+            type: models.sequelize.QueryTypes.SELECT,
+          }
+        );
+        return orbits[0];
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
 };

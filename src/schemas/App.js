@@ -324,15 +324,14 @@ export const queries = `
   fetchExecutionApps(appid: ID): [ExecuteApp]
 
   fetchOrbitsOfPlan(planid: ID!): [Orbit]
+
+  fetchOrbit(orbitid: ID!): Orbit
 `;
 
 export const mutations = `
   sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
 
   createOwnApp(ssoData: SSOInput!): IDID
-
-  # Deletes a licence on a set date, if it is after the normal cancel period
-  deleteLicenceAt(licenceid: ID!, time: Date!): Date!
 
   # Agree to all terms and conditions of a licence
   agreeToLicence(licenceid: ID!): Response!
