@@ -13,7 +13,7 @@ export default {
     async (parent, { groupid, limit, cursor }, { models, session }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid },
         } = decode(session.token);
 
         return await messaging.fetchDialog(
@@ -26,7 +26,7 @@ export default {
       } catch (err) {
         throw new NormalError({
           message: err.message,
-          internalData: { error: err }
+          internalData: { error: err },
         });
       }
     }
@@ -36,7 +36,7 @@ export default {
     async (parent, args, { models, token }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid },
         } = decode(session.token);
 
         return await messaging.fetchGroups(models, unitid);
@@ -50,8 +50,8 @@ export default {
     async (_p, { userid, canbedeleted }, { models }) => {
       try {
         const user = await models.User.findOne({
-          where: { id: userid, deleted: canbedeleted ? undefined || false },
-          raw: true
+          where: { id: userid, deleted: canbedeleted ? undefined : false },
+          raw: true,
         });
 
         return user;
@@ -59,5 +59,5 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
 };
