@@ -334,6 +334,10 @@ export const mutations = `
 
   createOwnApp(ssoData: SSOInput!): IDID
 
+  # Deletes a licence on a set date, if it is after the normal cancel period
+  # deprecated
+  deleteLicenceAt(licenceid: ID!, time: Date!): Date!
+
   # Agree to all terms and conditions of a licence
   agreeToLicence(licenceid: ID!): Response!
 
