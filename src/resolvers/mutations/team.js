@@ -741,8 +741,6 @@ export default {
 
           const promises = [];
 
-          console.log("INPUTS", teamid, userid, deletejson, endtime);
-
           // Delete all assignments of as
           await Promise.all(
             deletejson.assignments.map(async as => {
@@ -807,8 +805,6 @@ export default {
                   transaction: ta,
                 });
 
-                console.log("LR", licenceRight);
-
                 const licences = await models.sequelize.query(
                   `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
                   {
@@ -818,7 +814,6 @@ export default {
                   }
                 );
 
-                console.log("LICENCES", licences);
                 if (licences.length == 0) {
                   await models.LicenceData.update(
                     {
@@ -841,8 +836,6 @@ export default {
                     }
                   );
 
-                  console.log(otherlicences);
-
                   if (otherlicences.length == 0) {
                     const boughtplan = await models.sequelize.query(
                       `SELECT boughtplanid FROM licence_view WHERE id = :licenceid`,
@@ -853,14 +846,24 @@ export default {
                       }
                     );
 
-                    console.log("BOUGHTPLAN", boughtplan);
-
                     await models.BoughtPlanPeriod.update(
                       {
                         endtime,
                       },
                       {
                         where: { boughtplanid: boughtplan[0].boughtplanid },
+                        transaction: ta,
+                      }
+                    );
+
+                    await models.DepartmentApp.update(
+                      { endtime },
+                      {
+                        where: {
+                          departmentid: licenceRight.options.teamlicence,
+                          boughtplanid: boughtplan[0].boughtplanid,
+                          endtime: Infinity,
+                        },
                         transaction: ta,
                       }
                     );
