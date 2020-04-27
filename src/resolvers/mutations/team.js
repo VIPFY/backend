@@ -22,7 +22,7 @@ import {
 export default {
   createTeam: requiresRights(["create-team"]).createResolver(
     async (_p, { team, addemployees, apps }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const { models, session } = ctx;
 
@@ -178,9 +178,9 @@ export default {
               { transaction: ta }
             );
 
-            service.employees.forEach(employee => {
-              const empid = newemployees.find(e => e.email == employee.wmail1)
-                ? newemployees.find(e => e.email == employee.wmail1).id
+            service.employees.forEach((employee) => {
+              const empid = newemployees.find((e) => e.email == employee.wmail1)
+                ? newemployees.find((e) => e.email == employee.wmail1).id
                 : employee.id;
               servicepromises.push(
                 models.LicenceData.create(
@@ -215,7 +215,7 @@ export default {
           await createLog(ctx, "addTeam", { unit, department, parentUnit }, ta);
 
           const employeeNotifypromises = [];
-          addemployees.forEach(employee =>
+          addemployees.forEach((employee) =>
             employeeNotifypromises.push(
               createNotification({
                 receiver: employee.id,
@@ -242,7 +242,7 @@ export default {
 
   deleteTeam: requiresRights(["delete-team"]).createResolver(
     async (_, { teamid, deletejson, endtime }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const { models, session } = ctx;
           const {
@@ -261,7 +261,7 @@ export default {
           );
 
           await Promise.all(
-            deletejson.users.map(async user => {
+            deletejson.users.map(async (user) => {
               const deleteUserJson = user;
               const userid = user.userid;
 
@@ -270,7 +270,7 @@ export default {
 
               // Delete all assignments of as
               await Promise.all(
-                deleteUserJson.assignments.map(async as => {
+                deleteUserJson.assignments.map(async (as) => {
                   if (as.bool) {
                     promises.push(
                       models.LicenceRight.update(
@@ -298,7 +298,9 @@ export default {
                     ) {
                       let newtags = checkassignment.tags;
                       newtags.splice(
-                        checkassignment.tags.findIndex(e => e == "teamlicence"),
+                        checkassignment.tags.findIndex(
+                          (e) => e == "teamlicence"
+                        ),
                         1
                       );
                       promises.push(
@@ -325,7 +327,7 @@ export default {
               //Check for other assignments
               if (deleteUserJson.autodelete) {
                 await Promise.all(
-                  deleteUserJson.assignments.map(async asa => {
+                  deleteUserJson.assignments.map(async (asa) => {
                     const licenceRight = await models.LicenceRight.findOne({
                       where: { id: asa.id },
                       raw: true,
@@ -401,8 +403,6 @@ export default {
 
           const deletePromises = [];
 
-          console.log("END TEAMORBITS");
-
           deletePromises.push(
             models.DepartmentApp.update(
               {
@@ -444,9 +444,8 @@ export default {
           );
 
           if (oldTeam[0].employees) {
-            console.log("EMPLOYEES", oldTeam[0].employees);
             await Promise.all(
-              oldTeam[0].employees.map(async employeeid =>
+              oldTeam[0].employees.map(async (employeeid) =>
                 createNotification({
                   receiver: employeeid,
                   message: `A Team is deleted`,
@@ -481,7 +480,7 @@ export default {
 
   updateTeamPic: requiresRights(["edit-team"]).createResolver(
     async (_p, { file, teamid }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const { models, session } = ctx;
           const {
@@ -538,7 +537,7 @@ export default {
 
   addOrbitToTeam: requiresRights(["edit-team"]).createResolver(
     async (_p, { teamid, orbitid, assignments }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const {
             user: { unitid, company }
@@ -559,7 +558,7 @@ export default {
 
           const promises = [];
 
-          assignments.forEach(a => {
+          assignments.forEach((a) => {
             promises.push(
               checkCompanyMembership(models, company, a.employeeid, "employee")
             );
@@ -582,7 +581,7 @@ export default {
           await Promise.all(promises);
 
           const employeeNotifypromises = [];
-          assignments.forEach(a =>
+          assignments.forEach((a) =>
             employeeNotifypromises.push(
               createNotification({
                 receiver: a.employeeid,
@@ -630,7 +629,7 @@ export default {
 
   addMemberToTeam: requiresRights(["edit-team"]).createResolver(
     async (_p, { teamid, employeeid, assignments }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const {
             user: { unitid, company }
@@ -649,7 +648,7 @@ export default {
 
           const promises = [];
 
-          assignments.forEach(a => {
+          assignments.forEach((a) => {
             promises.push(checkOrbitMembership(models, company, a.orbitid));
 
             promises.push(
@@ -712,7 +711,7 @@ export default {
 
   removeTeamOrbitFromTeam: requiresRights(["edit-team"]).createResolver(
     async (_p, { teamid, orbitid, deletejson, endtime }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const {
             user: { unitid, company }
@@ -727,7 +726,7 @@ export default {
           const promises = [];
 
           // Delete all team-orbit-assignments
-          deletejson.teams.forEach(t => {
+          deletejson.teams.forEach((t) => {
             if (t.bool) {
               promises.push(
                 models.DepartmentApp.update(
@@ -747,11 +746,11 @@ export default {
 
           // Delete all accounts
           let noAccountLeft = true;
-          deletejson.accounts.forEach(a => {
+          deletejson.accounts.forEach((a) => {
             if (a) {
               // Delete all assignments of a
               Promise.all(
-                a.assignments.map(async as => {
+                a.assignments.map(async (as) => {
                   if (as.bool) {
                     promises.push(
                       models.LicenceRight.update(
@@ -779,7 +778,9 @@ export default {
                     ) {
                       let newtags = checkassignment.tags;
                       newtags.splice(
-                        checkassignment.tags.findIndex(e => e == "teamlicence"),
+                        checkassignment.tags.findIndex(
+                          (e) => e == "teamlicence"
+                        ),
                         1
                       );
                       promises.push(
@@ -802,7 +803,7 @@ export default {
                 })
               );
 
-              if (a.bool && a.assignments.every(as => as.bool)) {
+              if (a.bool && a.assignments.every((as) => as.bool)) {
                 promises.push(
                   models.LicenceData.update(
                     {
@@ -822,7 +823,7 @@ export default {
 
           if (
             deletejson.orbit &&
-            deletejson.teams.every(t => t && t.bool) &&
+            deletejson.teams.every((t) => t && t.bool) &&
             noAccountLeft
           ) {
             promises.push(
@@ -878,7 +879,7 @@ export default {
 
   removeMemberFromTeam: requiresRights(["edit-team"]).createResolver(
     async (_p, { teamid, userid, deletejson, endtime }, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
+      ctx.models.sequelize.transaction(async (ta) => {
         try {
           const {
             user: { unitid, company }
@@ -890,11 +891,9 @@ export default {
 
           const promises = [];
 
-          console.log("INPUTS", teamid, userid, deletejson, endtime);
-
           // Delete all assignments of as
           await Promise.all(
-            deletejson.assignments.map(async as => {
+            deletejson.assignments.map(async (as) => {
               if (as.bool) {
                 promises.push(
                   models.LicenceRight.update(
@@ -925,7 +924,7 @@ export default {
                       {
                         tags: checkassignment.tags.splice(
                           checkassignment.tags.findIndex(
-                            e => e == "teamlicence"
+                            (e) => e == "teamlicence"
                           ),
                           1
                         ),
@@ -949,14 +948,12 @@ export default {
           //Check for other assignments
           if (deletejson.autodelete) {
             await Promise.all(
-              deletejson.assignments.map(async asa => {
+              deletejson.assignments.map(async (asa) => {
                 const licenceRight = await models.LicenceRight.findOne({
                   where: { id: asa.id },
                   raw: true,
                   transaction: ta
                 });
-
-                console.log("LR", licenceRight);
 
                 const licences = await models.sequelize.query(
                   `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
@@ -967,7 +964,6 @@ export default {
                   }
                 );
 
-                console.log("LICENCES", licences);
                 if (licences.length == 0) {
                   await models.LicenceData.update(
                     {
@@ -990,8 +986,6 @@ export default {
                     }
                   );
 
-                  console.log(otherlicences);
-
                   if (otherlicences.length == 0) {
                     const boughtplan = await models.sequelize.query(
                       `SELECT boughtplanid FROM licence_view WHERE id = :licenceid`,
@@ -1002,14 +996,24 @@ export default {
                       }
                     );
 
-                    console.log("BOUGHTPLAN", boughtplan);
-
                     await models.BoughtPlanPeriod.update(
                       {
                         endtime
                       },
                       {
                         where: { boughtplanid: boughtplan[0].boughtplanid },
+                        transaction: ta
+                      }
+                    );
+
+                    await models.DepartmentApp.update(
+                      { endtime },
+                      {
+                        where: {
+                          departmentid: licenceRight.options.teamlicence,
+                          boughtplanid: boughtplan[0].boughtplanid,
+                          endtime: Infinity
+                        },
                         transaction: ta
                       }
                     );
