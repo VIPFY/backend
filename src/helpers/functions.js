@@ -203,7 +203,7 @@ export const createNotification = async (
             })
           );
       } catch (err) {
-        console.log("ERROR informTeams", err);
+        console.log("ERROR informTeams-one", err);
       }
     }
     if (informTeams && informTeams.teams) {
@@ -234,7 +234,7 @@ export const createNotification = async (
             })
           );
       } catch (err) {
-        console.log("ERROR informTeams", err);
+        console.log("ERROR informTeams-multiple", err);
       }
     }
     if (informAdmins && informAdmins.company) {
@@ -295,8 +295,8 @@ export const createNotification = async (
             },
           };
 
-          if (r.level > 1) {
-            await models.Notification.create(
+          if (!r.level || r.level > 1) {
+            notification = await models.Notification.create(
               {
                 ...notificationBody,
                 message: r.message,
@@ -324,6 +324,7 @@ export const createNotification = async (
 
     return true;
   } catch (err) {
+    console.log("ENDERROR", err);
     return new NormalError({ message: err.message });
   }
 };

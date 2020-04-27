@@ -752,7 +752,7 @@ export default {
             { transaction: ta }
           );
 
-          createNotification(
+          await createNotification(
             {
               receiver: unitid,
               message: "Vacation request successfully created",

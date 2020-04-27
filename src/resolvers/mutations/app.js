@@ -854,7 +854,7 @@ export default {
               },
               ta
             ),
-            createNotification(
+            await createNotification(
               {
                 receiver: userid,
                 message: starttime
@@ -1196,11 +1196,10 @@ export default {
   ]).createResolver(async (_p, { assignmentid, endtime, isNull }, ctx) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
-        const {
-          user: { company },
-        } = decode(ctx.session.token);
-
         const { models, session } = ctx;
+        const {
+          user: { company, unitid },
+        } = decode(session.token);
 
         const licence = await models.Licence.findOne({
           where: { assignmentid },
@@ -1237,7 +1236,7 @@ export default {
             receiver: assignment.unitid,
             message: isNull
               ? `User ${unitid} has reactived Account ${licence.id} for User ${assignment.unitid}`
-              : endtime <= now()
+              : endtime <= moment()
               ? `User ${unitid} has deleted Account ${licence.id} for User ${assignment.unitid}`
               : `User ${unitid} has set Account ${
                   licence.id

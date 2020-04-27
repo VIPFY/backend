@@ -58,7 +58,7 @@ export default {
 
           const [department, parentUnit] = await Promise.all([p1, p2]);
 
-          createNotification(
+          await createNotification(
             {
               receiver: unitid,
               message: `User ${unitid} has created Team ${unit.dataValues.id}`,
@@ -101,7 +101,7 @@ export default {
             }
           );
 
-          createNotification(
+          await createNotification(
             {
               message: `User ${unitid} has deleted Team ${teamid}`,
               icon: "users",
@@ -356,7 +356,7 @@ export default {
 
           const [team] = await Promise.all([p1, p2]);
 
-          createNotification(
+          await createNotification(
             {
               message: `User ${unitid} has updated the image of Team ${teamid}`,
               icon: "plus-circle",
