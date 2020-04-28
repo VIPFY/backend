@@ -12,7 +12,7 @@ import {
   pubsub,
   NEW_NOTIFICATION,
   USER_SESSION_ID_PREFIX,
-  REDIS_SESSION_PREFIX
+  REDIS_SESSION_PREFIX,
 } from "../constants";
 import { checkCompanyMembership } from "./companyMembership";
 import { createToken } from "./auth";
@@ -36,7 +36,7 @@ export const parentAdminCheck = async user => {
         childid is Not null) and employee = :userId`,
       {
         replacements: { userId: user.id },
-        type: models.sequelize.QueryTypes.SELECT
+        type: models.sequelize.QueryTypes.SELECT,
       }
     )
     .then(roots => roots.map(root => (user.company = root.id)));
@@ -107,7 +107,7 @@ export const recursiveAddressCheck = (accountData, iterator = 0) => {
 export const createLog = async (context, eventtype, eventdata, transaction) => {
   const {
     user: { unitid },
-    impersonator
+    impersonator,
   } = decode(context.session.token);
 
   await models.Log.create(
@@ -118,7 +118,7 @@ export const createLog = async (context, eventtype, eventdata, transaction) => {
       user: unitid,
       sudoer: impersonator,
       deviceid: context.deviceId,
-      hostname: context.userData.host
+      hostname: context.userData.host,
     },
     { transaction }
   );
@@ -144,90 +144,189 @@ export const formatHumanName = human =>
 export const createNotification = async (
   notificationBody,
   transaction,
-  informAdmins
+  informAdmins,
+  informTeams,
+  informIndividuals
 ) => {
   try {
-    const sendtime = getDate();
-
-    let notification = { dataValues: notificationBody };
-
-    // Filter the case where only admins should be informed
+    //get everyone who should be informed
+    const receivers = [];
     if (notificationBody.receiver) {
-      if (notificationBody.show !== false) {
-        notification = await models.Notification.create(
-          { ...notificationBody, sendtime },
-          { transaction }
-        );
-      }
-
-      pubsub.publish(NEW_NOTIFICATION, {
-        newNotification: notification
+      receivers.push({
+        receiver: notificationBody.receiver,
+        message: notificationBody.message,
+        level: notificationBody.level || 2,
       });
     }
-
-    if (informAdmins) {
-      const admins = await models.sequelize.query(
-        `
-        SELECT DISTINCT employee
-        FROM department_employee_view dev
-                INNER JOIN right_data rd ON rd.holder = dev.employee
-        WHERE rd.forunit = :company
-          AND dev.id = :company
-          AND rd.type = 'admin';
-        `,
-        {
-          replacements: { company: informAdmins.company },
-          type: models.sequelize.QueryTypes.SELECT
-        }
-      );
-
-      const adminIDs = admins
-        .map(({ employee }) => employee)
-        .filter(ID => {
-          if (notificationBody.receiver) {
-            return ID != notificationBody.receiver;
-          } else {
-            return true;
+    if (
+      informIndividuals &&
+      informIndividuals.users &&
+      informIndividuals.users.length > 0
+    ) {
+      informIndividuals.users
+        .filter(
+          t => receivers.length == 0 || receivers.find(f => f.receiver != t)
+        )
+        .forEach(t =>
+          receivers.push({
+            receiver: t,
+            message: informIndividuals.message || notificationBody.message,
+            level: informIndividuals.level || 1,
+          })
+        );
+    }
+    if (informTeams && informTeams.teamid) {
+      try {
+        const teammembers = await models.sequelize.query(
+          `
+          SELECT DISTINCT employee
+          FROM department_employee_view
+          WHERE id = :teamid;
+          `,
+          {
+            replacements: { teamid: informTeams.teamid },
+            type: models.sequelize.QueryTypes.SELECT,
+            transaction,
           }
-        });
+        );
 
-      for await (const id of adminIDs) {
-        if (notificationBody.show !== false) {
-          notification = await models.Notification.create(
-            {
-              ...notificationBody,
-              message: informAdmins.message,
-              receiver: id,
-              sendtime
-            },
-            { transaction }
+        teammembers
+          .filter(
+            t =>
+              receivers.length == 0 ||
+              receivers.find(f => f.receiver != t.employee)
+          )
+          .forEach(t =>
+            receivers.push({
+              receiver: t.employee,
+              message: informTeams.message || notificationBody.message,
+              level: informTeams.level || 1,
+            })
           );
-        }
+      } catch (err) {
+        console.log("ERROR informTeams-one", err);
       }
-
-      if (notificationBody.receiver) {
-        adminIDs.push(notificationBody.receiver);
-      }
-
-      for (const id of adminIDs) {
-        pubsub.publish(NEW_NOTIFICATION, {
-          newNotification: {
-            ...notification.dataValues,
-            message:
-              notificationBody.receiver && notificationBody.receiver == id
-                ? notificationBody.message
-                : informAdmins.message,
-            receiver: id,
-            sendtime: Date.now(),
-            changed: notificationBody.changed,
-            show: notificationBody.show
+    }
+    if (informTeams && informTeams.teams) {
+      try {
+        const teammembers = await models.sequelize.query(
+          `
+          SELECT DISTINCT employee
+          FROM department_employee_view
+          WHERE id in :teamid;
+          `,
+          {
+            replacements: { teamid: informTeams.teams },
+            type: models.sequelize.QueryTypes.SELECT,
+            transaction,
           }
-        });
+        );
+
+        teammembers
+          .filter(
+            t =>
+              receivers.length == 0 ||
+              receivers.find(f => f.receiver != t.employee)
+          )
+          .forEach(t =>
+            receivers.push({
+              receiver: t.employee,
+              message: informTeams.message || notificationBody.message,
+              level: informTeams.level || 1,
+            })
+          );
+      } catch (err) {
+        console.log("ERROR informTeams-multiple", err);
+      }
+    }
+    if (informAdmins && informAdmins.company) {
+      try {
+        const admins = await models.sequelize.query(
+          `
+              SELECT DISTINCT employee
+              FROM department_employee_view dev
+              INNER JOIN right_data rd ON rd.holder = dev.employee
+        WHERE rd.forunit = :company
+        AND dev.id = :company
+        AND rd.type = 'admin';
+        `,
+          {
+            replacements: { company: informAdmins.company },
+            type: models.sequelize.QueryTypes.SELECT,
+            transaction,
+          }
+        );
+        admins
+          .filter(
+            a =>
+              receivers.length == 0 ||
+              receivers.find(f => f.receiver != a.employee)
+          )
+          .forEach(a =>
+            receivers.push({
+              receiver: a.employee,
+              message: informAdmins.message || notificationBody.message,
+              level: informAdmins.level || 1,
+            })
+          );
+      } catch (err) {
+        console.log("ERROR informAdmins", err);
       }
     }
 
-    return notification;
+    const sendtime = getDate();
+
+    const promises = [];
+
+    receivers.forEach(r => {
+      promises.push(
+        (async () => {
+          let notification = {
+            ...notificationBody,
+            message: r.message,
+            receiver: r.receiver,
+            options: Object.assign(
+              notificationBody && notificationBody.options
+                ? {
+                    ...notificationBody.options,
+                  }
+                : {},
+              { level: r.level }
+            ),
+            sendtime,
+            id: `${sendtime}-${r.receiver}`,
+          };
+
+          if (!r.level || r.level > 1) {
+            notification = await models.Notification.create(
+              {
+                ...notificationBody,
+                message: r.message,
+                receiver: r.receiver,
+                options: Object.assign(
+                  notificationBody && notificationBody.options
+                    ? {
+                        ...notificationBody.options,
+                      }
+                    : {},
+                  { level: r.level }
+                ),
+                sendtime,
+              },
+              { transaction }
+            );
+          }
+          await pubsub.publish(NEW_NOTIFICATION, {
+            newNotification: notification,
+          });
+        })()
+      );
+    });
+    await Promise.all(promises);
+
+    return true;
   } catch (err) {
+    console.log("ENDERROR", err);
     return new NormalError({ message: err.message });
   }
 };
@@ -246,7 +345,7 @@ export const updateNotification = async (
 
     notificationBody.options.updatetime = updatetime;
     let notification = {
-      dataValues: { ...notificationBody, id: notificationid }
+      dataValues: { ...notificationBody, id: notificationid },
     };
 
     // Filter the case where only admins should be informed
@@ -256,14 +355,14 @@ export const updateNotification = async (
           {
             ...notificationBody,
             options: { ...notificationBody.options, type: "update" },
-            sendtime
+            sendtime,
           },
           { where: { id: notificationid }, transaction, returning: true }
         );
       }
 
       pubsub.publish(NEW_NOTIFICATION, {
-        newNotification: notification
+        newNotification: notification,
       });
     }
     return notification;
@@ -304,7 +403,7 @@ export const checkPlanValidity = async plan => {
 
   const app = await models.App.findOne({
     where: { id: plan.appid, deprecated: false, disabled: false },
-    raw: true
+    raw: true,
   });
 
   if (!app) {
@@ -356,15 +455,15 @@ export const selectCredit = async (code, unitid) => {
   try {
     const p1 = models.Department.findOne({
       where: { unitid, promocode: code },
-      raw: true
+      raw: true,
     });
 
     const p2 = models.Promocode.findOne(
       {
         where: {
           code,
-          expires: { [models.Op.gt]: models.sequelize.fn("NOW") }
-        }
+          expires: { [models.Op.gt]: models.sequelize.fn("NOW") },
+        },
       },
       { raw: true }
     );
@@ -449,7 +548,7 @@ export const checkPaymentData = async (unitid, plan, ta) => {
   try {
     const { payingoptions } = await models.Department.findOne({
       where: { unitid },
-      raw: true
+      raw: true,
     });
 
     if (
@@ -463,7 +562,7 @@ export const checkPaymentData = async (unitid, plan, ta) => {
 
     if (!payingoptions.stripe.subscription) {
       const subscription = await createSubscription(payingoptions.stripe.id, [
-        { plan }
+        { plan },
       ]);
 
       await models.DepartmentData.update(
@@ -472,9 +571,9 @@ export const checkPaymentData = async (unitid, plan, ta) => {
             ...payingoptions,
             stripe: {
               ...payingoptions.stripe,
-              subscription: subscription.id
-            }
-          }
+              subscription: subscription.id,
+            },
+          },
         },
         { where: { unitid }, transaction: ta }
       );
@@ -511,7 +610,7 @@ export const companyCheck = async (company, unitid, employee) => {
       {
         replacements: { company, employee },
         raw: true,
-        type: models.sequelize.QueryTypes.SELECT
+        type: models.sequelize.QueryTypes.SELECT,
       }
     );
 
@@ -552,7 +651,7 @@ export const groupBy = (list, keyGetter) => {
 export const teamCheck = async (parentunit, childunit) => {
   const team = await models.ParentUnit.findOne({
     where: { parentunit, childunit },
-    raw: true
+    raw: true,
   });
 
   if (!team) {
@@ -629,7 +728,7 @@ export const check2FARights = async (userid, unitid, company) => {
         { type: { [models.Op.and]: ["create-2FA"] } },
         { type: "admin" }
       )
-    )
+    ),
   });
 
   if (!hasRight) {
@@ -657,8 +756,8 @@ export const parseSessions = async sessions => {
         host: parsedSession.host,
         location: {
           city: parsedSession.city,
-          country: parsedSession.country
-        }
+          country: parsedSession.country,
+        },
       };
     });
 
@@ -737,7 +836,7 @@ export const createSession = async (user, ctx) => {
         session: ctx.sessionID,
         ...ctx.userData,
         ...location,
-        loggedInAt: Date.now()
+        loggedInAt: Date.now(),
       })
     );
 
@@ -766,7 +865,7 @@ export const endSession = async (redis, userid, sessionID) => {
 
     await Promise.all([
       redis.lrem(`${USER_SESSION_ID_PREFIX}${userid}`, 0, signOutSession),
-      redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`)
+      redis.del(`${REDIS_SESSION_PREFIX}${sessionID}`),
     ]);
 
     return sessions.filter(item => {
@@ -814,6 +913,6 @@ export function generateFakeKey(email, short) {
     id: email,
     salt: short ? salt.substring(0, 32) : salt,
     ops: 2,
-    mem: 67108864
+    mem: 67108864,
   };
 }

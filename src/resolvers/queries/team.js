@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import { NormalError } from "../../errors";
-import { requiresRights } from "../../helpers/permissions";
+import { requiresRights, requiresAuth } from "../../helpers/permissions";
 
 export default {
   fetchTeams: requiresRights([["view-teams", "view-licences"]]).createResolver(
@@ -12,7 +12,7 @@ export default {
           WHERE childunit = :userid and team_view.iscompany = false`,
           {
             replacements: { userid },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
 
@@ -24,11 +24,11 @@ export default {
   ),
 
   fetchCompanyTeams: requiresRights([
-    ["view-teams", "view-licences"]
+    ["view-teams", "view-licences"],
   ]).createResolver(async (_parent, _args, { models, session }) => {
     try {
       const {
-        user: { company }
+        user: { company },
       } = decode(session.token);
 
       const teams = await models.sequelize.query(
@@ -37,7 +37,7 @@ export default {
           WHERE parentunit = :company`,
         {
           replacements: { company },
-          type: models.sequelize.QueryTypes.SELECT
+          type: models.sequelize.QueryTypes.SELECT,
         }
       );
 
@@ -54,7 +54,7 @@ export default {
           `SELECT * FROM team_view WHERE unitid = :teamid`,
           {
             replacements: { teamid },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
         return team && team[0];
@@ -62,5 +62,22 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
+
+  fetchTeamName: requiresAuth.createResolver(
+    async (parent, { teamid }, { models }) => {
+      try {
+        const team = await models.sequelize.query(
+          `SELECT name FROM department_data WHERE unitid = :teamid`,
+          {
+            replacements: { teamid },
+            type: models.sequelize.QueryTypes.SELECT,
+          }
+        );
+        return team && team[0] && team[0].name;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
 };

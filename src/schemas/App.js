@@ -289,6 +289,7 @@ export const queries = `
 
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
+  fetchAppNameByID(id: ID!): AppDetails
 
   fetchAppByDomain(domain: String, hostname: String): AppDetails
   fetchLicenceAssignmentsByDomain(domain: String, hostname: String): [LicenceAssignment]
@@ -324,6 +325,8 @@ export const queries = `
   fetchExecutionApps(appid: ID): [ExecuteApp]
 
   fetchOrbitsOfPlan(planid: ID!): [Orbit]
+
+  fetchOrbit(orbitid: ID!): Orbit
 `;
 
 export const mutations = `
@@ -332,6 +335,7 @@ export const mutations = `
   createOwnApp(ssoData: SSOInput!): IDID
 
   # Deletes a licence on a set date, if it is after the normal cancel period
+  # deprecated
   deleteLicenceAt(licenceid: ID!, time: Date!): Date!
 
   # Agree to all terms and conditions of a licence

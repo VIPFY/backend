@@ -73,7 +73,7 @@ export const queries = `
   fetchMessages(read: Boolean): [Message]
   fetchDialog(groupid: ID!, limit: Int, cursor: String): [MessageData]
   fetchGroups: [MessageGroup]
-  fetchPublicUser(userid: ID!): PublicUser
+  fetchPublicUser(userid: ID!, canbedeleted: Boolean): PublicUser
 `;
 
 export const mutations = `
