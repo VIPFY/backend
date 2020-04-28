@@ -82,7 +82,7 @@ export default {
     }
   ),
 
-  fetchAppByIdName: requiresAuth.createResolver(
+  fetchAppNameByID: requiresAuth.createResolver(
     async (_parent, { id }, { models, session }) => {
       try {
         const {
