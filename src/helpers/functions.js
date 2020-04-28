@@ -278,7 +278,6 @@ export const createNotification = async (
 
     const promises = [];
 
-    //console.log("TEST NOTIFICATION", receivers, notificationBody);
     receivers.forEach(r => {
       promises.push(
         (async () => {
