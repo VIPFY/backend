@@ -354,8 +354,8 @@ export const mutations = `
   updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
 
 
-  createAccount(orbitid: ID!, alias: String, logindata: JSON!, starttime: Date, endtime: Date): Account!
-  changeAccount(accountid: ID!, alias: String, logindata: JSON, starttime: Date, endtime: Date): Account
+  createAccount(orbitid: ID!, alias: String, logindata: JSON!, starttime: Date, endtime: Date, options: JSON): Account!
+  changeAccount(accountid: ID!, alias: String, logindata: JSON, starttime: Date, endtime: Date, options: JSON): Account
 
   assignAccount(licenceid: ID!, userid: ID!, rights: LicenceRights, tags: [String], starttime: Date, endtime: Date, keyfragment: JSON): Boolean!
   terminateAssignAccount(assignmentid: ID!, endtime: Date, isNull: Boolean): LicenceAssignment
@@ -369,4 +369,6 @@ export const mutations = `
   saveExecutionPlan(appid: ID!, key: String!, script: JSON!): ExecuteApp!
 
   saveCookies(cookies: JSON): Boolean
+
+  checkEmployeeOrbit(appid: ID!): ID!
   `;

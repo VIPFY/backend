@@ -253,7 +253,7 @@ export default {
     }
   ),
 
-  fetchLicence: requiresRights(["view-licences"]).createResolver(
+  fetchLicence: requiresRights(["myself", "view-licences"]).createResolver(
     async (_parent, { licenceid }, { models }, _info) => {
       try {
         const licence = await models.LicenceDataFiltered.findOne({

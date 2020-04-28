@@ -211,7 +211,7 @@ export default {
     }
   ),
 
-  createOwnApp: requiresRights(["create-licences"]).createResolver(
+  createOwnApp: requiresRights(["myself", "create-licences"]).createResolver(
     async (_p, { ssoData }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
@@ -696,7 +696,11 @@ export default {
 
   // New Service - Orbit - Account - Assignment - Stuff
   createAccount: requiresRights(["myself", "edit-licences"]).createResolver(
-    async (_p, { orbitid, alias, logindata, starttime, endtime }, ctx) =>
+    async (
+      _p,
+      { orbitid, alias, logindata, starttime, endtime, options },
+      ctx
+    ) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const { models } = ctx;
@@ -724,6 +728,7 @@ export default {
               alias,
               starttime,
               endtime,
+              options: { ...options },
             },
             { transaction: ta }
           );
@@ -780,7 +785,11 @@ export default {
   ),
 
   changeAccount: requiresRights(["edit-licences"]).createResolver(
-    async (_p, { accountid, alias, logindata, starttime, endtime }, ctx) =>
+    async (
+      _p,
+      { accountid, alias, logindata, starttime, endtime, options },
+      ctx
+    ) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
@@ -805,6 +814,10 @@ export default {
               },
               starttime,
               endtime,
+              options: {
+                ...oldaccount.options,
+                ...options,
+              },
             },
             {
               where: { id: accountid },
@@ -1810,6 +1823,106 @@ export default {
         );
 
         return true;
+      } catch (err) {
+        console.log("ERROR", err);
+        return false;
+      }
+    }
+  ),
+
+  checkEmployeeOrbit: requiresAuth.createResolver(
+    async (_p, { appid }, ctx) => {
+      const { models, session } = ctx;
+      const {
+        user: { unitid, company },
+      } = decode(session.token);
+      try {
+        const boughtplan = await models.sequelize.query(
+          `Select boughtplan_view.id from plan_data join boughtplan_view on plan_data.id = planid
+          where appid = :appid
+                and usedby = :company
+          and key ->> 'employeeIntegrated' is not null
+        `,
+          {
+            replacements: {
+              appid,
+              company,
+            },
+            raw: true,
+          }
+        );
+
+        if (boughtplan && boughtplan[0] && boughtplan[0][0]) {
+          return boughtplan[0][0].id;
+        } else {
+          const planRaw = await models.sequelize.query(
+            `Select plan_data.id, app_data.name from plan_data join
+            app_data on app_data.id = plan_data.appid
+            where appid = :appid
+            and plan_data.options ->> 'external' is not null
+          `,
+            {
+              replacements: {
+                appid,
+              },
+              raw: true,
+            }
+          );
+          if (planRaw && planRaw[0] && planRaw[0][0]) {
+            const plan = planRaw[0][0];
+            const neworbit = await models.sequelize.transaction(async ta => {
+              try {
+                const orbit = await models.BoughtPlan.create(
+                  {
+                    payer: company,
+                    usedby: company,
+                    disabled: false,
+                    alias: `${plan.name} (Integrated)`,
+                    key: {
+                      external: true,
+                      selfIntegrated: true,
+                      employeeIntegrated: true,
+                    },
+                  },
+                  { transaction: ta }
+                );
+
+                await models.BoughtPlanPeriod.create(
+                  {
+                    boughtplanid: orbit.id,
+                    planid: plan.id,
+                    payer: company,
+                    creator: unitid,
+                    totalprice: 0,
+                  },
+                  { transaction: ta }
+                );
+
+                await createLog(
+                  ctx,
+                  "createOrbit",
+                  {
+                    plan: plan.id,
+                    alias: `${plan.name} (Integrated)`,
+                    options: {
+                      external: true,
+                      selfIntegrated: true,
+                      employeeIntegrated: true,
+                    },
+                    orbit,
+                  },
+                  ta
+                );
+                return orbit.id;
+              } catch (err) {
+                console.log("ERROR", err);
+                return false;
+              }
+            });
+            return neworbit;
+          }
+        }
+        return null;
       } catch (err) {
         console.log("ERROR", err);
         return false;
