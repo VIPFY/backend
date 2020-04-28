@@ -312,6 +312,13 @@ jobQueue.on("global:stalled", async (jobid, err) => {
   app.use(AWSXRay.express.closeSegment());
 } */
 
+// error handling, must be last
+app.use(function(error, req, res, next) {
+  console.error(error);
+  res.status(503);
+  res.json({ errors: [error.message] });
+});
+
 if (ENVIRONMENT != "testing") {
   server.listen(PORT, "0.0.0.0", () => {
     if (process.env.LOGGING) {
