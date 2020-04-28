@@ -1745,8 +1745,6 @@ export default {
           }
         );
 
-        console.log(boughtplan);
-
         if (boughtplan && boughtplan[0] && boughtplan[0][0]) {
           return boughtplan[0][0].id;
         } else {
