@@ -18,6 +18,7 @@ const appFields = `
   deprecated: Boolean!
   hidden: Boolean!
   owner: Department
+  domains: [String]
 `;
 
 const basicLicenceFields = `
@@ -288,6 +289,10 @@ export const queries = `
 
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
+  fetchAppNameByID(id: ID!): AppDetails
+
+  fetchAppByDomain(domain: String, hostname: String): AppDetails
+  fetchLicenceAssignmentsByDomain(domain: String, hostname: String): [LicenceAssignment]
 
   # Returns all Apps a department is allowed to distribute Licences for
   fetchUnitApps(departmentid: ID!): [AppBoughtPlanResponse]!
@@ -318,6 +323,10 @@ export const queries = `
   fetchUseableApps: [AppDetails]
 
   fetchExecutionApps(appid: ID): [ExecuteApp]
+
+  fetchOrbitsOfPlan(planid: ID!): [Orbit]
+
+  fetchOrbit(orbitid: ID!): Orbit
 `;
 
 export const mutations = `
@@ -326,6 +335,7 @@ export const mutations = `
   createOwnApp(ssoData: SSOInput!): IDID
 
   # Deletes a licence on a set date, if it is after the normal cancel period
+  # deprecated
   deleteLicenceAt(licenceid: ID!, time: Date!): Date!
 
   # Agree to all terms and conditions of a licence
@@ -344,8 +354,8 @@ export const mutations = `
   updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
 
 
-  createAccount(orbitid: ID!, alias: String, logindata: JSON!, starttime: Date, endtime: Date): Account!
-  changeAccount(accountid: ID!, alias: String, logindata: JSON, starttime: Date, endtime: Date): Account
+  createAccount(orbitid: ID!, alias: String, logindata: JSON!, starttime: Date, endtime: Date, options: JSON): Account!
+  changeAccount(accountid: ID!, alias: String, logindata: JSON, starttime: Date, endtime: Date, options: JSON): Account
 
   assignAccount(licenceid: ID!, userid: ID!, rights: LicenceRights, tags: [String], starttime: Date, endtime: Date, keyfragment: JSON): Boolean!
   terminateAssignAccount(assignmentid: ID!, endtime: Date, isNull: Boolean): LicenceAssignment
@@ -359,4 +369,6 @@ export const mutations = `
   saveExecutionPlan(appid: ID!, key: String!, script: JSON!): ExecuteApp!
 
   saveCookies(cookies: JSON): Boolean
+
+  checkEmployeeOrbit(appid: ID!): ID!
   `;

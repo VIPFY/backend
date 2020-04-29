@@ -39,7 +39,8 @@ export const queries = `
   fetchTeams(userid: ID!): [Team]
   fetchCompanyTeams: [Team]
   fetchTeam(teamid: ID!): Team
-`;
+  fetchTeamName(teamid: ID!): String
+  `;
 
 export const mutations = `
   createTeam(team: JSON!, addemployees: [JSON]!, apps: [JSON]!): ID!
@@ -50,5 +51,4 @@ export const mutations = `
   addMemberToTeam(teamid: ID!, employeeid: ID!, assignments: JSON): Team
   removeTeamOrbitFromTeam(teamid: ID!, orbitid: ID!, deletejson: JSON, endtime: Date): Team
   removeMemberFromTeam(teamid: ID!, userid: ID!, deletejson: JSON, endtime: Date): Team
-
 `;

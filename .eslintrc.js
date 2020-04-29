@@ -1,11 +1,15 @@
 module.exports = {
   plugins: ["import"],
-  extends: ["airbnb-base", "plugin:prettier/recommended", "prettier"],
-  env: {
-    node: true,
-    es6: true
-  },
+  extends: ["airbnb-base", "plugin:prettier/recommended"],
+  env: { node: true, es6: true },
   rules: {
+    "prettier/prettier": [
+      "error",
+      {},
+      {
+        usePrettierrc: true,
+      },
+    ],
     "implicit-arrow-linebreak": "off",
     "no-prototype-builtins": "off",
     "one-var": "off",
@@ -27,7 +31,7 @@ module.exports = {
     radix: "off",
     "linebreak-style": "off",
     "no-continue": "off",
-    "no-restricted-syntax": "off"
+    "no-restricted-syntax": "off",
   },
   globals: {
     describe: 1,
@@ -35,6 +39,6 @@ module.exports = {
     expect: 1,
     beforeAll: 1,
     afterAll: 1,
-    jest: 1
-  }
+    jest: 1,
+  },
 };

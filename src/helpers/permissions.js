@@ -9,10 +9,10 @@ import { checkRights } from "@vipfy-private/messaging";
 import {
   checkCompanyMembership,
   checkLicenceMembership,
-  checkOrbitMembership
+  checkOrbitMembership,
 } from "./companyMembership";
 import { AuthError, AdminError, RightsError, NormalError } from "../errors";
-import { vipfyManagement } from "../constants";
+import { VIPFY_MANAGEMENT } from "../constants";
 
 /**
  * Recursively wraps a function with passed functions
@@ -42,12 +42,12 @@ export const requiresAuth = createResolver(
       }
 
       const {
-        user: { company, unitid }
+        user: { company, unitid },
       } = verify(session.token, SECRET);
 
       const valid = models.User.findOne({
         where: { id: unitid },
-        raw: true
+        raw: true,
       });
 
       if (
@@ -61,22 +61,26 @@ export const requiresAuth = createResolver(
       }
 
       const vipfyPlans = await models.Plan.findAll({
-        where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
-        attributes: ["id"],
-        raw: true
+        where: {
+          appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2",
+          enddate: {
+            [models.Op.or]: {
+              [models.Op.is]: null,
+              [models.Op.lt]: models.sequelize.fn("NOW"),
+            },
+          },
+        },
+        attributes: ["id", "price"],
+        raw: true,
       });
-
-      // const currentPlan = await models.BoughtPlanPeriodView.findOne({
-      //   where: { payer: company, planid: planIds }
-      // });
 
       const plans = await models.BoughtPlanView.findAll({
         where: {
           payer: company,
-          planid: vipfyPlans.map(plan => plan.id)
+          planid: vipfyPlans.map(plan => plan.id),
         },
         order: [["endtime", "DESC"]],
-        raw: true
+        raw: true,
       });
 
       const currentPlan = plans.find(plan => {
@@ -89,18 +93,20 @@ export const requiresAuth = createResolver(
             {
               usedby: company,
               alias: "VIPFY Basic",
-              disabled: false
+              disabled: false,
             },
             { transaction: ta }
           );
 
+          const vipfyFreePlan = vipfyPlans.find(plan => plan.price == 0);
+
           await models.BoughtPlanPeriod.create(
             {
               boughtplanid: vipfyPlan.id,
-              planid: "8c3741f0-3037-42e8-80c9-c1663c0000e2",
+              planid: vipfyFreePlan.id,
               payer: company,
               creator: unitid,
-              totalprice: 0
+              totalprice: 0,
             },
             { transaction: ta }
           );
@@ -125,7 +131,7 @@ export const requiresAuth = createResolver(
       if (info.fieldName == "signOut") {
         throw new NormalError({
           message: error.message,
-          internalData: { error }
+          internalData: { error },
         });
       } else {
         throw new AuthError(error.message);
@@ -139,7 +145,7 @@ export const requiresRights = rights =>
   requiresAuth.createResolver(async (_parent, args, { models, session }) => {
     try {
       const {
-        user: { unitid: holder, company }
+        user: { unitid: holder, company },
       } = await decode(session.token);
 
       // Seems redundant @Jannis Froese
@@ -232,8 +238,8 @@ export const requiresRights = rights =>
               where: {
                 unitid: holder,
                 id: args.assignmentid,
-                endtime: { [models.Op.lt]: models.sequelize.fn("NOW") }
-              }
+                endtime: { [models.Op.lt]: models.sequelize.fn("NOW") },
+              },
             });
             if (r) {
               break;
@@ -245,7 +251,7 @@ export const requiresRights = rights =>
               { holder },
               { forunit: { [models.Op.or]: [company, null] } },
               models.sequelize.or({ type: right }, { type: "admin" })
-            )
+            ),
           });
 
           if (hasRight) {
@@ -260,7 +266,7 @@ export const requiresRights = rights =>
                 { holder },
                 { forunit: { [models.Op.or]: [company, null] } },
                 models.sequelize.or({ type: subRight }, { type: "admin" })
-              )
+              ),
             });
 
             if (!hasRight) {
@@ -289,7 +295,7 @@ export const requiresRights = rights =>
         });
         throw new AuthError({
           message:
-            "Opps, something went wrong. Please report this error with id auth_1"
+            "Opps, something went wrong. Please report this error with id auth_1",
         });
       }
     }
@@ -299,7 +305,7 @@ export const requiresMessageGroupRights = rights =>
   requiresAuth.createResolver(async (_p, args, { models, session }) => {
     try {
       const {
-        user: { unitid }
+        user: { unitid },
       } = await decode(session.token);
 
       const hasRights = await checkRights(models, rights, unitid, args);
@@ -317,7 +323,7 @@ export const requiresMessageGroupRights = rights =>
         });
         throw new AuthError({
           message:
-            "Oops, something went wrong. Please report this error with id auth_2"
+            "Oops, something went wrong. Please report this error with id auth_2",
         });
       }
     }
@@ -328,7 +334,7 @@ export const requiresVipfyManagement = myself =>
     async (_parent, { userid }, { models, session }) => {
       try {
         const {
-          user: { unitid, company }
+          user: { unitid, company },
         } = decode(session.token);
 
         if (!VIPFY_MANAGEMENT.find(id => id == unitid)) {
@@ -349,7 +355,7 @@ export const requiresVipfyAdmin = myself =>
     async (_parent, { userid }, { models, session }) => {
       try {
         const {
-          user: { unitid, company }
+          user: { unitid, company },
         } = decode(session.token);
 
         const vipfyAdmins = [
@@ -358,7 +364,7 @@ export const requiresVipfyAdmin = myself =>
           "84c3382a-63c1-479f-85cd-d16e9988aa8a", // Eva
           "582a705d-d650-4727-8db6-28d231b465dd", // Anna
           "c3e93aaa-b90d-4acd-b843-9a6632cb93de", // Osama
-          "ef08cbb6-d53c-4d0f-aa70-10a9df0b84d9" // Eva Kiszka's other account
+          "ef08cbb6-d53c-4d0f-aa70-10a9df0b84d9", // Eva Kiszka's other account
         ];
 
         if (!vipfyAdmins.find(id => id == unitid)) {

@@ -1,6 +1,7 @@
 import { duration } from "moment";
 import { RedisPubSub } from "graphql-redis-subscriptions";
 import Redis from "ioredis";
+import Bull from "bull";
 
 const NOTIFICATION_CHANNEL = process.env.NOTIFICATION_CHANNEL
   ? `${process.env.NOTIFICATION_CHANNEL}.`
@@ -9,6 +10,7 @@ const NOTIFICATION_CHANNEL = process.env.NOTIFICATION_CHANNEL
 // Subscription which will listen when an user gets send a new message
 export const NEW_MESSAGE = `${NOTIFICATION_CHANNEL}NEW_MESSAGE`;
 export const NEW_NOTIFICATION = `${NOTIFICATION_CHANNEL}NEW_NOTIFICATION`;
+export const TO_WEBSITEWORKER = `${NOTIFICATION_CHANNEL}TO_WEBSITEWORKER`;
 
 const options = {
   host: process.env.REDIS_HOST,
@@ -16,9 +18,9 @@ const options = {
   db: 0,
   password: process.env.REDIS_PW,
   // reconnect after
-  retryStrategy: times => Math.min(times * 50, 2000),
+  retryStrategy: (times) => Math.min(times * 50, 2000),
   tls: {},
-  showFriendlyErrorStack: true
+  showFriendlyErrorStack: true,
 };
 
 export const REDIS_SESSION_PREFIX = "session:";
@@ -34,37 +36,39 @@ if (
   process.env.REDIS_NO_SERVER_ID == "TRUE"
 ) {
   options.tls = {
-    checkServerIdentity: () => undefined
+    checkServerIdentity: () => undefined,
   };
 }
 export const redis = new Redis(options);
 
-redis.on("error", error => console.error("ioredis ERROR", error || ""));
-redis.on("connect", args => console.log("ioredis connected", args || ""));
-redis.on("ready", args => console.log("ioredis ready", args || ""));
-redis.on("close", args => console.log("ioredis close", args || ""));
-redis.on("reconnecting", args =>
+redis.on("error", (error) => console.error("ioredis ERROR", error || ""));
+redis.on("connect", (args) => console.log("ioredis connected", args || ""));
+redis.on("ready", (args) => console.log("ioredis ready", args || ""));
+redis.on("close", (args) => console.log("ioredis close", args || ""));
+redis.on("reconnecting", (args) =>
   console.log("ioredis reconnecting", args || "")
 );
 
 const subscriber = new Redis(options);
-subscriber.on("error", error =>
+subscriber.on("error", (error) =>
   console.error("ioredis Subscriptions ERROR", error || "")
 );
-subscriber.on("connect", args =>
+subscriber.on("connect", (args) =>
   console.log("ioredis Subscriptions connected", args || "")
 );
-subscriber.on("ready", args =>
+subscriber.on("ready", (args) =>
   console.log("ioredis Subscriptions ready", args || "")
 );
-subscriber.on("close", args =>
+subscriber.on("close", (args) =>
   console.log("ioredis Subscriptions close", args || "")
 );
-subscriber.on("reconnecting", args =>
+subscriber.on("reconnecting", (args) =>
   console.log("ioredis Subscriptions reconnecting", args || "")
 );
 
 export const pubsub = new RedisPubSub({ publisher: redis, subscriber });
+
+export const jobQueue = new Bull("vipfy-websiteworkers", { redis: options });
 
 // The location for uploaded files to be saved
 export const userPicFolder = "profilepictures";
@@ -85,7 +89,7 @@ export const VIPFY_MANAGEMENT = [
   "f876804e-efd0-48b4-a5b2-807cbf66315f", // Pascal
   "98cdb502-51fc-4c0d-a5c7-ee274b6bb7b5", // Markus
   "96d65748-7d36-459a-97d0-7f52a7a4bbf0", // Nils
-  "91bd25cb-65cc-4dca-b0c8-285dbf5919f3" // Jannis
+  "91bd25cb-65cc-4dca-b0c8-285dbf5919f3", // Jannis
 ];
 
 export const EU_COUNTRIES = [

@@ -91,6 +91,7 @@ export const types = `
     vacations: [Vacation]
     usesencryption: Boolean
     assignments: [LicenceAssignment]
+    recoverypublickey: String
   }
 
   type VacationUser {

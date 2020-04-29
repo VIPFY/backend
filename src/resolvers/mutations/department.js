@@ -2,12 +2,12 @@ import { decode } from "jsonwebtoken";
 import {
   userPicFolder,
   MAX_PASSWORD_LENGTH,
-  MIN_PASSWORD_LENGTH
+  MIN_PASSWORD_LENGTH,
 } from "../../constants";
 import {
   requiresAuth,
   requiresRights,
-  requiresVipfyManagement
+  requiresVipfyManagement,
 } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import {
@@ -16,7 +16,7 @@ import {
   formatHumanName,
   selectCredit,
   hashPasskey,
-  checkVat
+  checkVat,
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
@@ -25,283 +25,313 @@ import { uploadUserImage } from "../../services/aws";
 export default {
   createEmployee: requiresRights(["create-employees"]).createResolver(
     async (_p, args, ctx) =>
-      ctx.models.sequelize.transaction(async ta => {
-        try {
-          const { models, session } = ctx;
-          const {
-            name,
-            emails,
-            password,
-            needpasswordchange,
-            file,
-            birthday,
-            hiredate,
-            address,
-            position,
-            phones,
-            passkey,
-            passwordMetrics,
-            personalKey,
-            passwordsalt
-          } = args;
-          const {
-            user: { unitid, company }
-          } = decode(session.token);
+      ctx.models.sequelize
+        .transaction(async ta => {
+          try {
+            const { models, session } = ctx;
+            const {
+              name,
+              emails,
+              password,
+              needpasswordchange,
+              file,
+              birthday,
+              hiredate,
+              address,
+              position,
+              phones,
+              passkey,
+              passwordMetrics,
+              personalKey,
+              passwordsalt,
+            } = args;
+            const {
+              user: { unitid, company },
+            } = decode(session.token);
 
-          let noemail = true;
-          for await (const email of emails) {
-            if (email.email != "") {
-              noemail = false;
-              const isEmail = email.email.indexOf("@");
+            let noemail = true;
+            for await (const email of emails) {
+              if (email.email != "") {
+                noemail = false;
+                const isEmail = email.email.indexOf("@");
 
-              if (isEmail < 0) {
-                throw new Error("Please enter a valid Email!");
+                if (isEmail < 0) {
+                  throw new Error("Please enter a valid Email!");
+                }
+
+                const emailInUse = await models.Email.findOne({
+                  where: { email: email.email },
+                });
+                if (emailInUse) throw new Error("Email already in use!");
               }
-
-              const emailInUse = await models.Email.findOne({
-                where: { email: email.email }
-              });
-              if (emailInUse) throw new Error("Email already in use!");
             }
-          }
-          if (noemail) {
-            throw new Error("You need at least one Email!");
-          }
+            if (noemail) {
+              throw new Error("You need at least one Email!");
+            }
 
-          if (password && password.length > MAX_PASSWORD_LENGTH) {
-            throw new Error("Password too long");
-          }
+            if (password && password.length > MAX_PASSWORD_LENGTH) {
+              throw new Error("Password too long");
+            }
 
-          if (password && password.length < MIN_PASSWORD_LENGTH) {
-            throw new Error(
-              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
-            );
-          }
+            if (password && password.length < MIN_PASSWORD_LENGTH) {
+              throw new Error(
+                `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+              );
+            }
 
-          if (passwordMetrics.passwordStrength < MIN_PASSWORD_LENGTH) {
-            throw new Error("Password too weak!");
-          }
+            if (passwordMetrics.passwordStrength < MIN_PASSWORD_LENGTH) {
+              throw new Error("Password too weak!");
+            }
 
-          if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
-            throw new Error("Password too long");
-          }
+            if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
+              throw new Error("Password too long");
+            }
 
-          if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
-            throw new Error(
-              `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
-            );
-          }
+            if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
+              throw new Error(
+                `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
+              );
+            }
 
-          if (passkey.length != 128) {
-            throw new Error("Incompatible passkey format, try updating VIPFY");
-          }
+            if (passkey.length != 128) {
+              throw new Error(
+                "Incompatible passkey format, try updating VIPFY"
+              );
+            }
 
-          if (passwordsalt.length != 32) {
-            throw new Error("Incompatible salt format, try updating VIPFY");
-          }
+            if (passwordsalt.length != 32) {
+              throw new Error("Incompatible salt format, try updating VIPFY");
+            }
 
-          const data = {};
+            const data = {};
 
-          if (file) {
-            const parsedFile = await file;
-            const profilepicture = await uploadUserImage(
-              parsedFile,
-              userPicFolder
-            );
-            data.profilepicture = profilepicture;
-          }
+            if (file) {
+              const parsedFile = await file;
+              const profilepicture = await uploadUserImage(
+                parsedFile,
+                userPicFolder
+              );
+              data.profilepicture = profilepicture;
+            }
 
-          let unit = await models.Unit.create(data, { transaction: ta });
-          unit = unit.get();
+            let unit = await models.Unit.create(data, { transaction: ta });
+            unit = unit.get();
 
-          const humanpromises = [];
+            const humanpromises = [];
 
-          humanpromises.push(
-            models.Human.create(
-              {
-                firstname: name.firstname,
-                middlename: name.middlename,
-                lastname: name.lastname,
-                title: name.title,
-                suffix: name.suffix,
-                unitid: unit.id,
-                needspasswordchange:
-                  needpasswordchange === false ? false : true,
-                firstlogin: true,
-                position,
-                hiredate: hiredate != "" ? hiredate : null,
-                birthday: birthday != "" ? birthday : null,
-                passkey: await hashPasskey(passkey),
-                ...passwordMetrics,
-                passwordsalt,
-                passwordhash: ""
-              },
-              { transaction: ta }
-            )
-          );
-
-          // Create Emails
-          emails.forEach(
-            (email, index) =>
-              email &&
-              email.email &&
-              email.email != "" &&
-              humanpromises.push(
-                models.Email.create(
-                  {
-                    email: email.email,
-                    unitid: unit.id,
-                    verified: true,
-                    priority: index
-                  },
-                  { transaction: ta }
-                )
-              )
-          );
-
-          // Create Adress
-
-          if (address) {
-            const { zip, street, city, ...normalData } = address;
-            const addressData = { street, zip, city };
             humanpromises.push(
-              models.Address.create(
-                { ...normalData, address: addressData, unitid: unit.id },
+              models.Human.create(
+                {
+                  firstname: name.firstname,
+                  middlename: name.middlename,
+                  lastname: name.lastname,
+                  title: name.title,
+                  suffix: name.suffix,
+                  unitid: unit.id,
+                  needspasswordchange:
+                    needpasswordchange === false ? false : true,
+                  firstlogin: true,
+                  position,
+                  hiredate: hiredate != "" ? hiredate : null,
+                  birthday: birthday != "" ? birthday : null,
+                  passkey: await hashPasskey(passkey),
+                  ...passwordMetrics,
+                  passwordsalt,
+                  passwordhash: "",
+                },
                 { transaction: ta }
               )
             );
-          }
 
-          // Create Phones
-          if (phones) {
-            phones.forEach(
-              phoneData =>
-                phoneData &&
-                phoneData.number &&
-                phoneData.number != "" &&
+            // Create Emails
+            emails.forEach(
+              (email, index) =>
+                email &&
+                email.email &&
+                email.email != "" &&
                 humanpromises.push(
-                  models.Phone.create(
-                    { ...phoneData, unitid: unit.id },
+                  models.Email.create(
+                    {
+                      email: email.email,
+                      unitid: unit.id,
+                      verified: true,
+                      priority: index,
+                    },
                     { transaction: ta }
                   )
                 )
             );
-          }
 
-          humanpromises.push(
-            models.ParentUnit.create(
-              { parentunit: company, childunit: unit.id },
-              { transaction: ta }
-            )
-          );
+            // Create Adress
 
-          humanpromises.push(
-            models.Right.create(
-              {
-                holder: unit.id,
-                forunit: company,
-                type: "view-apps"
-              },
-              { transaction: ta }
-            )
-          );
+            if (address) {
+              const { zip, street, city, ...normalData } = address;
+              const addressData = { street, zip, city };
+              humanpromises.push(
+                models.Address.create(
+                  { ...normalData, address: addressData, unitid: unit.id },
+                  { transaction: ta }
+                )
+              );
+            }
 
-          humanpromises.push(
-            models.Key.create(
-              {
-                ...personalKey,
-                unitid: unit.id
-              },
-              { transaction: ta }
-            )
-          );
+            // Create Phones
+            if (phones) {
+              phones.forEach(
+                phoneData =>
+                  phoneData &&
+                  phoneData.number &&
+                  phoneData.number != "" &&
+                  humanpromises.push(
+                    models.Phone.create(
+                      { ...phoneData, unitid: unit.id },
+                      { transaction: ta }
+                    )
+                  )
+              );
+            }
 
-          await Promise.all(humanpromises);
+            humanpromises.push(
+              models.ParentUnit.create(
+                { parentunit: company, childunit: unit.id },
+                { transaction: ta }
+              )
+            );
 
-          const p4 = models.Human.findOne({ where: { unitid } });
-
-          const p5 = models.DepartmentData.findOne({
-            where: { unitid: company }
-          });
-
-          const [requester, companyObj] = await Promise.all([p4, p5]);
-
-          await createLog(ctx, "addCreateEmployee", { unit }, ta);
-
-          // brand new person, but better to be too careful
-          resetCompanyMembershipCache(company, unit.id);
-
-          if (password) {
-            await sendEmail({
-              templateId: "d-e049cce50d20428d81f011e521605d4c",
-              fromName: "VIPFY",
-              personalizations: [
+            humanpromises.push(
+              models.Right.create(
                 {
-                  to: [{ email: emails[0].email, name: formatHumanName(name) }],
-                  dynamic_template_data: {
-                    name: formatHumanName(name),
-                    creator: formatHumanName(requester),
-                    companyname: companyObj.name,
-                    email: emails[0].email,
-                    password
-                  }
-                }
-              ]
-            });
-          } else {
-            // no password supplied to backend, this should be the encouraged case
-            await sendEmail({
-              templateId: "d-fc629636327e400ea14bda1340451eb6",
-              fromName: "VIPFY",
-              personalizations: [
+                  holder: unit.id,
+                  forunit: company,
+                  type: "view-apps",
+                },
+                { transaction: ta }
+              )
+            );
+
+            humanpromises.push(
+              models.Key.create(
                 {
-                  to: [{ email: emails[0].email, name: formatHumanName(name) }],
-                  dynamic_template_data: {
-                    name: formatHumanName(name),
-                    creator: formatHumanName(requester),
-                    companyname: companyObj.name,
-                    email: emails[0].email
-                  }
-                }
-              ]
+                  ...personalKey,
+                  unitid: unit.id,
+                },
+                { transaction: ta }
+              )
+            );
+
+            await Promise.all(humanpromises);
+
+            const p4 = models.Human.findOne({ where: { unitid } });
+
+            const p5 = models.DepartmentData.findOne({
+              where: { unitid: company },
+            });
+
+            const [requester, companyObj] = await Promise.all([p4, p5]);
+
+            await createLog(ctx, "addCreateEmployee", { unit }, ta);
+
+            // brand new person, but better to be too careful
+            resetCompanyMembershipCache(company, unit.id);
+
+            if (password) {
+              await sendEmail({
+                templateId: "d-e049cce50d20428d81f011e521605d4c",
+                fromName: "VIPFY",
+                personalizations: [
+                  {
+                    to: [
+                      { email: emails[0].email, name: formatHumanName(name) },
+                    ],
+                    dynamic_template_data: {
+                      name: formatHumanName(name),
+                      creator: formatHumanName(requester),
+                      companyname: companyObj.name,
+                      email: emails[0].email,
+                      password,
+                    },
+                  },
+                ],
+              });
+            } else {
+              // no password supplied to backend, this should be the encouraged case
+              await sendEmail({
+                templateId: "d-fc629636327e400ea14bda1340451eb6",
+                fromName: "VIPFY",
+                personalizations: [
+                  {
+                    to: [
+                      { email: emails[0].email, name: formatHumanName(name) },
+                    ],
+                    dynamic_template_data: {
+                      name: formatHumanName(name),
+                      creator: formatHumanName(requester),
+                      companyname: companyObj.name,
+                      email: emails[0].email,
+                    },
+                  },
+                ],
+              });
+            }
+
+            const user = await models.User.findOne({
+              where: { id: unit.id },
+              transaction: ta,
+              raw: true,
+            });
+
+            return { unitid, name, user };
+          } catch (err) {
+            throw new NormalError({
+              message: err.message,
+              internalData: { err },
             });
           }
-
-          await createNotification({
-            receiver: unitid,
-            message: `${formatHumanName(name)} was successfully created`,
-            icon: "user-plus",
-            link: "employeemanager",
-            changed: ["employees"]
-          });
-
-          return await models.User.findOne({
-            where: { id: unit.id },
-            transaction: ta,
-            raw: true
-          });
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err }
-          });
-        }
-      })
+        })
+        .then(async ({ unitid, name, user }) => {
+          await createNotification(
+            {
+              message: `User ${user.id} was successfully created by User ${unitid}`,
+              icon: "user-plus",
+              link: "employeemanager",
+              changed: ["employees", "company"],
+            },
+            null,
+            { company }
+          );
+          return user;
+        })
   ),
 
   editDepartmentName: requiresRights(["edit-department"]).createResolver(
     (_p, { departmentid, name }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
-          const { models } = ctx;
+          const { models, session } = ctx;
+
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
 
           const updatedDepartment = await models.DepartmentData.update(
             { name },
             {
               where: { unitid: departmentid },
               returning: true,
-              transaction: ta
+              transaction: ta,
             }
+          );
+
+          await createNotification(
+            {
+              message: `User ${unitid} updated Name of Team ${departmentid}`,
+              icon: "users",
+              link: "teammanager",
+              changed: ["ownTeams", "companyTeams"],
+            },
+            null,
+            { company, level: 1 },
+            { teamid: departmentid, level: 1 }
           );
 
           await createLog(
@@ -315,7 +345,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -326,7 +356,7 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         const { models, session } = ctx;
         const {
-          user: { unitid, company }
+          user: { unitid, company },
         } = decode(session.token);
 
         if (userid == unitid) {
@@ -337,7 +367,7 @@ export default {
           const p1 = await models.DepartmentEmployee.findOne({
             where: { id: company, employee: userid },
 
-            raw: true
+            raw: true,
           });
 
           const p2 = models.User.findOne(
@@ -346,13 +376,7 @@ export default {
             { raw: true }
           );
 
-          const p3 = models.Human.findOne({
-            where: { unitid: userid },
-
-            raw: true
-          });
-
-          const [inCompany, admin, user] = await Promise.all([p1, p2, p3]);
+          const [inCompany, admin] = await Promise.all([p1, p2]);
 
           if (!inCompany) {
             throw new Error("This user doesn't belong to this company!");
@@ -363,13 +387,17 @@ export default {
             { where: { unitid: userid }, returning: true, transaction: ta }
           );
 
-          const p4 = createNotification({
-            receiver: unitid,
-            message: `You banned ${user.firstname} ${user.lastname} from the company`,
-            icon: "user-slash",
-            link: "team",
-            changed: ["human"]
-          });
+          const p4 = createNotification(
+            {
+              receiver: userid,
+              message: `User ${unitid} banned User ${userid} from the company`,
+              icon: "user-slash",
+              link: "team",
+              changed: ["me", "employees", "semiPublicUser"],
+            },
+            ta,
+            { company, level: 3 }
+          );
 
           const p5 = createLog(ctx, "banEmployee", { bannedUser, admin }, ta);
 
@@ -382,12 +410,12 @@ export default {
             message: `You couldn't ban the user. Please retry`,
             icon: "bug",
             link: "team",
-            changed: [""]
+            changed: [""],
           });
 
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -399,7 +427,7 @@ export default {
         const { models, session } = ctx;
 
         const {
-          user: { unitid, company }
+          user: { unitid, company },
         } = decode(session.token);
 
         try {
@@ -409,7 +437,7 @@ export default {
 
           const p1 = await models.DepartmentEmployee.findOne({
             where: { id: company, employee: userid },
-            raw: true
+            raw: true,
           });
 
           const p2 = models.User.findOne(
@@ -417,12 +445,7 @@ export default {
             { raw: true }
           );
 
-          const p3 = models.Human.findOne({
-            where: { unitid: userid },
-            raw: true
-          });
-
-          const [inCompany, admin, user] = await Promise.all([p1, p2, p3]);
+          const [inCompany, admin] = await Promise.all([p1, p2]);
 
           if (!inCompany) {
             throw new Error("This user doesn't belong to this company!");
@@ -433,13 +456,17 @@ export default {
             { where: { unitid: userid }, returning: true, transaction: ta }
           );
 
-          const p4 = createNotification({
-            receiver: unitid,
-            message: `You unbanned ${user.firstname} ${user.lastname} from the company`,
-            icon: "user-check",
-            link: "team",
-            changed: ["human"]
-          });
+          const p4 = createNotification(
+            {
+              receiver: userid,
+              message: `User ${unitid} unbanned User ${userid} from the company`,
+              icon: "user-check",
+              link: "team",
+              changed: ["me", "employees", "semiPublicUser"],
+            },
+            ta,
+            { company, level: 3 }
+          );
 
           const p5 = createLog(ctx, "banEmployee", { unbannedUser, admin }, ta);
 
@@ -452,12 +479,12 @@ export default {
             message: `You couldn't unban the user. Please retry`,
             icon: "bug",
             link: "team",
-            changed: [""]
+            changed: [""],
           });
 
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -469,14 +496,14 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company }
+            user: { unitid: issuer, company },
           } = decode(session.token);
 
           const p1 = models.Right.create(
             {
               holder: unitid,
               forunit: company,
-              type: "admin"
+              type: "admin",
             },
             { transaction }
           );
@@ -485,7 +512,7 @@ export default {
               publickey: adminkey.publickey,
               privatekey: adminkey.privatekey,
               encryptedby: adminkey.encryptedby,
-              unitid
+              unitid,
             },
             { transaction }
           );
@@ -496,15 +523,15 @@ export default {
           await createNotification(
             {
               receiver: unitid,
-              message: "You received admin privileges",
+              message: `User ${issuer} gave admin privileges to User ${unitid}`,
               icon: "user-tie",
               link: "profile",
-              changed: ["me"]
+              changed: ["me", "employees", "semiPublicUser"],
             },
             transaction,
             {
               company,
-              message: `User ${unitid} has received admin status`
+              level: 3,
             }
           );
 
@@ -512,7 +539,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -523,7 +550,7 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company, unitid: userid }
+            user: { company, unitid: userid },
           } = decode(session.token);
 
           if (userid == unitid) {
@@ -540,7 +567,7 @@ export default {
             {
               replacements: { company },
               type: models.sequelize.QueryTypes.SELECT,
-              transaction
+              transaction,
             }
           );
 
@@ -552,9 +579,9 @@ export default {
             where: {
               holder: unitid,
               forunit: company,
-              type: "admin"
+              type: "admin",
             },
-            transaction
+            transaction,
           });
           const p2 = models.sequelize.query(
             `
@@ -572,15 +599,15 @@ export default {
           await createNotification(
             {
               receiver: unitid,
-              message: "Your admin privileges were revoked",
+              message: `User ${userid} revoked admin privileges from User ${unitid}`,
               icon: "user-minus",
               link: "profile",
-              changed: ["me"]
+              changed: ["me", "employees", "semiPublicUser"],
             },
             transaction,
             {
               company,
-              message: `Admin Rights were revoked for user ${unitid}`
+              level: 3,
             }
           );
 
@@ -588,7 +615,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -603,13 +630,13 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(session.token);
 
           const valid = await models.PromocodePlan.findOne({
             where: { code: promocode },
             raw: true,
-            transaction: ta
+            transaction: ta,
           });
 
           if (!valid) {
@@ -629,14 +656,14 @@ export default {
             {
               replacements: { company },
               type: models.sequelize.QueryTypes.SELECT,
-              transaction: ta
+              transaction: ta,
             }
           );
 
           const p2 = models.Plan.findOne({
             where: { id: valid.planid, appid: 66 },
             raw: true,
-            transaction: ta
+            transaction: ta,
           });
 
           const p3 = models.DepartmentData.update(
@@ -656,7 +683,7 @@ export default {
               disabled: false,
               totalprice: 3.0,
               buytime: currentPlan[0].endtime,
-              endtime: null
+              endtime: null,
             },
             { transaction: ta }
           );
@@ -665,7 +692,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -677,7 +704,7 @@ export default {
         const { models, session } = ctx;
 
         const {
-          user: { unitid, company }
+          user: { unitid, company },
         } = decode(session.token);
 
         const { credits, currency, creditsexpire } = await selectCredit(
@@ -690,7 +717,7 @@ export default {
             amount: credits,
             currency,
             unitid: company,
-            expires: creditsexpire
+            expires: creditsexpire,
           },
           { transaction: ta }
         );
@@ -707,7 +734,7 @@ export default {
           message: `Congrats, you received ${credits} credits`,
           icon: "money-bill-wave",
           link: "profile",
-          changed: ["promocode"]
+          changed: ["promocode"],
         });
 
         const p4 = createLog(
@@ -723,7 +750,7 @@ export default {
       } catch (err) {
         throw new NormalError({
           message: err.message,
-          internalData: { err }
+          internalData: { err },
         });
       }
     })
@@ -733,12 +760,12 @@ export default {
     async (_p, { vatID }, { models, session }) => {
       try {
         const {
-          user: { company: companyID }
+          user: { company: companyID },
         } = decode(session.token);
 
         const company = await models.Department.findOne({
           where: { unitid: companyID },
-          raw: true
+          raw: true,
         });
 
         let legalinformation;
@@ -750,7 +777,7 @@ export default {
           } else {
             legalinformation = {
               ...company.legalinformation,
-              vatID: sanitizedVatID
+              vatID: sanitizedVatID,
             };
           }
         } else {
@@ -777,13 +804,13 @@ export default {
           const { models, session } = ctx;
 
           const {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(session.token);
 
           const oldUser = await models.User.findOne({
             where: { id: userid },
             transaction: ta,
-            raw: true
+            raw: true,
           });
 
           if (oldUser.assignments && autodelete) {
@@ -792,7 +819,7 @@ export default {
                 const licenceRight = await models.LicenceRight.findOne({
                   where: { id: asid },
                   raw: true,
-                  transaction: ta
+                  transaction: ta,
                 });
                 if (licenceRight) {
                   const licences = await models.sequelize.query(
@@ -800,7 +827,7 @@ export default {
                     {
                       replacements: { licenceid: licenceRight.licenceid },
                       type: models.sequelize.QueryTypes.SELECT,
-                      transaction: ta
+                      transaction: ta,
                     }
                   );
 
@@ -809,7 +836,7 @@ export default {
                       { endtime: models.Op.sequelize.fn("NOW") },
                       {
                         where: { id: licenceRight.licenceid },
-                        transaction: ta
+                        transaction: ta,
                       }
                     );
 
@@ -820,7 +847,7 @@ export default {
                       {
                         replacements: { licenceid: licenceRight.licenceid },
                         type: models.sequelize.QueryTypes.SELECT,
-                        transaction: ta
+                        transaction: ta,
                       }
                     );
 
@@ -830,7 +857,7 @@ export default {
                         {
                           replacements: { licenceid: licenceRight.licenceid },
                           type: models.sequelize.QueryTypes.SELECT,
-                          transaction: ta
+                          transaction: ta,
                         }
                       );
 
@@ -838,7 +865,7 @@ export default {
                         {
                           where: { boughtplanid: boughtplan[0].boughtplanid },
                           raw: true,
-                          transaction: ta
+                          transaction: ta,
                         }
                       );
 
@@ -846,7 +873,7 @@ export default {
                         { endtime: models.Op.sequelize.fn("NOW") },
                         {
                           where: { id: oldperiod.id },
-                          transaction: ta
+                          transaction: ta,
                         }
                       );
                     }
@@ -859,7 +886,7 @@ export default {
           await Promise.all([
             models.ParentUnit.destroy({
               where: { childunit: userid },
-              transaction: ta
+              transaction: ta,
             }),
             models.Unit.update(
               { deleted: true },
@@ -872,32 +899,32 @@ export default {
                 lastname: "redacted",
                 sex: null,
                 birthday: null,
-                statisticdata: null
+                statisticdata: null,
               },
               { where: { unitid: userid }, transaction: ta }
-            )
+            ),
           ]);
 
           await Promise.all([
             createNotification(
               {
-                receiver: unitid,
-                message: `User ${userid} was removed from the company`,
+                message: `User ${unitid} removed User ${userid} from the company`,
                 icon: "user-minus",
                 link: "employeemanager",
-                changed: ["employees"]
+                changed: ["employees"],
               },
-              ta
+              ta,
+              { company, level: 3 }
             ),
             createLog(ctx, "deleteUser", { oldUser }, ta),
-            resetCompanyMembershipCache(company, unitid.id)
+            resetCompanyMembershipCache(company, unitid.id),
           ]);
 
           return true;
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -908,7 +935,7 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { company }
+            user: { company },
           } = decode(session.token);
 
           const res = await models.VacationRequest.update(
@@ -927,12 +954,12 @@ export default {
               message: "Your vacation request was confirmed",
               icon: "umbrella-beach",
               changed: ["vacationRequest"],
-              link: "vacation"
+              link: "vacation",
             },
             ta,
             {
               company,
-              message: `User ${userid} vacation request was confirmed`
+              message: `User ${userid} vacation request was confirmed`,
             }
           );
 
@@ -940,7 +967,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -951,7 +978,7 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { company }
+            user: { company },
           } = decode(session.token);
           const res = await models.VacationRequest.update(
             { status: "REJECTED", decided: models.sequelize.fn("NOW") },
@@ -969,7 +996,7 @@ export default {
               message: "Your vacation request was declined",
               icon: "umbrella-beach",
               changed: ["vacationRequest"],
-              link: "vacation"
+              link: "vacation",
             },
             ta,
             { company, message: `User ${userid} vacation request was declined` }
@@ -979,7 +1006,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -991,7 +1018,7 @@ export default {
         try {
           const { models } = ctx;
           const {
-            user: { company, unitid }
+            user: { company, unitid },
           } = decode(ctx.session.token);
 
           const parsedFile = await file;
@@ -1003,7 +1030,7 @@ export default {
           const oldUnit = await models.Department.findOne({
             where: { unitid: company },
             raw: true,
-            transaction: ta
+            transaction: ta,
           });
 
           const [, updatedUnit] = await models.Unit.update(
@@ -1017,27 +1044,25 @@ export default {
               {
                 receiver: unitid,
                 show: true,
-                message:
-                  "You successfully updated the companies profile picture",
+                message: `User ${unitid} updated the companies profile picture`,
                 icon: "image",
-                changed: ["company"],
-                link: "vacation"
+                changed: ["company", "me"],
+                link: "companyprofile",
+                level: 1,
               },
               ta,
-              {
-                company,
-                message: `User ${unitid} updated the companies profile picture`
-              }
-            )
+              null,
+              { teamid: company, level: 1 }
+            ),
           ]);
 
           return { ...oldUnit, profilepicture };
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
-  )
+  ),
 };

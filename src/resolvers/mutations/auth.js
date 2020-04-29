@@ -8,7 +8,7 @@ import {
   REDIS_SESSION_PREFIX,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
-  EU_COUNTRIES
+  EU_COUNTRIES,
 } from "../../constants";
 import { createToken, checkAuthentification } from "../../helpers/auth";
 import { createToken as createSetupToken } from "../../helpers/token";
@@ -24,7 +24,7 @@ import {
   createSession,
   getNewPasswordData,
   hashPasskey,
-  comparePasskey
+  comparePasskey,
 } from "../../helpers/functions";
 import { googleMapsClient } from "../../services/gcloud";
 import { NormalError } from "../../errors";
@@ -45,13 +45,14 @@ export default {
       passwordMetrics,
       personalKey,
       adminKey,
-      passwordsalt
+      passwordsalt,
     },
     ctx
   ) =>
     ctx.models.sequelize.transaction(async ta => {
       try {
         const { models, ip } = ctx;
+        const { ENVIRONMENT } = process.env;
 
         if (!privacy || !termsOfService) {
           throw new Error(
@@ -90,7 +91,7 @@ export default {
         // Check whether the email is already in use
         const userExists = await models.Email.findOne({
           where: { email },
-          raw: true
+          raw: true,
         });
 
         if (userExists) {
@@ -99,7 +100,7 @@ export default {
 
         const { country_code } = await iplocate(
           // In development using the ip is not possible
-          process.env.ENVIRONMENT == "production" ? ip : "82.192.202.122"
+          ENVIRONMENT == "production" ? ip : "82.192.202.122"
         );
 
         const isEUR = EU_COUNTRIES.find(
@@ -116,7 +117,7 @@ export default {
             passkey: await hashPasskey(passkey),
             ...passwordMetrics,
             passwordsalt,
-            passwordhash: ""
+            passwordhash: "",
           },
           { transaction: ta }
         );
@@ -146,9 +147,9 @@ export default {
             name,
             legalinformation: {
               privacy: new Date(),
-              termsOfService: new Date()
+              termsOfService: new Date(),
             },
-            adminkey: adminKey.publickey
+            adminkey: adminKey.publickey,
           },
           { transaction: ta }
         );
@@ -162,8 +163,8 @@ export default {
           {
             disabled: false,
             usedby: company.id,
-            alias: "Vipfy Premium",
-            key: { vipfyTrial: true }
+            alias: "VIPFY Premium",
+            key: { vipfyTrial: true },
           },
           { transaction: ta }
         );
@@ -175,11 +176,9 @@ export default {
           {
             email,
             token: setupToken,
-            expiresat: moment()
-              .add(4, "hour")
-              .toISOString(),
+            expiresat: moment().add(4, "hour").toISOString(),
             type: "setuplogin",
-            data: { unitid: unit.id }
+            data: { unitid: unit.id },
           },
           { transaction: ta }
         );
@@ -188,11 +187,9 @@ export default {
           {
             email,
             token: verifyToken,
-            expiresat: moment()
-              .add(1, "week")
-              .toISOString(),
+            expiresat: moment().add(1, "week").toISOString(),
             type: "signUp",
-            data: { unitid: unit.id }
+            data: { unitid: unit.id },
           },
           { transaction: ta }
         );
@@ -218,13 +215,14 @@ export default {
         await models.BoughtPlanPeriod.create(
           {
             boughtplanid: vipfyPlan.dataValues.id,
-            planid: "c382fa7e-d83a-4516-ad40-55c91a3701d4",
+            planid:
+              ENVIRONMENT == "production"
+                ? "3adb8121-bcb1-4a82-a872-26aa614462cb"
+                : "aeb28408-464f-49f7-97f1-6a512ccf46c2",
             payer: company.id,
             creator: unit.id,
             totalprice: 0,
-            endtime: moment()
-              .add(1, "months")
-              .toDate()
+            endtime: moment().add(1, "months").toDate(),
           },
           { transaction: ta }
         );
@@ -232,9 +230,9 @@ export default {
         const windowsLink = `https://download.vipfy.store/latest/win32/x64/VIPFY-${setupToken}.exe`;
         const macLink = `https://download.vipfy.store/latest/darwin/x64/VIPFY-${setupToken}.dmg`;
         const verifyLink =
-          process.env.ENVIRONMENT == "development"
-            ? `https://aws2.vipfy.store/verify-email/${verifyToken}`
-            : `https://vipfy.store/verify-email/${verifyToken}`;
+          ENVIRONMENT == "production"
+            ? `https://vipfy.store/verify-email/${verifyToken}`
+            : `https://aws2.vipfy.store/verify-email/${verifyToken}`;
 
         await sendEmail({
           templateId: "d-f05a3b4cf6f047e184e921b230ffb7ad",
@@ -245,10 +243,10 @@ export default {
               dynamic_template_data: {
                 verifyLink,
                 windowsLink,
-                macLink
-              }
-            }
-          ]
+                macLink,
+              },
+            },
+          ],
         });
 
         user.company = company.id;
@@ -264,7 +262,7 @@ export default {
             department,
             parentUnit,
             vipfyPlan,
-            company
+            company,
           },
           ta
         );
@@ -274,8 +272,8 @@ export default {
           token,
           downloads: {
             win64: windowsLink,
-            macOS: macLink
-          }
+            macOS: macLink,
+          },
         };
       } catch (err) {
         logger.info(err);
@@ -291,7 +289,7 @@ export default {
     models.sequelize.transaction(async ta => {
       try {
         const {
-          user: { unitid, company }
+          user: { unitid, company },
         } = decode(session.token);
 
         let p1;
@@ -305,14 +303,14 @@ export default {
               lastname: name.lastName || "",
               suffix: name.suffix || "",
               firstlogin: false,
-              statisticdata: { username }
+              statisticdata: { username },
             },
             { where: { unitid }, transaction: ta, raw: true }
           );
         } else {
           p1 = models.Human.update(
             {
-              firstlogin: false
+              firstlogin: false,
             },
             { where: { unitid }, transaction: ta, raw: true }
           );
@@ -326,8 +324,8 @@ export default {
                 "formatted_address",
                 "international_phone_number",
                 "website",
-                "address_component"
-              ]
+                "address_component",
+              ],
             })
             .asPromise();
           const addressData = parseAddress(json.result.address_components);
@@ -336,7 +334,7 @@ export default {
             {
               ...addressData,
               unitid: company,
-              tags: ["main"]
+              tags: ["main"],
             },
             { transaction: ta }
           );
@@ -350,8 +348,8 @@ export default {
               ownAdress,
               vatoption,
               vatnumber,
-              country
-            }
+              country,
+            },
           },
           { where: { unitid: company }, transaction: ta }
         );
@@ -373,10 +371,10 @@ export default {
             token,
             type: "signUp",
             expiresat: {
-              [models.Op.gt]: models.sequelize.fn("NOW")
-            }
+              [models.Op.gt]: models.sequelize.fn("NOW"),
+            },
           },
-          raw: true
+          raw: true,
         });
 
         if (!tokenExists) {
@@ -386,16 +384,16 @@ export default {
         const user = await models.User.findOne({
           where: { id: tokenExists.data.unitid },
           raw: true,
-          transaction: ta
+          transaction: ta,
         });
 
         const p1 = models.Token.findOne({
           where: {
             email: tokenExists.email,
-            type: "setuplogin"
+            type: "setuplogin",
           },
           raw: true,
-          transaction: ta
+          transaction: ta,
         });
 
         const p2 = models.Email.update(
@@ -403,9 +401,9 @@ export default {
           {
             where: {
               email: tokenExists.email,
-              unitid: tokenExists.data.unitid
+              unitid: tokenExists.data.unitid,
             },
-            transaction: ta
+            transaction: ta,
           }
         );
 
@@ -432,21 +430,21 @@ export default {
           return {
             download: {
               win64: `https://download.vipfy.store/latest/win32/x64/VIPFY-${setupLoginToken.token}.exe`,
-              macOS: `https://download.vipfy.store/latest/darwin/x64/VIPFY-${setupLoginToken.token}.dmg`
-            }
+              macOS: `https://download.vipfy.store/latest/darwin/x64/VIPFY-${setupLoginToken.token}.dmg`,
+            },
           };
         } else {
           return {
             download: {
               win64: `https://download.vipfy.store/latest/win32/x64/VIPFY.exe`,
-              macOS: `https://download.vipfy.store/latest/darwin/x64/VIPFY.dmg`
-            }
+              macOS: `https://download.vipfy.store/latest/darwin/x64/VIPFY.dmg`,
+            },
           };
         }
       } catch (err) {
         throw new NormalError({
           message: "Couldn't activate user!",
-          internalData: { err }
+          internalData: { err },
         });
       }
     }),
@@ -470,9 +468,9 @@ export default {
           companyban: { [ctx.models.Op.or]: [null, false] },
           deleted: { [ctx.models.Op.or]: [null, false] },
           banned: { [ctx.models.Op.or]: [null, false] },
-          suspended: { [ctx.models.Op.or]: [null, false] }
+          suspended: { [ctx.models.Op.or]: [null, false] },
         },
-        raw: true
+        raw: true,
       });
 
       if (!emailExists) {
@@ -497,7 +495,7 @@ export default {
       if (emailExists.twofactor) {
         const { secret } = await ctx.models.TwoFA.findOne({
           where: { unitid: emailExists.unitid, type: emailExists.twofactor },
-          raw: true
+          raw: true,
         });
 
         const token = await createSetupToken();
@@ -506,10 +504,8 @@ export default {
           email,
           token,
           data: { unitid: emailExists.unitid },
-          expiresat: moment()
-            .add(15, "minutes")
-            .toISOString(),
-          type: "2FAToken"
+          expiresat: moment().add(15, "minutes").toISOString(),
+          type: "2FAToken",
         });
 
         // One is needed for the logger function to work correctly
@@ -524,7 +520,7 @@ export default {
           twofactor: secret.otpauth_url,
           unitid: emailExists.unitid,
           token,
-          config: emailExists.config
+          config: emailExists.config,
         };
       } else {
         // User doesn't have the property unitid, so we have to pass emailExists
@@ -546,7 +542,7 @@ export default {
     async (_p, _args, { session, redis, sessionID }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid },
         } = decode(session.token);
 
         if (session.token) {
@@ -580,7 +576,7 @@ export default {
     async (_p, { sessionID }, { session, redis }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid },
         } = decode(session.token);
         const remainingSessions = await endSession(redis, unitid, sessionID);
 
@@ -605,11 +601,11 @@ export default {
 
   signOutEverywhere: requiresRights([
     "myself",
-    "delete-session"
+    "delete-session",
   ]).createResolver(async (_p, { userid }, { session, redis }) => {
     try {
       let {
-        user: { unitid }
+        user: { unitid },
       } = decode(session.token);
 
       if (unitid != userid) {
@@ -657,12 +653,12 @@ export default {
           }
 
           const {
-            user: { unitid }
+            user: { unitid },
           } = await decode(session.token);
 
           const findOldPassword = await models.Login.findOne({
             where: { unitid },
-            raw: true
+            raw: true,
           });
 
           if (!findOldPassword) throw new Error("No database entry found!");
@@ -692,10 +688,10 @@ export default {
                 message: "You successfully updated your password",
                 icon: "lock-alt",
                 link: "profile",
-                changed: [""]
+                changed: [""],
               },
               ta
-            )
+            ),
           ];
 
           await Promise.all(promises);
@@ -719,7 +715,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -734,7 +730,7 @@ export default {
         recoveryPrivateKey,
         passwordMetrics,
         newKey,
-        replaceKeys
+        replaceKeys,
       },
       ctx
     ) =>
@@ -765,12 +761,12 @@ export default {
           }
 
           const {
-            user: { unitid }
+            user: { unitid },
           } = await decode(session.token);
 
           const findOldPassword = await models.Login.findOne({
             where: { unitid },
-            raw: true
+            raw: true,
           });
 
           if (!findOldPassword) throw new Error("No database entry found!");
@@ -793,7 +789,7 @@ export default {
               recoveryprivatekey: findOldPassword.recoveryprivatekey
                 ? recoveryPrivateKey
                 : null,
-              passkey: await hashPasskey(newPasskey)
+              passkey: await hashPasskey(newPasskey),
             },
             { where: { unitid }, returning: true, transaction: ta }
           );
@@ -816,11 +812,11 @@ export default {
                   id: k.id,
                   privatekey: k.privatekey,
                   encryptedby:
-                    k.encryptedby == "new" ? key.publickey : k.encryptedby
+                    k.encryptedby == "new" ? key.publickey : k.encryptedby,
                 },
                 {
                   where: { id: k.id, unitid, publickey: k.publickey },
-                  transaction: ta
+                  transaction: ta,
                 }
               )
             )
@@ -839,10 +835,10 @@ export default {
                 message: "You successfully updated your password",
                 icon: "lock-alt",
                 link: "profile",
-                changed: [""]
+                changed: [""],
               },
               ta
-            )
+            ),
           ];
 
           await Promise.all(promises);
@@ -866,7 +862,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -877,7 +873,7 @@ export default {
       try {
         const { models, session } = ctx;
         const {
-          user: { unitid }
+          user: { unitid },
         } = await decode(session.token);
 
         const updatedUser = await models.Human.update(
@@ -891,7 +887,7 @@ export default {
       } catch (err) {
         throw new NormalError({
           message: err.message,
-          internalData: { err }
+          internalData: { err },
         });
       }
     })
@@ -903,7 +899,7 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company }
+            user: { company },
           } = await decode(session.token);
 
           // check that user has rights
@@ -920,7 +916,7 @@ export default {
             { needspasswordchange: true },
             {
               where: { unitid: { [models.Op.in]: userids } },
-              transaction
+              transaction,
             }
           );
 
@@ -931,7 +927,7 @@ export default {
               "forcePasswordChange",
               { units: userids },
               transaction
-            )
+            ),
           ];
 
           for (const userid of userids) {
@@ -942,7 +938,7 @@ export default {
                   message: "An admin forces you to update your password",
                   icon: "lock-alt",
                   link: "profile",
-                  changed: ["me"]
+                  changed: ["me"],
                 },
                 transaction
               )
@@ -955,7 +951,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -970,8 +966,8 @@ export default {
           token: setuptoken,
           expiresat: { [models.Op.gt]: models.sequelize.fn("NOW") },
           type: "setuplogin",
-          usedat: null
-        }
+          usedat: null,
+        },
       });
 
       if (!setupTokenEntry) {
@@ -980,7 +976,7 @@ export default {
 
       const emailExists = await models.Login.findOne({
         where: { unitid: setupTokenEntry.data.unitid },
-        raw: true
+        raw: true,
       });
 
       if (!emailExists) throw new Error("user not found");
@@ -1008,7 +1004,7 @@ export default {
     } catch (err) {
       throw new NormalError({
         message: err.message,
-        internalData: { err }
+        internalData: { err },
       });
     }
   },
@@ -1018,7 +1014,7 @@ export default {
       try {
         const oldToken = await models.Token.findOne({
           where: { token, type: "signUp", usedat: null },
-          raw: true
+          raw: true,
         });
 
         if (!oldToken) {
@@ -1032,11 +1028,9 @@ export default {
           {
             email: oldToken.email,
             token: setupToken,
-            expiresat: moment()
-              .add(4, "hour")
-              .toISOString(),
+            expiresat: moment().add(4, "hour").toISOString(),
             type: "setuplogin",
-            data: { unitid: oldToken.data.unitid }
+            data: { unitid: oldToken.data.unitid },
           },
           { transaction: ta }
         );
@@ -1045,10 +1039,8 @@ export default {
           {
             email: oldToken.email,
             token: verifyToken,
-            expiresat: moment()
-              .add(1, "week")
-              .toISOString(),
-            type: "signUp"
+            expiresat: moment().add(1, "week").toISOString(),
+            type: "signUp",
           },
           { transaction: ta }
         );
@@ -1069,10 +1061,10 @@ export default {
               dynamic_template_data: {
                 verifyLink,
                 windowsLink,
-                macLink
-              }
-            }
-          ]
+                macLink,
+              },
+            },
+          ],
         });
 
         return true;
@@ -1085,12 +1077,12 @@ export default {
     async (_p, { keyData: { privatekey, publickey } }, { models, session }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid },
         } = decode(session.token);
 
         const user = await models.User.findOne({
           where: { id: unitid },
-          raw: true
+          raw: true,
         });
 
         if (!user || user.recoverypublickey) {
@@ -1105,7 +1097,7 @@ export default {
         return {
           ...user,
           recoverypublickey: publickey,
-          recoveryprivatekey: privatekey
+          recoveryprivatekey: privatekey,
         };
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -1130,9 +1122,9 @@ export default {
           companyban: { [ctx.models.Op.or]: [null, false] },
           deleted: { [ctx.models.Op.or]: [null, false] },
           banned: { [ctx.models.Op.or]: [null, false] },
-          suspended: { [ctx.models.Op.or]: [null, false] }
+          suspended: { [ctx.models.Op.or]: [null, false] },
         },
-        raw: true
+        raw: true,
       });
 
       if (!emailExists) {
@@ -1153,7 +1145,7 @@ export default {
       const userKeys = await models.Key.findAll({
         where: { unitid: emailExists.unitid, encryptedby: null },
         order: [["createdat", "DESC"]],
-        limit: 1
+        limit: 1,
       });
 
       if (!userKeys || userKeys.length == 0) {
@@ -1163,7 +1155,7 @@ export default {
       return {
         token: sessionToken,
         config: emailExists.config,
-        currentKey: userKeys[0]
+        currentKey: userKeys[0],
       };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
@@ -1182,13 +1174,13 @@ export default {
             newPasskey,
             passwordMetrics,
             newKey,
-            replaceKeys
+            replaceKeys,
           } = recoveryData;
 
           const { models, redis, SECRET } = ctx;
           // check whether the token is still valid
           const {
-            user: { unitid }
+            user: { unitid },
           } = await verify(token, SECRET);
           const savedSecret = await redis.get(email);
 
@@ -1218,7 +1210,7 @@ export default {
             {
               ...passwordMetrics,
               passkey: await hashPasskey(newPasskey),
-              recoveryprivatekey: recoveryPrivateKey
+              recoveryprivatekey: recoveryPrivateKey,
             },
             { where: { unitid }, returning: true, transaction: ta }
           );
@@ -1241,11 +1233,11 @@ export default {
                 {
                   privatekey: k.privatekey,
                   encryptedby:
-                    k.encryptedby == "new" ? key.publickey : k.encryptedby
+                    k.encryptedby == "new" ? key.publickey : k.encryptedby,
                 },
                 {
                   where: { id: k.id, unitid, publickey: k.publickey },
-                  transaction: ta
+                  transaction: ta,
                 }
               )
             )
@@ -1264,10 +1256,10 @@ export default {
                 message: "You set a new password",
                 icon: "lock-alt",
                 link: "profile",
-                changed: [""]
+                changed: [""],
               },
               ta
-            )
+            ),
           ];
 
           await Promise.all(promises);
@@ -1287,9 +1279,9 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
-  )
+  ),
 };

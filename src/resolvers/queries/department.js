@@ -3,7 +3,7 @@ import iplocate from "node-iplocate";
 import {
   requiresRights,
   requiresAuth,
-  requiresVipfyManagement
+  requiresVipfyManagement,
 } from "../../helpers/permissions";
 import { NormalError, VIPFYPlanError } from "../../errors";
 
@@ -12,7 +12,7 @@ export default {
     async (_parent, _args, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         return await models.Department.findOne({ where: { unitid: company } });
@@ -26,12 +26,12 @@ export default {
     async (_parent, _args, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         const departments = await models.sequelize
           .query("Select * from getDepartmentsData(:company)", {
-            replacements: { company }
+            replacements: { company },
           })
           .spread(res => res);
 
@@ -46,7 +46,7 @@ export default {
     async (_parent, _args, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         const employees = await models.sequelize.query(
@@ -54,7 +54,7 @@ export default {
          WHERE id = :company AND employee NOTNULL`,
           {
             replacements: { company },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
 
@@ -67,11 +67,11 @@ export default {
 
   fetchUserSecurityOverview: requiresRights([
     "view-security",
-    "myself"
+    "myself",
   ]).createResolver(async (_p, { userid }, { models, session }) => {
     try {
       const {
-        user: { company }
+        user: { company },
       } = decode(session.token);
 
       let query = `SELECT human_data.*,
@@ -101,7 +101,7 @@ export default {
 
       const res = await models.sequelize.query(query, {
         replacements: { company, userid },
-        type: models.sequelize.QueryTypes.SELECT
+        type: models.sequelize.QueryTypes.SELECT,
       });
 
       return res;
@@ -116,30 +116,32 @@ export default {
 
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         const vipfyPlans = await models.Plan.findAll({
           where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
           attributes: ["id", "options"],
-          raw: true
+          raw: true,
         });
 
         // requiresAuth ensures that at least one exists
         const [
           currentPlan,
-          oldPlan,
-          ..._oldVipfyPlans // eslint-disable-line no-unused-vars
+          lastPlan,
+          ..._olderVipfyPlans // eslint-disable-line no-unused-vars
         ] = await models.BoughtPlanView.findAll({
           where: {
             payer: company,
-            planid: vipfyPlans.map(plan => plan.id)
+            planid: vipfyPlans.map(plan => plan.id),
           },
-          order: [["starttime", "DESC"]]
+          raw: true,
+          order: [["starttime", "DESC"]],
         });
 
-        if (oldPlan) {
-          const { key, endtime, planid, id: boughtPlanID } = oldPlan.get();
+        if (lastPlan) {
+          const { key, endtime, planid, id: boughtPlanID } = lastPlan;
+
           const isPremiumPlan = vipfyPlans
             .filter(plan => plan.options.users === null)
             .find(({ id }) => id == planid);
@@ -148,7 +150,7 @@ export default {
             expiredPlan = {
               id: boughtPlanID,
               endtime,
-              features: { ...isPremiumPlan.options }
+              features: { ...isPremiumPlan.options },
             };
             throw new Error(402);
           }
@@ -169,7 +171,7 @@ export default {
     async (_p, _args, { models }) => {
       try {
         return await models.Plan.findAll({
-          where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" }
+          where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
         });
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -181,7 +183,7 @@ export default {
     async (_p, args, { models, session }) => {
       try {
         const {
-          user: { unitid, company }
+          user: { unitid, company },
         } = decode(session.token);
 
         const data = await models.sequelize.query(
@@ -189,7 +191,7 @@ export default {
        WHERE id = :company AND employee NOTNULL`,
           {
             replacements: { company },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
 
@@ -224,7 +226,7 @@ export default {
           WHERE uv.id IN (:employeeIDs)`,
           {
             replacements: { employeeIDs },
-            type: models.sequelize.QueryTypes.SELECT
+            type: models.sequelize.QueryTypes.SELECT,
           }
         );
 
@@ -233,5 +235,5 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
 };

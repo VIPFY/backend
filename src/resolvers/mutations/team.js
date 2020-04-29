@@ -9,14 +9,14 @@ import {
   teamCheck,
   companyCheck,
   checkPlanValidity,
-  formatHumanName
+  formatHumanName,
 } from "../../helpers/functions";
 import { uploadTeamImage, deleteUserImage } from "../../services/aws";
 import { createHuman } from "../../helpers/employee";
 import { sendEmail } from "../../helpers/email";
 import {
   checkOrbitMembership,
-  checkCompanyMembership
+  checkCompanyMembership,
 } from "../../helpers/companyMembership";
 
 export default {
@@ -27,7 +27,7 @@ export default {
           const { models, session } = ctx;
 
           const {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(session.token);
 
           const { name, profilepicture, ...teamdata } = team;
@@ -46,7 +46,7 @@ export default {
             {
               unitid: unit.dataValues.id,
               name,
-              internaldata: { created: Date.now(), ...teamdata }
+              internaldata: { created: Date.now(), ...teamdata },
             },
             { transaction: ta }
           );
@@ -58,183 +58,24 @@ export default {
 
           const [department, parentUnit] = await Promise.all([p1, p2]);
 
-          // add employees
-
-          const employeepromises = [];
-          let counter = 0;
-          const newemployees = [];
-          for await (const employee of addemployees) {
-            if (employee.id == "new") {
-              const userid = await createHuman(
-                models,
-                ta,
-                company,
-                employee.name,
-                employee.password,
-                employee.wmail1,
-                employee.wmail2
-              );
-
-              employee.id = userid;
-              newemployees.push({ email: employee.wmail1, id: userid });
-
-              employeepromises.push(
-                models.ParentUnit.create(
-                  { parentunit: unit.dataValues.id, childunit: userid },
-                  { transaction: ta }
-                )
-              );
-              const e1 = models.Human.findOne({ where: { unitid } });
-
-              const e2 = models.DepartmentData.findOne({
-                where: { unitid: company }
-              });
-
-              const [requester, companyObj] = await Promise.all([e1, e2]);
-              await sendEmail({
-                templateId: "d-e049cce50d20428d81f011e521605d4c",
-                fromName: "VIPFY",
-                personalizations: [
-                  {
-                    to: [
-                      {
-                        email: employee.wmail1,
-                        name: employee.name
-                      }
-                    ],
-                    dynamic_template_data: {
-                      name: employee.name,
-                      creator: formatHumanName(requester),
-                      companyname: companyObj.name,
-                      email: employee.wmail1,
-                      password: employee.password
-                    }
-                  }
-                ]
-              });
-
-              await createNotification({
-                receiver: unitid,
-                message: `${employee.name} was successfully created`,
-                icon: "user-plus",
-                link: "employeemanager",
-                changed: []
-              });
-              counter++;
-            } else {
-              employeepromises.push(
-                models.ParentUnit.create(
-                  { parentunit: unit.dataValues.id, childunit: employee.id },
-                  { transaction: ta }
-                )
-              );
-            }
-          }
-
-          await Promise.all(employeepromises);
-
-          //services aufsetzen
-
-          for await (const service of apps) {
-            const servicepromises = [];
-            const app = await models.Plan.findOne({
-              where: { id: service.id },
-              raw: true,
-              transaction: ta
-            });
-
-            const plan = await models.Plan.findOne({
-              where: { appid: service.id, options: { external: true } },
-              raw: true,
-              transaction: ta
-            });
-
-            if (!plan) {
-              throw new Error(
-                "This App is not integrated to handle external Accounts yet."
-              );
-            }
-            await checkPlanValidity(plan);
-
-            const boughtPlan = await models.BoughtPlan.create(
-              {
-                planid: plan.id,
-                alias: app.name,
-                disabled: false,
-                buyer: unitid,
-                payer: company,
-                usedby: company,
-                totalprice: 0,
-                key: {
-                  external: true,
-                  externaltotalprice: 0
-                }
-              },
-              { transaction: ta }
-            );
-
-            await models.DepartmentApp.create(
-              { departmentid: unit.dataValues.id, boughtplanid: boughtPlan.id },
-              { transaction: ta }
-            );
-
-            service.employees.forEach(employee => {
-              const empid = newemployees.find(e => e.email == employee.wmail1)
-                ? newemployees.find(e => e.email == employee.wmail1).id
-                : employee.id;
-              servicepromises.push(
-                models.LicenceData.create(
-                  {
-                    unitid: empid,
-                    disabled: false,
-                    boughtplanid: boughtPlan.id,
-                    agreed: true,
-                    key: {
-                      email: employee.setup.email,
-                      password: employee.setup.password,
-                      subdomain: employee.setup.subdomain,
-                      external: true
-                    },
-                    options: employee.setupfinished
-                      ? {
-                          teamlicence: unit.dataValues.id
-                        }
-                      : {
-                          teamlicence: unit.dataValues.id,
-                          nosetup: true
-                        }
-                  },
-                  { transaction: ta }
-                )
-              );
-            });
-
-            await Promise.all(servicepromises);
-          }
-
-          await createLog(ctx, "addTeam", { unit, department, parentUnit }, ta);
-
-          const employeeNotifypromises = [];
-          addemployees.forEach(employee =>
-            employeeNotifypromises.push(
-              createNotification({
-                receiver: employee.id,
-                message: `You are now assigned to team ${name}`,
-                icon: "users",
-                link: "teammanger",
-                changed: ["ownLicences"]
-              })
-            )
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `User ${unitid} has created Team ${unit.dataValues.id}`,
+              icon: "users",
+              link: "teammanger",
+              changed: ["companyTeams"],
+            },
+            ta,
+            { company }
           );
-
-          await Promise.all(employeeNotifypromises);
 
           return unit.dataValues.id;
         } catch (err) {
           console.error("\x1b[1m%s\x1b[0m", "LOG err", err);
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -246,7 +87,7 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(session.token);
 
           await teamCheck(company, teamid);
@@ -256,8 +97,25 @@ export default {
             {
               replacements: { teamid },
               type: models.sequelize.QueryTypes.SELECT,
-              transaction: ta
+              transaction: ta,
             }
+          );
+
+          await createNotification(
+            {
+              message: `User ${unitid} has deleted Team ${teamid}`,
+              icon: "users",
+              link: "teammanger",
+              changed: [
+                "companyTeams",
+                "ownLicences",
+                "ownTeams",
+                "semiPublicUser",
+              ],
+            },
+            ta,
+            { company, level: 2 },
+            { teamid, level: 3 }
           );
 
           await Promise.all(
@@ -275,11 +133,11 @@ export default {
                     promises.push(
                       models.LicenceRight.update(
                         {
-                          endtime
+                          endtime,
                         },
                         {
                           where: { id: as.id },
-                          transaction: ta
+                          transaction: ta,
                         }
                       )
                     );
@@ -288,7 +146,7 @@ export default {
                     const checkassignment = await models.LicenceRight.findOne({
                       where: { id: as.id },
                       raw: true,
-                      transaction: ta
+                      transaction: ta,
                     });
                     if (
                       checkassignment.tags &&
@@ -307,12 +165,12 @@ export default {
                             tags: newtags,
                             options: {
                               ...checkassignment.options,
-                              teamlicence: undefined
-                            }
+                              teamlicence: undefined,
+                            },
                           },
                           {
                             where: { id: as.id },
-                            transaction: ta
+                            transaction: ta,
                           }
                         )
                       );
@@ -329,7 +187,7 @@ export default {
                     const licenceRight = await models.LicenceRight.findOne({
                       where: { id: asa.id },
                       raw: true,
-                      transaction: ta
+                      transaction: ta,
                     });
 
                     const licences = await models.sequelize.query(
@@ -337,18 +195,18 @@ export default {
                       {
                         replacements: { licenceid: licenceRight.licenceid },
                         type: models.sequelize.QueryTypes.SELECT,
-                        transaction: ta
+                        transaction: ta,
                       }
                     );
 
                     if (licences.length == 0) {
                       await models.LicenceData.update(
                         {
-                          endtime
+                          endtime,
                         },
                         {
                           where: { id: licenceRight.licenceid },
-                          transaction: ta
+                          transaction: ta,
                         }
                       );
 
@@ -359,7 +217,7 @@ export default {
                         {
                           replacements: { licenceid: licenceRight.licenceid },
                           type: models.sequelize.QueryTypes.SELECT,
-                          transaction: ta
+                          transaction: ta,
                         }
                       );
 
@@ -369,17 +227,17 @@ export default {
                           {
                             replacements: { licenceid: licenceRight.licenceid },
                             type: models.sequelize.QueryTypes.SELECT,
-                            transaction: ta
+                            transaction: ta,
                           }
                         );
 
                         await models.BoughtPlanPeriod.update(
                           {
-                            endtime
+                            endtime,
                           },
                           {
                             where: { boughtplanid: boughtplan[0].boughtplanid },
-                            transaction: ta
+                            transaction: ta,
                           }
                         );
                       }
@@ -390,7 +248,7 @@ export default {
 
               await models.ParentUnit.destroy({
                 where: { parentunit: teamid, childunit: userid },
-                transaction: ta
+                transaction: ta,
               });
 
               //END ONE EMPLOYEE DELETED
@@ -401,16 +259,14 @@ export default {
 
           const deletePromises = [];
 
-          console.log("END TEAMORBITS");
-
           deletePromises.push(
             models.DepartmentApp.update(
               {
-                endtime
+                endtime,
               },
               {
                 where: { departmentid: teamid, endtime: Infinity },
-                transaction: ta
+                transaction: ta,
               }
             )
           );
@@ -425,9 +281,9 @@ export default {
           deletePromises.push(
             models.ParentUnit.destroy({
               where: {
-                [models.Op.or]: [{ childunit: teamid }, { parentunit: teamid }]
+                [models.Op.or]: [{ childunit: teamid }, { parentunit: teamid }],
               },
-              transaction: ta
+              transaction: ta,
             })
           );
 
@@ -438,33 +294,7 @@ export default {
             "deleteTeam",
             {
               teamid,
-              deletejson
-            },
-            ta
-          );
-
-          if (oldTeam[0].employees) {
-            console.log("EMPLOYEES", oldTeam[0].employees);
-            await Promise.all(
-              oldTeam[0].employees.map(async employeeid =>
-                createNotification({
-                  receiver: employeeid,
-                  message: `A Team is deleted`,
-                  icon: "users",
-                  link: "teammanger",
-                  changed: ["ownLicences"]
-                })
-              )
-            );
-          }
-
-          await createNotification(
-            {
-              receiver: unitid,
-              message: `A team has been removed`,
-              icon: "business-time",
-              link: `teammanager`,
-              changed: ["employees"]
+              deletejson,
             },
             ta
           );
@@ -473,7 +303,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -485,12 +315,12 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company }
+            user: { company },
           } = decode(session.token);
 
           const oldUnit = await models.Unit.findOne({
             where: { id: teamid },
-            raw: true
+            raw: true,
           });
 
           await teamCheck(company, teamid);
@@ -514,7 +344,7 @@ export default {
           const p1 = models.Team.findOne({
             where: { unitid: teamid },
             raw: true,
-            transaction: ta
+            transaction: ta,
           });
 
           const p2 = createLog(
@@ -526,11 +356,23 @@ export default {
 
           const [team] = await Promise.all([p1, p2]);
 
+          await createNotification(
+            {
+              message: `User ${unitid} has updated the image of Team ${teamid}`,
+              icon: "plus-circle",
+              link: "teammanger",
+              changed: ["ownTeams", "companyTeams"],
+            },
+            ta,
+            { company, level: 1 },
+            { teamid }
+          );
+
           return { ...team, profilepicture };
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -541,7 +383,7 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(ctx.session.token);
 
           const { models, session } = ctx;
@@ -572,7 +414,7 @@ export default {
                   tags: ["teamlicence"],
                   licenceid: a.accountid,
                   unitid: a.employeeid,
-                  options: { teamlicence: teamid }
+                  options: { teamlicence: teamid },
                 },
                 ta
               )
@@ -581,29 +423,28 @@ export default {
 
           await Promise.all(promises);
 
-          const employeeNotifypromises = [];
-          assignments.forEach(a =>
-            employeeNotifypromises.push(
-              createNotification({
-                receiver: a.employeeid,
-                message: `An orbit has been added to a team`,
-                icon: "plus-circle",
-                link: "teammanger",
-                changed: ["ownLicences"]
-              })
-            )
+          await createNotification(
+            {
+              message: `User ${unitid} has added Orbit ${orbitid} to Team ${teamid}`,
+              icon: "plus-circle",
+              link: "teammanger",
+              changed: [
+                "companyServices",
+                "semiPublicUser",
+                "companyTeams",
+                "ownLicences",
+              ],
+            },
+            ta,
+            { company },
+            { teamid, level: 3 }
           );
-
-          await Promise.all(employeeNotifypromises);
-
-          // await createLog(ctx, "addServiceToTeam", { teamid, serviceid }, ta);
-
           const team = await models.sequelize.query(
             `SELECT * FROM team_view WHERE unitid = :teamid`,
             {
               replacements: { teamid },
               type: models.sequelize.QueryTypes.SELECT,
-              transaction: ta
+              transaction: ta,
             }
           );
 
@@ -614,7 +455,7 @@ export default {
               teamid,
               orbitid,
               assignments,
-              team
+              team,
             },
             ta
           );
@@ -622,7 +463,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -633,7 +474,7 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(ctx.session.token);
 
           const { models, session } = ctx;
@@ -660,7 +501,7 @@ export default {
                   tags: ["teamlicence"],
                   licenceid: a.accountid,
                   unitid: employeeid,
-                  options: { teamlicence: teamid }
+                  options: { teamlicence: teamid },
                 },
                 ta
               )
@@ -669,13 +510,19 @@ export default {
 
           await Promise.all(promises);
 
-          await createNotification({
-            receiver: employeeid,
-            message: `Someone has been added to a team`,
-            icon: "plus-circle",
-            link: "teammanger",
-            changed: ["ownLicences"]
-          });
+          await createNotification(
+            {
+              receiver: employeeid,
+              message: `User ${unitid} has add User ${employeeid} to Team ${teamid}`,
+              icon: "plus-circle",
+              link: "teammanger",
+              changed: ["ownLicences", "ownTeams", "semiPublicUser"],
+              level: 3,
+            },
+            ta,
+            { company },
+            { teamid }
+          );
 
           // await createLog(ctx, "addServiceToTeam", { teamid, serviceid }, ta);
 
@@ -684,7 +531,7 @@ export default {
             {
               replacements: { teamid },
               type: models.sequelize.QueryTypes.SELECT,
-              transaction: ta
+              transaction: ta,
             }
           );
 
@@ -695,7 +542,7 @@ export default {
               teamid,
               employeeid,
               assignments,
-              team
+              team,
             },
             ta
           );
@@ -704,7 +551,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -715,7 +562,7 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(ctx.session.token);
 
           const { models, session } = ctx;
@@ -736,9 +583,9 @@ export default {
                     where: {
                       departmentid: t.id,
                       boughtplanid: orbitid,
-                      endtime: Infinity
+                      endtime: Infinity,
                     },
-                    transaction: ta
+                    transaction: ta,
                   }
                 )
               );
@@ -756,11 +603,11 @@ export default {
                     promises.push(
                       models.LicenceRight.update(
                         {
-                          endtime: endtime || new Date()
+                          endtime: endtime || new Date(),
                         },
                         {
                           where: { id: as.id },
-                          transaction: ta
+                          transaction: ta,
                         }
                       )
                     );
@@ -769,7 +616,7 @@ export default {
                     const checkassignment = await models.LicenceRight.findOne({
                       where: { id: as.id },
                       raw: true,
-                      transaction: ta
+                      transaction: ta,
                     });
                     if (
                       checkassignment.tags &&
@@ -788,12 +635,12 @@ export default {
                             tags: newtags,
                             options: {
                               ...checkassignment.options,
-                              teamlicence: undefined
-                            }
+                              teamlicence: undefined,
+                            },
                           },
                           {
                             where: { id: as.id },
-                            transaction: ta
+                            transaction: ta,
                           }
                         )
                       );
@@ -806,11 +653,11 @@ export default {
                 promises.push(
                   models.LicenceData.update(
                     {
-                      endtime: endtime || new Date()
+                      endtime: endtime || new Date(),
                     },
                     {
                       where: { id: a.id },
-                      transaction: ta
+                      transaction: ta,
                     }
                   )
                 );
@@ -828,7 +675,7 @@ export default {
             promises.push(
               models.BoughtPlanPeriod.update(
                 {
-                  endtime: endtime || new Date()
+                  endtime: endtime || new Date(),
                 },
                 { where: { boughtplanid: orbitid }, transaction: ta }
               )
@@ -841,17 +688,21 @@ export default {
             {
               replacements: { teamid },
               type: models.sequelize.QueryTypes.SELECT,
-              transaction: ta
+              transaction: ta,
             }
           );
 
-          await createNotification({
-            receiver: unitid,
-            message: `You have removed an team orbit`,
-            icon: "user-friends",
-            link: "teammanager",
-            changed: ["ownTeams", "ownLicences"]
-          });
+          await createNotification(
+            {
+              message: `User ${unitid} has removed Orbit ${orbitid} from Team ${teamid}`,
+              icon: "user-friends",
+              link: "teammanager",
+              changed: ["ownTeams", "ownLicences"],
+            },
+            ta,
+            { company },
+            { teamid, level: 3 }
+          );
 
           await createLog(
             ctx,
@@ -861,7 +712,7 @@ export default {
               orbitid,
               deletejson,
               endtime,
-              team
+              team,
             },
             ta
           );
@@ -870,7 +721,7 @@ export default {
           console.log("ERROR", err);
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -881,7 +732,7 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(ctx.session.token);
 
           const { models, session } = ctx;
@@ -890,8 +741,6 @@ export default {
 
           const promises = [];
 
-          console.log("INPUTS", teamid, userid, deletejson, endtime);
-
           // Delete all assignments of as
           await Promise.all(
             deletejson.assignments.map(async as => {
@@ -899,11 +748,11 @@ export default {
                 promises.push(
                   models.LicenceRight.update(
                     {
-                      endtime
+                      endtime,
                     },
                     {
                       where: { id: as.id },
-                      transaction: ta
+                      transaction: ta,
                     }
                   )
                 );
@@ -912,7 +761,7 @@ export default {
                 const checkassignment = await models.LicenceRight.findOne({
                   where: { id: as.id },
                   raw: true,
-                  transaction: ta
+                  transaction: ta,
                 });
                 if (
                   checkassignment.tags &&
@@ -931,12 +780,12 @@ export default {
                         ),
                         options: {
                           ...checkassignment.options,
-                          teamlicence: undefined
-                        }
+                          teamlicence: undefined,
+                        },
                       },
                       {
                         where: { id: as.id },
-                        transaction: ta
+                        transaction: ta,
                       }
                     )
                   );
@@ -953,29 +802,26 @@ export default {
                 const licenceRight = await models.LicenceRight.findOne({
                   where: { id: asa.id },
                   raw: true,
-                  transaction: ta
+                  transaction: ta,
                 });
-
-                console.log("LR", licenceRight);
 
                 const licences = await models.sequelize.query(
                   `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
                   {
                     replacements: { licenceid: licenceRight.licenceid },
                     type: models.sequelize.QueryTypes.SELECT,
-                    transaction: ta
+                    transaction: ta,
                   }
                 );
 
-                console.log("LICENCES", licences);
                 if (licences.length == 0) {
                   await models.LicenceData.update(
                     {
-                      endtime
+                      endtime,
                     },
                     {
                       where: { id: licenceRight.licenceid },
-                      transaction: ta
+                      transaction: ta,
                     }
                   );
 
@@ -986,11 +832,9 @@ export default {
                     {
                       replacements: { licenceid: licenceRight.licenceid },
                       type: models.sequelize.QueryTypes.SELECT,
-                      transaction: ta
+                      transaction: ta,
                     }
                   );
-
-                  console.log(otherlicences);
 
                   if (otherlicences.length == 0) {
                     const boughtplan = await models.sequelize.query(
@@ -998,19 +842,29 @@ export default {
                       {
                         replacements: { licenceid: licenceRight.licenceid },
                         type: models.sequelize.QueryTypes.SELECT,
-                        transaction: ta
+                        transaction: ta,
                       }
                     );
 
-                    console.log("BOUGHTPLAN", boughtplan);
-
                     await models.BoughtPlanPeriod.update(
                       {
-                        endtime
+                        endtime,
                       },
                       {
                         where: { boughtplanid: boughtplan[0].boughtplanid },
-                        transaction: ta
+                        transaction: ta,
+                      }
+                    );
+
+                    await models.DepartmentApp.update(
+                      { endtime },
+                      {
+                        where: {
+                          departmentid: licenceRight.options.teamlicence,
+                          boughtplanid: boughtplan[0].boughtplanid,
+                          endtime: Infinity,
+                        },
+                        transaction: ta,
                       }
                     );
                   }
@@ -1021,15 +875,28 @@ export default {
 
           await models.ParentUnit.destroy({
             where: { parentunit: teamid, childunit: userid },
-            transaction: ta
+            transaction: ta,
           });
+          await createNotification(
+            {
+              receiver: userid,
+              message: `User ${unitid} has removed User ${userid} from Team ${teamid}`,
+              icon: "user-friends",
+              link: "teammanager",
+              changed: ["ownTeams", "ownLicences"],
+              level: 3,
+            },
+            ta,
+            { company },
+            { teamid }
+          );
 
           const team = await models.sequelize.query(
             `SELECT * FROM team_view WHERE unitid = :teamid`,
             {
               replacements: { teamid },
               type: models.sequelize.QueryTypes.SELECT,
-              transaction: ta
+              transaction: ta,
             }
           );
           await createLog(
@@ -1040,7 +907,7 @@ export default {
               userid,
               deletejson,
               endtime,
-              team
+              team,
             },
             ta
           );
@@ -1049,9 +916,9 @@ export default {
           console.log("ERROR", err);
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
-  )
+  ),
 };
