@@ -776,8 +776,8 @@ export default {
             throw new Error("Please contact support to update your vatID");
           } else {
             legalinformation = {
-              ...company.legalinformation,
               vatID: sanitizedVatID,
+              ...company.legalinformation,
             };
           }
         } else {
@@ -790,6 +790,7 @@ export default {
           { legalinformation },
           { where: { unitid: companyID } }
         );
+
         return { ...company, legalinformation };
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -1057,6 +1058,48 @@ export default {
           ]);
 
           return { ...oldUnit, profilepicture };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
+  ),
+
+  selectVIPFYPlan: requiresRights(["edit-boughtplan"]).createResolver(
+    async (_p, { planid }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
+
+          const [vipfyPlan, boughtPlan] = await Promise.all([
+            models.Plan.findByPk(planid, { attributes: ["price"] }),
+            models.BoughtPlan.create(
+              {
+                disabled: false,
+                usedby: company.id,
+                alias: "VIPFY Premium",
+                key: { vipfyTrial: false },
+              },
+              { transaction: ta }
+            ),
+          ]);
+
+          await models.BoughtPlanPeriod.create(
+            {
+              boughtplanid: boughtPlan.dataValues.id,
+              planid,
+              payer: company,
+              creator: unitid,
+              totalprice: vipfyPlan.dataValues.price,
+            },
+            { transaction: ta }
+          );
+          throw new Error("DEBUG");
+          return true;
         } catch (err) {
           throw new NormalError({
             message: err.message,

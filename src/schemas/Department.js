@@ -112,6 +112,7 @@ export const mutations = `
   forcePasswordChange(userids: [ID]!): Response!
   addPromocode(promocode: String!): Boolean!
   applyPromocode(promocode: String!): Response!
+  selectVIPFYPlan(planid: ID!): Boolean!
   banEmployee(userid: ID!): Response!
   unbanEmployee(userid: ID!): Response!
   updateCompanyPic(file: Upload!): Department!
