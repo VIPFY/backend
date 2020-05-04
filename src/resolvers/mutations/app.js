@@ -866,9 +866,7 @@ export default {
 
           await createNotification(
             {
-              message: `User ${unitid} has change Account ${
-                account.get({ plain: true }).id
-              }`,
+              message: `User ${unitid} has change Account ${accountid}`,
               icon: "business-time",
               link: `dashboard`,
               changed: [
