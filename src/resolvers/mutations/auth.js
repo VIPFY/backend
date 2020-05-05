@@ -218,7 +218,7 @@ export default {
             planid:
               ENVIRONMENT == "production"
                 ? "3adb8121-bcb1-4a82-a872-26aa614462cb"
-                : "aeb28408-464f-49f7-97f1-6a512ccf46c2",
+                : "12d791f2-50f6-45c8-b43a-71ba01581ae1",
             payer: company.id,
             creator: unit.id,
             totalprice: 0,
@@ -527,7 +527,6 @@ export default {
         // for the token creation
         emailExists.sessionID = ctx.sessionID;
         const token = await createSession(emailExists, ctx);
-
         await createLog(ctx, "signIn", { user: emailExists, email }, null);
 
         return { ok: true, token, config: emailExists.config };

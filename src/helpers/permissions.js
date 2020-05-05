@@ -74,7 +74,7 @@ export const requiresAuth = createResolver(
         raw: true,
       });
 
-      const plans = await models.BoughtPlanView.findAll({
+      const usersVIPFYplans = await models.BoughtPlanView.findAll({
         where: {
           payer: company,
           planid: vipfyPlans.map(plan => plan.id),
@@ -83,7 +83,7 @@ export const requiresAuth = createResolver(
         raw: true,
       });
 
-      const currentPlan = plans.find(plan => {
+      const currentPlan = usersVIPFYplans.find(plan => {
         return (!plan.endtime || plan.endtime > Date.now()) && !plan.disabled;
       });
 

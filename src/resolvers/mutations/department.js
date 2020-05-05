@@ -1068,37 +1068,104 @@ export default {
   ),
 
   selectVIPFYPlan: requiresRights(["edit-boughtplan"]).createResolver(
-    async (_p, { planid }, { models, session }) =>
+    async (_p, { planid, tos }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           const {
             user: { unitid, company },
           } = decode(session.token);
 
-          const [vipfyPlan, boughtPlan] = await Promise.all([
-            models.Plan.findByPk(planid, { attributes: ["price"] }),
+          if (!tos) {
+            throw new Error("You have to accept the Terms of Service");
+          }
+
+          const vipfyPlans = await models.Plan.findAll({
+            where: {
+              appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2",
+              enddate: {
+                [models.Op.or]: {
+                  [models.Op.is]: null,
+                  [models.Op.lt]: models.sequelize.fn("NOW"),
+                },
+              },
+            },
+            attributes: ["id", "price"],
+            raw: true,
+          });
+
+          const [vipfyPlan, currentPlan, boughtPlan] = await Promise.all([
+            models.Plan.findByPk(planid, {
+              attributes: ["name", "price", "currency", "payperiod"],
+              raw: true,
+            }),
+            models.BoughtPlanView.findOne({
+              where: {
+                usedby: company,
+                planid: vipfyPlans.map(plan => plan.id),
+                endtime: null,
+                disabled: false,
+              },
+              order: [["buytime", "DESC"]],
+              raw: true,
+            }),
             models.BoughtPlan.create(
               {
                 disabled: false,
-                usedby: company.id,
+                usedby: company,
                 alias: "VIPFY Premium",
-                key: { vipfyTrial: false },
+                key: { vipfyTrial: false, tos: Date.now() },
               },
               { transaction: ta }
             ),
           ]);
 
-          await models.BoughtPlanPeriod.create(
+          await Promise.all([
+            models.BoughtPlanPeriod.create(
+              {
+                boughtplanid: boughtPlan.dataValues.id,
+                planid,
+                payer: company,
+                creator: unitid,
+                totalprice: vipfyPlan.price,
+              },
+              { transaction: ta }
+            ),
+            models.BoughtPlan.update(
+              {
+                disabled: true,
+                key: {
+                  ...boughtPlan.dataValues.key,
+                  needsCustomerAction: false,
+                },
+              },
+              { where: { id: currentPlan.id } }
+            ),
+            models.BoughtPlanPeriod.update(
+              { endtime: models.sequelize.fn("NOW") },
+
+              { where: { boughtplanid: currentPlan.id } }
+            ),
+          ]);
+
+          await createNotification(
             {
-              boughtplanid: boughtPlan.dataValues.id,
-              planid,
-              payer: company,
-              creator: unitid,
-              totalprice: vipfyPlan.dataValues.price,
+              receiver: unitid,
+              show: true,
+              message: `User ${unitid} bought the VIPFY plan ${
+                vipfyPlan.name
+              } for ${vipfyPlan.price} ${
+                vipfyPlan.price >= 0 ? vipfyPlan.currency : ""
+              }`,
+              icon: "file-contract",
+              changed: ["vipfyPlan"],
+              link: "companyprofile",
+              level: 1,
             },
-            { transaction: ta }
+            ta,
+            { company },
+            null
           );
-          throw new Error("DEBUG");
+
           return true;
         } catch (err) {
           throw new NormalError({
