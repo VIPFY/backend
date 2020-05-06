@@ -121,7 +121,7 @@ export default {
 
         const vipfyPlans = await models.Plan.findAll({
           where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
-          attributes: ["id", "options"],
+          attributes: ["id", "options", "payperiod"],
           raw: true,
         });
 
@@ -129,7 +129,7 @@ export default {
         const [
           currentPlan,
           lastPlan,
-          ..._olderVipfyPlans // eslint-disable-line no-unused-vars
+          ...olderVipfyPlans
         ] = await models.BoughtPlanView.findAll({
           where: {
             payer: company,
@@ -138,18 +138,20 @@ export default {
           raw: true,
           order: [["starttime", "DESC"]],
         });
-
         if (lastPlan) {
-          const { key, endtime, planid, id: boughtPlanID } = lastPlan;
-
           const isPremiumPlan = vipfyPlans
-            .filter(plan => plan.options.users === null)
-            .find(({ id }) => id == planid);
+            .filter(
+              plan =>
+                plan.options.users === null &&
+                Object.keys(plan.payperiod) == "months"
+            )
+            .find(({ id }) => id == lastPlan.planid);
 
-          if (isPremiumPlan && key.needsCustomerAction) {
+          if (isPremiumPlan && currentPlan.key.needsCustomerAction) {
             expiredPlan = {
-              id: boughtPlanID,
-              endtime,
+              id: isPremiumPlan.id,
+              endtime: lastPlan.endtime,
+              firstPlan: olderVipfyPlans.length < 1,
               features: { ...isPremiumPlan.options },
             };
             throw new Error(402);

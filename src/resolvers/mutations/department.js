@@ -1093,7 +1093,7 @@ export default {
             raw: true,
           });
 
-          const [vipfyPlan, currentPlan, boughtPlan] = await Promise.all([
+          const [vipfyPlan, currentPlan] = await Promise.all([
             models.Plan.findByPk(planid, {
               attributes: ["name", "price", "currency", "payperiod"],
               raw: true,
@@ -1108,16 +1108,17 @@ export default {
               order: [["buytime", "DESC"]],
               raw: true,
             }),
-            models.BoughtPlan.create(
-              {
-                disabled: false,
-                usedby: company,
-                alias: "VIPFY Premium",
-                key: { vipfyTrial: false, tos: Date.now() },
-              },
-              { transaction: ta }
-            ),
           ]);
+
+          const boughtPlan = await models.BoughtPlan.create(
+            {
+              disabled: false,
+              usedby: company,
+              alias: vipfyPlan.dataValues.name,
+              key: { vipfyTrial: false, tos: Date.now() },
+            },
+            { transaction: ta }
+          );
 
           await Promise.all([
             models.BoughtPlanPeriod.create(
@@ -1142,7 +1143,6 @@ export default {
             ),
             models.BoughtPlanPeriod.update(
               { endtime: models.sequelize.fn("NOW") },
-
               { where: { boughtplanid: currentPlan.id } }
             ),
           ]);

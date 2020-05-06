@@ -84,7 +84,13 @@ export const requiresAuth = createResolver(
       });
 
       const currentPlan = usersVIPFYplans.find(plan => {
-        return (!plan.endtime || plan.endtime > Date.now()) && !plan.disabled;
+        if (plan.disabled) {
+          return false;
+        } else if (!plan.endtime) {
+          return true;
+        } else {
+          return plan.endtime > Date.now();
+        }
       });
 
       if (!currentPlan) {
@@ -94,6 +100,7 @@ export const requiresAuth = createResolver(
               usedby: company,
               alias: "VIPFY Basic",
               disabled: false,
+              key: { needsCustomerAction: true },
             },
             { transaction: ta }
           );
@@ -110,13 +117,6 @@ export const requiresAuth = createResolver(
             },
             { transaction: ta }
           );
-
-          if (plans[0].key && plans[0].key.vipfyTrial) {
-            await models.BoughtPlan.update(
-              { key: { ...plans[0].key, needsCustomerAction: true } },
-              { where: { id: plans[0].id }, transaction: ta }
-            );
-          }
         });
       }
 
