@@ -3,13 +3,13 @@ module.exports = {
   extends: ["airbnb-base", "plugin:prettier/recommended"],
   env: { node: true, es6: true },
   rules: {
-    "prettier/prettier": [
-      "error",
-      {},
-      {
-        usePrettierrc: true,
-      },
-    ],
+    // "prettier/prettier": [
+    //   "error",
+    //   {},
+    //   {
+    //     usePrettierrc: true,
+    //   },
+    // ],
     "implicit-arrow-linebreak": "off",
     "no-prototype-builtins": "off",
     "one-var": "off",

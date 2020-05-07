@@ -138,19 +138,17 @@ export default {
           raw: true,
           order: [["starttime", "DESC"]],
         });
+
         if (lastPlan) {
           const isPremiumPlan = vipfyPlans
-            .filter(
-              plan =>
-                plan.options.users === null &&
-                Object.keys(plan.payperiod) == "months"
-            )
+            .filter(plan => plan.options.users === null)
             .find(({ id }) => id == lastPlan.planid);
 
           if (isPremiumPlan && currentPlan.key.needsCustomerAction) {
             expiredPlan = {
               id: isPremiumPlan.id,
               endtime: lastPlan.endtime,
+              payperiod: isPremiumPlan.payperiod,
               firstPlan: olderVipfyPlans.length < 1,
               features: { ...isPremiumPlan.options },
             };
@@ -172,7 +170,7 @@ export default {
   fetchVIPFYPlans: requiresAuth.createResolver(
     async (_p, _args, { models }) => {
       try {
-        return await models.Plan.findAll({
+        return models.Plan.findAll({
           where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
         });
       } catch (err) {

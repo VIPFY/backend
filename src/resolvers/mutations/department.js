@@ -1091,12 +1091,14 @@ export default {
             },
             attributes: ["id", "price"],
             raw: true,
+            transaction: ta,
           });
 
           const [vipfyPlan, currentPlan] = await Promise.all([
             models.Plan.findByPk(planid, {
               attributes: ["name", "price", "currency", "payperiod"],
               raw: true,
+              transaction: ta,
             }),
             models.BoughtPlanView.findOne({
               where: {
@@ -1107,6 +1109,7 @@ export default {
               },
               order: [["buytime", "DESC"]],
               raw: true,
+              transaction: ta,
             }),
           ]);
 
@@ -1114,7 +1117,7 @@ export default {
             {
               disabled: false,
               usedby: company,
-              alias: vipfyPlan.dataValues.name,
+              alias: vipfyPlan.name,
               key: { vipfyTrial: false, tos: Date.now() },
             },
             { transaction: ta }
