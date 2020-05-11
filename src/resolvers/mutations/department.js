@@ -21,6 +21,7 @@ import {
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
 import { uploadUserImage } from "../../services/aws";
+import moment from "moment";
 
 export default {
   createEmployee: requiresRights(["create-employees"]).createResolver(
@@ -49,10 +50,10 @@ export default {
               user: { unitid, company },
             } = decode(session.token);
 
-            let noemail = true;
+            let noEmail = true;
             for await (const email of emails) {
               if (email.email != "") {
-                noemail = false;
+                noEmail = false;
                 const isEmail = email.email.indexOf("@");
 
                 if (isEmail < 0) {
@@ -65,7 +66,8 @@ export default {
                 if (emailInUse) throw new Error("Email already in use!");
               }
             }
-            if (noemail) {
+
+            if (noEmail) {
               throw new Error("You need at least one Email!");
             }
 
@@ -114,12 +116,34 @@ export default {
               data.profilepicture = profilepicture;
             }
 
-            let unit = await models.Unit.create(data, { transaction: ta });
-            unit = unit.get();
+            const [unitData, [currentPlan]] = await Promise.all([
+              models.Unit.create(data, {
+                transaction: ta,
+              }),
+              models.sequelize.query(
+                `
+                SELECT bpv.id, bpv.key, bpv.totalprice, pd.price as singleprice
+                FROM boughtplan_view bpv
+                        LEFT JOIN plan_data pd ON pd.id = bpv.planid
+                WHERE planid IN (SELECT pd.id
+                                FROM plan_data pd
+                                WHERE appid = 'aeb28408-464f-49f7-97f1-6a512ccf46c2')
+                  AND payer = :company
+                  AND (endtime IS NULL OR endtime < now())
+                  AND starttime < now()
+                  AND disabled = FALSE
+                ORDER BY starttime DESC;
+                `,
+                {
+                  replacements: { company },
+                  transaction: ta,
+                  type: models.sequelize.QueryTypes.SELECT,
+                }
+              ),
+            ]);
+            const unit = unitData.get();
 
-            const humanpromises = [];
-
-            humanpromises.push(
+            const humanPromises = [
               models.Human.create(
                 {
                   firstname: name.firstname,
@@ -140,8 +164,21 @@ export default {
                   passwordhash: "",
                 },
                 { transaction: ta }
-              )
-            );
+              ),
+            ];
+
+            if (currentPlan.key && !currentPlan.key.vipfyTrial) {
+              humanPromises.push(
+                models.BoughtPlanPeriod.update(
+                  {
+                    totalprice:
+                      parseFloat(currentPlan.totalprice) +
+                      parseFloat(currentPlan.singleprice),
+                  },
+                  { where: { boughtplanid: currentPlan.id }, transaction: ta }
+                )
+              );
+            }
 
             // Create Emails
             emails.forEach(
@@ -149,7 +186,7 @@ export default {
                 email &&
                 email.email &&
                 email.email != "" &&
-                humanpromises.push(
+                humanPromises.push(
                   models.Email.create(
                     {
                       email: email.email,
@@ -167,7 +204,7 @@ export default {
             if (address) {
               const { zip, street, city, ...normalData } = address;
               const addressData = { street, zip, city };
-              humanpromises.push(
+              humanPromises.push(
                 models.Address.create(
                   { ...normalData, address: addressData, unitid: unit.id },
                   { transaction: ta }
@@ -182,7 +219,7 @@ export default {
                   phoneData &&
                   phoneData.number &&
                   phoneData.number != "" &&
-                  humanpromises.push(
+                  humanPromises.push(
                     models.Phone.create(
                       { ...phoneData, unitid: unit.id },
                       { transaction: ta }
@@ -191,14 +228,14 @@ export default {
               );
             }
 
-            humanpromises.push(
+            humanPromises.push(
               models.ParentUnit.create(
                 { parentunit: company, childunit: unit.id },
                 { transaction: ta }
               )
             );
 
-            humanpromises.push(
+            humanPromises.push(
               models.Right.create(
                 {
                   holder: unit.id,
@@ -209,7 +246,7 @@ export default {
               )
             );
 
-            humanpromises.push(
+            humanPromises.push(
               models.Key.create(
                 {
                   ...personalKey,
@@ -219,15 +256,14 @@ export default {
               )
             );
 
-            await Promise.all(humanpromises);
+            await Promise.all(humanPromises);
 
-            const p4 = models.Human.findOne({ where: { unitid } });
-
-            const p5 = models.DepartmentData.findOne({
-              where: { unitid: company },
-            });
-
-            const [requester, companyObj] = await Promise.all([p4, p5]);
+            const [requester, companyObj] = await Promise.all([
+              models.Human.findOne({ where: { unitid } }),
+              models.DepartmentData.findOne({
+                where: { unitid: company },
+              }),
+            ]);
 
             await createLog(ctx, "addCreateEmployee", { unit }, ta);
 
@@ -1094,7 +1130,7 @@ export default {
             transaction: ta,
           });
 
-          const [vipfyPlan, currentPlan] = await Promise.all([
+          const [vipfyPlan, currentPlan, { employees }] = await Promise.all([
             models.Plan.findByPk(planid, {
               attributes: ["name", "price", "currency", "payperiod"],
               raw: true,
@@ -1111,42 +1147,59 @@ export default {
               raw: true,
               transaction: ta,
             }),
+            models.Department.findOne({
+              where: { unitid: company },
+              attributes: ["employees"],
+              raw: true,
+              transaction: ta,
+            }),
           ]);
 
-          const boughtPlan = await models.BoughtPlan.create(
-            {
-              disabled: false,
-              usedby: company,
-              alias: vipfyPlan.name,
-              key: { vipfyTrial: false, tos: Date.now() },
-            },
-            { transaction: ta }
-          );
+          const [boughtPlan, { cancelperiod }] = await Promise.all([
+            models.BoughtPlan.create(
+              {
+                disabled: false,
+                usedby: company,
+                alias: vipfyPlan.name,
+                key: { vipfyTrial: false, tos: Date.now() },
+              },
+              { transaction: ta }
+            ),
+            models.Plan.findByPk(currentPlan.planid, {
+              raw: true,
+              transaction: ta,
+              attributes: ["cancelperiod"],
+            }),
+          ]);
+
+          const endtime = moment()
+            .add(Object.values(cancelperiod)[0], Object.keys(cancelperiod)[0])
+            .endOf("month");
 
           await Promise.all([
             models.BoughtPlanPeriod.create(
               {
                 boughtplanid: boughtPlan.dataValues.id,
                 planid,
+                starttime: endtime,
                 payer: company,
                 creator: unitid,
-                totalprice: vipfyPlan.price,
+                totalprice: parseFloat(vipfyPlan.price) * parseFloat(employees),
               },
               { transaction: ta }
             ),
             models.BoughtPlan.update(
               {
-                disabled: true,
                 key: {
                   ...boughtPlan.dataValues.key,
                   needsCustomerAction: false,
                 },
               },
-              { where: { id: currentPlan.id } }
+              { where: { id: currentPlan.id }, transaction: ta }
             ),
             models.BoughtPlanPeriod.update(
-              { endtime: models.sequelize.fn("NOW") },
-              { where: { boughtplanid: currentPlan.id } }
+              { endtime },
+              { where: { boughtplanid: currentPlan.id }, transaction: ta }
             ),
           ]);
 

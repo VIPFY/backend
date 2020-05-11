@@ -14,7 +14,6 @@ import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "../constants";
  * @param {mail1} mail1
  * @param {mail2} mail2
  */
-
 export const createHuman = async (
   models,
   ta,
@@ -38,7 +37,7 @@ export const createHuman = async (
       throw new Error("Email already in use!");
     } */
     const emailInUse = await models.Email.findOne({
-      where: { email: mail1 }
+      where: { email: mail1 },
     });
     if (emailInUse) throw new Error("Email already in use!");
 
@@ -71,8 +70,8 @@ export const createHuman = async (
           firstlogin: true,
           ...pwData,
           statisticdata: {
-            name
-          }
+            name,
+          },
         },
         { transaction: ta, raw: true }
       )

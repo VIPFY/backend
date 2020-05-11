@@ -12,8 +12,6 @@ import {
   formatHumanName,
 } from "../../helpers/functions";
 import { uploadTeamImage, deleteUserImage } from "../../services/aws";
-import { createHuman } from "../../helpers/employee";
-import { sendEmail } from "../../helpers/email";
 import {
   checkOrbitMembership,
   checkCompanyMembership,
