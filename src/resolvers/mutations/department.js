@@ -25,11 +25,15 @@ import moment from "moment";
 
 export default {
   createEmployee: requiresRights(["create-employees"]).createResolver(
-    async (_p, args, ctx) =>
-      ctx.models.sequelize
+    async (_p, args, ctx) => {
+      const { models, session } = ctx;
+      const {
+        user: { unitid, company },
+      } = decode(session.token);
+
+      return ctx.models.sequelize
         .transaction(async ta => {
           try {
-            const { models, session } = ctx;
             const {
               name,
               emails,
@@ -46,9 +50,6 @@ export default {
               personalKey,
               passwordsalt,
             } = args;
-            const {
-              user: { unitid, company },
-            } = decode(session.token);
 
             let noEmail = true;
             for await (const email of emails) {
@@ -324,7 +325,7 @@ export default {
             });
           }
         })
-        .then(async ({ unitid, name, user }) => {
+        .then(async ({ unitid, user }) => {
           await createNotification(
             {
               message: `User ${user.id} was successfully created by User ${unitid}`,
@@ -336,7 +337,8 @@ export default {
             { company }
           );
           return user;
-        })
+        });
+    }
   ),
 
   editDepartmentName: requiresRights(["edit-department"]).createResolver(
