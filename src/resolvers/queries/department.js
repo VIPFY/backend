@@ -1,11 +1,13 @@
 import { decode } from "jsonwebtoken";
 import iplocate from "node-iplocate";
+import path from "path";
 import {
   requiresRights,
   requiresAuth,
   requiresVipfyManagement,
 } from "../../helpers/permissions";
 import { NormalError, VIPFYPlanError } from "../../errors";
+import { evaTest } from "../../services/aws";
 
 export default {
   fetchCompany: requiresAuth.createResolver(

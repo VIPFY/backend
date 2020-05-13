@@ -249,19 +249,17 @@ export default {
                 transaction: ta,
               });
 
-              //END ONE EMPLOYEE DELETED
+              // END ONE EMPLOYEE DELETED
             })
           );
 
-          //End TeamOrbits
+          // End TeamOrbits
 
           const deletePromises = [];
 
           deletePromises.push(
             models.DepartmentApp.update(
-              {
-                endtime,
-              },
+              { endtime },
               {
                 where: { departmentid: teamid, endtime: Infinity },
                 transaction: ta,
@@ -313,7 +311,7 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company },
+            user: { company, unitid },
           } = decode(session.token);
 
           const oldUnit = await models.Unit.findOne({
@@ -384,7 +382,7 @@ export default {
             user: { unitid, company },
           } = decode(ctx.session.token);
 
-          const { models, session } = ctx;
+          const { models } = ctx;
 
           await teamCheck(company, teamid);
 
@@ -475,7 +473,7 @@ export default {
             user: { unitid, company },
           } = decode(ctx.session.token);
 
-          const { models, session } = ctx;
+          const { models } = ctx;
 
           await teamCheck(company, teamid);
 
@@ -563,7 +561,7 @@ export default {
             user: { unitid, company },
           } = decode(ctx.session.token);
 
-          const { models, session } = ctx;
+          const { models } = ctx;
 
           await teamCheck(company, teamid);
 
@@ -733,7 +731,7 @@ export default {
             user: { unitid, company },
           } = decode(ctx.session.token);
 
-          const { models, session } = ctx;
+          const { models } = ctx;
 
           await teamCheck(company, teamid);
 
@@ -793,7 +791,7 @@ export default {
           );
           await Promise.all(promises);
 
-          //Check for other assignments
+          // Check for other assignments
           if (deletejson.autodelete) {
             await Promise.all(
               deletejson.assignments.map(async asa => {
@@ -911,7 +909,6 @@ export default {
           );
           return team && team[0];
         } catch (err) {
-          console.log("ERROR", err);
           throw new NormalError({
             message: err.message,
             internalData: { err },

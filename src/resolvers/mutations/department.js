@@ -1,3 +1,4 @@
+import moment from "moment";
 import { decode } from "jsonwebtoken";
 import {
   userPicFolder,
@@ -9,7 +10,7 @@ import {
   requiresRights,
   requiresVipfyManagement,
 } from "../../helpers/permissions";
-import { NormalError } from "../../errors";
+import { NormalError, VIPFYPlanError } from "../../errors";
 import {
   createLog,
   createNotification,
@@ -21,7 +22,6 @@ import {
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
 import { uploadUserImage } from "../../services/aws";
-import moment from "moment";
 
 export default {
   createEmployee: requiresRights(["create-employees"]).createResolver(
@@ -30,6 +30,8 @@ export default {
       const {
         user: { unitid, company },
       } = decode(session.token);
+
+      let expiredPlan = null;
 
       return ctx.models.sequelize
         .transaction(async ta => {
@@ -123,14 +125,14 @@ export default {
               }),
               models.sequelize.query(
                 `
-                SELECT bpv.id, bpv.key, bpv.totalprice, pd.price as singleprice
+                SELECT bpv.*, pd.price as singleprice
                 FROM boughtplan_view bpv
                         LEFT JOIN plan_data pd ON pd.id = bpv.planid
                 WHERE planid IN (SELECT pd.id
                                 FROM plan_data pd
                                 WHERE appid = 'aeb28408-464f-49f7-97f1-6a512ccf46c2')
                   AND payer = :company
-                  AND (endtime IS NULL OR endtime < now())
+                  AND (endtime IS NULL OR endtime > now())
                   AND starttime < now()
                   AND disabled = FALSE
                 ORDER BY starttime DESC;
@@ -168,6 +170,11 @@ export default {
               ),
             ];
 
+            if (currentPlan.key && currentPlan.key.needsCustomerAction) {
+              expiredPlan = currentPlan;
+              throw new Error(402);
+            }
+
             if (currentPlan.key && !currentPlan.key.vipfyTrial) {
               humanPromises.push(
                 models.BoughtPlanPeriod.update(
@@ -201,7 +208,6 @@ export default {
             );
 
             // Create Adress
-
             if (address) {
               const { zip, street, city, ...normalData } = address;
               const addressData = { street, zip, city };
@@ -319,19 +325,23 @@ export default {
 
             return { unitid, name, user };
           } catch (err) {
+            if (err.message == 402) {
+              throw new VIPFYPlanError({ data: { expiredPlan } });
+            }
+
             throw new NormalError({
               message: err.message,
               internalData: { err },
             });
           }
         })
-        .then(async ({ unitid, user }) => {
+        .then(async ({ user }) => {
           await createNotification(
             {
               message: `User ${user.id} was successfully created by User ${unitid}`,
               icon: "user-plus",
               link: "employeemanager",
-              changed: ["employees", "company"],
+              changed: ["employees", "company", "vipfyPlan"],
             },
             null,
             { company }
@@ -846,11 +856,33 @@ export default {
             user: { unitid, company },
           } = decode(session.token);
 
-          const oldUser = await models.User.findOne({
-            where: { id: userid },
-            transaction: ta,
-            raw: true,
-          });
+          const [oldUser, [vipfyPlan]] = await Promise.all([
+            models.User.findOne({
+              where: { id: userid },
+              transaction: ta,
+              raw: true,
+            }),
+            models.sequelize.query(
+              `
+            SELECT bpv.id, bpv.key, bpv.totalprice, pd.price as singleprice
+            FROM boughtplan_view bpv
+                    LEFT JOIN plan_data pd ON pd.id = bpv.planid
+            WHERE planid IN (SELECT pd.id
+                            FROM plan_data pd
+                            WHERE appid = 'aeb28408-464f-49f7-97f1-6a512ccf46c2')
+              AND payer = :company
+              AND (endtime IS NULL OR endtime < now())
+              AND starttime < now()
+              AND disabled = FALSE
+            ORDER BY starttime DESC;
+            `,
+              {
+                replacements: { company },
+                transaction: ta,
+                type: models.sequelize.QueryTypes.SELECT,
+              }
+            ),
+          ]);
 
           if (oldUser.assignments && autodelete) {
             await Promise.all(
@@ -944,13 +976,24 @@ export default {
             ),
           ]);
 
+          if (vipfyPlan.key && !vipfyPlan.key.vipfyTrial) {
+            models.BoughtPlanPeriod.update(
+              {
+                totalprice:
+                  parseFloat(vipfyPlan.totalprice) -
+                  parseFloat(vipfyPlan.singleprice),
+              },
+              { where: { boughtplanid: vipfyPlan.id }, transaction: ta }
+            );
+          }
+
           await Promise.all([
             createNotification(
               {
                 message: `User ${unitid} removed User ${userid} from the company`,
                 icon: "user-minus",
                 link: "employeemanager",
-                changed: ["employees"],
+                changed: ["employees", "company", "vipfyPlan"],
               },
               ta,
               { company, level: 3 }
@@ -1143,9 +1186,12 @@ export default {
                 usedby: company,
                 planid: vipfyPlans.map(plan => plan.id),
                 endtime: null,
+                starttime: {
+                  [models.Op.lt]: models.sequelize.fn("NOW"),
+                },
                 disabled: false,
               },
-              order: [["buytime", "DESC"]],
+              order: [["starttime", "DESC"]],
               raw: true,
               transaction: ta,
             }),
@@ -1174,11 +1220,29 @@ export default {
             }),
           ]);
 
-          const endtime = moment()
+          let endtime = moment()
             .add(Object.values(cancelperiod)[0], Object.keys(cancelperiod)[0])
             .endOf("month");
+          const promises = [];
+
+          if (currentPlan.key && currentPlan.key.needsCustomerAction) {
+            endtime = models.sequelize.fn("NOW");
+
+            promises.push(
+              models.BoughtPlan.update(
+                {
+                  key: {
+                    ...boughtPlan.dataValues.key,
+                    needsCustomerAction: false,
+                  },
+                },
+                { where: { id: currentPlan.id }, transaction: ta }
+              )
+            );
+          }
 
           await Promise.all([
+            ...promises,
             models.BoughtPlanPeriod.create(
               {
                 boughtplanid: boughtPlan.dataValues.id,
@@ -1189,15 +1253,6 @@ export default {
                 totalprice: parseFloat(vipfyPlan.price) * parseFloat(employees),
               },
               { transaction: ta }
-            ),
-            models.BoughtPlan.update(
-              {
-                key: {
-                  ...boughtPlan.dataValues.key,
-                  needsCustomerAction: false,
-                },
-              },
-              { where: { id: currentPlan.id }, transaction: ta }
             ),
             models.BoughtPlanPeriod.update(
               { endtime },
@@ -1217,10 +1272,9 @@ export default {
               icon: "file-contract",
               changed: ["vipfyPlan"],
               link: "companyprofile",
-              level: 1,
             },
             ta,
-            { company },
+            { company, level: 3 },
             null
           );
 

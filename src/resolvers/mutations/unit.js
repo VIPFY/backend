@@ -189,9 +189,9 @@ export default {
           await createLog(ctx, "updateEmployee", { updateArgs: user }, ta);
           await createNotification(
             {
-              receiver: userid,
+              receiver: id,
               message: `User ${unitid} updated the profile of ${
-                unitid == userid ? `yourself` : `User ${userid}`
+                unitid == id ? `yourself` : `User ${id}`
               }`,
               icon: "user-friends",
               link: "employeemanager",
@@ -297,7 +297,7 @@ export default {
           passwordlength: pw.passwordlength,
           passwordstrength: pw.passwordstrength,
           needspasswordchange: true,
-          unitid: unitid,
+          unitid,
         };
       } catch (err) {
         if (err instanceof RightsError) {
