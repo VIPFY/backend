@@ -5,6 +5,7 @@ import {
   requiresVipfyManagement,
 } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
+import moment from "moment";
 
 export default {
   fetchCompany: requiresAuth.createResolver(
@@ -198,6 +199,61 @@ export default {
         );
 
         return employees;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchVIPFYOffice: requiresAuth.createResolver(
+    async (_p, {}, { models, session }) => {
+      try {
+        const {
+          user: { company },
+        } = decode(session.token);
+
+        if (company != "ff18ee19-b247-45aa-bcab-7b9992a593cd") {
+          throw new Error("You are not VIPFY!");
+        }
+
+        // ISO-8601, Europe
+        moment.updateLocale("en", {
+          week: {
+            dow: 1, // First day of week is Monday
+            doy: 4, // First week of year must contain 4 January (7 + 1 - 4)
+          },
+        });
+
+        let props = "";
+        for (let i = 1; i <= 8; i++) {
+          props += `${i == 1 ? i : `, ${i}`}, null`;
+        }
+
+        let weekdays = "json_build_object(";
+        [...new Array(5)].forEach((_v, key) => {
+          weekdays += `'${moment()
+            .weekday(key + 1)
+            .format("dddd")
+            .toLowerCase()}', json_build_object(${props})${
+            key == 4 ? ")" : ", "
+          }`;
+        });
+
+        const [data] = await models.sequelize.query(
+          `SELECT dv.unitid as id,
+              COALESCE(dv.internaldata::json -> 'officePlans' -> (extract(week FROM current_date) + 1)::text, ${weekdays}) as officeplans,
+            ARRAY(SELECT DISTINCT employee
+            FROM department_employee_view
+            WHERE id = :company AND employee NOTNULL) as employees
+           FROM department_view dv
+           WHERE dv.unitid = :company`,
+          {
+            replacements: { company },
+            type: models.sequelize.QueryTypes.SELECT,
+          }
+        );
+        console.log("\x1b[1m%s\x1b[0m", "LOG data", data);
+        return data;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

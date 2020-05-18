@@ -21,6 +21,7 @@ import {
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
 import { uploadUserImage } from "../../services/aws";
+import moment from "moment";
 
 export default {
   createEmployee: requiresRights(["create-employees"]).createResolver(
@@ -1066,5 +1067,97 @@ export default {
           });
         }
       })
+  ),
+
+  reserveSeats: requiresAuth.createResolver(
+    async (_p, { seats }, { models, session }) => {
+      try {
+        const {
+          user: { unitid, company },
+        } = decode(session.token);
+        if (company != "ff18ee19-b247-45aa-bcab-7b9992a593cd") {
+          throw new Error("You are not VIPFY!");
+        }
+
+        // ISO-8601, Europe
+        moment.updateLocale("en", {
+          week: {
+            dow: 1, // First day of week is Monday
+            doy: 4, // First week of year must contain 4 January (7 + 1 - 4)
+          },
+        });
+
+        let { internaldata } = await models.Department.findOne({
+          where: { unitid: company },
+          raw: true,
+          attributes: ["internaldata"],
+        });
+
+        let officePlans = {};
+        const nextWeek = moment().add(1, "week").startOf("week").format("ww");
+        if (
+          !internaldata ||
+          !internaldata.officePlans ||
+          !internaldata.officePlans[nextWeek]
+        ) {
+          // Create the seats from 0 - 9
+          const newProps = {};
+          [...Array(8)].forEach((_d, key) => {
+            newProps[key + 1] = null;
+          });
+
+          if (
+            internaldata &&
+            internaldata.officePlans &&
+            !internaldata.officePlans[nextWeek]
+          ) {
+            officePlans = internaldata.officePlans;
+          }
+
+          // Create the days from Monday - Friday
+          officePlans[nextWeek] = {};
+          [...Array(5)].forEach((_d, key) => {
+            officePlans[nextWeek][
+              moment().weekday(key).format("dddd").toLowerCase()
+            ] = { ...newProps };
+          });
+
+          Object.keys(seats).forEach(day => {
+            if (seats[day]) {
+              officePlans[nextWeek][day][seats[day]] = unitid;
+            }
+          });
+        } else {
+          officePlans = internaldata.officePlans;
+          const daysSelected = {};
+          Object.keys(seats).forEach(seat => {
+            if (seats[seat]) {
+              daysSelected[seat] = seats[seat];
+            }
+          });
+
+          Object.keys(daysSelected).forEach(day => {
+            Object.values(officePlans[nextWeek][day]).forEach((seat, key) => {
+              if (seat == unitid) {
+                officePlans[nextWeek][day][key + 1] = null;
+              }
+
+              if (key + 1 == seats[day]) {
+                officePlans[nextWeek][day][key + 1] = unitid;
+              }
+            });
+          });
+        }
+
+        await models.DepartmentData.update(
+          { internaldata: { ...internaldata, officePlans } },
+          { where: { unitid: company } }
+        );
+
+        return officePlans[nextWeek];
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   ),
 };
