@@ -49,8 +49,12 @@ export default {
   fetchPublicUser: requiresAuth.createResolver(
     async (_p, { userid, canbedeleted }, { models }) => {
       try {
+        const where = { id: userid };
+        if (!canbedeleted) {
+          where.deleted = false;
+        }
         const user = await models.User.findOne({
-          where: { id: userid, deleted: canbedeleted ? undefined : false },
+          where,
           raw: true,
         });
 
