@@ -14,7 +14,6 @@ import tutorialQueries from "./queries/tutorial";
 import teamQueries from "./queries/team";
 import logQueries from "./queries/log";
 
-
 import twoFA from "./mutations/2FA";
 import adminMutations from "./mutations/admin";
 import authMutations from "./mutations/auth";
@@ -73,7 +72,7 @@ const unitAndPlan = { sponsor: "Unit", planid: "Plan" };
 const developerAndSupport = {
   developer: "Unit",
   supportunit: "Unit",
-  owner: "Unit"
+  owner: "Unit",
 };
 const plans = { appid: "App", gotoplan: "Plan" };
 
@@ -94,7 +93,7 @@ export default {
     buyer: "Unit",
     usedby: "Unit",
     planid: "Plan",
-    payer: "Unit"
+    payer: "Unit",
   }),
   BoughtplanUsagePerUser: find({ boughtplan: "BoughtPlanView", unit: "User" }),
   Department: find({
@@ -102,15 +101,15 @@ export default {
     adminkey: {
       datatype: "Key",
       multiple: true,
-      query: "SELECT * FROM key_data WHERE publickey=:key"
-    }
+      query: "SELECT * FROM key_data WHERE publickey=:key",
+    },
   }),
   DepartmentData: find(unit),
   DepartmentEmail: find({ departmentid: "Department", emailownerid: "Unit" }),
   DepartmentEmployee: find({
     id: "Department",
     childid: "Unit",
-    employee: "User"
+    employee: "User",
   }),
   Domain: find({ boughtplanid: "BoughtPlanView" }),
   Email: find(unit),
@@ -120,17 +119,17 @@ export default {
     teamlicence: "Team",
     teamaccount: "Team",
     assignmentid: "LicenceAssignment",
-    vacationid: "Vacation"
+    vacationid: "Vacation",
   }),
   Licence: find({
-    boughtplanid: "BoughtPlanView"
+    boughtplanid: "BoughtPlanView",
   }),
   LicenceAssignment: find({
     unitid: "User",
     boughtplanid: "BoughtPlanView",
     teamlicence: "Team",
     teamaccount: "Team",
-    vacationid: "Vacation"
+    vacationid: "Vacation",
   }),
   Log: find({ user: "User", sudoer: "User" }),
   Key: find({
@@ -138,8 +137,8 @@ export default {
     encryptedby: {
       datatype: "Key",
       multiple: true,
-      query: "SELECT * FROM key_data WHERE publickey=:key"
-    }
+      query: "SELECT * FROM key_data WHERE publickey=:key",
+    },
   }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
@@ -147,7 +146,7 @@ export default {
   MessageTag: find({ unitid: "User", messageid: "MessageTag" }),
   MessageGroup: find({
     lastmessage: "MessageData",
-    memberships: "[MessageGroupMembership]"
+    memberships: "[MessageGroupMembership]",
   }),
   MessageResponse: find({ message: "MessageData" }),
   Newsletter: find({ email: "Email" }),
@@ -158,7 +157,7 @@ export default {
     buyer: "Unit",
     usedby: "Unit",
     planid: "Plan",
-    payer: "Unit"
+    payer: "Unit",
   }),
   ParentUnit: find({ parentunit: "Unit", childunit: "Unit" }),
   Phone: find({}),
@@ -175,15 +174,15 @@ export default {
     unitid: "Unit",
     employees: "[User]",
     licences: "[LicenceDataFiltered]",
-    services: "[Orbit]"
+    services: "[Orbit]",
   }),
   CompanyService: find({
     app: "App",
-    orbitids: "[Orbit]"
+    orbitids: "[Orbit]",
   }),
   TeamBoughtPlan: find({
     departmentid: "Team",
-    boughtplanid: "BoughtPlanView"
+    boughtplanid: "BoughtPlanView",
   }),
   Upload: GraphQLUpload,
   User: find({
@@ -191,7 +190,7 @@ export default {
     emails: "[Email]",
     phones: "[Phone]",
     vacations: "[Vacation]",
-    assignments: "[LicenceAssignment]"
+    assignments: "[LicenceAssignment]",
   }),
   SemiPublicUser: find({
     company: "Department",
@@ -199,9 +198,10 @@ export default {
     addresses: "[Address]",
     phones: "[Phone]",
     vacations: "[Vacation]",
-    assignments: "[LicenceAssignment]"
+    assignments: "[LicenceAssignment]",
   }),
   UserSecurityOverview: find({ unitid: "User" }),
   Vacation: find({ unitid: "User" }),
-  Website: find({})
+  VIPFYOffice: find({ employees: "[User]" }),
+  Website: find({}),
 };

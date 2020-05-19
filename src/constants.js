@@ -18,7 +18,7 @@ const options = {
   db: 0,
   password: process.env.REDIS_PW,
   // reconnect after
-  retryStrategy: (times) => Math.min(times * 50, 2000),
+  retryStrategy: times => Math.min(times * 50, 2000),
   tls: {},
   showFriendlyErrorStack: true,
 };
@@ -41,28 +41,28 @@ if (
 }
 export const redis = new Redis(options);
 
-redis.on("error", (error) => console.error("ioredis ERROR", error || ""));
-redis.on("connect", (args) => console.log("ioredis connected", args || ""));
-redis.on("ready", (args) => console.log("ioredis ready", args || ""));
-redis.on("close", (args) => console.log("ioredis close", args || ""));
-redis.on("reconnecting", (args) =>
+redis.on("error", error => console.error("ioredis ERROR", error || ""));
+redis.on("connect", args => console.log("ioredis connected", args || ""));
+redis.on("ready", args => console.log("ioredis ready", args || ""));
+redis.on("close", args => console.log("ioredis close", args || ""));
+redis.on("reconnecting", args =>
   console.log("ioredis reconnecting", args || "")
 );
 
 const subscriber = new Redis(options);
-subscriber.on("error", (error) =>
+subscriber.on("error", error =>
   console.error("ioredis Subscriptions ERROR", error || "")
 );
-subscriber.on("connect", (args) =>
+subscriber.on("connect", args =>
   console.log("ioredis Subscriptions connected", args || "")
 );
-subscriber.on("ready", (args) =>
+subscriber.on("ready", args =>
   console.log("ioredis Subscriptions ready", args || "")
 );
-subscriber.on("close", (args) =>
+subscriber.on("close", args =>
   console.log("ioredis Subscriptions close", args || "")
 );
-subscriber.on("reconnecting", (args) =>
+subscriber.on("reconnecting", args =>
   console.log("ioredis Subscriptions reconnecting", args || "")
 );
 
@@ -90,34 +90,4 @@ export const VIPFY_MANAGEMENT = [
   "98cdb502-51fc-4c0d-a5c7-ee274b6bb7b5", // Markus
   "96d65748-7d36-459a-97d0-7f52a7a4bbf0", // Nils
   "91bd25cb-65cc-4dca-b0c8-285dbf5919f3", // Jannis
-];
-
-export const EU_COUNTRIES = [
-  { value: "AT", name: "Austria" },
-  { value: "BE", name: "Belgium" },
-  { value: "BG", name: "Bulgaria" },
-  { value: "HR", name: "Croatia" },
-  { value: "CY", name: "Cyprus" },
-  { value: "CZ", name: "Czech Republic" },
-  { value: "DK", name: "Denmark" },
-  { value: "EE", name: "Estonia" },
-  { value: "FI", name: "Finland" },
-  { value: "FR", name: "France" },
-  { value: "DE", name: "Germany" },
-  { value: "GR", name: "Greece" },
-  { value: "HU", name: "Hungary" },
-  { value: "IE", name: "Ireland" },
-  { value: "IT", name: "Italy" },
-  { value: "LV", name: "Latvia" },
-  { value: "LT", name: "Lithuania" },
-  { value: "LU", name: "Luxembourg" },
-  { value: "MT", name: "Malta" },
-  { value: "NL", name: "Netherlands" },
-  { value: "PL", name: "Poland" },
-  { value: "PT", name: "Portugal" },
-  { value: "RO", name: "Romania" },
-  { value: "SK", name: "Slovakia" },
-  { value: "SI", name: "Slovenia" },
-  { value: "ES", name: "Spain" },
-  { value: "SE", name: "Sweden" }
 ];

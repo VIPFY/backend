@@ -59,6 +59,12 @@ export const types = `
     employee: SemiPublicUser
   }
 
+  type VIPFYOffice {
+    id: String!
+    employees: [User!]!
+    officeplans: JSON!
+  }
+
   input HumanName {
     title: String!
     firstname: String!
@@ -82,6 +88,14 @@ export const types = `
     subIndustry: String
     companyStage: String
   }
+
+  input Seats {
+    monday: String
+    tuesday: String
+    wednesday: String
+    thursday: String
+    friday: String
+  }
 `;
 
 export const queries = `
@@ -96,6 +110,7 @@ export const queries = `
   fetchUserSecurityOverview(userid: ID): [UserSecurityOverview]!
   fetchVipfyPlan: BoughtPlan
   fetchVIPFYPlans: [Plan!]!
+  fetchVIPFYOffice: VIPFYOffice!
 `;
 
 export const mutations = `
@@ -119,6 +134,7 @@ export const mutations = `
 
   approveVacationRequest(userid: ID!, requestid: ID!): Boolean!
   declineVacationRequest(userid: ID!, requestid: ID!): Boolean!
+  reserveSeats(seats: Seats!): JSON!
 `;
 
 // banEmployee, unbanEmployee unused but maybe useful?  createEmployee only used once

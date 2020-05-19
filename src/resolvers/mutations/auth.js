@@ -8,8 +8,8 @@ import {
   REDIS_SESSION_PREFIX,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
-  EU_COUNTRIES,
 } from "../../constants";
+import COUNTRIES from "../../countries";
 import { createToken, checkAuthentification } from "../../helpers/auth";
 import { createToken as createSetupToken } from "../../helpers/token";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
@@ -103,8 +103,8 @@ export default {
           ENVIRONMENT == "production" ? ip : "82.192.202.122"
         );
 
-        const isEUR = EU_COUNTRIES.find(
-          ({ value }) => value.toLowerCase() == country_code.toLowerCase()
+        const country = COUNTRIES.find(
+          c => c.country_iso_2_char_code == country_code.toUpperCase()
         );
 
         const unit = await models.Unit.create({}, { transaction: ta });
@@ -141,7 +141,7 @@ export default {
         const p4 = models.DepartmentData.create(
           {
             unitid: company.id,
-            currency: isEUR ? "EUR" : "USD",
+            currency: country.currency_iso_3_char_code,
             iscompany: true,
             isprivate,
             name,
