@@ -941,30 +941,47 @@ export default {
             user: { company },
           } = decode(session.token);
 
-          const res = await models.VacationRequest.update(
-            { status: "CONFIRMED", decided: models.sequelize.fn("NOW") },
-            { where: { unitid: userid, id: requestid } }
-          );
+          const [res, user] = await Promise.all([
+            models.VacationRequest.update(
+              { status: "CONFIRMED", decided: models.sequelize.fn("NOW") },
+              { where: { unitid: userid, id: requestid } }
+            ),
+            models.User.findByPk(unitid, {
+              raw: true,
+              transaction: ta,
+              attributes: ["firstname", "lastname"],
+            }),
+          ]);
 
           if (res[0] == 0) {
             throw new Error("Could not update request");
           }
 
-          await createNotification(
-            {
-              receiver: userid,
-              show: true,
-              message: "Your vacation request was confirmed",
-              icon: "umbrella-beach",
-              changed: ["vacationRequest"],
-              link: "vacation",
-            },
-            ta,
-            {
-              company,
-              message: `User ${userid} vacation request was confirmed`,
-            }
-          );
+          await Promise.all([
+            createNotification(
+              {
+                receiver: userid,
+                show: true,
+                message: "Your vacation request was confirmed",
+                icon: "umbrella-beach",
+                changed: ["vacationRequest"],
+                link: "vacation",
+              },
+              ta,
+              {
+                company,
+                message: `User ${userid} vacation request was confirmed`,
+              }
+            ),
+            sendEmail({
+              templateId: "d-5dc7c3306d584ffba6fbc1aa9d273b5d",
+              personalizations: {
+                name: `${user.firstname} ${user.lastname}`,
+                decission: "approved",
+              },
+              from: "VIPFY Vacation Team",
+            }),
+          ]);
 
           return true;
         } catch (err) {
@@ -983,27 +1000,47 @@ export default {
           const {
             user: { company },
           } = decode(session.token);
-          const res = await models.VacationRequest.update(
-            { status: "REJECTED", decided: models.sequelize.fn("NOW") },
-            { where: { unitid: userid, id: requestid }, transaction: ta }
-          );
+          const [res, user] = await Promise.all([
+            models.VacationRequest.update(
+              { status: "REJECTED", decided: models.sequelize.fn("NOW") },
+              { where: { unitid: userid, id: requestid }, transaction: ta }
+            ),
+            models.User.findByPk(unitid, {
+              raw: true,
+              transaction: ta,
+              attributes: ["firstname", "lastname"],
+            }),
+          ]);
 
           if (res[0] == 0) {
             throw new Error("Could not update request");
           }
 
-          await createNotification(
-            {
-              receiver: userid,
-              show: true,
-              message: "Your vacation request was declined",
-              icon: "umbrella-beach",
-              changed: ["vacationRequest"],
-              link: "vacation",
-            },
-            ta,
-            { company, message: `User ${userid} vacation request was declined` }
-          );
+          await Promise.all([
+            createNotification(
+              {
+                receiver: userid,
+                show: true,
+                message: "Your vacation request was declined",
+                icon: "umbrella-beach",
+                changed: ["vacationRequest"],
+                link: "vacation",
+              },
+              ta,
+              {
+                company,
+                message: `User ${userid} vacation request was declined`,
+              }
+            ),
+            sendEmail({
+              templateId: "d-5dc7c3306d584ffba6fbc1aa9d273b5d",
+              personalizations: {
+                name: `${user.firstname} ${user.lastname}`,
+                decission: "denied",
+              },
+              from: "VIPFY Vacation Team",
+            }),
+          ]);
 
           return true;
         } catch (err) {

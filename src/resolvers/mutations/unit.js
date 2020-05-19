@@ -741,28 +741,42 @@ export default {
             );
           }
 
-          const request = await models.VacationRequest.create(
-            {
-              unitid,
-              startdate: startdate.format("LL"),
-              enddate: enddate.format("LL"),
-              days,
-              requested: models.sequelize.fn("NOW"),
-            },
-            { transaction: ta }
-          );
+          const [request, user] = await Promise.all([
+            await models.VacationRequest.create(
+              {
+                unitid,
+                startdate: startdate.format("LL"),
+                enddate: enddate.format("LL"),
+                days,
+                requested: models.sequelize.fn("NOW"),
+              },
+              { transaction: ta }
+            ),
+            models.User.findByPk(unitid, {
+              raw: true,
+              transaction: ta,
+              attributes: ["firstname", "lastname"],
+            }),
+          ]);
 
-          await createNotification(
-            {
-              receiver: unitid,
-              message: "Vacation request successfully created",
-              icon: "umbrella-beach",
-              link: "vacation",
-              changed: ["vacationRequest"],
-            },
-            ta,
-            { company, message: `User ${unitid} requested vacation` }
-          );
+          await Promise.all([
+            createNotification(
+              {
+                receiver: unitid,
+                message: "Vacation request successfully created",
+                icon: "umbrella-beach",
+                link: "vacation",
+                changed: ["vacationRequest"],
+              },
+              ta,
+              { company, message: `User ${unitid} requested a vacation` }
+            ),
+            sendEmail({
+              templateId: "d-815c5b4c5006439399ee5d69725d69de",
+              personalizations: { name: `${user.firstname} ${user.lastname}` },
+              fromName: "VIPFY Vacation Bot",
+            }),
+          ]);
 
           return request;
         });
