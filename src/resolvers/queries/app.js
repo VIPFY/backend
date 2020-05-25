@@ -1,16 +1,12 @@
-import { decode, sign } from "jsonwebtoken";
-import uuid from "uuid";
+import { decode } from "jsonwebtoken";
 import moment from "moment";
 // import { getLoginData } from "@vipfy-private/weebly";
-import * as Services from "@vipfy-private/services";
-import dd24Api from "../../services/dd24";
-import { NormalError, PartnerError } from "../../errors";
+import { NormalError } from "../../errors";
 import {
   requiresAuth,
   requiresRights,
   requiresVipfyAdmin,
 } from "../../helpers/permissions";
-import { companyCheck, concatName } from "../../helpers/functions";
 import freshdeskAPI from "../../services/freshdesk";
 
 export default {
@@ -254,7 +250,7 @@ export default {
   ),
 
   fetchLicence: requiresRights(["myself", "view-licences"]).createResolver(
-    async (_parent, { licenceid }, { models }, _info) => {
+    async (_parent, { licenceid }, { models }) => {
       try {
         const licence = await models.LicenceDataFiltered.findOne({
           where: { id: licenceid },
