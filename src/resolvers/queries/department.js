@@ -216,22 +216,16 @@ export default {
           throw new Error("You are not VIPFY!");
         }
 
-        // ISO-8601, Europe
-        moment.updateLocale("en", {
-          week: {
-            dow: 1, // First day of week is Monday
-            doy: 4, // First week of year must contain 4 January (7 + 1 - 4)
-          },
-        });
-
         let props = "";
-        for (let i = 1; i <= 8; i++) {
+        // Create the open seats
+        for (let i = 1; i <= 6; i++) {
           props += `${i == 1 ? i : `, ${i}`}, null`;
         }
 
         let weekdays = "json_build_object(";
         [...new Array(5)].forEach((_v, key) => {
           weekdays += `'${moment()
+            // Sunday is 0
             .weekday(key + 1)
             .format("dddd")
             .toLowerCase()}', json_build_object(${props})${
@@ -241,7 +235,7 @@ export default {
 
         const [data] = await models.sequelize.query(
           `SELECT dv.unitid as id,
-              COALESCE(dv.internaldata::json -> 'officePlans' -> (extract(week FROM current_date) + 1)::text, ${weekdays}) as officeplans,
+              COALESCE(dv.internaldata::json -> 'officePlans' -> (extract(week FROM current_date))::text, ${weekdays}) as officeplans,
             ARRAY(SELECT DISTINCT employee
             FROM department_employee_view
             WHERE id = :company AND employee NOTNULL) as employees
@@ -252,7 +246,7 @@ export default {
             type: models.sequelize.QueryTypes.SELECT,
           }
         );
-        console.log("\x1b[1m%s\x1b[0m", "LOG data", data);
+
         return data;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });

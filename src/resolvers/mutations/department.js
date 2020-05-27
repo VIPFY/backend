@@ -3,6 +3,7 @@ import {
   userPicFolder,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
+  vipfyManagement,
 } from "../../constants";
 import {
   requiresAuth,
@@ -1077,13 +1078,19 @@ export default {
           throw new Error("You are not VIPFY!");
         }
 
-        // ISO-8601, Europe
-        moment.updateLocale("en", {
-          week: {
-            dow: 1, // First day of week is Monday
-            doy: 4, // First week of year must contain 4 January (7 + 1 - 4)
-          },
-        });
+        if (
+          [
+            ...vipfyManagement,
+            "e72a945f-b29d-445b-ab68-d75d1070bdb6",
+            "582a705d-d650-4727-8db6-28d231b465dd",
+            "70309b26-1754-4877-ae86-3578dfca3b85",
+            "b65a0528-59b1-4137-887f-faf3d6a07fd7",
+          ].find(id => id == unitid)
+        ) {
+          throw new Error(
+            "You either have a seat or were banished into Home Office!"
+          );
+        }
 
         let { internaldata } = await models.Department.findOne({
           where: { unitid: company },
@@ -1092,37 +1099,41 @@ export default {
         });
 
         let officePlans = {};
-        const nextWeek = moment().add(1, "week").startOf("week").format("ww");
+        const thisWeek = moment().startOf("week").format("ww");
         if (
           !internaldata ||
           !internaldata.officePlans ||
-          !internaldata.officePlans[nextWeek]
+          !internaldata.officePlans[thisWeek]
         ) {
-          // Create the seats from 0 - 9
+          // Create the seats from 0 - 5
           const newProps = {};
-          [...Array(8)].forEach((_d, key) => {
+          [...Array(6)].forEach((_d, key) => {
             newProps[key + 1] = null;
           });
 
           if (
             internaldata &&
             internaldata.officePlans &&
-            !internaldata.officePlans[nextWeek]
+            !internaldata.officePlans[thisWeek]
           ) {
             officePlans = internaldata.officePlans;
           }
 
           // Create the days from Monday - Friday
-          officePlans[nextWeek] = {};
+          officePlans[thisWeek] = {};
           [...Array(5)].forEach((_d, key) => {
-            officePlans[nextWeek][
-              moment().weekday(key).format("dddd").toLowerCase()
+            officePlans[thisWeek][
+              moment()
+                // Sunday is 0
+                .weekday(key + 1)
+                .format("dddd")
+                .toLowerCase()
             ] = { ...newProps };
           });
 
           Object.keys(seats).forEach(day => {
             if (seats[day]) {
-              officePlans[nextWeek][day][seats[day]] = unitid;
+              officePlans[thisWeek][day][seats[day]] = unitid;
             }
           });
         } else {
@@ -1135,13 +1146,13 @@ export default {
           });
 
           Object.keys(daysSelected).forEach(day => {
-            Object.values(officePlans[nextWeek][day]).forEach((seat, key) => {
+            Object.values(officePlans[thisWeek][day]).forEach((seat, key) => {
               if (seat == unitid) {
-                officePlans[nextWeek][day][key + 1] = null;
+                officePlans[thisWeek][day][key + 1] = null;
               }
 
               if (key + 1 == seats[day]) {
-                officePlans[nextWeek][day][key + 1] = unitid;
+                officePlans[thisWeek][day][key + 1] = unitid;
               }
             });
           });
@@ -1152,7 +1163,7 @@ export default {
           { where: { unitid: company } }
         );
 
-        return officePlans[nextWeek];
+        return officePlans[thisWeek];
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
