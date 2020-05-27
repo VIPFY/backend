@@ -18,7 +18,7 @@ const options = {
   db: 0,
   password: process.env.REDIS_PW,
   // reconnect after
-  retryStrategy: (times) => Math.min(times * 50, 2000),
+  retryStrategy: times => Math.min(times * 50, 2000),
   tls: {},
   showFriendlyErrorStack: true,
 };
@@ -41,28 +41,28 @@ if (
 }
 export const redis = new Redis(options);
 
-redis.on("error", (error) => console.error("ioredis ERROR", error || ""));
-redis.on("connect", (args) => console.log("ioredis connected", args || ""));
-redis.on("ready", (args) => console.log("ioredis ready", args || ""));
-redis.on("close", (args) => console.log("ioredis close", args || ""));
-redis.on("reconnecting", (args) =>
+redis.on("error", error => console.error("ioredis ERROR", error || ""));
+redis.on("connect", args => console.log("ioredis connected", args || ""));
+redis.on("ready", args => console.log("ioredis ready", args || ""));
+redis.on("close", args => console.log("ioredis close", args || ""));
+redis.on("reconnecting", args =>
   console.log("ioredis reconnecting", args || "")
 );
 
 const subscriber = new Redis(options);
-subscriber.on("error", (error) =>
+subscriber.on("error", error =>
   console.error("ioredis Subscriptions ERROR", error || "")
 );
-subscriber.on("connect", (args) =>
+subscriber.on("connect", args =>
   console.log("ioredis Subscriptions connected", args || "")
 );
-subscriber.on("ready", (args) =>
+subscriber.on("ready", args =>
   console.log("ioredis Subscriptions ready", args || "")
 );
-subscriber.on("close", (args) =>
+subscriber.on("close", args =>
   console.log("ioredis Subscriptions close", args || "")
 );
-subscriber.on("reconnecting", (args) =>
+subscriber.on("reconnecting", args =>
   console.log("ioredis Subscriptions reconnecting", args || "")
 );
 
@@ -85,7 +85,7 @@ export const MIN_PASSWORD_LENGTH = 10;
 // ssh -N -L 6379:master.prod1.n21sml.euc1.cache.amazonaws.com:6379 nv@bastion.internal.vipfy.store
 // ssh -N -L 5431:dev1.c1mg5mgfkmoa.eu-central-1.rds.amazonaws.com:5432 nv@bastion.internal.vipfy.store
 
-export const vipfyManagement = [
+export const VIPFY_MANAGEMENT = [
   "f876804e-efd0-48b4-a5b2-807cbf66315f", // Pascal
   "98cdb502-51fc-4c0d-a5c7-ee274b6bb7b5", // Markus
   "96d65748-7d36-459a-97d0-7f52a7a4bbf0", // Nils

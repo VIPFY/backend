@@ -46,9 +46,7 @@ export const parentAdminCheck = async user => {
 
 export const formatFilename = filename => {
   const date = moment().format("YYYYMMDD");
-  const randomString = Math.random()
-    .toString(36)
-    .substring(2, 7);
+  const randomString = Math.random().toString(36).substring(2, 7);
   const cleanFilename = filename.toLowerCase().replace(/[^a-z0-9]/g, "-");
 
   return `${date}-${randomString}-${cleanFilename}`;
@@ -149,7 +147,7 @@ export const createNotification = async (
   informIndividuals
 ) => {
   try {
-    //get everyone who should be informed
+    // Fetch everyone who should be informed
     const receivers = [];
     if (notificationBody.receiver) {
       receivers.push({
@@ -446,7 +444,7 @@ export const checkVat = async vat => {
       throw new Error(res);
     }
   } catch (error) {
-    console.error(error.message);
+    console.error("\x1b[1m%s\x1b[0m", error.message);
     throw new Error("Invalid Vatnumber!");
   }
 };
