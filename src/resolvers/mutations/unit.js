@@ -852,4 +852,51 @@ export default {
       }
     }
   ),
+
+  updateMyConfig: requiresRights(["me"]).createResolver(
+    async (_p, { config }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
+          const {
+            user: { unitid },
+          } = decode(session.token);
+
+          const user = await models.User.findOne({
+            where: { id: unitid },
+            transaction: ta,
+          });
+
+          console.log("CONFIG", config, user);
+
+          await models.Human.update(
+            {
+              config: {
+                ...user.config,
+                config,
+              },
+            },
+            { where: { unitid }, transaction: ta }
+          );
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Updated config",
+              icon: "cog",
+              link: "settings",
+              changed: ["ownLicences"],
+            },
+            ta
+          );
+
+          return true;
+        });
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err },
+        });
+      }
+    }
+  ),
 };
