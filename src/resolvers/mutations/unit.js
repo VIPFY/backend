@@ -852,4 +852,55 @@ export default {
       }
     }
   ),
+
+  addFavorite: requiresAuth(async (_p, { licenceid }, { models, session }) => {
+    try {
+      const {
+        user: { unitid },
+      } = decode(session.token);
+      const licence = await models.LicenceAssignment.findOne({
+        where: { unitid, id: licenceid },
+        raw: true,
+        attributes: ["id", "tags"],
+      });
+
+      await models.LicenceRight.update(
+        { tags: [...licence.tags, "favorite"] },
+        {
+          where: { id: licence.id },
+          returning: true,
+        }
+      );
+
+      return { ...licence, tags: [...licence.tags, "favorite"] };
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }),
+
+  removeFavorite: requiresAuth(
+    async (_p, { licenceid }, { models, session }) => {
+      try {
+        const {
+          user: { unitid },
+        } = decode(session.token);
+        const licence = await models.LicenceAssignment.findOne({
+          where: { unitid, id: licenceid },
+          raw: true,
+          attributes: ["id", "tags"],
+        });
+
+        const tags = licence.tags.filter(tag => tag != "favorite");
+
+        await models.LicenceRight.update(
+          { tags },
+          { where: { id: licence.id }, returning: true }
+        );
+
+        return { ...licence, tags };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
 };
