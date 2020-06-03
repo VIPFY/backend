@@ -853,7 +853,7 @@ export default {
     }
   ),
 
-  updateMyConfig: requiresRights(["me"]).createResolver(
+  updateMyConfig: requiresAuth.createResolver(
     async (_p, { config }, { models, session }) => {
       try {
         return await models.sequelize.transaction(async ta => {
@@ -865,8 +865,6 @@ export default {
             where: { id: unitid },
             transaction: ta,
           });
-
-          console.log("CONFIG", config, user);
 
           await models.Human.update(
             {
