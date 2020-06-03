@@ -189,9 +189,9 @@ export default {
           await createLog(ctx, "updateEmployee", { updateArgs: user }, ta);
           await createNotification(
             {
-              receiver: userid,
+              receiver: id,
               message: `User ${unitid} updated the profile of ${
-                unitid == userid ? `yourself` : `User ${userid}`
+                unitid == id ? `yourself` : `User ${id}`
               }`,
               icon: "user-friends",
               link: "employeemanager",
@@ -297,7 +297,7 @@ export default {
           passwordlength: pw.passwordlength,
           passwordstrength: pw.passwordstrength,
           needspasswordchange: true,
-          unitid: unitid,
+          unitid,
         };
       } catch (err) {
         if (err instanceof RightsError) {
@@ -896,6 +896,57 @@ export default {
           message: err.message,
           internalData: { err },
         });
+      }
+    }
+  ),
+  
+  addFavorite: requiresAuth(async (_p, { licenceid }, { models, session }) => {
+    try {
+      const {
+        user: { unitid },
+      } = decode(session.token);
+      const licence = await models.LicenceAssignment.findOne({
+        where: { unitid, id: licenceid },
+        raw: true,
+        attributes: ["id", "tags"],
+      });
+
+      await models.LicenceRight.update(
+        { tags: [...licence.tags, "favorite"] },
+        {
+          where: { id: licence.id },
+          returning: true,
+        }
+      );
+
+      return { ...licence, tags: [...licence.tags, "favorite"] };
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  }),
+
+  removeFavorite: requiresAuth(
+    async (_p, { licenceid }, { models, session }) => {
+      try {
+        const {
+          user: { unitid },
+        } = decode(session.token);
+        const licence = await models.LicenceAssignment.findOne({
+          where: { unitid, id: licenceid },
+          raw: true,
+          attributes: ["id", "tags"],
+        });
+
+        const tags = licence.tags.filter(tag => tag != "favorite");
+
+        await models.LicenceRight.update(
+          { tags },
+          { where: { id: licence.id }, returning: true }
+        );
+
+        return { ...licence, tags };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   ),

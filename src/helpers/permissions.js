@@ -12,16 +12,16 @@ import {
   checkOrbitMembership,
 } from "./companyMembership";
 import { AuthError, AdminError, RightsError, NormalError } from "../errors";
-import { vipfyManagement } from "../constants";
+import { VIPFY_MANAGEMENT } from "../constants";
 
 /**
  * Recursively wraps a function with passed functions
  *
  * @param {function} resolver The function which will be wrapped
  */
-const createResolver = (resolver) => {
+const createResolver = resolver => {
   const baseResolver = resolver;
-  baseResolver.createResolver = (childResolver) => {
+  baseResolver.createResolver = childResolver => {
     const newResolver = async (parent, args, context, info) => {
       await resolver(parent, args, context, info);
       return childResolver(parent, args, context, info);
@@ -61,40 +61,56 @@ export const requiresAuth = createResolver(
       }
 
       const vipfyPlans = await models.Plan.findAll({
-        where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
-        attributes: ["id"],
+        where: {
+          appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2",
+          enddate: {
+            [models.Op.or]: {
+              [models.Op.is]: null,
+              [models.Op.lt]: models.sequelize.fn("NOW"),
+            },
+          },
+        },
+        attributes: ["id", "price"],
         raw: true,
       });
 
-      const planIds = vipfyPlans.map((plan) => plan.id);
-      let vipfyPlan = await models.BoughtPlanPeriodView.findOne({
+      const usersVIPFYplans = await models.BoughtPlanView.findAll({
         where: {
           payer: company,
-          endtime: {
-            [models.Op.or]: {
-              [models.Op.gt]: models.sequelize.fn("NOW"),
-              [models.Op.eq]: null,
-            },
-          },
-          planid: { [models.Op.in]: planIds },
+          planid: vipfyPlans.map(plan => plan.id),
         },
+        order: [["endtime", "DESC"]],
+        raw: true,
       });
 
-      if (!vipfyPlan) {
-        await models.sequelize.transaction(async (ta) => {
-          vipfyPlan = await models.BoughtPlan.create(
+      const currentPlan = usersVIPFYplans.find(plan => {
+        if (plan.disabled) {
+          return false;
+        } else if (!plan.endtime) {
+          return true;
+        } else {
+          return plan.endtime > Date.now();
+        }
+      });
+
+      if (!currentPlan) {
+        await models.sequelize.transaction(async ta => {
+          const vipfyPlan = await models.BoughtPlan.create(
             {
               usedby: company,
               alias: "VIPFY Basic",
               disabled: false,
+              key: { needsCustomerAction: true },
             },
             { transaction: ta }
           );
 
+          const vipfyFreePlan = vipfyPlans.find(plan => plan.price == 0);
+
           await models.BoughtPlanPeriod.create(
             {
               boughtplanid: vipfyPlan.id,
-              planid: "8c3741f0-3037-42e8-80c9-c1663c0000e2",
+              planid: vipfyFreePlan.id,
               payer: company,
               creator: unitid,
               totalprice: 0,
@@ -106,7 +122,7 @@ export const requiresAuth = createResolver(
 
       return "authenticated!";
     } catch (error) {
-      session.destroy((err) => {
+      session.destroy(err => {
         if (err) {
           console.error(err);
         }
@@ -125,7 +141,7 @@ export const requiresAuth = createResolver(
   // all other cases handled by auth middleware
 );
 
-export const requiresRights = (rights) =>
+export const requiresRights = rights =>
   requiresAuth.createResolver(async (_parent, args, { models, session }) => {
     try {
       const {
@@ -185,16 +201,16 @@ export const requiresRights = (rights) =>
       if (args.userids) {
         await Promise.all(
           args.userids
-            .filter((id) => id != "new")
-            .map((id) => checkCompanyMembership(models, company, id, "user"))
+            .filter(id => id != "new")
+            .map(id => checkCompanyMembership(models, company, id, "user"))
         );
       }
 
       if (args.unitids) {
         await Promise.all(
           args.unitids
-            .filter((id) => id != "new")
-            .map((id) => checkCompanyMembership(models, company, id, "user"))
+            .filter(id => id != "new")
+            .map(id => checkCompanyMembership(models, company, id, "user"))
         );
       }
 
@@ -262,7 +278,7 @@ export const requiresRights = (rights) =>
         index++;
       }
 
-      const okay = Object.values(rightsCheck).some((val) => val === true);
+      const okay = Object.values(rightsCheck).some(val => val === true);
       if (!okay) {
         throw new RightsError();
       }
@@ -272,7 +288,7 @@ export const requiresRights = (rights) =>
         throw err;
       } else {
         console.error(err);
-        session.destroy((error) => {
+        session.destroy(error => {
           if (error) {
             console.error(error);
           }
@@ -285,7 +301,7 @@ export const requiresRights = (rights) =>
     }
   });
 
-export const requiresMessageGroupRights = (rights) =>
+export const requiresMessageGroupRights = rights =>
   requiresAuth.createResolver(async (_p, args, { models, session }) => {
     try {
       const {
@@ -300,7 +316,7 @@ export const requiresMessageGroupRights = (rights) =>
       if (err instanceof RightsError) {
         throw err;
       } else {
-        session.destroy((error) => {
+        session.destroy(error => {
           if (error) {
             console.error(error);
           }
@@ -313,7 +329,7 @@ export const requiresMessageGroupRights = (rights) =>
     }
   });
 
-export const requiresVipfyManagement = (myself) =>
+export const requiresVipfyManagement = myself =>
   requiresAuth.createResolver(
     async (_parent, { userid }, { models, session }) => {
       try {
@@ -321,7 +337,7 @@ export const requiresVipfyManagement = (myself) =>
           user: { unitid, company },
         } = decode(session.token);
 
-        if (!vipfyManagement.find((id) => id == unitid)) {
+        if (!VIPFY_MANAGEMENT.find(id => id == unitid)) {
           if (userid && myself) {
             await checkCompanyMembership(models, company, userid, "user");
           } else {
@@ -334,7 +350,7 @@ export const requiresVipfyManagement = (myself) =>
     }
   );
 
-export const requiresVipfyAdmin = (myself) =>
+export const requiresVipfyAdmin = myself =>
   requiresAuth.createResolver(
     async (_parent, { userid }, { models, session }) => {
       try {
@@ -343,7 +359,7 @@ export const requiresVipfyAdmin = (myself) =>
         } = decode(session.token);
 
         const vipfyAdmins = [
-          ...vipfyManagement,
+          ...VIPFY_MANAGEMENT,
           "b65a0528-59b1-4137-887f-faf3d6a07fd7", // Lisa
           "84c3382a-63c1-479f-85cd-d16e9988aa8a", // Eva
           "582a705d-d650-4727-8db6-28d231b465dd", // Anna
@@ -351,7 +367,7 @@ export const requiresVipfyAdmin = (myself) =>
           "ef08cbb6-d53c-4d0f-aa70-10a9df0b84d9", // Eva Kiszka's other account
         ];
 
-        if (!vipfyAdmins.find((id) => id == unitid)) {
+        if (!vipfyAdmins.find(id => id == unitid)) {
           if (userid && myself) {
             await checkCompanyMembership(models, company, userid, "user");
           } else {

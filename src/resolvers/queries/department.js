@@ -1,10 +1,11 @@
 import { decode } from "jsonwebtoken";
+import moment from "moment";
 import {
   requiresRights,
   requiresAuth,
   requiresVipfyManagement,
 } from "../../helpers/permissions";
-import { NormalError } from "../../errors";
+import { NormalError, VIPFYPlanError } from "../../errors";
 
 export default {
   fetchCompany: requiresAuth.createResolver(
@@ -111,6 +112,8 @@ export default {
 
   fetchVipfyPlan: requiresAuth.createResolver(
     async (_p, _args, { models, session }) => {
+      let expiredPlan = {};
+
       try {
         const {
           user: { company },
@@ -118,27 +121,57 @@ export default {
 
         const vipfyPlans = await models.Plan.findAll({
           where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
-          attributes: ["id"],
+          attributes: ["id", "options", "payperiod"],
           raw: true,
         });
 
-        const planIds = vipfyPlans.map(plan => plan.id);
-
-        // requiresAuth ensures that one exists
-
-        return models.BoughtPlanView.findOne({
+        // requiresAuth ensures that at least one exists
+        const [
+          currentPlan,
+          lastPlan,
+          ...olderVipfyPlans
+        ] = await models.BoughtPlanView.findAll({
           where: {
             payer: company,
-            endtime: {
-              [models.Op.or]: {
-                [models.Op.gt]: models.sequelize.fn("NOW"),
-                [models.Op.eq]: null,
-              },
-            },
-            buytime: { [models.Op.lt]: models.sequelize.fn("NOW") },
-            planid: { [models.Op.in]: planIds },
+            planid: vipfyPlans.map(plan => plan.id),
           },
           raw: true,
+          order: [["starttime", "DESC"]],
+        });
+
+        if (lastPlan) {
+          const isPremiumPlan = vipfyPlans
+            .filter(plan => plan.options.users === null)
+            .find(({ id }) => id == lastPlan.planid);
+
+          if (isPremiumPlan && currentPlan.key.needsCustomerAction) {
+            expiredPlan = {
+              id: isPremiumPlan.id,
+              endtime: lastPlan.endtime,
+              payperiod: isPremiumPlan.payperiod,
+              firstPlan: olderVipfyPlans.length < 1,
+              features: { ...isPremiumPlan.options },
+            };
+            throw new Error(402);
+          }
+        }
+
+        return currentPlan;
+      } catch (err) {
+        if (err.message == 402) {
+          throw new VIPFYPlanError({ data: { expiredPlan } });
+        }
+
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchVIPFYPlans: requiresAuth.createResolver(
+    async (_p, _args, { models }) => {
+      try {
+        return models.Plan.findAll({
+          where: { appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2" },
         });
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -198,6 +231,61 @@ export default {
         );
 
         return employees;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  fetchVIPFYOffice: requiresAuth.createResolver(
+    async (_p, _args, { models, session }) => {
+      try {
+        const {
+          user: { company },
+        } = decode(session.token);
+
+        if (company != "ff18ee19-b247-45aa-bcab-7b9992a593cd") {
+          throw new Error("You are not VIPFY!");
+        }
+
+        // ISO-8601, Europe
+        moment.updateLocale("en", {
+          week: {
+            dow: 1, // First day of week is Monday
+            doy: 4, // First week of year must contain 4 January (7 + 1 - 4)
+          },
+        });
+
+        let props = "";
+        for (let i = 1; i <= 8; i++) {
+          props += `${i == 1 ? i : `, ${i}`}, null`;
+        }
+
+        let weekdays = "json_build_object(";
+        [...new Array(5)].forEach((_v, key) => {
+          weekdays += `'${moment()
+            .weekday(key + 1)
+            .format("dddd")
+            .toLowerCase()}', json_build_object(${props})${
+            key == 4 ? ")" : ", "
+          }`;
+        });
+
+        const [data] = await models.sequelize.query(
+          `SELECT dv.unitid as id,
+              COALESCE(dv.internaldata::json -> 'officePlans' -> (extract(week FROM current_date) + 1)::text, ${weekdays}) as officeplans,
+            ARRAY(SELECT DISTINCT employee
+            FROM department_employee_view
+            WHERE id = :company AND employee NOTNULL) as employees
+           FROM department_view dv
+           WHERE dv.unitid = :company`,
+          {
+            replacements: { company },
+            type: models.sequelize.QueryTypes.SELECT,
+          }
+        );
+
+        return data;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }

@@ -5,7 +5,7 @@ import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import {
   createLog,
   createNotification,
-  checkPlanValidity
+  checkPlanValidity,
 } from "../../helpers/functions";
 import { calculatePlanPrice } from "../../helpers/apps";
 import {
@@ -16,7 +16,7 @@ import {
   addSubscriptionItem,
   updateSubscriptionItem,
   removeSubscriptionItem,
-  changeDefaultCard
+  changeDefaultCard,
 } from "../../services/stripe";
 import { BillingError, NormalError, InvoiceError } from "../../errors";
 import logger from "../../loggers";
@@ -40,14 +40,14 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         const { models, session } = ctx;
         const {
-          user: { unitid, company }
+          user: { unitid, company },
         } = decode(session.token);
 
         try {
           const department = await models.Department.findOne(
             { where: { unitid: company } },
             {
-              raw: true
+              raw: true,
             }
           );
           const logArgs = { department };
@@ -59,15 +59,15 @@ export default {
                 name: data.card.name,
                 email,
                 ip: data.client_ip,
-                vatID: legalinformation.vatID || ""
+                vatID: legalinformation.vatID || "",
               },
               address: {
                 address_city: data.card.address_city,
                 address_line1: data.card.address_line1,
                 address_country: data.card.address_country,
-                address_zip: data.card.address_zip
+                address_zip: data.card.address_zip,
               },
-              source: data.id
+              source: data.id,
             });
             const card = await listCards(stripeCustomer.id);
 
@@ -80,9 +80,9 @@ export default {
                     created: stripeCustomer.created,
                     currency: stripeCustomer.currency,
                     billingEmail: email,
-                    cards: [{ ...card.data[0] }]
-                  }
-                }
+                    cards: [{ ...card.data[0] }],
+                  },
+                },
               },
               { where: { id: company } }
             );
@@ -98,9 +98,9 @@ export default {
                   ...payingoptions,
                   stripe: {
                     ...payingoptions.stripe,
-                    cards: [...payingoptions.stripe.cards, { ...card }]
-                  }
-                }
+                    cards: [...payingoptions.stripe.cards, { ...card }],
+                  },
+                },
               },
               { where: { id: company } }
             );
@@ -114,9 +114,10 @@ export default {
               message: "Credit Card successfully added",
               icon: "credit-card",
               link: "billing",
-              changed: ["paymentMethods"]
+              changed: ["paymentMethods"],
             },
-            ta
+            ta,
+            { company, message: `User ${unitid} added a new credit card` }
           );
 
           let p3 = new Promise(resolve => resolve(true));
@@ -129,8 +130,8 @@ export default {
               address: {
                 street,
                 zip,
-                city
-              }
+                city,
+              },
             });
           }
 
@@ -144,14 +145,14 @@ export default {
               message: "Adding Credit Card failed",
               icon: "credit-card",
               link: "billing",
-              changed: ["paymentMethods"]
+              changed: ["paymentMethods"],
             },
             ta
           );
 
           throw new BillingError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -162,12 +163,12 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         const { models, session } = ctx;
         const {
-          user: { company, unitid }
+          user: { company, unitid },
         } = decode(session.token);
 
         try {
           const department = await models.Unit.findByPk(company, {
-            raw: true
+            raw: true,
           });
 
           const stripeId = department.payingoptions.stripe.id;
@@ -178,9 +179,9 @@ export default {
               payingoptions: {
                 stripe: {
                   ...department.payingoptions.stripe,
-                  cards: res.sources.data
-                }
-              }
+                  cards: res.sources.data,
+                },
+              },
             },
             { where: { id: company }, returning: true }
           );
@@ -198,7 +199,7 @@ export default {
               message: "New default Credit Card",
               icon: "credit-card",
               link: "billing",
-              changed: ["paymentMethods"]
+              changed: ["paymentMethods"],
             },
             ta
           );
@@ -213,13 +214,13 @@ export default {
               message: "Switching of default Card failed",
               icon: "credit-card",
               link: "billing",
-              changed: ["paymentMethods"]
+              changed: ["paymentMethods"],
             },
             ta
           );
           throw new BillingError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -230,12 +231,12 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         const { models, session } = ctx;
         const {
-          user: { company, unitid }
+          user: { company, unitid },
         } = decode(session.token);
 
         try {
           const department = await models.Unit.findByPk(company, {
-            raw: true
+            raw: true,
           });
 
           if (department.payingoptions.stripe.cards.length <= 1) {
@@ -251,8 +252,8 @@ export default {
           const updatedDepartment = await models.Unit.update(
             {
               payingoptions: {
-                stripe: { ...department.payingoptions.stripe, cards }
-              }
+                stripe: { ...department.payingoptions.stripe, cards },
+              },
             },
             { where: { id: company }, returning: true }
           );
@@ -270,7 +271,7 @@ export default {
               message: "Removed Credit Card",
               icon: "credit-card",
               link: "billing",
-              changed: ["paymentMethods"]
+              changed: ["paymentMethods"],
             },
             ta
           );
@@ -285,14 +286,14 @@ export default {
               message: "Removing of Credit Card failed",
               icon: "credit-card",
               link: "billing",
-              changed: ["paymentMethods"]
+              changed: ["paymentMethods"],
             },
             ta
           );
 
           throw new BillingError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -312,7 +313,7 @@ export default {
     async (_p, { planid, features, price, planinputs }, ctx) => {
       const { models, session } = ctx;
       const {
-        user: { unitid, company }
+        user: { unitid, company },
       } = decode(session.token);
 
       let subscription = null;
@@ -324,12 +325,12 @@ export default {
             planid,
             features,
             price,
-            planinputs
+            planinputs,
           });
 
           const plan = await models.Plan.findOne({
             where: { id: planid },
-            raw: true
+            raw: true,
           });
 
           if (!plan) {
@@ -347,7 +348,7 @@ export default {
           const department = await models.Department.findOne({
             where: { unitid: company },
             raw: true,
-            transaction: ta
+            transaction: ta,
           });
 
           const calculatedPrice = calculatePlanPrice(
@@ -380,7 +381,7 @@ export default {
           logger.debug("mergedFeatures", {
             mergedFeatures,
             features,
-            internaldescription: plan.internaldescription
+            internaldescription: plan.internaldescription,
           });
 
           const partnerLogs = {};
@@ -395,10 +396,10 @@ export default {
               totalprice: calculatedPrice,
               additionalfeatures: features,
               totalfeatures: mergedFeatures,
-              planinputs
+              planinputs,
             },
             {
-              transaction: ta
+              transaction: ta,
             }
           );
 
@@ -419,7 +420,7 @@ export default {
                     boughtplanid: boughtPlan.id,
                     agreed: false,
                     disabled: false,
-                    key: {}
+                    key: {},
                   },
                   { transaction: ta }
                 )
@@ -484,7 +485,7 @@ export default {
               message: `Successfull bought ${plan.name}`,
               icon: "shopping-cart",
               link: "team",
-              changed: ["foreignLicences", "invoices"]
+              changed: ["foreignLicences", "invoices"],
             },
             ta
           );
@@ -500,7 +501,7 @@ export default {
               planid,
               features,
               price,
-              planinputs
+              planinputs,
             },
             ta
           );
@@ -515,7 +516,7 @@ export default {
           message: "Buying plan failed",
           icon: "bug",
           link: "marketplace",
-          changed: []
+          changed: [],
         });
 
         /* if (subscription && stripeplan) {
@@ -531,7 +532,7 @@ export default {
 
         throw new BillingError({
           message: err.message,
-          internalData: { err, planid, features, price, planinputs, unitid }
+          internalData: { err, planid, features, price, planinputs, unitid },
         });
       }
     }
@@ -543,37 +544,37 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company }
+            user: { company },
           } = decode(session.token);
 
           const p1 = models.BoughtPlanView.findOne({
             where: { id: planid, payer: company },
             raw: true,
-            transaction: ta
+            transaction: ta,
           });
 
           const p2 = models.Licence.findAll({
             where: { boughtplanid: planid },
             raw: true,
-            transaction: ta
+            transaction: ta,
           });
 
           const p3 = models.Department.findOne({
             where: { unitid: company },
             raw: true,
-            attributes: ["payingoptions"]
+            attributes: ["payingoptions"],
           });
 
           const [
             cancelledBoughtPlan,
             licences,
-            { payingoptions }
+            { payingoptions },
           ] = await Promise.all([p1, p2, p3]);
 
           const { appid } = await models.Plan.findOne({
             where: { id: cancelledBoughtPlan.planid },
             raw: true,
-            transaction: ta
+            transaction: ta,
           });
 
           const assignedLicences = licences.filter(
@@ -600,12 +601,14 @@ export default {
 
           const p4 = models.BoughtPlan.update(
             {
-              endtime: new Date(cancelledSubscription.current_period_end * 1000)
+              endtime: new Date(
+                cancelledSubscription.current_period_end * 1000
+              ),
             },
             {
               where: { id: cancelledBoughtPlan.id, payer: company },
               transaction: ta,
-              returning: true
+              returning: true,
             }
           );
 
@@ -620,7 +623,7 @@ export default {
             {
               cancelledBoughtPlan,
               cancelledSubscription,
-              licences
+              licences,
             },
             ta
           );
@@ -630,7 +633,7 @@ export default {
         } catch (err) {
           throw new BillingError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -643,7 +646,7 @@ export default {
           const { models, session } = ctx;
 
           const {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(session.token);
 
           const oldBoughtPlan = await models.BoughtPlanView.findOne(
@@ -680,7 +683,7 @@ export default {
                 features,
                 price,
                 planinputs: oldBoughtPlan.planinputs,
-                unitid
+                unitid,
               }
             );
             throw new Error(
@@ -698,21 +701,21 @@ export default {
           logger.debug("mergedFeatures", {
             mergedFeatures,
             features,
-            internaldescription: plan.internaldescription
+            internaldescription: plan.internaldescription,
           });
           //TODO: fix it with new BoughtPlanPeriods!!
           const closedBoughtPlan = await models.BoughtPlan.update(
             {
               endtime: Date.now(),
-              disabled: true
+              disabled: true,
             },
             {
               transaction: ta,
               where: {
                 payer: company,
                 id: planid,
-                returning: true
-              }
+                returning: true,
+              },
             }
           );
 
@@ -728,7 +731,7 @@ export default {
               additionalfeatures: features,
               totalfeatures: mergedFeatures,
               planinputs: oldBoughtPlan.planinputs,
-              stripeplan: oldBoughtPlan.stripeplan
+              stripeplan: oldBoughtPlan.stripeplan,
             },
             { transaction: ta }
           );
@@ -744,7 +747,7 @@ export default {
                   boughtplanid: newBoughtPlan.id,
                   agreed: false,
                   disabled: false,
-                  key: {}
+                  key: {},
                 },
                 { transaction: ta }
               )
@@ -775,7 +778,7 @@ export default {
               closedBoughtPlan: closedBoughtPlan[1][0],
               newBoughtPlan,
               newLicences,
-              updatedSubscription
+              updatedSubscription,
             },
             ta
           );
@@ -784,7 +787,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -797,24 +800,24 @@ export default {
           const { models, session } = ctx;
 
           const {
-            user: { company }
+            user: { company },
           } = decode(session.token);
 
           const p1 = models.BoughtPlanView.findOne({
             where: { id: planid, payer: company },
-            raw: true
+            raw: true,
           });
 
           const p2 = models.Department.findOne({
             where: { unitid: company },
-            raw: true
+            raw: true,
           });
 
           const [boughtPlan, department] = await Promise.all([p1, p2]);
 
           const plan = await models.Plan.findOne({
             where: { id: boughtPlan.planid },
-            raw: true
+            raw: true,
           });
 
           await checkPlanValidity(plan);
@@ -828,7 +831,7 @@ export default {
                   boughtplanid: boughtPlan.id,
                   agreed: false,
                   disabled: false,
-                  key: {}
+                  key: {},
                 },
                 { transaction: ta }
               )
@@ -862,7 +865,7 @@ export default {
             {
               newLicences,
               reactivatedSubscription,
-              updatedBoughtPlan: updatedBoughtPlan[1][0]
+              updatedBoughtPlan: updatedBoughtPlan[1][0],
             },
             ta
           );
@@ -871,7 +874,7 @@ export default {
         } catch (err) {
           throw new BillingError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -919,12 +922,12 @@ export default {
     async (_parent, { billid }, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         const { billname } = await models.Bill.findOne({
           where: { id: billid, unitid: company },
-          raw: true
+          raw: true,
         });
 
         return getInvoiceLink(billname, moment());
@@ -938,13 +941,13 @@ export default {
     async (_p, { email }, { models, session }) => {
       try {
         const {
-          user: { company }
+          user: { company },
         } = decode(session.token);
 
         await models.Email.create({
           unitid: company,
           email,
-          tags: ["billing"]
+          tags: ["billing"],
         });
 
         return true;
@@ -952,5 +955,5 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
-  )
+  ),
 };

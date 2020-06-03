@@ -164,6 +164,9 @@ export const queries = `
 `;
 
 export const mutations = `
+  addFavorite(licenceid: ID!): LicenceAssignment!
+  removeFavorite(licenceid: ID!): LicenceAssignment!
+
   updateEmployee(user: EmployeeInput!): SemiPublicUser!
   updateEmployeePic(file: Upload!, userid: ID!): SemiPublicUser!
 

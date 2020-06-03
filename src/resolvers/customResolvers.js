@@ -25,7 +25,7 @@ export const implementDate = {
       return parseInt(ast.value, 10); // ast value is always in string format
     }
     return null;
-  }
+  },
 };
 
 export const implementJSON = {
@@ -63,14 +63,14 @@ export const implementJSON = {
       default:
         return undefined;
     }
-  }
+  },
 };
 
 const specialKeys = {
   Human: "unitid",
   Department: "unitid",
   Email: "email",
-  LicenceAssignment: "assignmentid"
+  LicenceAssignment: "assignmentid",
 };
 
 const postprocessors = {
@@ -161,7 +161,7 @@ const postprocessors = {
       }
     }
     return value;
-  }
+  },
 };
 
 const postprocess = async (datatype, value, fields, models, ctx) => {
@@ -186,7 +186,7 @@ const getDataLoader = (datatype, key, ctx) => {
       const { data } = await ctx.models.sequelize.query(query, {
         replacements: { keys },
         type: ctx.models.sequelize.QueryTypes.SELECT,
-        plain: true
+        plain: true,
       });
 
       if (data) {
@@ -202,7 +202,7 @@ const getDataLoader = (datatype, key, ctx) => {
 export const find = data => {
   const searches = {};
   Object.keys(data).map(search => {
-    searches[search] = async (parent, args, ctx, info) => {
+    searches[search] = async (parent, _args, ctx, info) => {
       const { models } = ctx;
       try {
         const fields = info.fieldNodes[0].selectionSet.selections
@@ -221,7 +221,7 @@ export const find = data => {
               data[search].datatype && data[search].datatype in postprocessors;
             const result = await models.sequelize.query(data[search].query, {
               replacements: { key: parent[search] },
-              type: models.sequelize.QueryTypes.SELECT
+              type: models.sequelize.QueryTypes.SELECT,
             });
             if (requiresPostprocessing && loadMultiple) {
               return await Promise.all(
@@ -304,7 +304,7 @@ export const find = data => {
         console.error(err);
         throw new NormalError({
           message: err.message,
-          internalData: { error: "A resolver didn't function properly", data }
+          internalData: { error: "A resolver didn't function properly", data },
         });
       }
     };

@@ -1379,10 +1379,10 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid },
+            user: { unitid, company },
           } = decode(ctx.session.token);
 
-          const { models, session } = ctx;
+          const { models } = ctx;
 
           const vacation = await models.Vacation.create(
             {
@@ -1437,9 +1437,7 @@ export default {
           await Promise.all(notifypromises);
 
           await models.Vacation.update(
-            {
-              options,
-            },
+            { options },
             {
               where: { id: vacation.id },
               transaction: ta,
@@ -1504,16 +1502,12 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid },
+            user: { unitid, company },
           } = decode(ctx.session.token);
-
-          const { models, session } = ctx;
+          const { models } = ctx;
 
           let vacation = await models.Vacation.update(
-            {
-              starttime,
-              endtime,
-            },
+            { starttime, endtime },
             {
               where: { id: vacationid },
               transaction: ta,
@@ -1521,6 +1515,7 @@ export default {
             }
           );
 
+          const userid = vacation[1][0].dataValues.unitid;
           const promises = [];
           const oldpromises = [];
           const users = [];
@@ -1585,9 +1580,7 @@ export default {
           });
 
           vacation = await models.Vacation.update(
-            {
-              options,
-            },
+            { options },
             {
               where: { id: vacationid },
               transaction: ta,
