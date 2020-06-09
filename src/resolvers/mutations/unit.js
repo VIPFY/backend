@@ -904,7 +904,7 @@ export default {
         const {
           user: { unitid },
         } = decode(session.token);
-        const licence = await models.LicenceAssignment.findOne({
+        const licence = await models.LicenceRight.findOne({
           where: { unitid, id: licenceid },
           raw: true,
           attributes: ["id", "tags"],
@@ -912,10 +912,7 @@ export default {
 
         await models.LicenceRight.update(
           { tags: [...licence.tags, "favorite"] },
-          {
-            where: { id: licence.id },
-            returning: true,
-          }
+          { where: { id: licenceid } }
         );
 
         return { ...licence, tags: [...licence.tags, "favorite"] };
@@ -931,7 +928,7 @@ export default {
         const {
           user: { unitid },
         } = decode(session.token);
-        const licence = await models.LicenceAssignment.findOne({
+        const licence = await models.LicenceRight.findOne({
           where: { unitid, id: licenceid },
           raw: true,
           attributes: ["id", "tags"],
