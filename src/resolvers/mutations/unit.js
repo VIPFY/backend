@@ -912,7 +912,7 @@ export default {
           attributes: ["id", "tags"],
         });
 
-        if (!licence.tags) {
+        if (licence.tags) {
           tags = licence.tags;
         }
 
