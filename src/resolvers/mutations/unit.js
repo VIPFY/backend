@@ -917,7 +917,7 @@ export default {
         }
 
         await models.LicenceRight.update(
-          { tags: [...licence.tags, "favorite"] },
+          { tags: [...tags, "favorite"] },
           { where: { id: licenceid } }
         );
 
