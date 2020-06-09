@@ -904,11 +904,17 @@ export default {
         const {
           user: { unitid },
         } = decode(session.token);
+        let tags = [];
+
         const licence = await models.LicenceRight.findOne({
           where: { unitid, id: licenceid },
           raw: true,
           attributes: ["id", "tags"],
         });
+
+        if (licence.tags) {
+          tags = licence.tags;
+        }
 
         await models.LicenceRight.update(
           { tags: [...licence.tags, "favorite"] },
