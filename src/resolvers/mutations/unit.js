@@ -923,7 +923,7 @@ export default {
         return {
           ...licence,
           id: licence.assignmentid,
-          accountid: licence.id,
+          accountid: licence.assignmentid,
           tags: [...licence.tags, "favorite"],
         };
       } catch (err) {
@@ -947,7 +947,7 @@ export default {
 
         await models.LicenceRight.update(
           { tags },
-          { where: { id: licence.id }, returning: true }
+          { where: { id: licence.assignmentid }, returning: true }
         );
 
         return {
