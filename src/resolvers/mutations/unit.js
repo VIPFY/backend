@@ -935,7 +935,7 @@ export default {
           user: { unitid },
         } = decode(session.token);
         const licence = await models.Licence.findOne({
-          where: { unitid, id: licenceid },
+          where: { unitid, assignmentid: licenceid },
           raw: true,
           attributes: ["id", "tags"],
         });
