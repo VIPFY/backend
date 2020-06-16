@@ -909,7 +909,6 @@ export default {
         const licence = await models.Licence.findOne({
           where: { unitid, assignmentid: licenceid },
           raw: true,
-          attributes: ["id", "tags"],
         });
 
         if (licence.tags) {
@@ -921,7 +920,12 @@ export default {
           { where: { id: licenceid } }
         );
 
-        return { ...licence, tags: [...licence.tags, "favorite"] };
+        return {
+          ...licence,
+          id: licence.assignmentid,
+          accountid: licence.id,
+          tags: [...licence.tags, "favorite"],
+        };
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
@@ -937,7 +941,6 @@ export default {
         const licence = await models.Licence.findOne({
           where: { unitid, assignmentid: licenceid },
           raw: true,
-          attributes: ["id", "tags"],
         });
 
         const tags = licence.tags.filter(tag => tag != "favorite");
@@ -947,7 +950,12 @@ export default {
           { where: { id: licence.id }, returning: true }
         );
 
-        return { ...licence, tags };
+        return {
+          ...licence,
+          id: licence.assignmentid,
+          accountid: licence.id,
+          tags,
+        };
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
