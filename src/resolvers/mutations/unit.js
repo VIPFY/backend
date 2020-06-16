@@ -906,8 +906,8 @@ export default {
         } = decode(session.token);
         let tags = [];
 
-        const licence = await models.LicenceRight.findOne({
-          where: { unitid, id: licenceid },
+        const licence = await models.Licence.findOne({
+          where: { unitid, assignmentid: licenceid },
           raw: true,
           attributes: ["id", "tags"],
         });
@@ -934,7 +934,7 @@ export default {
         const {
           user: { unitid },
         } = decode(session.token);
-        const licence = await models.LicenceRight.findOne({
+        const licence = await models.Licence.findOne({
           where: { unitid, id: licenceid },
           raw: true,
           attributes: ["id", "tags"],
