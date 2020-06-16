@@ -485,17 +485,16 @@ export default {
             user: { unitid, company },
           } = decode(session.token);
           let appOwned = null;
-          let licence = null;
-          let logo = undefined;
-          let icon = undefined;
+          let logo = null;
+          let icon = null;
 
           if (data.squareImages && data.squareImages.length == 2) {
             [logo, icon] = await Promise.all(
               data.squareImages.map(async (upload, index) => {
                 const pic = await upload;
                 const filename = formatFilename(index == 0 ? "logo" : "icon");
-                console.log(pic, data.name, filename);
                 const name = await uploadAppImage(pic, data.name, filename);
+
                 return name;
               })
             );
@@ -554,7 +553,7 @@ export default {
               { transaction: ta }
             );
 
-            const plan = await models.Plan.create(
+            await models.Plan.create(
               {
                 name: `${data.name} Integrated`,
                 appid: appOwned.dataValues.id,
@@ -569,6 +568,21 @@ export default {
               { transaction: ta }
             );
           }
+
+          const [userData] = await models.sequelize.query(
+            `
+          SELECT concat_ws(' ',hv.firstname, hv.middlename, hv.lastname) as username, dv.name as companyname
+          FROM human_view hv
+            LEFT JOIN department_view dv on hv.unitid = dv.unitid
+          WHERE hv.unitid = :unitid
+          `,
+            {
+              transaction: ta,
+              replacements: { unitid },
+              type: models.sequelize.QueryTypes.SELECT,
+            }
+          );
+
           await sendEmail({
             templateId: "d-58d4a9f85f8c47f88750d379d4fab23a",
             fromName: "VIPFY",
@@ -576,16 +590,14 @@ export default {
               {
                 to: [{ email: "support@vipfy.store" }],
                 dynamic_template_data: {
-                  unitid,
-                  company,
+                  name: userData.username,
+                  company: userData.companyname || "John Doe",
                   loginurl: data.loginurl,
-                  name: data.name,
+                  appName: data.name,
                   appid:
                     appOwned && appOwned.dataValues
                       ? appOwned.dataValues.id
                       : -1,
-                  licenceid:
-                    licence && licence.dataValues ? licence.dataValues.id : -1,
                 },
               },
             ],
