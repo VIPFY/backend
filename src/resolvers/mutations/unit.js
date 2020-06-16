@@ -952,7 +952,7 @@ export default {
 
         return {
           ...licence,
-          id: licence.id,
+          id: licence.assignmentid,
           accountid: licence.id,
           tags,
         };
