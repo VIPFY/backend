@@ -16,6 +16,7 @@ import {
 } from "../constants";
 import { checkCompanyMembership } from "./companyMembership";
 import { createToken } from "./auth";
+import { v4 as uuid } from "uuid";
 
 /* eslint-disable no-return-assign */
 
@@ -149,6 +150,7 @@ export const createNotification = async (
   try {
     // Fetch everyone who should be informed
     const receivers = [];
+    const notificationIds = [];
     if (notificationBody.receiver) {
       receivers.push({
         receiver: notificationBody.receiver,
@@ -292,7 +294,7 @@ export const createNotification = async (
               { level: r.level }
             ),
             sendtime,
-            id: `${sendtime}-${r.receiver}`,
+            id: uuid(),
           };
 
           if (!r.level || r.level > 1) {
@@ -314,6 +316,7 @@ export const createNotification = async (
               { transaction }
             );
           }
+          notificationIds.push(notification.id);
           await pubsub.publish(NEW_NOTIFICATION, {
             newNotification: notification,
           });
@@ -322,7 +325,7 @@ export const createNotification = async (
     });
     await Promise.all(promises);
 
-    return true;
+    return notificationIds;
   } catch (err) {
     console.log("ENDERROR", err);
     return new NormalError({ message: err.message });

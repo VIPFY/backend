@@ -9,11 +9,17 @@ export const queries = `
   allCompanies(limit: Int, offset: Int): [Department]!
 
   fetchServerStats: JsonResponse!
+
+  fetchEmailData(emailid: ID!): JSON
+  fetchInboundEmails:JSON
+  
+  fetchPendingIntegrations: [IDJsonResponse]
 `;
 
 export const mutations = `
-  createApp(app: AppInput!, options: AppOptions): ID!
+  createApp(app: AppInput!, options: JSON): ID!
   uploadAppImages(images: [Upload!]!, appid: ID!): Boolean!
   deleteImage(image: String!, id: ID!, type: String!): Boolean!
   updateApp(supportid: ID, developerid: ID, appid: ID!, app: AppInput, options: AppOptions): AppDetails!
+  createPlan(period: String!, planName: String!, price: String!, appid: ID!): Boolean
 `;
