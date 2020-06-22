@@ -16,6 +16,7 @@ import * as Tutorial from "./Tutorial";
 import * as Team from "./Team";
 import * as TwoFA from "./2FA";
 import * as Log from "./Log";
+import * as Internal from "./Internal";
 
 // Create Arrays to store the data from every schema
 const types = [];
@@ -41,7 +42,8 @@ const schemas = [
   Unit,
   Tutorial,
   Team,
-  TwoFA
+  TwoFA,
+  Internal,
 ];
 
 // Push the value into the corresponding Array to export it
