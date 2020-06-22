@@ -18,7 +18,7 @@ const {
   SECRET,
   SECRET_THREE,
   ENVIRONMENT = "development",
-  SESSION_LIFETIME = 1000 * 60 * 60 * 9 // One work day with breaks
+  SESSION_LIFETIME = 1000 * 60 * 60 * 9, // One work day with breaks
 } = process.env;
 
 export const sessionMiddleware = session({
@@ -118,7 +118,7 @@ export const loggingMiddleWare = (req, res, next) => {
         ip: req.ip,
         eventtype,
         eventdata,
-        user
+        user,
       };
 
       if (parsedBody.data) {

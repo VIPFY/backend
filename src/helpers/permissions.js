@@ -31,6 +31,29 @@ const createResolver = resolver => {
   return baseResolver;
 };
 
+export const requiresSecondaryAuth = requiredRights =>
+  createResolver(
+    async (_parent, _args, { SECRET_TWO, secondaryAuthToken }, info) => {
+      try {
+        if (!SECRET_TWO) {
+          throw new Error("server misconfigured, no secret set");
+        }
+        if (!secondaryAuthToken) {
+          throw new Error("secondary auth required but not present");
+        }
+        const { rights } = verify(secondaryAuthToken, SECRET_TWO);
+        for (const right in requiredRights) {
+          if (!rights.includes(right)) {
+            return false;
+          }
+        }
+        return true;
+      } catch (error) {
+        throw new AuthError(error.message);
+      }
+    }
+  );
+
 /**
  * Checks whether the user is authenticated
  */
