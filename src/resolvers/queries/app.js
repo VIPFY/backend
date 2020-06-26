@@ -824,8 +824,7 @@ export default {
           user: { company },
         } = decode(session.token);
         const orbits = await models.sequelize.query(
-          `
-          SELECT boughtplan_view.id,
+          `SELECT boughtplan_view.id,
           boughtplan_view.buyer,
           boughtplan_view.planid,
           boughtplan_view.buytime,
@@ -850,8 +849,13 @@ export default {
                  FROM departmentapps_data dd
                 WHERE ((dd.boughtplanid = d3.boughtplanid) AND
                 (dd.departmentid = d3.departmentid) AND
-                usedby=:company and id=:orbitid)))))))
-        GROUP BY boughtplan_view.id, boughtplan_view.buyer, boughtplan_view.planid, boughtplan_view.buytime, boughtplan_view.endtime, boughtplan_view.key, boughtplan_view.disabled, boughtplan_view.payer, boughtplan_view.totalprice, boughtplan_view.usedby, boughtplan_view.additionalfeatures, boughtplan_view.totalfeatures, boughtplan_view.alias, boughtplan_view.stripeplan, boughtplan_view.planinputs;
+                usedby=:company and boughtplan_view.id=:orbitid)))))))
+        GROUP BY boughtplan_view.id, boughtplan_view.buyer, boughtplan_view.planid,
+        boughtplan_view.buytime, boughtplan_view.endtime, boughtplan_view.key,
+        boughtplan_view.disabled, boughtplan_view.payer, boughtplan_view.totalprice,
+        boughtplan_view.usedby, boughtplan_view.additionalfeatures,
+        boughtplan_view.totalfeatures, boughtplan_view.alias,
+        boughtplan_view.stripeplan, boughtplan_view.planinputs;
         `,
           {
             replacements: { orbitid, company },
