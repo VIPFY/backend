@@ -485,16 +485,17 @@ export default {
             user: { unitid, company },
           } = decode(session.token);
           let appOwned = null;
-          let logo = null;
-          let icon = null;
+          let licence = null;
+          let logo = undefined;
+          let icon = undefined;
 
           if (data.squareImages && data.squareImages.length == 2) {
             [logo, icon] = await Promise.all(
               data.squareImages.map(async (upload, index) => {
                 const pic = await upload;
                 const filename = formatFilename(index == 0 ? "logo" : "icon");
+                console.log(pic, data.name, filename);
                 const name = await uploadAppImage(pic, data.name, filename);
-
                 return name;
               })
             );
@@ -553,7 +554,7 @@ export default {
               { transaction: ta }
             );
 
-            await models.Plan.create(
+            const plan = await models.Plan.create(
               {
                 name: `${data.name} Integrated`,
                 appid: appOwned.dataValues.id,
@@ -568,21 +569,6 @@ export default {
               { transaction: ta }
             );
           }
-
-          const [userData] = await models.sequelize.query(
-            `
-          SELECT concat_ws(' ',hv.firstname, hv.middlename, hv.lastname) as username, dv.name as companyname
-          FROM human_view hv
-            LEFT JOIN department_view dv on hv.unitid = dv.unitid
-          WHERE hv.unitid = :unitid
-          `,
-            {
-              transaction: ta,
-              replacements: { unitid },
-              type: models.sequelize.QueryTypes.SELECT,
-            }
-          );
-
           await sendEmail({
             templateId: "d-58d4a9f85f8c47f88750d379d4fab23a",
             fromName: "VIPFY",
@@ -590,14 +576,16 @@ export default {
               {
                 to: [{ email: "support@vipfy.store" }],
                 dynamic_template_data: {
-                  name: userData.username,
-                  company: userData.companyname || "John Doe",
+                  unitid,
+                  company,
                   loginurl: data.loginurl,
-                  appName: data.name,
+                  name: data.name,
                   appid:
                     appOwned && appOwned.dataValues
                       ? appOwned.dataValues.id
                       : -1,
+                  licenceid:
+                    licence && licence.dataValues ? licence.dataValues.id : -1,
                 },
               },
             ],
@@ -617,6 +605,154 @@ export default {
           );
 
           return appOwned.dataValues.id;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
+  ),
+  requestIntegration: requiresAuth.createResolver(
+    async (_p, { data }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
+
+          const { startUrl, serviceName, trackedPlan, finalUrl } = data;
+
+          console.log("TESTING", data);
+          let appOwned = null;
+          if (data.manager) {
+            appOwned = await models.App.create(
+              {
+                name: serviceName,
+                options: {
+                  pending: true,
+                  integrated: {
+                    ...data,
+                  },
+                },
+                disabled: false,
+                color: "#f5f5f5",
+                developer: company,
+                supportunit: company,
+                owner: company,
+                logo: null,
+                icon: null,
+              },
+              { transaction: ta }
+            );
+
+            await models.Plan.create(
+              {
+                name: `${data.serviceName} Integrated`,
+                appid: appOwned.dataValues.id,
+                teaserdescription: `Integrated Plan for ${data.serviceName}`,
+                startdate: models.sequelize.fn("NOW"),
+                numlicences: 0,
+                price: 0.0,
+                options: { external: true, integrated: true },
+                payperiod: { years: 1 },
+                cancelperiod: { secs: 1 },
+              },
+              { transaction: ta }
+            );
+          } else {
+            appOwned = await models.App.create(
+              {
+                name: serviceName,
+                options: {
+                  pending: true,
+                  integrated: {
+                    ...data,
+                  },
+                },
+                disabled: false,
+                color: "#f5f5f5",
+                developer: company,
+                supportunit: company,
+                owner: company,
+                logo: null,
+                icon: null,
+              },
+              { transaction: ta }
+            );
+
+            await models.Plan.create(
+              {
+                name: `${data.serviceName} Integrated`,
+                appid: appOwned.dataValues.id,
+                teaserdescription: `Integrated Plan for ${data.serviceName}`,
+                startdate: models.sequelize.fn("NOW"),
+                numlicences: 0,
+                price: 0.0,
+                options: { external: true, integrated: true },
+                payperiod: { years: 1 },
+                cancelperiod: { secs: 1 },
+              },
+              { transaction: ta }
+            );
+          }
+
+          await createNotification(
+            {
+              receiver: unitid,
+              title: `Integration of ${data.serviceName}`,
+              message: "",
+              icon: "code-branch",
+              link: `serviceManager`,
+              changed: ["companyServices"],
+              level: 3,
+              options: {
+                autoclose: false,
+                closeable: false,
+                notificationType: "RequestedIntegration",
+                data: {
+                  startUrl,
+                  trackedPlan,
+                  finalUrl,
+                  appId: appOwned.dataValues.id,
+                  manager: data.manager,
+                },
+              },
+            },
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
+  ),
+
+  confirmIntegration: requiresAuth.createResolver(
+    async (_p, { data }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
+
+          const { loginUrl, options, internalData, appId } = data;
+          await models.App.update(
+            {
+              options,
+              internaldata: internalData,
+              loginurl: loginUrl,
+            },
+            {
+              where: { id: appId },
+              transaction: ta,
+            }
+          );
+          return true;
         } catch (err) {
           throw new NormalError({
             message: err.message,
