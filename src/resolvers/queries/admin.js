@@ -106,7 +106,7 @@ export default {
     },
   })),
 
-  fetchEmailData: requiresVipfyAdmin().createResolver(
+  adminFetchEmailData: requiresVipfyAdmin().createResolver(
     async (parent, { emailid }, { models }) => {
       try {
         const email = await models.InboundEmail.findOne({
@@ -118,7 +118,7 @@ export default {
       }
     }
   ),
-  fetchInboundEmails: requiresVipfyAdmin().createResolver(
+  adminetchInboundEmails: requiresVipfyAdmin().createResolver(
     async (parent, args, { models }) => {
       try {
         const emails = await models.InboundEmail.findAll();
@@ -128,7 +128,7 @@ export default {
       }
     }
   ),
-  fetchPendingIntegrations: requiresVipfyAdmin().createResolver(
+  adminetchPendingIntegrations: requiresVipfyAdmin().createResolver(
     async (parent, args, { models }) => {
       try {
         return models.sequelize.query(
