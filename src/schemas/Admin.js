@@ -10,10 +10,10 @@ export const queries = `
 
   fetchServerStats: JsonResponse!
 
-  fetchEmailData(emailid: ID!): JSON
-  fetchInboundEmails:JSON
+  adminFetchEmailData(emailid: ID!): JSON
+  adminFetchInboundEmails:JSON
   
-  fetchPendingIntegrations: [IDJsonResponse]
+  adminFetchPendingIntegrations: [IDJsonResponse]
 `;
 
 export const mutations = `
