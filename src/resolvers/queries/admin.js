@@ -15,7 +15,7 @@ export default {
           limit,
           offset,
           where: { owner: null },
-          order: sortOptions ? [[sortOptions.name, sortOptions.order]] : ""
+          order: sortOptions ? [[sortOptions.name, sortOptions.order]] : "",
         });
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
@@ -29,7 +29,7 @@ export default {
       if (session && session.token) {
         try {
           const {
-            user: { unitid }
+            user: { unitid },
           } = decode(token);
           const me = await models.User.findByPk(unitid);
 
@@ -66,9 +66,9 @@ export default {
               models.sequelize.literal(
                 `CASE WHEN firstName = 'Deleted' THEN 1 ELSE 0 END`
               ),
-              "ASC"
-            ]
-          ]
+              "ASC",
+            ],
+          ],
         });
 
         return users;
@@ -83,7 +83,7 @@ export default {
       try {
         const companies = await models.Department.findAll({
           limit,
-          offset
+          offset,
         });
 
         return companies;
@@ -101,8 +101,46 @@ export default {
         memory: process.memoryUsage(),
         uptime: process.uptime(),
         nodeVersion: process.version,
-        version: serverVersion
+        version: serverVersion,
+      },
+    },
+  })),
+
+  adminFetchEmailData: requiresVipfyAdmin().createResolver(
+    async (parent, { emailid }, { models }) => {
+      try {
+        const email = await models.InboundEmail.findOne({
+          where: { id: emailid },
+        });
+        return email;
+      } catch (err) {
+        throw new Error(err);
       }
     }
-  }))
+  ),
+  adminFetchInboundEmails: requiresVipfyAdmin().createResolver(
+    async (parent, args, { models }) => {
+      try {
+        const emails = await models.InboundEmail.findAll();
+        return emails;
+      } catch (err) {
+        throw new Error(err);
+      }
+    }
+  ),
+  adminFetchPendingIntegrations: requiresVipfyAdmin().createResolver(
+    async (parent, args, { models }) => {
+      try {
+        return models.sequelize.query(
+          `SELECT id, options as key FROM app_data 
+            WHERE app_data.options ? 'pending'`,
+          {
+            type: models.sequelize.QueryTypes.SELECT,
+          }
+        );
+      } catch (err) {
+        throw new Error(err);
+      }
+    }
+  ),
 };

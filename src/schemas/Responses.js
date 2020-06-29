@@ -176,4 +176,10 @@ export const types = `
     createdate: String!
     twofactormethods: [TwoFactorDetails]
   }
+
+  type IDJsonResponse{
+    id: ID
+    key: JSON
+  }
+
 `;
