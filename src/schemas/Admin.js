@@ -21,5 +21,4 @@ export const mutations = `
   uploadAppImages(images: [Upload!]!, appid: ID!): Boolean!
   deleteImage(image: String!, id: ID!, type: String!): Boolean!
   updateApp(supportid: ID, developerid: ID, appid: ID!, app: AppInput, options: AppOptions): AppDetails!
-  createPlan(period: String!, planName: String!, price: String!, appid: ID!): Boolean
 `;
