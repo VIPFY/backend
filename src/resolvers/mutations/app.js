@@ -494,7 +494,6 @@ export default {
               data.squareImages.map(async (upload, index) => {
                 const pic = await upload;
                 const filename = formatFilename(index == 0 ? "logo" : "icon");
-                console.log(pic, data.name, filename);
                 const name = await uploadAppImage(pic, data.name, filename);
                 return name;
               })
@@ -621,10 +620,23 @@ export default {
             user: { unitid, company },
           } = decode(session.token);
 
-          const { startUrl, serviceName, trackedPlan, finalUrl } = data;
-
-          console.log("TESTING", data);
+          const { startUrl, serviceName, trackedPlan, finalUrl, color } = data;
           let appOwned = null;
+          let planId = null;
+
+          let logo = undefined;
+          let icon = undefined;
+
+          if (data.squareImages && data.squareImages.length == 2) {
+            [logo, icon] = await Promise.all(
+              data.squareImages.map(async (upload, index) => {
+                const pic = await upload;
+                const filename = formatFilename(index == 0 ? "logo" : "icon");
+                const name = await uploadAppImage(pic, serviceName, filename);
+                return name;
+              })
+            );
+          }
           if (data.manager) {
             appOwned = await models.App.create(
               {
@@ -636,17 +648,17 @@ export default {
                   },
                 },
                 disabled: false,
-                color: "#f5f5f5",
+                color: color || "#f5f5f5",
                 developer: company,
                 supportunit: company,
                 owner: company,
-                logo: null,
-                icon: null,
+                logo,
+                icon,
               },
               { transaction: ta }
             );
 
-            await models.Plan.create(
+            planId = await models.Plan.create(
               {
                 name: `${data.serviceName} Integrated`,
                 appid: appOwned.dataValues.id,
@@ -671,21 +683,21 @@ export default {
                   },
                 },
                 disabled: false,
-                color: "#f5f5f5",
+                color: color || "#f5f5f5",
                 developer: company,
                 supportunit: company,
                 owner: company,
-                logo: null,
-                icon: null,
+                logo,
+                icon,
               },
               { transaction: ta }
             );
 
-            await models.Plan.create(
+            planId = await models.Plan.create(
               {
-                name: `${data.serviceName} Integrated`,
+                name: `${serviceName} Integrated`,
                 appid: appOwned.dataValues.id,
-                teaserdescription: `Integrated Plan for ${data.serviceName}`,
+                teaserdescription: `Integrated Plan for ${serviceName}`,
                 startdate: models.sequelize.fn("NOW"),
                 numlicences: 0,
                 price: 0.0,
@@ -700,7 +712,7 @@ export default {
           await createNotification(
             {
               receiver: unitid,
-              title: `Integration of ${data.serviceName}`,
+              title: `Integration of ${serviceName}`,
               message: "",
               icon: "code-branch",
               link: `serviceManager`,
@@ -715,7 +727,9 @@ export default {
                   trackedPlan,
                   finalUrl,
                   appId: appOwned.dataValues.id,
+                  planId: planId.dataValues.id,
                   manager: data.manager,
+                  serviceName,
                 },
               },
             },
@@ -754,6 +768,44 @@ export default {
           );
           return true;
         } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
+  ),
+
+  sendFailedIntegrationRequest: requiresAuth.createResolver(
+    async (_p, { appid }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
+
+          const app = await models.App.findOne({ where: { id: appid } });
+
+          await sendEmail({
+            templateId: "d-58d4a9f85f8c47f88750d379d4fab23a",
+            fromName: "VIPFY",
+            personalizations: [
+              {
+                to: [{ email: "support@vipfy.store" }],
+                dynamic_template_data: {
+                  unitid,
+                  company,
+                  loginurl: app.loginurl,
+                  name: app.name,
+                  appid,
+                  licenceid: -1,
+                },
+              },
+            ],
+          });
+          return true;
+        } catch (err) {
+          console.log("ERROR", err);
           throw new NormalError({
             message: err.message,
             internalData: { err },

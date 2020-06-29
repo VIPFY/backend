@@ -6,6 +6,7 @@ import { requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { checkVat, createLog } from "../../helpers/functions";
 import { s3 } from "../../services/aws";
+import { sendEmail } from "../../helpers/email";
 /* eslint-disable consistent-return, no-unused-vars */
 
 export default {
@@ -13,7 +14,7 @@ export default {
     async (_parent, { id }, { models, session }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid },
         } = decode(session.token);
 
         await models.Notification.update(
@@ -32,7 +33,7 @@ export default {
     async (_parent, _args, { models, session }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid },
         } = decode(session.token);
 
         await models.Notification.update(
@@ -68,6 +69,19 @@ export default {
       try {
         console.error(eventdata);
 
+        await sendEmail({
+          templateId: "d-a93f5ca8ee6f4f0ab1173d64376a5b97",
+          fromName: "VIPFY",
+          personalizations: [
+            {
+              to: [{ email: "support@vipfy.store" }],
+              dynamic_template_data: {
+                ...eventdata,
+              },
+            },
+          ],
+        });
+
         await createLog(context, "logSSOError", eventdata, null);
 
         return true;
@@ -81,7 +95,7 @@ export default {
     async (_parent, { data }, { models, ip, session, deviceId }) => {
       try {
         const {
-          user: { unitid }
+          user: { unitid },
         } = decode(session.token);
 
         const superSecretKey =
@@ -117,7 +131,7 @@ export default {
         const params = {
           Key,
           Body,
-          Bucket
+          Bucket,
         };
 
         await s3.upload(params).promise();
@@ -127,9 +141,9 @@ export default {
         console.warn(err);
         throw new NormalError({
           message: "error uploading data",
-          internalData: { err }
+          internalData: { err },
         });
       }
     }
-  )
+  ),
 };

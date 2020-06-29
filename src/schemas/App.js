@@ -346,6 +346,7 @@ export const mutations = `
   failedIntegration(data: SSOResult!): ID!
   requestIntegration(data: JSON!): Boolean
   confirmIntegration(data: JSON!): Boolean
+  sendFailedIntegrationRequest(appid: ID!): Boolean
 
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!
