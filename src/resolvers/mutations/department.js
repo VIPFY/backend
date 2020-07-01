@@ -1,3 +1,4 @@
+import moment from "moment";
 import { decode } from "jsonwebtoken";
 import {
   userPicFolder,
@@ -9,7 +10,7 @@ import {
   requiresRights,
   requiresVipfyManagement,
 } from "../../helpers/permissions";
-import { NormalError } from "../../errors";
+import { NormalError, VIPFYPlanError } from "../../errors";
 import {
   createLog,
   createNotification,
@@ -21,7 +22,6 @@ import {
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
 import { uploadUserImage } from "../../services/aws";
-import moment from "moment";
 
 export default {
   createEmployee: requiresRights(["create-employees"]).createResolver(
@@ -30,7 +30,7 @@ export default {
       const {
         user: { unitid, company },
       } = decode(session.token);
-
+      let expiredPlan = null;
       return ctx.models.sequelize
         .transaction(async ta => {
           try {
@@ -50,63 +50,51 @@ export default {
               personalKey,
               passwordsalt,
             } = args;
-
-            let noemail = true;
+            let noEmail = true;
             for await (const email of emails) {
               if (email.email != "") {
-                noemail = false;
+                noEmail = false;
                 const isEmail = email.email.indexOf("@");
-
                 if (isEmail < 0) {
                   throw new Error("Please enter a valid Email!");
                 }
-
                 const emailInUse = await models.Email.findOne({
                   where: { email: email.email },
                 });
                 if (emailInUse) throw new Error("Email already in use!");
               }
             }
-            if (noemail) {
+            if (noEmail) {
               throw new Error("You need at least one Email!");
             }
-
             if (password && password.length > MAX_PASSWORD_LENGTH) {
               throw new Error("Password too long");
             }
-
             if (password && password.length < MIN_PASSWORD_LENGTH) {
               throw new Error(
                 `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
               );
             }
-
             if (passwordMetrics.passwordStrength < MIN_PASSWORD_LENGTH) {
               throw new Error("Password too weak!");
             }
-
             if (passwordMetrics.passwordlength > MAX_PASSWORD_LENGTH) {
               throw new Error("Password too long");
             }
-
             if (passwordMetrics.passwordlength < MIN_PASSWORD_LENGTH) {
               throw new Error(
                 `Password must be at least ${MIN_PASSWORD_LENGTH} characters long!`
               );
             }
-
             if (passkey.length != 128) {
               throw new Error(
                 "Incompatible passkey format, try updating VIPFY"
               );
             }
-
             if (passwordsalt.length != 32) {
               throw new Error("Incompatible salt format, try updating VIPFY");
             }
-
             const data = {};
-
             if (file) {
               const parsedFile = await file;
               const profilepicture = await uploadUserImage(
@@ -115,13 +103,33 @@ export default {
               );
               data.profilepicture = profilepicture;
             }
-
-            let unit = await models.Unit.create(data, { transaction: ta });
-            unit = unit.get();
-
-            const humanpromises = [];
-
-            humanpromises.push(
+            const [unitData, [currentPlan]] = await Promise.all([
+              models.Unit.create(data, {
+                transaction: ta,
+              }),
+              models.sequelize.query(
+                `
+                SELECT bpv.*, pd.price as singleprice
+                FROM boughtplan_view bpv
+                        LEFT JOIN plan_data pd ON pd.id = bpv.planid
+                WHERE planid IN (SELECT pd.id
+                                FROM plan_data pd
+                                WHERE appid = 'aeb28408-464f-49f7-97f1-6a512ccf46c2')
+                  AND payer = :company
+                  AND (endtime IS NULL OR endtime > now())
+                  AND starttime < now()
+                  AND disabled = FALSE
+                ORDER BY starttime DESC;
+                `,
+                {
+                  replacements: { company },
+                  transaction: ta,
+                  type: models.sequelize.QueryTypes.SELECT,
+                }
+              ),
+            ]);
+            const unit = unitData.get();
+            const humanPromises = [
               models.Human.create(
                 {
                   firstname: name.firstname,
@@ -142,16 +150,31 @@ export default {
                   passwordhash: "",
                 },
                 { transaction: ta }
-              )
-            );
-
+              ),
+            ];
+            if (currentPlan.key && currentPlan.key.needsCustomerAction) {
+              expiredPlan = currentPlan;
+              throw new Error(402);
+            }
+            if (currentPlan.key && !currentPlan.key.vipfyTrial) {
+              humanPromises.push(
+                models.BoughtPlanPeriod.update(
+                  {
+                    totalprice:
+                      parseFloat(currentPlan.totalprice) +
+                      parseFloat(currentPlan.singleprice),
+                  },
+                  { where: { boughtplanid: currentPlan.id }, transaction: ta }
+                )
+              );
+            }
             // Create Emails
             emails.forEach(
               (email, index) =>
                 email &&
                 email.email &&
                 email.email != "" &&
-                humanpromises.push(
+                humanPromises.push(
                   models.Email.create(
                     {
                       email: email.email,
@@ -163,20 +186,17 @@ export default {
                   )
                 )
             );
-
             // Create Adress
-
             if (address) {
               const { zip, street, city, ...normalData } = address;
               const addressData = { street, zip, city };
-              humanpromises.push(
+              humanPromises.push(
                 models.Address.create(
                   { ...normalData, address: addressData, unitid: unit.id },
                   { transaction: ta }
                 )
               );
             }
-
             // Create Phones
             if (phones) {
               phones.forEach(
@@ -184,7 +204,7 @@ export default {
                   phoneData &&
                   phoneData.number &&
                   phoneData.number != "" &&
-                  humanpromises.push(
+                  humanPromises.push(
                     models.Phone.create(
                       { ...phoneData, unitid: unit.id },
                       { transaction: ta }
@@ -192,15 +212,13 @@ export default {
                   )
               );
             }
-
-            humanpromises.push(
+            humanPromises.push(
               models.ParentUnit.create(
                 { parentunit: company, childunit: unit.id },
                 { transaction: ta }
               )
             );
-
-            humanpromises.push(
+            humanPromises.push(
               models.Right.create(
                 {
                   holder: unit.id,
@@ -210,8 +228,7 @@ export default {
                 { transaction: ta }
               )
             );
-
-            humanpromises.push(
+            humanPromises.push(
               models.Key.create(
                 {
                   ...personalKey,
@@ -220,22 +237,16 @@ export default {
                 { transaction: ta }
               )
             );
-
-            await Promise.all(humanpromises);
-
-            const p4 = models.Human.findOne({ where: { unitid } });
-
-            const p5 = models.DepartmentData.findOne({
-              where: { unitid: company },
-            });
-
-            const [requester, companyObj] = await Promise.all([p4, p5]);
-
+            await Promise.all(humanPromises);
+            const [requester, companyObj] = await Promise.all([
+              models.Human.findOne({ where: { unitid } }),
+              models.DepartmentData.findOne({
+                where: { unitid: company },
+              }),
+            ]);
             await createLog(ctx, "addCreateEmployee", { unit }, ta);
-
             // brand new person, but better to be too careful
             resetCompanyMembershipCache(company, unit.id);
-
             if (password) {
               await sendEmail({
                 templateId: "d-e049cce50d20428d81f011e521605d4c",
@@ -275,28 +286,29 @@ export default {
                 ],
               });
             }
-
             const user = await models.User.findOne({
               where: { id: unit.id },
               transaction: ta,
               raw: true,
             });
-
             return { unitid, name, user };
           } catch (err) {
+            if (err.message == 402) {
+              throw new VIPFYPlanError({ data: { expiredPlan } });
+            }
             throw new NormalError({
               message: err.message,
               internalData: { err },
             });
           }
         })
-        .then(async ({ unitid, user }) => {
+        .then(async ({ user }) => {
           await createNotification(
             {
               message: `User ${user.id} was successfully created by User ${unitid}`,
               icon: "user-plus",
               link: "employeemanager",
-              changed: ["employees", "company"],
+              changed: ["employees", "company", "vipfyPlan"],
             },
             null,
             { company }
@@ -305,17 +317,14 @@ export default {
         });
     }
   ),
-
   editDepartmentName: requiresRights(["edit-department"]).createResolver(
     (_p, { departmentid, name }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const { models, session } = ctx;
-
           const {
             user: { unitid, company },
           } = decode(session.token);
-
           const updatedDepartment = await models.DepartmentData.update(
             { name },
             {
@@ -324,7 +333,6 @@ export default {
               transaction: ta,
             }
           );
-
           await createNotification(
             {
               message: `User ${unitid} updated Name of Team ${departmentid}`,
@@ -336,14 +344,12 @@ export default {
             { company, level: 1 },
             { teamid: departmentid, level: 1 }
           );
-
           await createLog(
             ctx,
             "editDepartmentName",
             { updatedDepartment: updatedDepartment[1] },
             ta
           );
-
           return { ok: true };
         } catch (err) {
           throw new NormalError({
@@ -353,7 +359,6 @@ export default {
         }
       })
   ),
-
   banEmployee: requiresRights(["edit-employees"]).createResolver(
     async (_p, { userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
@@ -361,35 +366,26 @@ export default {
         const {
           user: { unitid, company },
         } = decode(session.token);
-
         if (userid == unitid) {
           throw new Error("You can't ban yourself!");
         }
-
         try {
           const p1 = await models.DepartmentEmployee.findOne({
             where: { id: company, employee: userid },
-
             raw: true,
           });
-
           const p2 = models.User.findOne(
             { where: { id: unitid } },
-
             { raw: true }
           );
-
           const [inCompany, admin] = await Promise.all([p1, p2]);
-
           if (!inCompany) {
             throw new Error("This user doesn't belong to this company!");
           }
-
           const bannedUser = await models.Human.update(
             { companyban: true },
             { where: { unitid: userid }, returning: true, transaction: ta }
           );
-
           const p4 = createNotification(
             {
               receiver: userid,
@@ -401,11 +397,8 @@ export default {
             ta,
             { company, level: 3 }
           );
-
           const p5 = createLog(ctx, "banEmployee", { bannedUser, admin }, ta);
-
           await Promise.all([p4, p5]);
-
           return { ok: true };
         } catch (err) {
           await createNotification({
@@ -415,7 +408,6 @@ export default {
             link: "team",
             changed: [""],
           });
-
           throw new NormalError({
             message: err.message,
             internalData: { err },
@@ -423,42 +415,33 @@ export default {
         }
       })
   ),
-
   unbanEmployee: requiresRights(["edit-employees"]).createResolver(
     async (_p, { userid }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         const { models, session } = ctx;
-
         const {
           user: { unitid, company },
         } = decode(session.token);
-
         try {
           if (userid == unitid) {
             throw new Error("You can't unban yourself!");
           }
-
           const p1 = await models.DepartmentEmployee.findOne({
             where: { id: company, employee: userid },
             raw: true,
           });
-
           const p2 = models.User.findOne(
             { where: { id: unitid } },
             { raw: true }
           );
-
           const [inCompany, admin] = await Promise.all([p1, p2]);
-
           if (!inCompany) {
             throw new Error("This user doesn't belong to this company!");
           }
-
           const unbannedUser = await models.Human.update(
             { companyban: false },
             { where: { unitid: userid }, returning: true, transaction: ta }
           );
-
           const p4 = createNotification(
             {
               receiver: userid,
@@ -470,11 +453,8 @@ export default {
             ta,
             { company, level: 3 }
           );
-
           const p5 = createLog(ctx, "banEmployee", { unbannedUser, admin }, ta);
-
           await Promise.all([p4, p5]);
-
           return { ok: true };
         } catch (err) {
           await createNotification({
@@ -484,7 +464,6 @@ export default {
             link: "team",
             changed: [""],
           });
-
           throw new NormalError({
             message: err.message,
             internalData: { err },
@@ -492,7 +471,6 @@ export default {
         }
       })
   ),
-
   addAdmin: requiresRights(["edit-users"]).createResolver(
     async (_p, { unitid, adminkey }, ctx) =>
       ctx.models.sequelize.transaction(async transaction => {
@@ -501,7 +479,6 @@ export default {
           const {
             user: { unitid: issuer, company },
           } = decode(session.token);
-
           const p1 = models.Right.create(
             {
               holder: unitid,
@@ -520,9 +497,7 @@ export default {
             { transaction }
           );
           const p3 = createLog(ctx, "adminAdd", {}, transaction);
-
           await Promise.all([p1, p2, p3]);
-
           await createNotification(
             {
               receiver: unitid,
@@ -537,7 +512,6 @@ export default {
               level: 3,
             }
           );
-
           return models.User.findByPk(unitid, { transaction });
         } catch (err) {
           throw new NormalError({
@@ -555,11 +529,9 @@ export default {
           const {
             user: { company, unitid: userid },
           } = decode(session.token);
-
           if (userid == unitid) {
             throw new Error("You can't take your own admin rights!");
           }
-
           const allAdmins = await models.sequelize.query(
             `
               SELECT DISTINCT ON (dev.employee) uv.*
@@ -573,11 +545,9 @@ export default {
               transaction,
             }
           );
-
           if (allAdmins.length < 2) {
             throw new Error("You can't take the last admins privileges");
           }
-
           const p1 = models.Right.destroy({
             where: {
               holder: unitid,
@@ -596,9 +566,7 @@ export default {
             { replacements: { unitid, company }, transaction }
           );
           const p3 = createLog(ctx, "adminRemove", {}, transaction);
-
           await Promise.all([p1, p2, p3]);
-
           await createNotification(
             {
               receiver: unitid,
@@ -613,7 +581,6 @@ export default {
               level: 3,
             }
           );
-
           return models.User.findByPk(unitid, { transaction });
         } catch (err) {
           throw new NormalError({
@@ -623,11 +590,10 @@ export default {
         }
       })
   ),
-
-  /**
-   * Adds a promocode to the customers account.
-   * As this is on
-   */
+  // /**
+  //  * Adds a promocode to the customers account.
+  //  * As this is on
+  //  */
   addPromocode: requiresAuth.createResolver(
     async (_p, { promocode }, { models, session }) =>
       models.sequelize.transaction(async ta => {
@@ -635,17 +601,14 @@ export default {
           const {
             user: { unitid, company },
           } = decode(session.token);
-
           const valid = await models.PromocodePlan.findOne({
             where: { code: promocode },
             raw: true,
             transaction: ta,
           });
-
           if (!valid) {
             throw new Error(`The code ${promocode} is not valid`);
           }
-
           const p1 = models.sequelize.query(
             `SELECT bd.*, pd.name
             FROM boughtplan_view bd
@@ -662,20 +625,16 @@ export default {
               transaction: ta,
             }
           );
-
           const p2 = models.Plan.findOne({
             where: { id: valid.planid, appid: 66 },
             raw: true,
             transaction: ta,
           });
-
           const p3 = models.DepartmentData.update(
             { promocode },
             { where: { unitid: company }, returning: true, transaction: ta }
           );
-
           const [currentPlan, promoPlan, _d] = await Promise.all([p1, p2, p3]);
-
           await models.BoughtPlan.create(
             {
               planid: promoPlan.id,
@@ -690,7 +649,6 @@ export default {
             },
             { transaction: ta }
           );
-
           return true;
         } catch (err) {
           throw new NormalError({
@@ -705,16 +663,13 @@ export default {
     ctx.models.sequelize.transaction(async ta => {
       try {
         const { models, session } = ctx;
-
         const {
           user: { unitid, company },
         } = decode(session.token);
-
         const { credits, currency, creditsexpire } = await selectCredit(
           promocode,
           company
         );
-
         const p1 = models.Credit.create(
           {
             amount: credits,
@@ -724,14 +679,11 @@ export default {
           },
           { transaction: ta }
         );
-
         const p2 = models.DepartmentData.update(
           { promocode },
           { where: { unitid: company }, returning: true, transaction: ta }
         );
-
         const [newCredits, updatedDepartment] = await Promise.all([p1, p2]);
-
         const p3 = createNotification({
           receiver: unitid,
           message: `Congrats, you received ${credits} credits`,
@@ -739,16 +691,13 @@ export default {
           link: "profile",
           changed: ["promocode"],
         });
-
         const p4 = createLog(
           ctx,
           "applyPromocode",
           { promocode, newCredits, updatedDepartment },
           ta
         );
-
         await Promise.all([p3, p4]);
-
         return { ok: true };
       } catch (err) {
         throw new NormalError({
@@ -758,37 +707,31 @@ export default {
       }
     })
   ),
-
   setVatID: requiresRights(["edit-company"]).createResolver(
     async (_p, { vatID }, { models, session }) => {
       try {
         const {
           user: { company: companyID },
         } = decode(session.token);
-
         const company = await models.Department.findOne({
           where: { unitid: companyID },
           raw: true,
         });
-
         let legalinformation;
         const sanitizedVatID = vatID.replace(/[\s]*/g, "");
-
         if (company.legalinformation) {
           if (company.legalinformation.vatID) {
             throw new Error("Please contact support to update your vatID");
           } else {
             legalinformation = {
-              ...company.legalinformation,
               vatID: sanitizedVatID,
+              ...company.legalinformation,
             };
           }
         } else {
           legalinformation = { vatID: sanitizedVatID };
         }
-
         await checkVat(sanitizedVatID);
-
         await models.DepartmentData.update(
           { legalinformation },
           { where: { unitid: companyID } }
@@ -799,23 +742,41 @@ export default {
       }
     }
   ),
-
   deleteUser: requiresRights(["delete-employees"]).createResolver(
     async (_p, { userid, autodelete }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
         try {
           const { models, session } = ctx;
-
           const {
             user: { unitid, company },
           } = decode(session.token);
-
-          const oldUser = await models.User.findOne({
-            where: { id: userid },
-            transaction: ta,
-            raw: true,
-          });
-
+          const [oldUser, [vipfyPlan]] = await Promise.all([
+            models.User.findOne({
+              where: { id: userid },
+              transaction: ta,
+              raw: true,
+            }),
+            models.sequelize.query(
+              `
+            SELECT bpv.id, bpv.key, bpv.totalprice, pd.price as singleprice
+            FROM boughtplan_view bpv
+                    LEFT JOIN plan_data pd ON pd.id = bpv.planid
+            WHERE planid IN (SELECT pd.id
+                            FROM plan_data pd
+                            WHERE appid = 'aeb28408-464f-49f7-97f1-6a512ccf46c2')
+              AND payer = :company
+              AND (endtime IS NULL OR endtime < now())
+              AND starttime < now()
+              AND disabled = FALSE
+            ORDER BY starttime DESC;
+            `,
+              {
+                replacements: { company },
+                transaction: ta,
+                type: models.sequelize.QueryTypes.SELECT,
+              }
+            ),
+          ]);
           if (oldUser.assignments && autodelete) {
             await Promise.all(
               oldUser.assignments.map(async asid => {
@@ -833,7 +794,6 @@ export default {
                       transaction: ta,
                     }
                   );
-
                   if (licences.length == 0) {
                     await models.LicenceData.update(
                       { endtime: models.Op.sequelize.fn("NOW") },
@@ -842,7 +802,6 @@ export default {
                         transaction: ta,
                       }
                     );
-
                     const otherlicences = await models.sequelize.query(
                       `Select distinct (lva.*)
                     from licence_view lva left outer join licence_view lvb on lva.boughtplanid = lvb.boughtplanid
@@ -853,7 +812,6 @@ export default {
                         transaction: ta,
                       }
                     );
-
                     if (otherlicences.length == 0) {
                       const boughtplan = await models.sequelize.query(
                         `SELECT boughtplanid FROM licence_view WHERE id = :licenceid`,
@@ -863,7 +821,6 @@ export default {
                           transaction: ta,
                         }
                       );
-
                       const oldperiod = await models.BoughtPlanPeriodView.findOne(
                         {
                           where: { boughtplanid: boughtplan[0].boughtplanid },
@@ -871,7 +828,6 @@ export default {
                           transaction: ta,
                         }
                       );
-
                       await models.BoughtPlanPeriod.update(
                         { endtime: models.Op.sequelize.fn("NOW") },
                         {
@@ -885,7 +841,6 @@ export default {
               })
             );
           }
-
           await Promise.all([
             models.ParentUnit.destroy({
               where: { childunit: userid },
@@ -907,14 +862,23 @@ export default {
               { where: { unitid: userid }, transaction: ta }
             ),
           ]);
-
+          if (vipfyPlan.key && !vipfyPlan.key.vipfyTrial) {
+            models.BoughtPlanPeriod.update(
+              {
+                totalprice:
+                  parseFloat(vipfyPlan.totalprice) -
+                  parseFloat(vipfyPlan.singleprice),
+              },
+              { where: { boughtplanid: vipfyPlan.id }, transaction: ta }
+            );
+          }
           await Promise.all([
             createNotification(
               {
                 message: `User ${unitid} removed User ${userid} from the company`,
                 icon: "user-minus",
                 link: "employeemanager",
-                changed: ["employees"],
+                changed: ["employees", "company", "vipfyPlan"],
               },
               ta,
               { company, level: 3 }
@@ -922,7 +886,6 @@ export default {
             createLog(ctx, "deleteUser", { oldUser }, ta),
             resetCompanyMembershipCache(company, unitid.id),
           ]);
-
           return true;
         } catch (err) {
           throw new NormalError({
@@ -932,7 +895,6 @@ export default {
         }
       })
   ),
-
   approveVacationRequest: requiresVipfyManagement().createResolver(
     async (_p, { userid, requestid }, { models, session }) =>
       models.sequelize.transaction(async ta => {
@@ -992,7 +954,6 @@ export default {
         }
       })
   ),
-
   declineVacationRequest: requiresVipfyManagement().createResolver(
     async (_p, { userid, requestid }, { models, session }) =>
       models.sequelize.transaction(async ta => {
@@ -1051,7 +1012,6 @@ export default {
         }
       })
   ),
-
   updateCompanyPic: requiresRights(["edit-department"]).createResolver(
     async (_p, { file }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
@@ -1060,24 +1020,20 @@ export default {
           const {
             user: { company, unitid },
           } = decode(ctx.session.token);
-
           const parsedFile = await file;
           const profilepicture = await uploadUserImage(
             parsedFile,
             userPicFolder
           );
-
           const oldUnit = await models.Department.findOne({
             where: { unitid: company },
             raw: true,
             transaction: ta,
           });
-
           const [, updatedUnit] = await models.Unit.update(
             { profilepicture },
             { where: { id: company }, returning: true, transaction: ta }
           );
-
           await Promise.all([
             createLog(ctx, "updateCompanyPic", { oldUnit, updatedUnit }, ta),
             createNotification(
@@ -1095,8 +1051,139 @@ export default {
               { teamid: company, level: 1 }
             ),
           ]);
-
           return { ...oldUnit, profilepicture };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
+  ),
+  selectVIPFYPlan: requiresRights(["edit-boughtplan"]).createResolver(
+    async (_p, { planid, tos }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
+          if (!tos) {
+            throw new Error("You have to accept the Terms of Service");
+          }
+          const vipfyPlans = await models.Plan.findAll({
+            where: {
+              appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2",
+              enddate: {
+                [models.Op.or]: {
+                  [models.Op.is]: null,
+                  [models.Op.lt]: models.sequelize.fn("NOW"),
+                },
+              },
+            },
+            attributes: ["id", "price"],
+            raw: true,
+            transaction: ta,
+          });
+          const [vipfyPlan, currentPlan, { employees }] = await Promise.all([
+            models.Plan.findByPk(planid, {
+              attributes: ["name", "price", "currency", "payperiod"],
+              raw: true,
+              transaction: ta,
+            }),
+            models.BoughtPlanView.findOne({
+              where: {
+                usedby: company,
+                planid: vipfyPlans.map(plan => plan.id),
+                endtime: null,
+                starttime: {
+                  [models.Op.lt]: models.sequelize.fn("NOW"),
+                },
+                disabled: false,
+              },
+              order: [["starttime", "DESC"]],
+              raw: true,
+              transaction: ta,
+            }),
+            models.Department.findOne({
+              where: { unitid: company },
+              attributes: ["employees"],
+              raw: true,
+              transaction: ta,
+            }),
+          ]);
+          const [boughtPlan, { cancelperiod }] = await Promise.all([
+            models.BoughtPlan.create(
+              {
+                disabled: false,
+                usedby: company,
+                alias: vipfyPlan.name,
+                key: { vipfyTrial: false, tos: Date.now() },
+              },
+              { transaction: ta }
+            ),
+            models.Plan.findByPk(currentPlan.planid, {
+              raw: true,
+              transaction: ta,
+              attributes: ["cancelperiod"],
+            }),
+          ]);
+          let endtime = moment()
+            .add(Object.values(cancelperiod)[0], Object.keys(cancelperiod)[0])
+            .endOf("month");
+          const promises = [];
+
+          if (currentPlan.key && currentPlan.key.needsCustomerAction) {
+            endtime = models.sequelize.fn("NOW");
+            promises.push(
+              models.BoughtPlan.update(
+                {
+                  key: {
+                    ...boughtPlan.dataValues.key,
+                    needsCustomerAction: false,
+                  },
+                },
+                { where: { id: currentPlan.id }, transaction: ta }
+              )
+            );
+          }
+          await Promise.all([
+            ...promises,
+            models.BoughtPlanPeriod.create(
+              {
+                boughtplanid: boughtPlan.dataValues.id,
+                planid,
+                starttime: endtime,
+                payer: company,
+                creator: unitid,
+                totalprice: parseFloat(vipfyPlan.price) * parseFloat(employees),
+              },
+              { transaction: ta }
+            ),
+            models.BoughtPlanPeriod.update(
+              { endtime },
+              { where: { boughtplanid: currentPlan.id }, transaction: ta }
+            ),
+          ]);
+
+          await createNotification(
+            {
+              receiver: unitid,
+              show: true,
+              message: `User ${unitid} bought the VIPFY plan ${
+                vipfyPlan.name
+              } for ${vipfyPlan.price} ${
+                vipfyPlan.price >= 0 ? vipfyPlan.currency : ""
+              }`,
+              icon: "file-contract",
+              changed: ["vipfyPlan"],
+              link: "companyprofile",
+            },
+            ta,
+            { company, level: 3 },
+            null
+          );
+
+          return true;
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -1115,7 +1202,6 @@ export default {
         if (company != "ff18ee19-b247-45aa-bcab-7b9992a593cd") {
           throw new Error("You are not VIPFY!");
         }
-
         // ISO-8601, Europe
         moment.updateLocale("en", {
           week: {
@@ -1124,7 +1210,7 @@ export default {
           },
         });
 
-        let { internaldata } = await models.Department.findOne({
+        const { internaldata } = await models.Department.findOne({
           where: { unitid: company },
           raw: true,
           attributes: ["internaldata"],
@@ -1132,6 +1218,7 @@ export default {
 
         let officePlans = {};
         const nextWeek = moment().add(1, "week").startOf("week").format("ww");
+
         if (
           !internaldata ||
           !internaldata.officePlans ||
@@ -1142,7 +1229,6 @@ export default {
           [...Array(8)].forEach((_d, key) => {
             newProps[key + 1] = null;
           });
-
           if (
             internaldata &&
             internaldata.officePlans &&
@@ -1150,7 +1236,6 @@ export default {
           ) {
             officePlans = internaldata.officePlans;
           }
-
           // Create the days from Monday - Friday
           officePlans[nextWeek] = {};
           [...Array(5)].forEach((_d, key) => {
@@ -1178,14 +1263,12 @@ export default {
               if (seat == unitid) {
                 officePlans[nextWeek][day][key + 1] = null;
               }
-
               if (key + 1 == seats[day]) {
                 officePlans[nextWeek][day][key + 1] = unitid;
               }
             });
           });
         }
-
         await models.DepartmentData.update(
           { internaldata: { ...internaldata, officePlans } },
           { where: { unitid: company } }

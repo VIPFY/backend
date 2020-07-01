@@ -39,6 +39,7 @@ const {
   SSL_KEY,
   SSL_CERT,
   SECRET,
+  SECRET_TWO,
   USE_VOYAGER,
   USE_SSH,
   PROXY_LEVELS,
@@ -119,7 +120,7 @@ export const schema = makeExecutableSchema({ typeDefs, resolvers });
 app.use((req, res, next) => {
   let tries = 3;
   // Recursive Function to retry on a lost connection to Redis
-  const lookupSession = (error) => {
+  const lookupSession = error => {
     if (error) {
       return next(error);
     }
@@ -163,11 +164,13 @@ const gqlserver = new ApolloServer({
       language: req.headers["accept-language"],
       host: req.headers["x-user-host"],
     },
+    secondaryAuthToken: req.headers["x-secondary-authorization"],
     session: req.session,
     sessionID: req.sessionID,
     deviceId: req.headers["x-device"],
     logger,
     SECRET,
+    SECRET_TWO,
     ip: req.ip,
     segment: req.segment,
   }),
@@ -204,6 +207,7 @@ gqlserver.applyMiddleware({
           ]
         : [
             "http://localhost:3000",
+            "http://localhost:3001",
             "https://aws2.vipfy.store",
             "http://localhost:9000",
           ],
