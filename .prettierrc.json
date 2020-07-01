@@ -1,6 +1,6 @@
 {
   "arrowParens": "avoid",
-  "comma-dangle": "off",
+  "comma-dangle": "es5",
   "quotes": [
     2,
     "double",

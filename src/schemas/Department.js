@@ -109,6 +109,7 @@ export const queries = `
 
   fetchUserSecurityOverview(userid: ID): [UserSecurityOverview]!
   fetchVipfyPlan: BoughtPlan
+  fetchVIPFYPlans: [Plan!]!
   fetchVIPFYOffice: VIPFYOffice!
 `;
 
@@ -126,6 +127,7 @@ export const mutations = `
   forcePasswordChange(userids: [ID]!): Response!
   addPromocode(promocode: String!): Boolean!
   applyPromocode(promocode: String!): Response!
+  selectVIPFYPlan(planid: ID!, tos: Boolean!): Boolean!
   banEmployee(userid: ID!): Response!
   unbanEmployee(userid: ID!): Response!
   updateCompanyPic(file: Upload!): Department!

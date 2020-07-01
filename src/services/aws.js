@@ -25,7 +25,7 @@ const fileTypeCheck = createWrapper(file => {
       "image/tiff",
       "image/gif",
       "image/png",
-      "image/webp"
+      "image/webp",
     ];
     const validFile = validFileExtensions.find(ext => ext == file.mimetype);
 
@@ -53,7 +53,7 @@ export const uploadInvoice = async (path, name) => {
       Key,
       Body,
       Bucket,
-      ContentType: "application/pdf"
+      ContentType: "application/pdf",
     };
 
     await s3.upload(params).promise();
@@ -77,7 +77,7 @@ export const uploadUserImage = fileTypeCheck.createWrapper(
       const params = {
         Key,
         Body,
-        Bucket
+        Bucket,
       };
 
       await s3.upload(params).promise();
@@ -150,7 +150,7 @@ export const getInvoiceLink = async (billname, time) => {
     const url = await s3.getSignedUrl("getObject", {
       Bucket,
       Key,
-      Expires: 3600
+      Expires: 3600,
     });
 
     return url;

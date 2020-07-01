@@ -613,6 +613,154 @@ export default {
         }
       })
   ),
+  requestIntegration: requiresAuth.createResolver(
+    async (_p, { data }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
+
+          const { startUrl, serviceName, trackedPlan, finalUrl } = data;
+
+          console.log("TESTING", data);
+          let appOwned = null;
+          if (data.manager) {
+            appOwned = await models.App.create(
+              {
+                name: serviceName,
+                options: {
+                  pending: true,
+                  integrated: {
+                    ...data,
+                  },
+                },
+                disabled: false,
+                color: "#f5f5f5",
+                developer: company,
+                supportunit: company,
+                owner: company,
+                logo: null,
+                icon: null,
+              },
+              { transaction: ta }
+            );
+
+            await models.Plan.create(
+              {
+                name: `${data.serviceName} Integrated`,
+                appid: appOwned.dataValues.id,
+                teaserdescription: `Integrated Plan for ${data.serviceName}`,
+                startdate: models.sequelize.fn("NOW"),
+                numlicences: 0,
+                price: 0.0,
+                options: { external: true, integrated: true },
+                payperiod: { years: 1 },
+                cancelperiod: { secs: 1 },
+              },
+              { transaction: ta }
+            );
+          } else {
+            appOwned = await models.App.create(
+              {
+                name: serviceName,
+                options: {
+                  pending: true,
+                  integrated: {
+                    ...data,
+                  },
+                },
+                disabled: false,
+                color: "#f5f5f5",
+                developer: company,
+                supportunit: company,
+                owner: company,
+                logo: null,
+                icon: null,
+              },
+              { transaction: ta }
+            );
+
+            await models.Plan.create(
+              {
+                name: `${data.serviceName} Integrated`,
+                appid: appOwned.dataValues.id,
+                teaserdescription: `Integrated Plan for ${data.serviceName}`,
+                startdate: models.sequelize.fn("NOW"),
+                numlicences: 0,
+                price: 0.0,
+                options: { external: true, integrated: true },
+                payperiod: { years: 1 },
+                cancelperiod: { secs: 1 },
+              },
+              { transaction: ta }
+            );
+          }
+
+          await createNotification(
+            {
+              receiver: unitid,
+              title: `Integration of ${data.serviceName}`,
+              message: "",
+              icon: "code-branch",
+              link: `serviceManager`,
+              changed: ["companyServices"],
+              level: 3,
+              options: {
+                autoclose: false,
+                closeable: false,
+                notificationType: "RequestedIntegration",
+                data: {
+                  startUrl,
+                  trackedPlan,
+                  finalUrl,
+                  appId: appOwned.dataValues.id,
+                  manager: data.manager,
+                },
+              },
+            },
+            ta
+          );
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
+  ),
+
+  confirmIntegration: requiresAuth.createResolver(
+    async (_p, { data }, { models, session }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
+
+          const { loginUrl, options, internalData, appId } = data;
+          await models.App.update(
+            {
+              options,
+              internaldata: internalData,
+              loginurl: loginUrl,
+            },
+            {
+              where: { id: appId },
+              transaction: ta,
+            }
+          );
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
+  ),
 
   // Not used at the moment - maybe for late use
   updateLicenceSpeed: requiresAuth.createResolver(
@@ -1379,10 +1527,10 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid },
+            user: { unitid, company },
           } = decode(ctx.session.token);
 
-          const { models, session } = ctx;
+          const { models } = ctx;
 
           const vacation = await models.Vacation.create(
             {
@@ -1437,9 +1585,7 @@ export default {
           await Promise.all(notifypromises);
 
           await models.Vacation.update(
-            {
-              options,
-            },
+            { options },
             {
               where: { id: vacation.id },
               transaction: ta,
@@ -1504,16 +1650,12 @@ export default {
       ctx.models.sequelize.transaction(async ta => {
         try {
           const {
-            user: { unitid },
+            user: { unitid, company },
           } = decode(ctx.session.token);
-
-          const { models, session } = ctx;
+          const { models } = ctx;
 
           let vacation = await models.Vacation.update(
-            {
-              starttime,
-              endtime,
-            },
+            { starttime, endtime },
             {
               where: { id: vacationid },
               transaction: ta,
@@ -1521,6 +1663,7 @@ export default {
             }
           );
 
+          const userid = vacation[1][0].dataValues.unitid;
           const promises = [];
           const oldpromises = [];
           const users = [];
@@ -1585,9 +1728,7 @@ export default {
           });
 
           vacation = await models.Vacation.update(
-            {
-              options,
-            },
+            { options },
             {
               where: { id: vacationid },
               transaction: ta,

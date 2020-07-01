@@ -164,6 +164,9 @@ export const queries = `
 `;
 
 export const mutations = `
+  addFavorite(licenceid: ID!): LicenceAssignment!
+  removeFavorite(licenceid: ID!): LicenceAssignment!
+
   updateEmployee(user: EmployeeInput!): SemiPublicUser!
   updateEmployeePic(file: Upload!, userid: ID!): SemiPublicUser!
 
@@ -183,4 +186,5 @@ export const mutations = `
   setVacationDays(year: Int!, days: Int!, userid: ID!): Boolean!
   updateEmployeePassword(unitid: ID!, password: String!, logOut: Boolean): UserSecurityOverview!
   updateEmployeePasswordEncrypted(unitid: ID!, recoveryPrivateKey: String, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, logOut: Boolean, newKey: KeyInput!, deprecateAllExistingKeys: Boolean!, licenceUpdates: [licenceKeyUpdateInput!]!): UserSecurityOverview!
+  updateMyConfig(config: JSON!): Boolean!
 `;

@@ -47,6 +47,12 @@ export const AdminError = createError("AdminError", {
   internalData: { error: "Someone tried to login as an Admin." }
 });
 
+export const VIPFYPlanError = createError("VIPFYPlanError", {
+  message: "You don't have an active VIPFY Plan.",
+  data: { code: 402, id: 8 },
+  internalData: { error: "No active VIPFYplan." }
+});
+
 export const formatError = err => {
   const { originalError } = err;
 

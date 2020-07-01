@@ -344,6 +344,8 @@ export const mutations = `
   trackMinutesSpent(assignmentid: ID!, minutes: Int!): Response!
 
   failedIntegration(data: SSOResult!): ID!
+  requestIntegration(data: JSON!): Boolean
+  confirmIntegration(data: JSON!): Boolean
 
   # Register a vote for the next app to implement
   voteForApp(app: String!): Response!

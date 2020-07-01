@@ -16,6 +16,7 @@ import {
 } from "../constants";
 import { checkCompanyMembership } from "./companyMembership";
 import { createToken } from "./auth";
+import { v4 as uuid } from "uuid";
 
 /* eslint-disable no-return-assign */
 
@@ -46,9 +47,7 @@ export const parentAdminCheck = async user => {
 
 export const formatFilename = filename => {
   const date = moment().format("YYYYMMDD");
-  const randomString = Math.random()
-    .toString(36)
-    .substring(2, 7);
+  const randomString = Math.random().toString(36).substring(2, 7);
   const cleanFilename = filename.toLowerCase().replace(/[^a-z0-9]/g, "-");
 
   return `${date}-${randomString}-${cleanFilename}`;
@@ -149,8 +148,9 @@ export const createNotification = async (
   informIndividuals
 ) => {
   try {
-    //get everyone who should be informed
+    // Fetch everyone who should be informed
     const receivers = [];
+    const notificationIds = [];
     if (notificationBody.receiver) {
       receivers.push({
         receiver: notificationBody.receiver,
@@ -294,7 +294,7 @@ export const createNotification = async (
               { level: r.level }
             ),
             sendtime,
-            id: `${sendtime}-${r.receiver}`,
+            id: uuid(),
           };
 
           if (!r.level || r.level > 1) {
@@ -316,6 +316,7 @@ export const createNotification = async (
               { transaction }
             );
           }
+          notificationIds.push(notification.id);
           await pubsub.publish(NEW_NOTIFICATION, {
             newNotification: notification,
           });
@@ -324,7 +325,7 @@ export const createNotification = async (
     });
     await Promise.all(promises);
 
-    return true;
+    return notificationIds;
   } catch (err) {
     console.log("ENDERROR", err);
     return new NormalError({ message: err.message });
@@ -446,7 +447,7 @@ export const checkVat = async vat => {
       throw new Error(res);
     }
   } catch (error) {
-    console.error(error.message);
+    console.error("\x1b[1m%s\x1b[0m", error.message);
     throw new Error("Invalid Vatnumber!");
   }
 };

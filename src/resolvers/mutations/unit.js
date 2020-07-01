@@ -189,9 +189,9 @@ export default {
           await createLog(ctx, "updateEmployee", { updateArgs: user }, ta);
           await createNotification(
             {
-              receiver: userid,
+              receiver: id,
               message: `User ${unitid} updated the profile of ${
-                unitid == userid ? `yourself` : `User ${userid}`
+                unitid == id ? `yourself` : `User ${id}`
               }`,
               icon: "user-friends",
               link: "employeemanager",
@@ -297,7 +297,7 @@ export default {
           passwordlength: pw.passwordlength,
           passwordstrength: pw.passwordstrength,
           needspasswordchange: true,
-          unitid: unitid,
+          unitid,
         };
       } catch (err) {
         if (err instanceof RightsError) {
@@ -849,6 +849,115 @@ export default {
           message: err.message,
           internalData: { err },
         });
+      }
+    }
+  ),
+
+  updateMyConfig: requiresAuth.createResolver(
+    async (_p, { config }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
+          const {
+            user: { unitid },
+          } = decode(session.token);
+
+          const user = await models.User.findOne({
+            where: { id: unitid },
+            transaction: ta,
+          });
+
+          await models.Human.update(
+            {
+              config: {
+                ...user.config,
+                config,
+              },
+            },
+            { where: { unitid }, transaction: ta }
+          );
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Updated config",
+              icon: "cog",
+              link: "settings",
+              changed: ["ownLicences"],
+            },
+            ta
+          );
+
+          return true;
+        });
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err },
+        });
+      }
+    }
+  ),
+
+  addFavorite: requiresAuth.createResolver(
+    async (_p, { licenceid }, { models, session }) => {
+      try {
+        const {
+          user: { unitid },
+        } = decode(session.token);
+        let tags = [];
+
+        const licence = await models.Licence.findOne({
+          where: { unitid, assignmentid: licenceid },
+          raw: true,
+        });
+
+        if (licence.tags) {
+          tags = licence.tags;
+        }
+
+        await models.LicenceRight.update(
+          { tags: [...tags, "favorite"] },
+          { where: { id: licence.assignmentid } }
+        );
+
+        return {
+          ...licence,
+          id: licence.assignmentid,
+          accountid: licence.id,
+          tags: [...licence.tags, "favorite"],
+        };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  removeFavorite: requiresAuth.createResolver(
+    async (_p, { licenceid }, { models, session }) => {
+      try {
+        const {
+          user: { unitid },
+        } = decode(session.token);
+        const licence = await models.Licence.findOne({
+          where: { unitid, assignmentid: licenceid },
+          raw: true,
+        });
+
+        const tags = licence.tags.filter(tag => tag != "favorite");
+
+        await models.LicenceRight.update(
+          { tags },
+          { where: { id: licence.assignmentid }, returning: true }
+        );
+
+        return {
+          ...licence,
+          id: licence.assignmentid,
+          accountid: licence.id,
+          tags,
+        };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
   ),
