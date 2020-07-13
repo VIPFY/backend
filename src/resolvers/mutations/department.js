@@ -896,6 +896,7 @@ export default {
         }
       })
   ),
+
   approveVacationRequest: requiresVipfyManagement().createResolver(
     async (_p, { userid, requestid }, { models, session }) =>
       models.sequelize.transaction(async ta => {
@@ -909,16 +910,18 @@ export default {
               { status: "CONFIRMED", decided: models.sequelize.fn("NOW") },
               { where: { unitid: userid, id: requestid } }
             ),
-            models.User.findByPk(unitid, {
+            models.User.findByPk(userid, {
               raw: true,
               transaction: ta,
-              attributes: ["firstname", "lastname"],
+              attributes: ["firstname", "lastname", "emails"],
             }),
           ]);
 
           if (res[0] == 0) {
             throw new Error("Could not update request");
           }
+
+          const name = `${user.firstname} ${user.lastname}`;
 
           await Promise.all([
             createNotification(
@@ -938,10 +941,12 @@ export default {
             ),
             sendEmail({
               templateId: "d-5dc7c3306d584ffba6fbc1aa9d273b5d",
-              personalizations: {
-                name: `${user.firstname} ${user.lastname}`,
-                decission: "approved",
-              },
+              personalizations: [
+                {
+                  to: [{ email: user.emails[0], name }],
+                  dynamic_template_data: { name, decision: "approved" },
+                },
+              ],
               from: "VIPFY Vacation Team",
             }),
           ]);
@@ -967,16 +972,18 @@ export default {
               { status: "REJECTED", decided: models.sequelize.fn("NOW") },
               { where: { unitid: userid, id: requestid }, transaction: ta }
             ),
-            models.User.findByPk(unitid, {
+            models.User.findByPk(userid, {
               raw: true,
               transaction: ta,
-              attributes: ["firstname", "lastname"],
+              attributes: ["firstname", "lastname", "emails"],
             }),
           ]);
 
           if (res[0] == 0) {
             throw new Error("Could not update request");
           }
+
+          const name = `${user.firstname} ${user.lastname}`;
 
           await Promise.all([
             createNotification(
@@ -996,10 +1003,12 @@ export default {
             ),
             sendEmail({
               templateId: "d-5dc7c3306d584ffba6fbc1aa9d273b5d",
-              personalizations: {
-                name: `${user.firstname} ${user.lastname}`,
-                decission: "denied",
-              },
+              personalizations: [
+                {
+                  to: [{ email: user.emails[0], name }],
+                  dynamic_template_data: { name, decision: "denied" },
+                },
+              ],
               from: "VIPFY Vacation Team",
             }),
           ]);
