@@ -944,7 +944,7 @@ export default {
               personalizations: [
                 {
                   to: [{ email: user.emails[0], name }],
-                  dynamic_template_data: { name, decission: "approved" },
+                  dynamic_template_data: { name, decision: "approved" },
                 },
               ],
               from: "VIPFY Vacation Team",
@@ -1006,7 +1006,7 @@ export default {
               personalizations: [
                 {
                   to: [{ email: user.emails[0], name }],
-                  dynamic_template_data: { name, decission: "denied" },
+                  dynamic_template_data: { name, decision: "denied" },
                 },
               ],
               from: "VIPFY Vacation Team",
