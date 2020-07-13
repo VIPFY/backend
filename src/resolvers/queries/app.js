@@ -189,6 +189,7 @@ export default {
         }
 
         if (domain && !apps.length > 0) {
+          //Added domains
           apps = await models.AppDetails.findAll(
             {
               where: {
@@ -199,6 +200,18 @@ export default {
               },
             },
             { plain: true }
+          );
+        }
+        if (domain && !apps.length > 0) {
+          //Login Domains
+          apps = await models.sequelize.query(
+            `Select id from app_details where position(:domain in loginurl) > 0
+            AND disabled = false AND deprecated = false
+            AND (owner is null OR owner = :company);`,
+            {
+              replacements: { domain, company },
+              type: models.sequelize.QueryTypes.SELECT,
+            }
           );
         }
         if (apps.length > 0) {
