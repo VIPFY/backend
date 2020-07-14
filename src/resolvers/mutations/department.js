@@ -4,6 +4,7 @@ import {
   userPicFolder,
   MAX_PASSWORD_LENGTH,
   MIN_PASSWORD_LENGTH,
+  vipfyManagement,
 } from "../../constants";
 import {
   requiresAuth,
@@ -895,6 +896,7 @@ export default {
         }
       })
   ),
+
   approveVacationRequest: requiresVipfyManagement().createResolver(
     async (_p, { userid, requestid }, { models, session }) =>
       models.sequelize.transaction(async ta => {
@@ -902,28 +904,53 @@ export default {
           const {
             user: { company },
           } = decode(session.token);
-          const res = await models.VacationRequest.update(
-            { status: "CONFIRMED", decided: models.sequelize.fn("NOW") },
-            { where: { unitid: userid, id: requestid } }
-          );
+
+          const [res, user] = await Promise.all([
+            models.VacationRequest.update(
+              { status: "CONFIRMED", decided: models.sequelize.fn("NOW") },
+              { where: { unitid: userid, id: requestid } }
+            ),
+            models.User.findByPk(userid, {
+              raw: true,
+              transaction: ta,
+              attributes: ["firstname", "lastname", "emails"],
+            }),
+          ]);
+
           if (res[0] == 0) {
             throw new Error("Could not update request");
           }
-          await createNotification(
-            {
-              receiver: userid,
-              show: true,
-              message: "Your vacation request was confirmed",
-              icon: "umbrella-beach",
-              changed: ["vacationRequest"],
-              link: "vacation",
-            },
-            ta,
-            {
-              company,
-              message: `User ${userid} vacation request was confirmed`,
-            }
-          );
+
+          const name = `${user.firstname} ${user.lastname}`;
+
+          await Promise.all([
+            createNotification(
+              {
+                receiver: userid,
+                show: true,
+                message: "Your vacation request was confirmed",
+                icon: "umbrella-beach",
+                changed: ["vacationRequest"],
+                link: "vacation",
+              },
+              ta,
+              {
+                company,
+                message: `User ${userid} vacation request was confirmed`,
+              }
+            ),
+            sendEmail({
+              templateId: "d-5dc7c3306d584ffba6fbc1aa9d273b5d",
+              personalizations: [
+                {
+                  to: [{ email: user.emails[0], name }],
+                  dynamic_template_data: { name, decision: "approved" },
+                },
+              ],
+              from: "VIPFY Vacation Team",
+            }),
+          ]);
+
           return true;
         } catch (err) {
           throw new NormalError({
@@ -940,25 +967,52 @@ export default {
           const {
             user: { company },
           } = decode(session.token);
-          const res = await models.VacationRequest.update(
-            { status: "REJECTED", decided: models.sequelize.fn("NOW") },
-            { where: { unitid: userid, id: requestid }, transaction: ta }
-          );
+          const [res, user] = await Promise.all([
+            models.VacationRequest.update(
+              { status: "REJECTED", decided: models.sequelize.fn("NOW") },
+              { where: { unitid: userid, id: requestid }, transaction: ta }
+            ),
+            models.User.findByPk(userid, {
+              raw: true,
+              transaction: ta,
+              attributes: ["firstname", "lastname", "emails"],
+            }),
+          ]);
+
           if (res[0] == 0) {
             throw new Error("Could not update request");
           }
-          await createNotification(
-            {
-              receiver: userid,
-              show: true,
-              message: "Your vacation request was declined",
-              icon: "umbrella-beach",
-              changed: ["vacationRequest"],
-              link: "vacation",
-            },
-            ta,
-            { company, message: `User ${userid} vacation request was declined` }
-          );
+
+          const name = `${user.firstname} ${user.lastname}`;
+
+          await Promise.all([
+            createNotification(
+              {
+                receiver: userid,
+                show: true,
+                message: "Your vacation request was declined",
+                icon: "umbrella-beach",
+                changed: ["vacationRequest"],
+                link: "vacation",
+              },
+              ta,
+              {
+                company,
+                message: `User ${userid} vacation request was declined`,
+              }
+            ),
+            sendEmail({
+              templateId: "d-5dc7c3306d584ffba6fbc1aa9d273b5d",
+              personalizations: [
+                {
+                  to: [{ email: user.emails[0], name }],
+                  dynamic_template_data: { name, decision: "denied" },
+                },
+              ],
+              from: "VIPFY Vacation Team",
+            }),
+          ]);
+
           return true;
         } catch (err) {
           throw new NormalError({
@@ -1158,13 +1212,20 @@ export default {
         if (company != "ff18ee19-b247-45aa-bcab-7b9992a593cd") {
           throw new Error("You are not VIPFY!");
         }
-        // ISO-8601, Europe
-        moment.updateLocale("en", {
-          week: {
-            dow: 1, // First day of week is Monday
-            doy: 4, // First week of year must contain 4 January (7 + 1 - 4)
-          },
-        });
+
+        if (
+          [
+            ...vipfyManagement,
+            "e72a945f-b29d-445b-ab68-d75d1070bdb6",
+            "582a705d-d650-4727-8db6-28d231b465dd",
+            "70309b26-1754-4877-ae86-3578dfca3b85",
+            "b65a0528-59b1-4137-887f-faf3d6a07fd7",
+          ].find(id => id == unitid)
+        ) {
+          throw new Error(
+            "You either have a seat or were banished into Home Office!"
+          );
+        }
 
         const { internaldata } = await models.Department.findOne({
           where: { unitid: company },
@@ -1173,36 +1234,39 @@ export default {
         });
 
         let officePlans = {};
-        const nextWeek = moment().add(1, "week").startOf("week").format("ww");
-
+        const thisWeek = moment().startOf("week").format("ww");
         if (
           !internaldata ||
           !internaldata.officePlans ||
-          !internaldata.officePlans[nextWeek]
+          !internaldata.officePlans[thisWeek]
         ) {
-          // Create the seats from 0 - 9
+          // Create the seats from 0 - 5
           const newProps = {};
-          [...Array(8)].forEach((_d, key) => {
+          [...Array(6)].forEach((_d, key) => {
             newProps[key + 1] = null;
           });
           if (
             internaldata &&
             internaldata.officePlans &&
-            !internaldata.officePlans[nextWeek]
+            !internaldata.officePlans[thisWeek]
           ) {
             officePlans = internaldata.officePlans;
           }
           // Create the days from Monday - Friday
-          officePlans[nextWeek] = {};
+          officePlans[thisWeek] = {};
           [...Array(5)].forEach((_d, key) => {
-            officePlans[nextWeek][
-              moment().weekday(key).format("dddd").toLowerCase()
+            officePlans[thisWeek][
+              moment()
+                // Sunday is 0
+                .weekday(key + 1)
+                .format("dddd")
+                .toLowerCase()
             ] = { ...newProps };
           });
 
           Object.keys(seats).forEach(day => {
             if (seats[day]) {
-              officePlans[nextWeek][day][seats[day]] = unitid;
+              officePlans[thisWeek][day][seats[day]] = unitid;
             }
           });
         } else {
@@ -1215,12 +1279,12 @@ export default {
           });
 
           Object.keys(daysSelected).forEach(day => {
-            Object.values(officePlans[nextWeek][day]).forEach((seat, key) => {
+            Object.values(officePlans[thisWeek][day]).forEach((seat, key) => {
               if (seat == unitid) {
-                officePlans[nextWeek][day][key + 1] = null;
+                officePlans[thisWeek][day][key + 1] = null;
               }
               if (key + 1 == seats[day]) {
-                officePlans[nextWeek][day][key + 1] = unitid;
+                officePlans[thisWeek][day][key + 1] = unitid;
               }
             });
           });
@@ -1230,7 +1294,7 @@ export default {
           { where: { unitid: company } }
         );
 
-        return officePlans[nextWeek];
+        return officePlans[thisWeek];
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
