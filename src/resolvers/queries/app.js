@@ -188,7 +188,8 @@ export default {
           }
         }
 
-        if (domain && !apps.length > 0) {
+        if (domain){
+        if (apps.length === 0) {
           //Added domains
           apps = await models.AppDetails.findAll(
             {
@@ -202,7 +203,7 @@ export default {
             { plain: true }
           );
         }
-        if (domain && !apps.length > 0) {
+        if (apps.length === 0) {
           //Login Domains
           apps = await models.sequelize.query(
             `Select id from app_details where position(:domain in loginurl) > 0
@@ -213,6 +214,7 @@ export default {
               type: models.sequelize.QueryTypes.SELECT,
             }
           );
+        }
         }
         if (apps.length > 0) {
           const licences = await models.sequelize.query(
