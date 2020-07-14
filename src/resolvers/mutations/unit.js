@@ -915,7 +915,7 @@ export default {
             {
               config: {
                 ...user.config,
-                config,
+                ...config,
               },
             },
             { where: { unitid }, transaction: ta }
@@ -927,12 +927,19 @@ export default {
               message: "Updated config",
               icon: "cog",
               link: "settings",
-              changed: ["ownLicences"],
+              changed: ["ownLicences", "me"],
+              level: 1,
             },
             ta
           );
 
-          return true;
+          return {
+            id: unitid,
+            config: {
+              ...user.config,
+              ...config,
+            },
+          };
         });
       } catch (err) {
         throw new NormalError({
