@@ -471,7 +471,7 @@ export default {
             );
           } catch (err) {
             console.error(err);
-            throw Error("Updating promo code didn't work");
+            throw Error("Updating vat didn't work");
           }
         }
 
