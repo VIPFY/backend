@@ -162,6 +162,27 @@ export const types = `
   input CardInput {
     ${cardFields}
   }
+
+  type PaymentResponse {
+    stripeid: String
+    cards: [Card]
+    address: Address
+    vatstatus: JSON
+    emails: [BillingEmail]
+    companyName: String
+    phone: Phone
+    promoCode: String
+  }
+
+  type SetupResponse {
+    setupid: String
+    secret: String
+  }
+
+  type BillingEmail {
+    id: String!
+    email: String!
+  }
 `;
 
 export const queries = `
@@ -171,7 +192,7 @@ export const queries = `
   createLoginLink(boughtplanid: ID!): ProductResponse!
 
   fetchBills: [Bill]!
-  fetchPaymentData: [Card]!
+  fetchPaymentData: PaymentResponse!
   fetchBillingEmails: [Email]!
   fetchCredits: Credit
 
@@ -196,4 +217,12 @@ export const mutations = `
   createMonthlyInvoices: Boolean!
   downloadBill(billid: ID!): String!
   createNewBillingEmail(email: String!): Boolean!
+
+  startRecurringBillingIntent(customerid: String!): SetupResponse!
+  cancelRecurringBillingIntent(setupid: String!): Boolean!
+  deletePaymentMethod(paymentMethodId: String!): Boolean!
+  addCard(paymentMethodId: String!): Boolean!
+  changeCardOrder(paymentMethodId: String!, index: Int): PaymentResponse!
+  chargeCard(customerid: String!): Boolean!
+  saveBillingInformations(country: String, vat: JSON, postalCode: String, city: String, street: String, companyName: String, phone: String, addition: String, promoCode: String, emaildelete: [String], emailadd: [String], addressId: String, phoneId: String): Boolean
 `;
