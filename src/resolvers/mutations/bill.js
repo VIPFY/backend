@@ -488,14 +488,14 @@ export default {
             (!payingoptions || !payingoptions.stripe) &&
             legalinformation.vatstatus
           ) {
-            const address = await models.Address.findOne({
+            const addressStripe = await models.Address.findOne({
               where: { unitid: company },
               attributes: ["country", "address"],
               raw: true,
               transaction: ta,
             });
 
-            const email = models.DepartmentEmail.findOne({
+            const emailStripe = await models.DepartmentEmail.findOne({
               where: {
                 departmentid: company,
                 tags: { [models.Op.contains]: ["billing"] },
@@ -506,7 +506,7 @@ export default {
               transaction: ta,
             });
 
-            const phone = models.Phone.findOne({
+            const phoneStripe = await models.Phone.findOne({
               where: {
                 unitid: company,
                 tags: { [models.Op.contains]: ["billing"] },
@@ -515,25 +515,25 @@ export default {
               raw: true,
               transaction: ta,
             });
-            const stripeCustomer = await createCustomer({
-              customer: {
-                name: department.name,
-                email: email.email,
-                phone: phone.number,
-                tax_exempt: legalinformation.vatstatus.vatNumber
-                  ? "reverse"
-                  : "exempt",
-                tax_id_data: legalinformation.vatstatus.vatNumber && {
+            const stripeCustomer = await stripe.customers.create({
+              name: department.name,
+              email: emailStripe.email,
+              phone: phoneStripe.number,
+              tax_exempt: legalinformation.vatstatus.vatNumber
+                ? "reverse"
+                : "exempt",
+              tax_id_data: legalinformation.vatstatus.vatNumber && [
+                {
                   type: "eu_vat",
-                  value: legalinformation.vatstatus.vatNumber,
+                  value: `${addressStripe.country}${legalinformation.vatstatus.vatNumber}`,
                 },
-              },
+              ],
               address: {
-                city: address.city,
-                line1: address.street,
-                line2: address.addition,
-                country: address.country,
-                postal_code: address.postalCode,
+                city: addressStripe.address.city,
+                line1: addressStripe.address.street,
+                line2: addressStripe.address.addition,
+                country: addressStripe.country,
+                postal_code: addressStripe.address.postalCode,
               },
             });
 

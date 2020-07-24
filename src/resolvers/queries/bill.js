@@ -91,6 +91,14 @@ export default {
           raw: true,
         });
 
+        const phone = await models.Phone.findOne({
+          where: {
+            unitid: company,
+            tags: { [models.Op.contains]: ["billing"] },
+          },
+          raw: true,
+        });
+
         if (
           !paymentData.payingoptions ||
           !paymentData.payingoptions.stripe ||
@@ -98,8 +106,21 @@ export default {
         ) {
           return {
             stripeid: null,
+            vatstatus: paymentData.legalinformation.vatstatus,
             cards: [],
-            address: { country: address.country, ...address },
+            address: {
+              country: address ? address.country : undefined,
+              ...address,
+            },
+            emails:
+              emails &&
+              emails.map(e => {
+                return { id: e.email, email: e.email };
+              }),
+            companyName: paymentData.name,
+            phone,
+            promoCode:
+              paymentData.payingoptions && paymentData.payingoptions.promoCode,
           };
         }
 
@@ -116,21 +137,16 @@ export default {
           });
         }
 
-        const phone = await models.Phone.findOne({
-          where: {
-            unitid: company,
-            tags: { [models.Op.contains]: ["billing"] },
-          },
-          raw: true,
-        });
-
         const cards = [...sortedcards, ...stripeCards];
 
         return {
           stripeid: paymentData.payingoptions.stripe.id,
           vatstatus: paymentData.legalinformation.vatstatus,
           cards,
-          address: { country: address.country, ...address },
+          address: {
+            country: address ? address.country : undefined,
+            ...address,
+          },
           emails:
             emails &&
             emails.map(e => {

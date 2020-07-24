@@ -30,8 +30,8 @@ export const types = `
   }
 
   type Address {
-    id: ID!
-    country: String!
+    id: ID
+    country: String
     address: JSON
     description: String
     priority: Int
