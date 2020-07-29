@@ -167,7 +167,7 @@ export const types = `
     stripeid: String
     cards: [Card]
     address: Address
-    vatstatus: JSON
+    vatstatus: Vat
     emails: [BillingEmail]
     companyName: String
     companyId: ID
