@@ -1203,8 +1203,9 @@ export default {
 
   startRecurringBillingIntent: requiresRights([
     "create-payment-data",
-  ]).createResolver(async (_p, args, { models, session }) =>
-    models.sequelize.transaction(async ta => {
+  ]).createResolver(async (_p, args, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      const { models, session } = ctx;
       try {
         const {
           user: { company },
@@ -1292,6 +1293,15 @@ export default {
           customer: stripeId,
         });
 
+        await createLog(
+          ctx,
+          "startRecurringBillingIntent",
+          {
+            company,
+          },
+          ta
+        );
+
         return { secret: intent.client_secret, setupid: intent.id };
       } catch (err) {
         throw new BillingError({
@@ -1308,6 +1318,9 @@ export default {
     ctx.models.sequelize.transaction(async () => {
       try {
         await stripe.setupIntents.cancel(setupid);
+        await createLog(ctx, "cancelRecurringBillingIntent", {
+          setupid,
+        });
         return true;
       } catch (err) {
         throw new BillingError({
