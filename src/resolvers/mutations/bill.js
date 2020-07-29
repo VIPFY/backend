@@ -1283,8 +1283,9 @@ export default {
             },
             { where: { id: company }, transaction: ta }
           );
+          stripeId = stripeCustomer.id;
         } else {
-          stripeId = payingoptions.stripe;
+          stripeId = payingoptions.stripe.id;
         }
 
         const intent = await stripe.setupIntents.create({
