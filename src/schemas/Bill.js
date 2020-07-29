@@ -184,6 +184,12 @@ export const types = `
     id: String!
     email: String!
   }
+
+  type Vat{
+    vaild: Boolean
+    selfCheck: Boolean
+    vatNumber: String
+  }
 `;
 
 export const queries = `
@@ -225,7 +231,7 @@ export const mutations = `
   addCard(paymentMethodId: String!): Boolean!
   changeCardOrder(paymentMethodId: String!, index: Int): PaymentResponse!
   chargeCard(customerid: String!): Boolean!
-  saveVatStatus(vat: JSON!, country: String!): Boolean!
+  saveVatStatus(vat: Vat!, country: String!): Boolean!
   savePromoCode(promoCode: String!): Boolean!
   saveBillingEmails(emaildelete: [String]!, emailadd: [String]!): Boolean!
 `;
