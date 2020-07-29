@@ -275,7 +275,6 @@ export default {
             throw Error("You need at least one billing email");
           }
         }
-
         try {
           const createEmailFunction = async (resolve, reject, e) => {
             try {
@@ -283,8 +282,10 @@ export default {
                 where: {
                   departmentid: company,
                   email: e,
-                  tags: {
-                    [models.Op.not]: { [models.Op.contains]: ["billing"] },
+                  [models.Op.not]: {
+                    tags: {
+                      [models.Op.contains]: ["billing"],
+                    },
                   },
                 },
                 transaction: ta,
@@ -316,7 +317,6 @@ export default {
               return reject(err);
             }
           };
-
           const emailaddPromises = [];
           emailadd.forEach(e => {
             if (e && e != "") {
