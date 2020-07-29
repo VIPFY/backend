@@ -72,7 +72,12 @@ export default {
 
         const paymentData = await models.Department.findOne({
           where: { unitid: company },
-          attributes: ["name", "payingoptions", "legalinformation"],
+          attributes: [
+            "name",
+            "payingoptions",
+            "legalinformation",
+            "promocode",
+          ],
           raw: true,
         });
 
@@ -152,9 +157,10 @@ export default {
             emails.map(e => {
               return { id: e.email, email: e.email };
             }),
+          companyId: company,
           companyName: paymentData.name,
           phone,
-          promoCode: paymentData.payingoptions.promoCode,
+          promoCode: paymentData.promocode,
         };
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });

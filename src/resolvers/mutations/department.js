@@ -329,7 +329,7 @@ export default {
           const updatedDepartment = await models.DepartmentData.update(
             { name },
             {
-              where: { unitid: departmentid },
+              where: { unitid: departmentid || company },
               returning: true,
               transaction: ta,
             }
@@ -338,12 +338,14 @@ export default {
             {
               message: `User ${unitid} updated Name of Team ${departmentid}`,
               icon: "users",
-              link: "teammanager",
-              changed: ["ownTeams", "companyTeams"],
+              link: departmentid ? "teammanager" : "company",
+              changed: departmentid
+                ? ["ownTeams", "companyTeams"]
+                : ["company"],
             },
             null,
             { company, level: 1 },
-            { teamid: departmentid, level: 1 }
+            departmentid ? { teamid: departmentid, level: 1 } : null
           );
           await createLog(
             ctx,

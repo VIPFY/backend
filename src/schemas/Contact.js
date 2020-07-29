@@ -47,7 +47,8 @@ export const types = `
     street: String
     city: String
     state: String
-    zip: String
+    postalCode: String
+    addition: String
     priority: Int
     tags: [String]
   }

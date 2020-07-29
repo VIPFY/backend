@@ -4,7 +4,7 @@ import { NormalError, RightsError } from "../../errors";
 import { createLog } from "../../helpers/functions";
 import {
   newsletterSignup,
-  newsletterConfirmSignup
+  newsletterConfirmSignup,
 } from "../../helpers/newsletter";
 import logger from "../../loggers";
 import { googleMapsClient } from "../../services/gcloud";
@@ -19,7 +19,7 @@ export default {
         try {
           const { models, session } = ctx;
           let {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(session.token);
 
           if (department) {
@@ -27,22 +27,28 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "create-addresses"] }
+                type: { [models.Op.or]: ["admin", "create-addresses"] },
               },
-              raw: true
+              raw: true,
             });
 
             if (!hasRight) {
               throw new RightsError({
-                message: "You don't have the neccessary rights!"
+                message: "You don't have the neccessary rights!",
               });
             } else {
               unitid = company;
             }
           }
 
-          const { zip, street, city, ...normalData } = addressData;
-          const address = { street, zip, city };
+          const {
+            postalCode,
+            street,
+            city,
+            addition,
+            ...normalData
+          } = addressData;
+          const address = { street, postalCode, city, addition };
 
           const newAddress = await models.Address.create(
             { ...normalData, address, unitid },
@@ -58,7 +64,7 @@ export default {
           } else {
             throw new NormalError({
               message: err.message,
-              internalData: { err }
+              internalData: { err },
             });
           }
         }
@@ -72,7 +78,7 @@ export default {
           const { models, session } = ctx;
 
           let {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(session.token);
 
           if (address.department) {
@@ -80,13 +86,13 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "edit-addresses"] }
-              }
+                type: { [models.Op.or]: ["admin", "edit-addresses"] },
+              },
             });
 
             if (!hasRight) {
               throw new RightsError({
-                message: "You don't have the neccessary rights!"
+                message: "You don't have the neccessary rights!",
               });
             } else {
               unitid = company;
@@ -95,16 +101,22 @@ export default {
 
           const oldAddress = await models.Address.findByPk(id, {
             raw: true,
-            transaction: ta
+            transaction: ta,
           });
 
-          const { zip, street, city, ...normalData } = address;
-          const addressData = { zip, street, city };
+          const { postalCode, street, city, addition, ...normalData } = address;
+          const addressData = { postalCode, street, city, addition };
 
           const updatedAddress = await models.Address.update(
             {
               ...normalData,
-              address: { ...oldAddress.address, ...addressData }
+              address: {
+                city: addressData.city || oldAddress.address.city,
+                street: addressData.street || oldAddress.address.street,
+                postalCode:
+                  addressData.postalCode || oldAddress.address.postalCode,
+                addition: addressData.addition || oldAddress.address.addition,
+              },
             },
             { where: { id, unitid }, returning: true, transaction: ta }
           );
@@ -123,7 +135,7 @@ export default {
           } else {
             throw new NormalError({
               message: err.message,
-              internalData: { err }
+              internalData: { err },
             });
           }
         }
@@ -136,7 +148,7 @@ export default {
         try {
           const { models, session } = ctx;
           let {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(session.token);
 
           if (department) {
@@ -144,14 +156,14 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "delete-addresses"] }
+                type: { [models.Op.or]: ["admin", "delete-addresses"] },
               },
-              raw: true
+              raw: true,
             });
 
             if (!hasRight) {
               throw new RightsError({
-                message: "You don't have the neccessary rights!"
+                message: "You don't have the neccessary rights!",
               });
             } else {
               unitid = company;
@@ -159,7 +171,7 @@ export default {
           }
 
           const oldAddress = await models.Address.findOne({
-            where: { id, unitid }
+            where: { id, unitid },
           });
 
           const billingAddress = oldAddress.tags.find(tag => tag == "billing");
@@ -170,7 +182,7 @@ export default {
 
           const p1 = models.Address.destroy({
             where: { id, unitid },
-            transaction: ta
+            transaction: ta,
           });
 
           const p2 = createLog(ctx, "deleteAddress", { oldAddress }, ta);
@@ -184,7 +196,7 @@ export default {
           } else {
             throw new NormalError({
               message: err.message,
-              internalData: { err }
+              internalData: { err },
             });
           }
         }
@@ -206,7 +218,7 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company, unitid }
+            user: { company, unitid },
           } = decode(session.token);
 
           const emailRegex = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -228,7 +240,7 @@ export default {
 
           const emailExists = await models.Email.findOne({
             where: { email: emailData.email },
-            raw: true
+            raw: true,
           });
 
           if (emailExists) {
@@ -256,12 +268,12 @@ export default {
           const { models, session } = ctx;
 
           const {
-            user: { company }
+            user: { company },
           } = decode(session.token);
 
           const oldEmail = await models.DepartmentEmail.findOne({
             where: { email, departmentid: company },
-            raw: true
+            raw: true,
           });
 
           if (!oldEmail) {
@@ -286,7 +298,7 @@ export default {
             {
               where: { email },
               transaction: ta,
-              returning: true
+              returning: true,
             }
           );
 
@@ -296,7 +308,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
@@ -314,7 +326,7 @@ export default {
       try {
         const { models, session } = ctx;
         const {
-          user: { company, unitid }
+          user: { company, unitid },
         } = decode(session.token);
 
         let id;
@@ -331,7 +343,7 @@ export default {
         const p2 = models.Email.findAll({ where: { unitid: id } });
         const [belongsToUser, userHasAnotherEmail] = await Promise.all([
           p1,
-          p2
+          p2,
         ]);
 
         if (!belongsToUser) {
@@ -363,7 +375,7 @@ export default {
         try {
           const { models, session } = ctx;
           let {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(session.token);
 
           if (department) {
@@ -371,13 +383,13 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "create-phones"] }
-              }
+                type: { [models.Op.or]: ["admin", "create-phones"] },
+              },
             });
 
             if (!hasRight) {
               throw new RightsError({
-                message: "You don't have the neccessary rights!"
+                message: "You don't have the neccessary rights!",
               });
             } else {
               unitid = company;
@@ -402,7 +414,7 @@ export default {
           } else {
             throw new NormalError({
               message: err.message,
-              internalData: { err }
+              internalData: { err },
             });
           }
         }
@@ -416,7 +428,7 @@ export default {
           const { models, session } = ctx;
 
           let {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(session.token);
 
           if (phone.department) {
@@ -424,13 +436,13 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "edit-phones"] }
-              }
+                type: { [models.Op.or]: ["admin", "edit-phones"] },
+              },
             });
 
             if (!hasRight) {
               throw new RightsError({
-                message: "You don't have the neccessary rights!"
+                message: "You don't have the neccessary rights!",
               });
             } else {
               unitid = company;
@@ -443,7 +455,7 @@ export default {
 
           const oldPhone = await models.Phone.findByPk(id, {
             raw: true,
-            transaction: ta
+            transaction: ta,
           });
 
           const updatedPhone = await models.Phone.update(
@@ -465,7 +477,7 @@ export default {
           } else {
             throw new NormalError({
               message: err.message,
-              internalData: { err }
+              internalData: { err },
             });
           }
         }
@@ -478,7 +490,7 @@ export default {
         try {
           const { models, session } = ctx;
           let {
-            user: { unitid, company }
+            user: { unitid, company },
           } = decode(session.token);
 
           if (department) {
@@ -486,14 +498,14 @@ export default {
               where: {
                 holder: unitid,
                 forunit: { [models.Op.or]: [company, null] },
-                type: { [models.Op.or]: ["admin", "delete-phones"] }
+                type: { [models.Op.or]: ["admin", "delete-phones"] },
               },
-              raw: true
+              raw: true,
             });
 
             if (!hasRight) {
               throw new RightsError({
-                message: "You don't have the neccessary rights!"
+                message: "You don't have the neccessary rights!",
               });
             } else {
               unitid = company;
@@ -505,12 +517,12 @@ export default {
           }
 
           const oldPhone = await models.Phone.findOne({
-            where: { id, unitid }
+            where: { id, unitid },
           });
 
           const p1 = models.Phone.destroy({
             where: { id, unitid },
-            transaction: ta
+            transaction: ta,
           });
           const p2 = createLog(ctx, "deletePhone", { oldPhone }, ta);
 
@@ -523,7 +535,7 @@ export default {
           } else {
             throw new NormalError({
               message: err.message,
-              internalData: { err }
+              internalData: { err },
             });
           }
         }
@@ -534,7 +546,7 @@ export default {
     try {
       const alreadySignedUp = await models.NewsletterSignup.findOne({
         where: { email },
-        raw: true
+        raw: true,
       });
 
       if (!alreadySignedUp) {
@@ -546,7 +558,7 @@ export default {
       logger.error(err);
       throw new NormalError({
         message: "there was a problem with adding you to our newsletter",
-        internalData: { err }
+        internalData: { err },
       });
     }
   },
@@ -567,7 +579,7 @@ export default {
           input,
           inputtype: "textquery",
           language: region,
-          fields: ["formatted_address", "place_id", "name"]
+          fields: ["formatted_address", "place_id", "name"],
         })
         .asPromise();
 
@@ -594,9 +606,9 @@ export default {
           {
             to: [{ email: contactData.email }],
             cc: [{ email: "contact@vipfy.store" }],
-            dynamic_template_data: { name: contactData.name }
-          }
-        ]
+            dynamic_template_data: { name: contactData.name },
+          },
+        ],
       });
 
       const toVipfy = sendEmail({
@@ -605,9 +617,9 @@ export default {
         personalizations: [
           {
             to: [{ email: "contact@vipfy.store" }],
-            dynamic_template_data: contactData
-          }
-        ]
+            dynamic_template_data: contactData,
+          },
+        ],
       });
 
       await Promise.all([reply, toVipfy]);
@@ -616,5 +628,5 @@ export default {
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
-  }
+  },
 };

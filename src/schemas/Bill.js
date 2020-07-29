@@ -170,6 +170,7 @@ export const types = `
     vatstatus: JSON
     emails: [BillingEmail]
     companyName: String
+    companyId: ID
     phone: Phone
     promoCode: String
   }
@@ -224,5 +225,7 @@ export const mutations = `
   addCard(paymentMethodId: String!): Boolean!
   changeCardOrder(paymentMethodId: String!, index: Int): PaymentResponse!
   chargeCard(customerid: String!): Boolean!
-  saveBillingInformations(country: String, vat: JSON, postalCode: String, city: String, street: String, companyName: String, phone: String, addition: String, promoCode: String, emaildelete: [String], emailadd: [String], addressId: String, phoneId: String): Boolean
+  saveVatStatus(vat: JSON!, country: String!): Boolean!
+  savePromoCode(promoCode: String!): Boolean!
+  saveBillingEmails(emaildelete: [String]!, emailadd: [String]!): Boolean!
 `;

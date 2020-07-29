@@ -163,299 +163,30 @@ export default {
       })
   ),
 
-  saveBillingInformations: requiresRights([
-    "create-payment-data",
-  ]).createResolver(
-    async (
-      _p,
-      {
-        country,
-        vat,
-        postalCode,
-        city,
-        street,
-        companyName,
-        phone,
-        addition,
-        promoCode,
-        emaildelete,
-        emailadd,
-        addressId,
-        phoneId,
-      },
-      { models, session }
-    ) =>
-      models.sequelize.transaction(async ta => {
+  saveVatStatus: requiresRights(["create-payment-data"]).createResolver(
+    async (_p, { country, vat }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, session } = ctx;
         const {
-          user: { unitid, company },
+          user: { company },
         } = decode(session.token);
 
-        // update companyName if updated
-        if (companyName) {
-          try {
+        try {
+          const departmentPromo = await models.Unit.findOne({
+            where: { id: company },
+            transaction: ta,
+          });
+          if (!vat.valid || !checkVat(`${country}${vat.vatNumber}`)) {
             await models.DepartmentData.update(
-              { name: companyName },
+              {
+                legalinformation: {
+                  ...departmentPromo.legalinformation,
+                  vatstatus: null,
+                },
+              },
               { where: { unitid: company }, transaction: ta }
             );
-          } catch (err) {
-            console.error(err);
-            throw Error("Updating company Name didn't work");
-          }
-        }
-
-        // delete emails
-        if (emaildelete) {
-          try {
-            const deleteEmailFunction = async (resolve, reject, e) => {
-              try {
-                const deleteEmail = await models.Email.destroy({
-                  where: {
-                    email: e,
-                    unitid: company,
-                  },
-                  transaction: ta,
-                });
-                if (deleteEmail == 0) {
-                  const oldEmail = await models.Email.findOne({
-                    where: {
-                      email: e,
-                    },
-                    transaction: ta,
-                  });
-                  if (oldEmail) {
-                    await models.Email.update(
-                      {
-                        tags: oldEmail.dataValues.tags.filter(
-                          t => t != "billing"
-                        ),
-                      },
-                      {
-                        where: {
-                          email: e,
-                        },
-                        transaction: ta,
-                      }
-                    );
-                  }
-                }
-                return resolve();
-              } catch (err) {
-                return reject();
-              }
-            };
-
-            const emaildeletePromises = [];
-            emaildelete.forEach(e => {
-              if (e && e != "") {
-                emaildeletePromises.push(
-                  new Promise((resolve, reject) => {
-                    deleteEmailFunction(resolve, reject, e);
-                  })
-                );
-              }
-            });
-            await Promise.all(emaildeletePromises);
-          } catch (err) {
-            console.error(err);
-            throw Error("Removing emails didn't work");
-          }
-        }
-
-        // add new emails
-        if (emailadd) {
-          try {
-            const createEmailFunction = async (resolve, reject, e) => {
-              try {
-                const oldEmail = await models.Email.findOne({
-                  where: {
-                    email: e,
-                  },
-                  transaction: ta,
-                });
-                if (oldEmail) {
-                  await models.Email.update(
-                    {
-                      tags: [...(oldEmail.dataValues.tags || []), "billing"],
-                    },
-                    {
-                      where: {
-                        email: e,
-                      },
-                      transaction: ta,
-                    }
-                  );
-                } else {
-                  models.Email.create(
-                    {
-                      unitid: company,
-                      email: e,
-                      tags: ["billing"],
-                    },
-                    { transaction: ta }
-                  );
-                }
-                return resolve();
-              } catch (err) {
-                console.log("ERROR 1", err);
-                return reject();
-              }
-            };
-
-            const emailaddPromises = [];
-            emailadd.forEach(e => {
-              if (e && e != "") {
-                emailaddPromises.push(
-                  new Promise((resolve, reject) => {
-                    createEmailFunction(resolve, reject, e);
-                  })
-                );
-              }
-            });
-            await Promise.all(emailaddPromises);
-          } catch (err) {
-            console.error("ERROR", err);
-            throw Error("Adding emails didn't work");
-          }
-        }
-
-        // Update/Create Address
-        if (country || postalCode || city || street || addition) {
-          try {
-            if (addressId) {
-              const address = await models.Address.findOne({
-                where: { id: addressId },
-                transaction: ta,
-                raw: true,
-              });
-              await models.Address.update(
-                {
-                  tags: ["billing"],
-                  unitid: company,
-                  country: country || address.country,
-                  address: {
-                    street:
-                      street ||
-                      (address && address.address && address.address.street),
-                    addtion:
-                      addition ||
-                      (address && address.address && address.address.addition),
-                    city:
-                      city ||
-                      (address && address.address && address.address.city),
-                    postalCode:
-                      postalCode ||
-                      (address &&
-                        address.address &&
-                        address.address.postalCode),
-                  },
-                },
-                { where: { id: addressId }, transaction: ta }
-              );
-            } else {
-              await models.Address.create(
-                {
-                  tags: ["billing"],
-                  unitid: company,
-                  country,
-                  address: {
-                    street: street,
-                    addtion: addition,
-                    city: city,
-                    postalCode: postalCode,
-                  },
-                },
-                { transaction: ta }
-              );
-            }
-          } catch (err) {
-            console.error(err);
-            throw Error("Creating or updating address didn't work");
-          }
-        }
-
-        // Update/Create Phone
-        if (phone) {
-          try {
-            await models.Phone.upsert(
-              {
-                tags: ["billing"],
-                unitid: company,
-                number: phone,
-                id: phoneId,
-              },
-              {
-                where: {
-                  unitid: company,
-                  tags: { [models.Op.contains]: ["billing"] },
-                },
-                transaction: ta,
-              }
-            );
-          } catch (err) {
-            console.error(err);
-            throw Error("Creating or updating phone didn't work");
-          }
-        }
-
-        // Promocode
-        if (promoCode) {
-          try {
-            const unit = await models.Unit.findOne({
-              where: { id: company },
-              transaction: ta,
-            });
-            await models.Unit.update(
-              {
-                payingoptions: {
-                  ...unit.payingoptions,
-                  promoCode,
-                },
-              },
-              { where: { id: company }, transaction: ta }
-            );
-          } catch (err) {
-            console.error(err);
-            throw Error("Updating promo code didn't work");
-          }
-        }
-
-        // vat
-        if (vat) {
-          let checkcountry = null;
-          if (country) {
-            checkcountry = country;
           } else {
-            try {
-              checkcountry = await models.Address.findOne({
-                where: {
-                  unitid: company,
-                  tags: { [models.Op.contains]: ["billing"] },
-                },
-                transaction: ta,
-              }).country;
-            } catch (err) {
-              console.error(err);
-              throw Error("Fetching Address didn't work");
-            }
-          }
-
-          try {
-            const departmentPromo = await models.Unit.findOne({
-              where: { id: company },
-              transaction: ta,
-            });
-            if (!vat.valid || !checkVat(`${checkcountry}${vat.vatNumber}`)) {
-              await models.DepartmentData.update(
-                {
-                  legalinformation: {
-                    ...departmentPromo.legalinformation,
-                    vatstatus: null,
-                  },
-                },
-                { where: { unitid: company }, transaction: ta }
-              );
-            }
-
             await models.DepartmentData.update(
               {
                 legalinformation: {
@@ -469,93 +200,200 @@ export default {
               },
               { where: { unitid: company }, transaction: ta }
             );
-          } catch (err) {
-            console.error(err);
-            throw Error("Updating vat didn't work");
+          }
+          await createLog(
+            ctx,
+            "saveVatStatus",
+            {
+              country,
+              vat,
+              company,
+            },
+            ta
+          );
+          return true;
+        } catch (err) {
+          console.error(err);
+          throw Error("Saving vat status didn't work");
+        }
+      })
+  ),
+
+  savePromoCode: requiresRights(["create-payment-data"]).createResolver(
+    async (_p, { promoCode }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, session } = ctx;
+        const {
+          user: { company },
+        } = decode(session.token);
+
+        try {
+          await models.DepartmentData.update(
+            { promocode: promoCode },
+            { where: { unitid: company }, transaction: ta }
+          );
+          await createLog(
+            ctx,
+            "savePromoCode",
+            {
+              promoCode,
+              company,
+            },
+            ta
+          );
+          return true;
+        } catch (err) {
+          console.error(err);
+          throw Error("Saving PromoCode didn't work");
+        }
+      })
+  ),
+
+  saveBillingEmails: requiresRights(["create-payment-data"]).createResolver(
+    async (_p, { emaildelete, emailadd }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, session } = ctx;
+        const {
+          user: { company },
+        } = decode(session.token);
+
+        // Check if at least one is left over
+
+        if (
+          emaildelete.filter(ed => ed != "").length >
+          emailadd.filter(ed => ed != "").length
+        ) {
+          const emails = await models.DepartmentEmail.findAll({
+            where: {
+              departmentid: company,
+              tags: { [models.Op.contains]: ["billing"] },
+              autogenerated: false,
+            },
+            order: [["priority", "DESC"]],
+            raw: true,
+          });
+
+          if (emails.length - emaildelete.length + emailadd.length <= 0) {
+            throw Error("You need at least one billing email");
           }
         }
 
-        // Create Stripe Account if not there and all needed information present
         try {
-          const department = await models.Department.findOne({
-            where: { unitid: company },
-            transaction: ta,
-            raw: true,
-          });
-          const { payingoptions, legalinformation } = department;
-
-          if (
-            (!payingoptions || !payingoptions.stripe) &&
-            legalinformation.vatstatus
-          ) {
-            const addressStripe = await models.Address.findOne({
-              where: { unitid: company },
-              attributes: ["country", "address"],
-              raw: true,
-              transaction: ta,
-            });
-
-            const emailStripe = await models.DepartmentEmail.findOne({
-              where: {
-                departmentid: company,
-                tags: { [models.Op.contains]: ["billing"] },
-                autogenerated: false,
-              },
-              order: [["priority", "DESC"]],
-              raw: true,
-              transaction: ta,
-            });
-
-            const phoneStripe = await models.Phone.findOne({
-              where: {
-                unitid: company,
-                tags: { [models.Op.contains]: ["billing"] },
-              },
-              order: [["priority", "DESC"]],
-              raw: true,
-              transaction: ta,
-            });
-            const stripeCustomer = await stripe.customers.create({
-              name: department.name,
-              email: emailStripe.email,
-              phone: phoneStripe.number,
-              tax_exempt: legalinformation.vatstatus.vatNumber
-                ? "reverse"
-                : "exempt",
-              tax_id_data: legalinformation.vatstatus.vatNumber && [
-                {
-                  type: "eu_vat",
-                  value: `${addressStripe.country}${legalinformation.vatstatus.vatNumber}`,
+          const createEmailFunction = async (resolve, reject, e) => {
+            try {
+              const oldEmail = await models.Email.findOne({
+                where: {
+                  email: e,
                 },
-              ],
-              address: {
-                city: addressStripe.address.city,
-                line1: addressStripe.address.street,
-                line2: addressStripe.address.addition,
-                country: addressStripe.country,
-                postal_code: addressStripe.address.postalCode,
-              },
-            });
-
-            await models.Unit.update(
-              {
-                payingoptions: {
-                  ...department.payingoptions,
-                  stripe: {
-                    id: stripeCustomer.id,
+                transaction: ta,
+              });
+              if (oldEmail) {
+                await models.Email.update(
+                  {
+                    tags: [...(oldEmail.dataValues.tags || []), "billing"],
                   },
-                },
-              },
-              { where: { id: company }, transaction: ta }
-            );
-          }
+                  {
+                    where: {
+                      email: e,
+                    },
+                    transaction: ta,
+                  }
+                );
+              } else {
+                await models.Email.create(
+                  {
+                    unitid: company,
+                    email: e,
+                    tags: ["billing"],
+                  },
+                  { transaction: ta }
+                );
+              }
+              return resolve();
+            } catch (err) {
+              console.log("ERROR 1", err);
+              return reject();
+            }
+          };
 
+          const emailaddPromises = [];
+          emailadd.forEach(e => {
+            if (e && e != "") {
+              emailaddPromises.push(
+                new Promise((resolve, reject) => {
+                  createEmailFunction(resolve, reject, e);
+                })
+              );
+            }
+          });
+          await Promise.all(emailaddPromises);
+
+          // Delete old ones
+
+          const deleteEmailFunction = async (resolve, reject, e) => {
+            try {
+              const deleteEmail = await models.Email.destroy({
+                where: {
+                  email: e,
+                  unitid: company,
+                },
+                transaction: ta,
+              });
+              if (deleteEmail == 0) {
+                const oldEmail = await models.Email.findOne({
+                  where: {
+                    email: e,
+                  },
+                  transaction: ta,
+                });
+                if (oldEmail) {
+                  await models.Email.update(
+                    {
+                      tags: oldEmail.dataValues.tags.filter(
+                        t => t != "billing"
+                      ),
+                    },
+                    {
+                      where: {
+                        email: e,
+                      },
+                      transaction: ta,
+                    }
+                  );
+                }
+              }
+              return resolve();
+            } catch (err) {
+              return reject();
+            }
+          };
+
+          const emaildeletePromises = [];
+          emaildelete.forEach(e => {
+            if (e && e != "") {
+              emaildeletePromises.push(
+                new Promise((resolve, reject) => {
+                  deleteEmailFunction(resolve, reject, e);
+                })
+              );
+            }
+          });
+          await Promise.all(emaildeletePromises);
+
+          await createLog(
+            ctx,
+            "saveBillingEmails",
+            {
+              emaildelete,
+              emailadd,
+              company,
+            },
+            ta
+          );
           return true;
         } catch (err) {
-          throw new BillingError({
-            message: err.message,
-            internalData: { err },
-          });
+          console.error(err);
+          throw Error("Removing Billingemails didn't work");
         }
       })
   ),
@@ -1459,33 +1297,116 @@ export default {
   ),
 
   addCard: requiresRights(["create-payment-data"]).createResolver(
-    async (_p, { paymentMethodId }, { models, session }) =>
-      models.sequelize.transaction(async () => {
+    async (_p, { paymentMethodId }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        const { models, session } = ctx;
         try {
           const {
             user: { company },
           } = decode(session.token);
 
-          const paymentData = await models.Unit.findOne({
-            where: { id: company },
-            attributes: ["payingoptions"],
+          let stripeId = null;
+
+          const department = await models.Department.findOne({
+            where: { unitid: company },
+            transaction: ta,
             raw: true,
           });
+          const { payingoptions, legalinformation } = department;
+
+          if (
+            (!payingoptions.stripe || !payingoptions.stripe.id) &&
+            legalinformation.vatstatus
+          ) {
+            const addressStripe = await models.Address.findOne({
+              where: { unitid: company },
+              attributes: ["country", "address"],
+              raw: true,
+              transaction: ta,
+            });
+
+            const emailStripe = await models.DepartmentEmail.findOne({
+              where: {
+                departmentid: company,
+                tags: { [models.Op.contains]: ["billing"] },
+                autogenerated: false,
+              },
+              order: [["priority", "DESC"]],
+              raw: true,
+              transaction: ta,
+            });
+
+            const phoneStripe = await models.Phone.findOne({
+              where: {
+                unitid: company,
+                tags: { [models.Op.contains]: ["billing"] },
+              },
+              order: [["priority", "DESC"]],
+              raw: true,
+              transaction: ta,
+            });
+            const stripeCustomer = await stripe.customers.create({
+              name: department.name,
+              email: emailStripe.email,
+              phone: phoneStripe.number,
+              tax_exempt: legalinformation.vatstatus.vatNumber
+                ? "reverse"
+                : "exempt",
+              tax_id_data: legalinformation.vatstatus.vatNumber && [
+                {
+                  type: "eu_vat",
+                  value: `${addressStripe.country}${legalinformation.vatstatus.vatNumber}`,
+                },
+              ],
+              address: {
+                city: addressStripe.address.city,
+                line1: addressStripe.address.street,
+                line2: addressStripe.address.addition,
+                country: addressStripe.country,
+                postal_code: addressStripe.address.postalCode,
+              },
+            });
+
+            await models.Unit.update(
+              {
+                payingoptions: {
+                  ...department.payingoptions,
+                  stripe: {
+                    id: stripeCustomer.id,
+                  },
+                },
+              },
+              { where: { id: company }, transaction: ta }
+            );
+            stripeId = {
+              id: stripeCustomer.id,
+            };
+          } else {
+            stripeId = payingoptions.stripe;
+          }
 
           await models.Unit.update(
             {
               payingoptions: {
-                ...paymentData.payingoptions,
+                ...payingoptions,
                 stripe: {
-                  ...paymentData.payingoptions.stripe,
-                  cards: [
-                    paymentMethodId,
-                    ...paymentData.payingoptions.stripe.cards,
-                  ],
+                  ...payingoptions.stripe,
+                  id: stripeId,
+                  cards: [paymentMethodId, ...payingoptions.stripe.cards],
                 },
               },
             },
             { where: { id: company } }
+          );
+
+          await createLog(
+            ctx,
+            "addCard",
+            {
+              paymentMethodId,
+              company,
+            },
+            ta
           );
           return true;
         } catch (err) {
