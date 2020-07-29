@@ -186,13 +186,13 @@ export const types = `
   }
 
   type Vat{
-    vaild: Boolean
+    valid: Boolean
     selfCheck: Boolean
     vatNumber: String
   }
 
   input VatInput{
-    vaild: Boolean
+    valid: Boolean
     selfCheck: Boolean
     vatNumber: String
   }
