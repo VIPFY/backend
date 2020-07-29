@@ -279,8 +279,9 @@ export default {
         try {
           const createEmailFunction = async (resolve, reject, e) => {
             try {
-              const oldEmail = await models.Email.findOne({
+              const oldEmail = await models.DepartmentEmail.findOne({
                 where: {
+                  departmentid: company,
                   email: e,
                   tags: {
                     [models.Op.not]: { [models.Op.contains]: ["billing"] },
@@ -312,8 +313,7 @@ export default {
               }
               return resolve();
             } catch (err) {
-              console.log("ERROR 1", err);
-              return reject();
+              return reject(err);
             }
           };
 
@@ -341,8 +341,9 @@ export default {
                 transaction: ta,
               });
               if (deleteEmail == 0) {
-                const oldEmail = await models.Email.findOne({
+                const oldEmail = await models.DepartmentEmail.findOne({
                   where: {
+                    departmentid: company,
                     email: e,
                   },
                   transaction: ta,
@@ -361,11 +362,13 @@ export default {
                       transaction: ta,
                     }
                   );
+                } else {
+                  throw new Error("Email doesn't belog to this company");
                 }
               }
               return resolve();
             } catch (err) {
-              return reject();
+              return reject(err);
             }
           };
 
