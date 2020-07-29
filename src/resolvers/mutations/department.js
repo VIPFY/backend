@@ -326,7 +326,7 @@ export default {
           const {
             user: { unitid, company },
           } = decode(session.token);
-          if (name == "") {
+          if (/^\s*$/.test(name)) {
             throw new Error("Name can't be empty");
           }
           const updatedDepartment = await models.DepartmentData.update(
