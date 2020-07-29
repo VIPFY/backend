@@ -282,6 +282,9 @@ export default {
               const oldEmail = await models.Email.findOne({
                 where: {
                   email: e,
+                  tags: {
+                    [models.Op.not]: { [models.Op.contains]: ["billing"] },
+                  },
                 },
                 transaction: ta,
               });
@@ -391,7 +394,7 @@ export default {
           return true;
         } catch (err) {
           console.error(err);
-          throw Error("Removing Billingemails didn't work");
+          throw Error("Updating Billingemails didn't work");
         }
       })
   ),
