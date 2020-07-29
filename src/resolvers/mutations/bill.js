@@ -1,7 +1,7 @@
 import moment from "moment";
 import { decode } from "jsonwebtoken";
 import * as Services from "@vipfy-private/services";
-import { randomId, randomPassword } from "@vipfy-private/service-base";
+import stripePackage from "stripe";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import {
   createLog,
@@ -24,10 +24,8 @@ import { BillingError, NormalError, InvoiceError } from "../../errors";
 import logger from "../../loggers";
 import { getInvoiceLink } from "../../services/aws";
 import createMonthlyInvoice from "../../helpers/createInvoice";
-import { jobQueue } from "../../constants";
-import { address } from "faker";
 
-const stripe = require("stripe")("sk_test_FUWxIU2DGb5C8nWynrnG7Nvf");
+const stripe = stripePackage(process.env.STRIPE_SECRET_KEY);
 
 /* eslint-disable array-callback-return, no-return-await, prefer-destructuring */
 
