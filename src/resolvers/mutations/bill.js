@@ -1332,8 +1332,9 @@ export default {
   ),
 
   deletePaymentMethod: requiresRights(["create-payment-data"]).createResolver(
-    async (_p, { paymentMethodId }, { models, session }) =>
-      models.sequelize.transaction(async () => {
+    async (_p, { paymentMethodId }, ctx) =>
+      ctx.models.sequelize.transaction(async () => {
+        const { models, session } = ctx;
         try {
           const {
             user: { company },
@@ -1363,7 +1364,10 @@ export default {
             },
             { where: { id: company } }
           );
-
+          await createLog(ctx, "deletePaymentMethod", {
+            paymentMethodId,
+            company,
+          });
           return true;
         } catch (err) {
           throw new BillingError({
