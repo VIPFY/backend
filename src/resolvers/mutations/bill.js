@@ -1203,16 +1203,12 @@ export default {
 
   startRecurringBillingIntent: requiresRights([
     "create-payment-data",
-  ]).createResolver(async (_p, { customerid }, { models, session }) =>
+  ]).createResolver(async (_p, args, { models, session }) =>
     models.sequelize.transaction(async ta => {
       try {
         const {
           user: { company },
         } = decode(session.token);
-
-        const intent = await stripe.setupIntents.create({
-          customer: customerid,
-        });
 
         let stripeId = null;
 
@@ -1287,26 +1283,14 @@ export default {
             },
             { where: { id: company }, transaction: ta }
           );
-          stripeId = {
-            id: stripeCustomer.id,
-          };
         } else {
           stripeId = payingoptions.stripe;
         }
 
-        await models.Unit.update(
-          {
-            payingoptions: {
-              ...payingoptions,
-              stripe: {
-                ...payingoptions.stripe,
-                id: stripeId,
-                cards: [...payingoptions.stripe.cards],
-              },
-            },
-          },
-          { where: { id: company } }
-        );
+        const intent = await stripe.setupIntents.create({
+          customer: stripeId,
+        });
+
         return { secret: intent.client_secret, setupid: intent.id };
       } catch (err) {
         throw new BillingError({

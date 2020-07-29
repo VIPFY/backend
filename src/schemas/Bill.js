@@ -219,7 +219,7 @@ export const mutations = `
   downloadBill(billid: ID!): String!
   createNewBillingEmail(email: String!): Boolean!
 
-  startRecurringBillingIntent(customerid: String!): SetupResponse!
+  startRecurringBillingIntent: SetupResponse!
   cancelRecurringBillingIntent(setupid: String!): Boolean!
   deletePaymentMethod(paymentMethodId: String!): Boolean!
   addCard(paymentMethodId: String!): Boolean!
