@@ -1429,8 +1429,9 @@ export default {
   ),
 
   changeCardOrder: requiresRights(["create-payment-data"]).createResolver(
-    async (_p, { paymentMethodId, index }, { models, session }) =>
-      models.sequelize.transaction(async () => {
+    async (_p, { paymentMethodId, index }, ctx) =>
+      ctx.models.sequelize.transaction(async () => {
+        const { models, session } = ctx;
         try {
           const {
             user: { company },
@@ -1475,6 +1476,11 @@ export default {
             },
             { where: { id: company } }
           );
+          await createLog(ctx, "addCard", {
+            paymentMethodId,
+            index,
+            company,
+          });
           return {
             stripeid: paymentData.payingoptions.stripe.id,
             cards,
@@ -1488,6 +1494,7 @@ export default {
       })
   ),
 
+  // Experimental Function
   chargeCard: requiresRights(["create-payment-data"]).createResolver(
     async (_p, { customerid }, ctx) =>
       ctx.models.sequelize.transaction(async () => {

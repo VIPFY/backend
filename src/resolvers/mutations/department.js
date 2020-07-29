@@ -358,10 +358,7 @@ export default {
           );
           return { ok: true };
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err },
-          });
+          throw new Error(err.message);
         }
       })
   ),
