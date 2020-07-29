@@ -30,8 +30,8 @@ export const types = `
   }
 
   type Address {
-    id: ID!
-    country: String!
+    id: ID
+    country: String
     address: JSON
     description: String
     priority: Int
@@ -47,7 +47,8 @@ export const types = `
     street: String
     city: String
     state: String
-    zip: String
+    postalCode: String
+    addition: String
     priority: Int
     tags: [String]
   }

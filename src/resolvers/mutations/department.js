@@ -326,10 +326,13 @@ export default {
           const {
             user: { unitid, company },
           } = decode(session.token);
+          if (/^\s*$/.test(name)) {
+            throw new Error("Name can't be empty");
+          }
           const updatedDepartment = await models.DepartmentData.update(
             { name },
             {
-              where: { unitid: departmentid },
+              where: { unitid: departmentid || company },
               returning: true,
               transaction: ta,
             }
@@ -338,12 +341,14 @@ export default {
             {
               message: `User ${unitid} updated Name of Team ${departmentid}`,
               icon: "users",
-              link: "teammanager",
-              changed: ["ownTeams", "companyTeams"],
+              link: departmentid ? "teammanager" : "company",
+              changed: departmentid
+                ? ["ownTeams", "companyTeams"]
+                : ["company"],
             },
             null,
             { company, level: 1 },
-            { teamid: departmentid, level: 1 }
+            departmentid ? { teamid: departmentid, level: 1 } : null
           );
           await createLog(
             ctx,
@@ -353,10 +358,7 @@ export default {
           );
           return { ok: true };
         } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err },
-          });
+          throw new Error(err.message);
         }
       })
   ),
