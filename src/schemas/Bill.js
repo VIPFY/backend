@@ -190,6 +190,12 @@ export const types = `
     selfCheck: Boolean
     vatNumber: String
   }
+
+  input VatInput{
+    vaild: Boolean
+    selfCheck: Boolean
+    vatNumber: String
+  }
 `;
 
 export const queries = `
@@ -231,7 +237,7 @@ export const mutations = `
   addCard(paymentMethodId: String!): Boolean!
   changeCardOrder(paymentMethodId: String!, index: Int): PaymentResponse!
   chargeCard(customerid: String!): Boolean!
-  saveVatStatus(vat: Vat!, country: String!): Boolean!
+  saveVatStatus(vat: VatInput!, country: String!): Boolean!
   savePromoCode(promoCode: String!): Boolean!
   saveBillingEmails(emaildelete: [String]!, emailadd: [String]!): Boolean!
 `;
