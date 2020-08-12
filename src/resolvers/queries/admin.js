@@ -154,21 +154,35 @@ export default {
           fetchStudyData(),
         ]);
 
+        const VIPFY_USERS = {
+          10: "035d2b90-8489-4ef1-9876-423ada82788b",
+          9: "035d2b90-8489-4ef1-9876-423ada82788c",
+          11: "035d2b90-8489-4ef1-9876-423ada82788d",
+          1: "035d2b90-8489-4ef1-9876-423ada82788e",
+          12: "035d2b90-8489-4ef1-9876-423ada82789f",
+          8: "035d2b90-8489-4ef1-9876-423ada82788f",
+        };
+
         const monstrosity = studyData.reduce((acc, cV) => {
           // This will obviously break if the structure of the bucket changes
-          const [_root, userID, subFolder, file] = cV.Key.split("/");
+          // eslint-disable-next-line prefer-const
+          let [_root, userID, subFolder, file] = cV.Key.split("/");
+
+          if (userID.length < 3) {
+            userID = VIPFY_USERS[userID];
+          }
 
           if (!acc[userID]) {
             const user = users.find(({ id }) => id == userID);
 
             acc[userID] = {
               id: userID,
-              email: user ? user.email : `VIPFY User ${userID}`,
-              registrationDate: user ? user.accept_tos_study : "-",
+              email: user.email,
+              registrationDate: user.accept_tos_study,
               dates: new Set(),
               amountFiles: 0,
               totalByteSize: 0,
-              voucher: user ? user.voucher : null,
+              voucher: user.voucher,
             };
           }
 
@@ -182,41 +196,22 @@ export default {
           return acc;
         }, {});
 
-        const FAULTY_ID_USERS = [
-          "035d2b90-8489-4ef1-9876-423ada82788b",
-          "035d2b90-8489-4ef1-9876-423ada82788c",
-          "035d2b90-8489-4ef1-9876-423ada82788d",
-          "035d2b90-8489-4ef1-9876-423ada82788e",
-          "035d2b90-8489-4ef1-9876-423ada82789f",
-          "035d2b90-8489-4ef1-9876-423ada82788f",
-        ];
-
-        users
-          .filter(user => !FAULTY_ID_USERS.find(id => user.id == id))
-          .forEach(user => {
-            if (monstrosity[user.id]) {
-              // Somehow Graphql does not like a set and returns nothing
-              monstrosity[user.id].dates = [...monstrosity[user.id].dates];
-            } else {
-              monstrosity[user.id] = {
-                id: user.id,
-                email: user.email,
-                registrationDate: user.accept_tos_study,
-                dates: [],
-                amountFiles: 0,
-                totalByteSize: 0,
-                voucher: user.voucher,
-              };
-            }
-          });
-
-        // Unfortunately, the simplest solution 🤮
-        monstrosity["1"].dates = [...monstrosity["1"].dates];
-        monstrosity["10"].dates = [...monstrosity["10"].dates];
-        monstrosity["11"].dates = [...monstrosity["11"].dates];
-        monstrosity["12"].dates = [...monstrosity["12"].dates];
-        monstrosity["8"].dates = [...monstrosity["8"].dates];
-        monstrosity["9"].dates = [...monstrosity["9"].dates];
+        users.forEach(user => {
+          if (monstrosity[user.id]) {
+            // Somehow Graphql does not like a set and returns nothing
+            monstrosity[user.id].dates = [...monstrosity[user.id].dates];
+          } else {
+            monstrosity[user.id] = {
+              id: user.id,
+              email: user.email,
+              registrationDate: user.accept_tos_study,
+              dates: [],
+              amountFiles: 0,
+              totalByteSize: 0,
+              voucher: user.voucher,
+            };
+          }
+        });
 
         return monstrosity;
       } catch (err) {
