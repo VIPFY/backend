@@ -44,14 +44,14 @@ export const types = `
     internaldata: JSON
   }
 
-  type CompanyServiceNEW{
+  type CompanyServiceNEW {
     id: ID!
     app: AppDetails!
     licences: [LicenceAssignment]
     teams: [TeamBoughtPlan]
   }
 
-  type CompanyService{
+  type CompanyService {
     app: AppDetails!
     orbitids: [Orbit]
   }

@@ -14,6 +14,7 @@ export const queries = `
   adminFetchInboundEmails:JSON
   
   adminFetchPendingIntegrations: [IDJsonResponse]
+  adminFetchStudyData: JSON!
 `;
 
 export const mutations = `
