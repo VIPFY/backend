@@ -18,7 +18,7 @@ export default {
       try {
         const app = await models.App.findOne({
           where: { id: appid, owner: null },
-          raw: true
+          raw: true,
         });
 
         const names = await Promise.all(
@@ -43,7 +43,7 @@ export default {
           const { name, images } = await models.App.findOne({
             where: { id, owner: null },
             raw: true,
-            attributes: ["images", "name"]
+            attributes: ["images", "name"],
           });
 
           await deleteAppImage(image, name);
@@ -68,12 +68,12 @@ export default {
         try {
           const { models, session } = context;
           const {
-            user: { company }
+            user: { company },
           } = decode(session.token);
 
           const nameExists = await models.App.findOne({
             where: { name: app.name, owner: null },
-            raw: true
+            raw: true,
           });
 
           if (nameExists) throw new Error("Name is already in Database!");
@@ -107,9 +107,9 @@ export default {
                   created,
                   name,
                   type,
-                  updated
-                }
-              }
+                  updated,
+                },
+              },
             },
             { transaction: ta }
           );
@@ -128,7 +128,7 @@ export default {
                 options: { external: true },
                 payperiod: { years: 1 },
                 cancelperiod: { secs: 1 },
-                hidden: true
+                hidden: true,
               },
               { transaction: ta }
             );
@@ -157,7 +157,7 @@ export default {
             let { name, images } = await models.App.findOne({
               where: { id: appid, owner: null },
               attributes: ["name", "images"],
-              raw: true
+              raw: true,
             });
             const folder = name;
 
@@ -174,7 +174,7 @@ export default {
               {
                 where: { id: appid, owner: null },
                 transaction: ta,
-                returning: true
+                returning: true,
               }
             );
           }
@@ -183,7 +183,7 @@ export default {
             const { name, logo: oldLogo } = await models.App.findOne({
               where: { id: appid, owner: null },
               attributes: ["name", "logo"],
-              raw: true
+              raw: true,
             });
             const folder = name;
 
@@ -204,7 +204,7 @@ export default {
             const { name, icon: oldIcon } = await models.App.findOne({
               where: { id: appid, owner: null },
               attributes: ["name", "icon"],
-              raw: true
+              raw: true,
             });
             const folder = name;
 
@@ -223,7 +223,7 @@ export default {
 
           if (app.developerwebsite) {
             const siteExists = await models.Website.findOne({
-              where: { unitid: developerid }
+              where: { unitid: developerid },
             });
             const website = app.developerwebsite;
 
@@ -240,7 +240,7 @@ export default {
             }
           } else if (app.supportwebsite) {
             const siteExists = await models.Website.findOne({
-              where: { unitid: supportid }
+              where: { unitid: supportid },
             });
             const website = app.supportwebsite;
 
@@ -258,7 +258,7 @@ export default {
           } else if (app.supportphone) {
             const unitid = supportid;
             const phoneExists = await models.Phone.findOne({
-              where: { unitid }
+              where: { unitid },
             });
 
             if (phoneExists) {
@@ -277,7 +277,7 @@ export default {
           if (options) {
             const { options: oldOptions } = await models.App.findOne({
               where: { id: appid, owner: null },
-              raw: true
+              raw: true,
             });
 
             await models.App.update(
@@ -285,7 +285,7 @@ export default {
               {
                 where: { id: appid, owner: null },
                 transaction: ta,
-                returning: true
+                returning: true,
               }
             );
           } else {
@@ -294,7 +294,7 @@ export default {
               {
                 where: { id: appid, owner: null },
                 transaction: ta,
-                returning: true
+                returning: true,
               }
             );
           }
@@ -305,5 +305,35 @@ export default {
 
       return models.AppDetails.findOne({ where: { id: appid, owner: null } });
     }
-  )
+  ),
+
+  finishStudy: requiresVipfyAdmin().createResolver(
+    async (_p, { participantID }, { models }) => {
+      try {
+        await models.Study.update(
+          { voucher: true },
+          { where: { id: participantID }, returning: true }
+        );
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  cancelFinishStudy: requiresVipfyAdmin().createResolver(
+    async (_p, { participantID }, { models }) => {
+      try {
+        await models.Study.update(
+          { voucher: false },
+          { where: { id: participantID }, returning: true }
+        );
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
 };
