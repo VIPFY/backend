@@ -22,4 +22,6 @@ export const mutations = `
   uploadAppImages(images: [Upload!]!, appid: ID!): Boolean!
   deleteImage(image: String!, id: ID!, type: String!): Boolean!
   updateApp(supportid: ID, developerid: ID, appid: ID!, app: AppInput, options: AppOptions): AppDetails!
-`;
+  cancelFinishStudy(participantID: ID!): Boolean!
+  finishStudy(participantID: ID!): Boolean!
+  `;
