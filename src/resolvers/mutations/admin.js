@@ -306,6 +306,28 @@ export default {
       return models.AppDetails.findOne({ where: { id: appid, owner: null } });
     }
   ),
+  createPlan: requiresVipfyAdmin().createResolver(
+    async (_p, { period, planName, price, appid }, { models }) => {
+      await models.sequelize.transaction(async ta => {
+        try {
+          await models.Plan.create(
+            {
+              name: planName,
+              appid,
+              price,
+              options: {},
+              payperiod: { mons: 6 },
+              cancelperiod: { mons: 6 },
+            },
+            { transaction: ta }
+          );
+        } catch ({ message }) {
+          throw new Error(message);
+        }
+      });
+      return true;
+    }
+  ),
 
   finishStudy: requiresVipfyAdmin().createResolver(
     async (_p, { participantID }, { models }) => {

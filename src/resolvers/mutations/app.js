@@ -1320,7 +1320,7 @@ export default {
           });
 
           const accounts = await models.LicenceData.findAll({
-            where: { boughtplanid: oldperiod.boughtplanid },
+            where: { boughtplanid: orbitid },
             returning: true,
             transaction: ta,
             raw: true,
@@ -1330,7 +1330,7 @@ export default {
           if (accounts) {
             users = await models.LicenceRight.findAll({
               where: {
-                licenceid: accounts[1].map(oa => oa.id),
+                licenceid: accounts.map(oa => oa.id),
                 endtime: {
                   [models.Op.or]: {
                     [models.Op.gt]: endtime,
@@ -1426,7 +1426,7 @@ export default {
           await createNotification(
             {
               message: endtime
-                ? endtime <= now()
+                ? endtime <= moment.now()
                   ? `User ${unitid} has deleted Orbit ${orbitid}`
                   : `User ${unitid} has set Orbit ${orbitid} to expire on ${moment(
                       endtime

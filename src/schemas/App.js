@@ -19,6 +19,7 @@ const appFields = `
   hidden: Boolean!
   owner: Department
   domains: [String]
+  internaldata: JSON
 `;
 
 const basicLicenceFields = `
@@ -41,7 +42,6 @@ export const types = `
 
   type ExecuteApp {
     ${appFields}
-    internaldata: JSON
   }
 
   type CompanyServiceNEW {
