@@ -71,12 +71,18 @@ export default {
             user: { company },
           } = decode(session.token);
 
+          let operation = "create";
+
           const nameExists = await models.App.findOne({
             where: { name: app.name, owner: null },
             raw: true,
           });
 
-          if (nameExists) throw new Error("Name is already in Database!");
+          if (nameExists && !app.external) {
+            operation = "update";
+          } else if (nameExists && app.external) {
+            throw new Error("Sorry, an app with that name already exists!");
+          }
 
           const [logo, icon] = await Promise.all(
             app.images.map(async (upload, index) => {
@@ -87,56 +93,101 @@ export default {
               return name;
             })
           );
-          const productData = await createProduct(app.name);
-          const { id, active, created, name, type, updated } = productData;
           delete app.images;
 
-          const newApp = await models.App.create(
-            {
-              ...app,
-              logo,
-              icon,
-              disabled: app.disabled ? app.disabled : false,
-              options,
-              developer: company,
-              supportunit: company,
-              internaldata: {
-                stripe: {
-                  id,
-                  active,
-                  created,
-                  name,
-                  type,
-                  updated,
-                },
-              },
-            },
-            { transaction: ta }
-          );
-
+          let appData;
           let plan = null;
 
-          if (app.external) {
-            plan = await models.Plan.create(
+          if (operation == "create") {
+            appData = await models.App.create(
               {
-                name: `${app.name} External`,
-                appid: newApp.dataValues.id,
-                teaserdescription: `External Plan for ${app.name}`,
-                startdate: models.sequelize.fn("NOW"),
-                numlicences: 0,
-                price: 0.0,
-                options: { external: true },
-                payperiod: { years: 1 },
-                cancelperiod: { secs: 1 },
-                hidden: true,
+                ...app,
+                logo,
+                icon,
+                disabled: app.disabled ? app.disabled : false,
+                options,
+                developer: company,
+                supportunit: company,
               },
               { transaction: ta }
             );
+
+            if (app.external) {
+              plan = await models.Plan.create(
+                {
+                  name: `${app.name} External`,
+                  appid: appData.dataValues.id,
+                  teaserdescription: `External Plan for ${app.name}`,
+                  startdate: models.sequelize.fn("NOW"),
+                  numlicences: 0,
+                  price: 0.0,
+                  options: { external: true },
+                  payperiod: { years: 1 },
+                  cancelperiod: { secs: 1 },
+                  hidden: true,
+                },
+                { transaction: ta }
+              );
+            }
+          } else {
+            let newOptions = options;
+
+            if (options) {
+              newOptions = { ...nameExists.oldOptions, ...options };
+            }
+
+            appData = await models.App.update(
+              {
+                ...app,
+                logo,
+                icon,
+                disabled: app.disabled ? app.disabled : false,
+                options: newOptions,
+                developer: company,
+                supportunit: company,
+              },
+              { where: { id: nameExists.id }, transaction: ta }
+            );
+
+            if (app.supportwebsite) {
+              const siteExists = await models.Website.findOne({
+                where: { unitid: nameExists.id },
+              });
+              const website = app.supportwebsite;
+
+              if (siteExists) {
+                await models.Website.update(
+                  { website },
+                  { where: { unitid: nameExists.id }, transaction: ta }
+                );
+              } else {
+                await models.Website.create(
+                  { website, unitid: nameExists.id },
+                  { transaction: ta }
+                );
+              }
+            } else if (app.supportphone) {
+              const phoneExists = await models.Phone.findOne({
+                where: { unitid: nameExists.id },
+              });
+
+              if (phoneExists) {
+                await models.Phone.update(
+                  { number: app.supportphone },
+                  { where: { unitid: nameExists.id }, transaction: ta }
+                );
+              } else {
+                await models.Phone.create(
+                  { number: app.supportphone, unitid: nameExists.id },
+                  { transaction: ta }
+                );
+              }
+            }
           }
 
-          await createLog(context, "updateProfilePic", { newApp, plan }, ta);
+          await createLog(context, "createApp", { appData, plan }, ta);
 
-          return newApp.dataValues.id;
+          return appData.dataValues.id;
         } catch ({ message }) {
           throw new Error(message);
         }
