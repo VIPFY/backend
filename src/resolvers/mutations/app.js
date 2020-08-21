@@ -1663,8 +1663,8 @@ export default {
             { company, level: 1 },
             null,
             {
-              users: users.reduce((u, ua) => {
-                if (!ua.find(e => e == u)) {
+              users: users.reduce((ua, u) => {
+                if (!ua || !ua.find(e => e == u)) {
                   return ua.push(u);
                 } else {
                   return ua;
@@ -1809,8 +1809,8 @@ export default {
             { company, level: 1 },
             null,
             {
-              users: allusers.reduce((u, ua) => {
-                if (!ua.find(e => e == u)) {
+              users: allusers.reduce((ua, u) => {
+                if (!ua || !ua.find(e => e == u)) {
                   return ua.push(u);
                 } else {
                   return ua;
@@ -2033,6 +2033,7 @@ export default {
           where appid = :appid
                 and usedby = :company
           and key ->> 'employeeIntegrated' is not null
+          and (endtime is null or endtime > now())
         `,
           {
             replacements: {
