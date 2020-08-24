@@ -1,11 +1,11 @@
 import { decode } from "jsonwebtoken";
+import moment from "moment";
 import { getStats as serviceStats } from "@vipfy-private/services";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
-import { parentAdminCheck } from "../../helpers/functions";
-import { listInvoices } from "../../services/stripe";
 import { NormalError } from "../../errors";
 import { getAuthStats } from "../../helpers/auth";
 import { version as serverVersion } from "../../../package.json";
+import { fetchStudyData } from "../../services/aws";
 
 export default {
   adminFetchAllApps: requiresVipfyAdmin().createResolver(
@@ -30,7 +30,7 @@ export default {
         try {
           const {
             user: { unitid },
-          } = decode(token);
+          } = decode(session.token);
           const me = await models.User.findByPk(unitid);
 
           if (me.suspended) throw new Error("This User is suspended!");
@@ -46,7 +46,7 @@ export default {
   ),
 
   adminFetchAppById: requiresVipfyAdmin().createResolver(
-    async (parent, { id }, { models }) => {
+    async (_parent, { id }, { models }) => {
       try {
         return await models.AppDetails.findOne({ where: { id } });
       } catch (err) {
@@ -56,7 +56,7 @@ export default {
   ),
 
   allUsers: requiresVipfyAdmin().createResolver(
-    async (parent, { limit, offset }, { models }) => {
+    async (_parent, { limit, offset }, { models }) => {
       try {
         const users = await models.User.findAll({
           limit,
@@ -79,7 +79,7 @@ export default {
   ),
 
   allCompanies: requiresVipfyAdmin().createResolver(
-    async (parent, { limit, offset }, { models }) => {
+    async (_parent, { limit, offset }, { models }) => {
       try {
         const companies = await models.Department.findAll({
           limit,
@@ -107,7 +107,7 @@ export default {
   })),
 
   adminFetchEmailData: requiresVipfyAdmin().createResolver(
-    async (parent, { emailid }, { models }) => {
+    async (_parent, { emailid }, { models }) => {
       try {
         const email = await models.InboundEmail.findOne({
           where: { id: emailid },
@@ -119,7 +119,7 @@ export default {
     }
   ),
   adminFetchInboundEmails: requiresVipfyAdmin().createResolver(
-    async (parent, args, { models }) => {
+    async (_parent, _args, { models }) => {
       try {
         const emails = await models.InboundEmail.findAll();
         return emails;
@@ -128,16 +128,92 @@ export default {
       }
     }
   ),
+
   adminFetchPendingIntegrations: requiresVipfyAdmin().createResolver(
-    async (parent, args, { models }) => {
+    async (_parent, _args, { models }) => {
       try {
         return models.sequelize.query(
           `SELECT id, options as key FROM app_data 
             WHERE app_data.options ? 'pending'`,
-          {
-            type: models.sequelize.QueryTypes.SELECT,
-          }
+          { type: models.sequelize.QueryTypes.SELECT }
         );
+      } catch (err) {
+        throw new Error(err);
+      }
+    }
+  ),
+
+  adminFetchStudyData: requiresVipfyAdmin().createResolver(
+    async (_p, _args, { models }) => {
+      try {
+        const [users, studyData] = await Promise.all([
+          models.Study.findAll({
+            attributes: ["id", "email", "accept_tos_study", "voucher"],
+            raw: true,
+          }),
+          fetchStudyData(),
+        ]);
+
+        const VIPFY_USERS = {
+          10: "035d2b90-8489-4ef1-9876-423ada82788b",
+          9: "035d2b90-8489-4ef1-9876-423ada82788c",
+          11: "035d2b90-8489-4ef1-9876-423ada82788d",
+          1: "035d2b90-8489-4ef1-9876-423ada82788e",
+          12: "035d2b90-8489-4ef1-9876-423ada82789f",
+          8: "035d2b90-8489-4ef1-9876-423ada82788f",
+        };
+
+        const monstrosity = studyData.reduce((acc, cV) => {
+          // This will obviously break if the structure of the bucket changes
+          // eslint-disable-next-line prefer-const
+          let [_root, userID, subFolder, file] = cV.Key.split("/");
+
+          if (userID.length < 3) {
+            userID = VIPFY_USERS[userID];
+          }
+
+          if (!acc[userID]) {
+            const user = users.find(({ id }) => id == userID);
+
+            acc[userID] = {
+              id: userID,
+              email: user.email,
+              registrationDate: user.accept_tos_study,
+              dates: new Set(),
+              amountFiles: 0,
+              totalByteSize: 0,
+              voucher: user.voucher,
+            };
+          }
+
+          if (subFolder && file) {
+            const date = moment(cV.LastModified).format("DD.MM.YY");
+
+            acc[userID].dates.add(date);
+            ++acc[userID].amountFiles;
+            acc[userID].totalByteSize += cV.Size;
+          }
+          return acc;
+        }, {});
+
+        users.forEach(user => {
+          if (monstrosity[user.id]) {
+            // Somehow Graphql does not like a set and returns nothing
+            monstrosity[user.id].dates = [...monstrosity[user.id].dates];
+          } else {
+            monstrosity[user.id] = {
+              id: user.id,
+              email: user.email,
+              registrationDate: user.accept_tos_study,
+              dates: [],
+              amountFiles: 0,
+              totalByteSize: 0,
+              voucher: user.voucher,
+            };
+          }
+        });
+
+        return monstrosity;
       } catch (err) {
         throw new Error(err);
       }

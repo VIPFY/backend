@@ -132,6 +132,55 @@ export const deleteAppImage = async file => {
 };
 
 /**
+ * Response Object of the s3.listObjectsV2 method
+ * https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#listObjectsV2-property
+ *
+ * @typedef {Object} listObjectsV2Res
+ * @param {string} res.Key - The name that you assign to an object. You use the object key to retrieve the object.
+ * @param {Date} res.LastModified - The date the Object was Last Modified
+ * @param {string} res.ETag - The entity tag is a hash of the object. The ETag reflects changes only to the contents of an object, not its metadata. The ETag may or may not be an MD5 digest of the object data. Whether or not it is depends on how the object was created and how it is encrypted.
+ * @param {number} res.Size - Size in bytes of the object
+ * @param {string} res.StorageClass - The class of storage used to store the object.
+ */
+
+/**
+ * Fetches recursively metadata about files in the study bucket
+ *
+ * @param {string} [startAfter] - The method only returns 1000 entries, so if this token is supplied, it starts the list after it. Will be automatically provided by the function.
+ * @param {listObjectsV2Res[]} [res=[]] - The full list {@link listObjectsV2Res}
+ * @returns {listObjectsV2Res[]}
+ */
+export async function fetchStudyData(startAfter, res = []) {
+  const params = {
+    Bucket: "vipfy-studien",
+    Prefix: "security/",
+  };
+
+  if (startAfter) {
+    params.StartAfter = startAfter;
+    // Turns into an endless loop if not provided, even as it is
+    // technically redundant. These morons at AWS...
+    params.ContinuationToken = startAfter;
+  }
+
+  try {
+    console.log("Fetching data... 🚚");
+    const data = await s3.listObjectsV2(params).promise();
+
+    if (data.IsTruncated && data.NextContinuationToken) {
+      return await fetchStudyData(data.NextContinuationToken, [
+        ...res,
+        ...data.Contents,
+      ]);
+    }
+    console.log("\x1b[1m%s\x1b[0m", "Fetching Done! 💪");
+    return res;
+  } catch (error) {
+    throw new Error(error);
+  }
+}
+
+/**
  * Generates a link where we can download the invoice.
  *
  * @export

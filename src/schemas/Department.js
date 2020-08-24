@@ -115,7 +115,7 @@ export const queries = `
 
 export const mutations = `
   setVatID(vatID: String!): Department!
-  editDepartmentName(departmentid: ID!, name: String!): Response!
+  editDepartmentName(departmentid: ID, name: String!): Response!
   createEmployee(name: HumanName!, emails: [EmailInput!]!, password: String, needpasswordchange: Boolean, file: Upload, birthday: Date, hiredate: Date, address: AddressInput, position: String, phones: [PhoneInput], passkey: String!, passwordMetrics: PasswordMetricsInput!, personalKey: KeyInput!, passwordsalt: String!): SemiPublicUser!
   deleteUser(userid: ID!, autodelete: Boolean): Boolean!
 

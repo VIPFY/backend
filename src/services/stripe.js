@@ -13,7 +13,7 @@ export const createProduct = async app => {
   try {
     const res = await stripe.products.create({
       name: app,
-      type: "service"
+      type: "service",
     });
 
     return res;
@@ -70,11 +70,11 @@ export const createCustomer = async ({ customer, address, source }) => {
       description: customer.name,
       email: customer.email,
       metadata: {
-        ip: customer.ip
+        ip: customer.ip,
       },
       tax_info: {
         tax_id: customer.vatID,
-        type: "vat"
+        type: "vat",
       },
       shipping: {
         name: customer.name,
@@ -82,10 +82,10 @@ export const createCustomer = async ({ customer, address, source }) => {
           line1: address.address_line1,
           city: address.address_city,
           country: address.address_country,
-          postal_code: address.address_zip
-        }
+          postal_code: address.address_zip,
+        },
       },
-      source
+      source,
     });
 
     return res;
@@ -101,9 +101,16 @@ export const createCustomer = async ({ customer, address, source }) => {
  */
 export const listCards = async id => {
   try {
-    const res = await stripe.customers.listCards(id);
+    const res = await stripe.paymentMethods.list({
+      customer: id,
+      type: "card",
+    });
 
-    return res;
+    const cards = res.data.map((pm, k) => {
+      return { id: pm.id, name: pm.billing_details.name, ...pm.card };
+    });
+
+    return cards;
   } catch (err) {
     throw new Error(err.message);
   }
@@ -169,10 +176,7 @@ const fetchSubscription = async id => {
  */
 export const createSubscription = async (customer, items) => {
   try {
-    const nextMonth = moment()
-      .add(1, "months")
-      .startOf("month")
-      .unix();
+    const nextMonth = moment().add(1, "months").startOf("month").unix();
 
     // const inTenMinutes = moment()
     //   .add(10, "minutes")
@@ -180,7 +184,7 @@ export const createSubscription = async (customer, items) => {
     const res = await stripe.subscriptions.create({
       customer,
       items,
-      billing_cycle_anchor: nextMonth
+      billing_cycle_anchor: nextMonth,
       // trial_end: inTenMinutes
       // tax_percent: tax
     });
@@ -202,7 +206,7 @@ export const createSubscription = async (customer, items) => {
 export const cancelSubscription = async id => {
   try {
     const res = await stripe.subscriptions.update(id, {
-      cancel_at_period_end: true
+      cancel_at_period_end: true,
     });
 
     return res;
@@ -243,7 +247,7 @@ export const updateSubscription = async (id, items) => {
   try {
     const res = await stripe.subscriptions.update(id, {
       cancel_at_period_end: false,
-      items
+      items,
     });
 
     return res;
@@ -265,7 +269,7 @@ export const addSubscriptionItem = async (subscription, plan) => {
   try {
     const res = await stripe.subscriptionItems.create({
       subscription,
-      plan
+      plan,
     });
 
     return res;
@@ -345,7 +349,7 @@ export const updateSubscriptionItem = async (item, plan) => {
 export const reactivateSubscription = async id => {
   try {
     const res = await stripe.subscriptions.update(id, {
-      cancel_at_period_end: false
+      cancel_at_period_end: false,
     });
 
     return res;
@@ -394,7 +398,7 @@ export const listInvoices = async () => {
 export const changeDefaultCard = async (customer, card) => {
   try {
     const res = await stripe.customers.update(customer, {
-      default_source: card
+      default_source: card,
     });
 
     return res;
