@@ -89,7 +89,7 @@ export default {
           hidden: false,
           owner: null,
         },
-        order: sortOptions ? [[sortOptions.name, sortOptions.order]] : "",
+        order: sortOptions ? [[sortOptions.name, sortOptions.order]] : [["name", "desc"]],
       });
 
       return allApps;
