@@ -211,6 +211,20 @@ export default {
     }
   ),
 
+  sendDownloadLink: async (_p, { email }) => {
+    try {
+      await sendEmail({
+        templateId: "d-dbe6fd61bc654b81b036cfced48f2066",
+        fromName: "VIPFY",
+        personalizations: [{ to: [{ email }], dynamic_template_data: {} }],
+      });
+
+      return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
+
   createOwnApp: requiresRights(["myself", "create-licences"]).createResolver(
     async (_p, { ssoData }, { models, session }) =>
       models.sequelize.transaction(async ta => {
