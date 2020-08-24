@@ -218,6 +218,7 @@ export default {
         fromName: "VIPFY",
         personalizations: [{ to: [{ email }], dynamic_template_data: {} }],
       });
+      console.log("Serverlogs","Sent download link to " + email);
 
       return true;
     } catch (err) {
