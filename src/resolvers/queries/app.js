@@ -59,6 +59,45 @@ export default {
     }
   ),
 
+  fetchMarketplaceApps: async (
+    _P,
+    { limit, offset, sortOptions },
+    { models }
+  ) => {
+    try {
+      const allApps = await models.AppDetails.findAll({
+        limit,
+        offset,
+        attributes: [
+          "id",
+          "description",
+          "teaserdescription",
+          "name",
+          "logo",
+          "icon",
+          "needssubdomain",
+          "developername",
+          "developerwebsite",
+          "images",
+          "options",
+          "color",
+          "features",
+        ],
+        where: {
+          disabled: false,
+          deprecated: false,
+          hidden: false,
+          owner: null,
+        },
+        order: sortOptions ? [[sortOptions.name, sortOptions.order]] : [["name", "desc"]],
+      });
+
+      return allApps;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
+
   fetchAppById: requiresRights(["view-apps"]).createResolver(
     async (_parent, { id }, { models, session }) => {
       try {
@@ -188,33 +227,33 @@ export default {
           }
         }
 
-        if (domain){
-        if (apps.length === 0) {
-          //Added domains
-          apps = await models.AppDetails.findAll(
-            {
-              where: {
-                domains: { [models.Op.contains]: [domain] },
-                disabled: false,
-                deprecated: false,
-                owner: { [models.Op.or]: [null, company] },
+        if (domain) {
+          if (apps.length === 0) {
+            //Added domains
+            apps = await models.AppDetails.findAll(
+              {
+                where: {
+                  domains: { [models.Op.contains]: [domain] },
+                  disabled: false,
+                  deprecated: false,
+                  owner: { [models.Op.or]: [null, company] },
+                },
               },
-            },
-            { plain: true }
-          );
-        }
-        if (apps.length === 0) {
-          //Login Domains
-          apps = await models.sequelize.query(
-            `Select id from app_details where position(:domain in loginurl) > 0
+              { plain: true }
+            );
+          }
+          if (apps.length === 0) {
+            //Login Domains
+            apps = await models.sequelize.query(
+              `Select id from app_details where position(:domain in loginurl) > 0
             AND disabled = false AND deprecated = false
             AND (owner is null OR owner = :company);`,
-            {
-              replacements: { domain, company },
-              type: models.sequelize.QueryTypes.SELECT,
-            }
-          );
-        }
+              {
+                replacements: { domain, company },
+                type: models.sequelize.QueryTypes.SELECT,
+              }
+            );
+          }
         }
         if (apps.length > 0) {
           const licences = await models.sequelize.query(
