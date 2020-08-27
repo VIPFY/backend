@@ -281,11 +281,7 @@ export default {
       }
     }),
 
-  setupFinished: async (
-    _p,
-    { country, vatoption, vatnumber, placeId, ownAdress, username },
-    { models, session }
-  ) =>
+  setupFinished: async (_p, { username, phoneNumber }, { models, session }) =>
     models.sequelize.transaction(async ta => {
       try {
         const {
@@ -316,44 +312,22 @@ export default {
           );
         }
 
-        if (placeId && placeId !== "OWN") {
-          const { json } = await googleMapsClient
-            .place({
-              placeid: placeId,
-              fields: [
-                "formatted_address",
-                "international_phone_number",
-                "website",
-                "address_component",
-              ],
-            })
-            .asPromise();
-          const addressData = parseAddress(json.result.address_components);
-
-          await models.Address.create(
-            {
-              ...addressData,
-              unitid: company,
-              tags: ["main"],
-            },
+        let p2;
+        if (phoneNumber) {
+          p2 = models.Phone.create(
+            { number: phoneNumber, tags: ["private"], unitid },
             { transaction: ta }
           );
         }
 
-        const p2 = models.DepartmentData.update(
+        const p3 = models.DepartmentData.update(
           {
             setupfinished: true,
-            statisticdata: {
-              placeId,
-              ownAdress,
-              vatoption,
-              vatnumber,
-              country,
-            },
           },
           { where: { unitid: company }, transaction: ta }
         );
-        await Promise.all([p1, p2]);
+
+        await Promise.all([p1, p2, p3]);
 
         return { ok: true };
       } catch (err) {
