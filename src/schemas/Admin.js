@@ -24,4 +24,5 @@ export const mutations = `
   updateApp(supportid: ID, developerid: ID, appid: ID!, app: AppInput, options: AppOptions): AppDetails!
   cancelFinishStudy(participantID: ID!): Boolean!
   finishStudy(participantID: ID!): Boolean!
+  processMarketplaceApps(file: Upload!): Boolean!
   `;

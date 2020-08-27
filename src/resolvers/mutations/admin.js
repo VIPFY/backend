@@ -1,4 +1,6 @@
 import { decode } from "jsonwebtoken";
+import fs from "fs";
+import path from "path";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { createProduct } from "../../services/stripe";
 import { NormalError } from "../../errors";
@@ -329,6 +331,60 @@ export default {
           { voucher: false },
           { where: { id: participantID }, returning: true }
         );
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  processMarketplaceApps: requiresVipfyAdmin().createResolver(
+    async (_p, { file }, { models }) => {
+      try {
+        const FILE_PATH = path.join(__dirname, "../../files/apps.json");
+        const apps = await file;
+        console.log("⛴️ Bulk data received", apps);
+        const columns = [
+          "name",
+          "id",
+          "description",
+          "teaserdescription",
+          "ratings",
+          "logo",
+          "companySizes",
+          "website",
+          "JobDistribution",
+          "industryDistribution",
+          "alternatives",
+          "quotes",
+          "tags",
+        ];
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        fs.writeFileSync(
+          FILE_PATH,
+          apps.createReadStream().pipe(fs.createWriteStream(FILE_PATH))
+        );
+        // Needed, otherwise the file is not there
+        await sleep(500);
+
+        const myFile = fs.readFileSync(FILE_PATH, { encoding: "utf-8" });
+        const jsonData = await JSON.parse(myFile);
+        await models.sequelize.query(
+          `
+        INSERT INTO app_data (:columns)
+        FROM jsonb_read_files(:filePath)
+        ON CONFLICT (name)
+          DO
+            UPDATE SET email = EXCLUDED.email;
+        `,
+          { replacements: { filePath: FILE_PATH, columns } }
+        );
+
+        console.log("Upload worked 🤗", jsonData);
+        fs.unlinkSync(FILE_PATH);
+        console.log("File deleted 🗑️");
 
         return true;
       } catch (err) {
