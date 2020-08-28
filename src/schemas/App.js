@@ -286,6 +286,7 @@ export const types = `
 export const queries = `
   # Returns all apps in Vipfy
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
+  fetchMarketplaceApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
 
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
@@ -331,7 +332,7 @@ export const queries = `
 
 export const mutations = `
   sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
-
+  sendDownloadLink(email: String!): Boolean!
   createOwnApp(ssoData: SSOInput!): IDID
 
   # Deletes a licence on a set date, if it is after the normal cancel period
