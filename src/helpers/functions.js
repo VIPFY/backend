@@ -207,7 +207,7 @@ export const createNotification = async (
         console.log("ERROR informTeams-one", err);
       }
     }
-    if (informTeams && informTeams.teams) {
+    if (informTeams && informTeams.teams && informTeams.teams.length > 0) {
       try {
         const teammembers = await models.sequelize.query(
           `
