@@ -171,7 +171,7 @@ export const mutations = `
   updateEmployeePic(file: Upload!, userid: ID!): SemiPublicUser!
 
   #Setup Finished
-  setupFinished(country: String, vatoption: Int, vatnumber: String, placeId: String, ownAdress: String, username: String): Response!
+  setupFinished(username: String, phoneNumber: String): Response!
 
   # Agree to Vipfy Terms of Service and Privacy Agreement
   agreeTos: Response!

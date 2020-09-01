@@ -218,6 +218,7 @@ export default {
         fromName: "VIPFY",
         personalizations: [{ to: [{ email }], dynamic_template_data: {} }],
       });
+      console.log("Serverlogs","Sent download link to " + email);
 
       return true;
     } catch (err) {
@@ -1334,7 +1335,7 @@ export default {
           });
 
           const accounts = await models.LicenceData.findAll({
-            where: { boughtplanid: oldperiod.boughtplanid },
+            where: { boughtplanid: orbitid },
             returning: true,
             transaction: ta,
             raw: true,
@@ -1344,7 +1345,7 @@ export default {
           if (accounts) {
             users = await models.LicenceRight.findAll({
               where: {
-                licenceid: accounts[1].map(oa => oa.id),
+                licenceid: accounts.map(oa => oa.id),
                 endtime: {
                   [models.Op.or]: {
                     [models.Op.gt]: endtime,
@@ -1440,7 +1441,7 @@ export default {
           await createNotification(
             {
               message: endtime
-                ? endtime <= now()
+                ? endtime <= moment.now()
                   ? `User ${unitid} has deleted Orbit ${orbitid}`
                   : `User ${unitid} has set Orbit ${orbitid} to expire on ${moment(
                       endtime
@@ -1677,8 +1678,8 @@ export default {
             { company, level: 1 },
             null,
             {
-              users: users.reduce((u, ua) => {
-                if (!ua.find(e => e == u)) {
+              users: users.reduce((ua, u) => {
+                if (!ua || !ua.find(e => e == u)) {
                   return ua.push(u);
                 } else {
                   return ua;
@@ -1823,8 +1824,8 @@ export default {
             { company, level: 1 },
             null,
             {
-              users: allusers.reduce((u, ua) => {
-                if (!ua.find(e => e == u)) {
+              users: allusers.reduce((ua, u) => {
+                if (!ua || !ua.find(e => e == u)) {
                   return ua.push(u);
                 } else {
                   return ua;
@@ -2047,6 +2048,7 @@ export default {
           where appid = :appid
                 and usedby = :company
           and key ->> 'employeeIntegrated' is not null
+          and (endtime is null or endtime > now())
         `,
           {
             replacements: {
