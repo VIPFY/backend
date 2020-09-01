@@ -12,7 +12,7 @@ const appFields = `
   images: [String]
   features: JSON
   options: JSON
-  developer: Unit!
+  developer: Unit
   supportunit: Unit!
   color: String!
   deprecated: Boolean!

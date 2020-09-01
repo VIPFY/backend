@@ -340,56 +340,102 @@ export default {
   ),
 
   processMarketplaceApps: requiresVipfyAdmin().createResolver(
-    async (_p, { file }, { models }) => {
-      try {
-        const FILE_PATH = path.join(__dirname, "../../files/apps.json");
-        const apps = await file;
-        console.log("⛴️ Bulk data received", apps);
-        const columns = [
-          "name",
-          "id",
-          "description",
-          "teaserdescription",
-          "ratings",
-          "logo",
-          "companySizes",
-          "website",
-          "JobDistribution",
-          "industryDistribution",
-          "alternatives",
-          "quotes",
-          "tags",
-        ];
-        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    async (_p, { file }, { models }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const FILE_PATH = path.join(__dirname, "../../files/apps.json");
+          // const apps = await file;
+          // console.log("⛴️ Bulk data received", apps);
 
-        fs.writeFileSync(
-          FILE_PATH,
-          apps.createReadStream().pipe(fs.createWriteStream(FILE_PATH))
-        );
-        // Needed, otherwise the file is not there
-        await sleep(500);
+          const columns = [
+            "name",
+            "description",
+            "teaserdescription",
+            "ratings",
+            "logo",
+            "website",
+            "alternatives",
+            "tags",
+            "externalid",
+            "externalstatistics",
+          ];
+          const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-        const myFile = fs.readFileSync(FILE_PATH, { encoding: "utf-8" });
-        const jsonData = await JSON.parse(myFile);
-        await models.sequelize.query(
-          `
-        INSERT INTO app_data (:columns)
-        FROM jsonb_read_files(:filePath)
-        ON CONFLICT (name)
-          DO
-            UPDATE SET email = EXCLUDED.email;
-        `,
-          { replacements: { filePath: FILE_PATH, columns } }
-        );
+          // fs.writeFileSync(
+          //   FILE_PATH,
+          //   apps.createReadStream().pipe(fs.createWriteStream(FILE_PATH))
+          // );
+          //  Needed, otherwise the file is not there
+          await sleep(500);
 
-        console.log("Upload worked 🤗", jsonData);
-        fs.unlinkSync(FILE_PATH);
-        console.log("File deleted 🗑️");
+          const myFile = fs.readFileSync(FILE_PATH, { encoding: "utf-8" });
+          const jsonList = await JSON.parse(myFile);
 
-        return true;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
-      }
-    }
+          const createPromises = jsonList.map(app =>
+            models.App.findOrCreate({
+              where: { externalid: app.externalid },
+              defaults: app,
+              transaction: ta,
+            })
+          );
+
+          const createdApps = await Promise.all(createPromises);
+          const appsToUpdate = [];
+          const deleteOldQuotes = [];
+          const quotes = [];
+
+          createdApps.forEach(([app, created]) => {
+            const jsonApp = jsonList.find(
+              node => node.externalid == app.externalid
+            );
+
+            if (!created) {
+              appsToUpdate.push(jsonApp);
+
+              deleteOldQuotes.push(
+                models.Quote.destroy({
+                  where: { appid: app.id },
+                  transaction: ta,
+                })
+              );
+            }
+
+            if (jsonApp.quotes) {
+              jsonApp.quotes.forEach(quote => {
+                quotes.push(
+                  models.Quote.create(
+                    { appid: app.dataValues.id, ...quote },
+                    { transaction: ta }
+                  )
+                );
+              });
+            }
+
+            // TODO: Update table with app alternatives as soon as Conrad is ready
+          });
+
+          const updatePromises = appsToUpdate.map(app =>
+            models.App.update(app, {
+              where: { externalid: app.externalid },
+              transaction: ta,
+            })
+          );
+
+          await Promise.all(updatePromises);
+          await Promise.all(deleteOldQuotes);
+          await Promise.all(quotes);
+
+          console.log("Upload worked 🤗");
+          // fs.unlinkSync(FILE_PATH);
+          // console.log("File deleted 🗑️");
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
   ),
 };
