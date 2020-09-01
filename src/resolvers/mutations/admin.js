@@ -344,27 +344,14 @@ export default {
       models.sequelize.transaction(async ta => {
         try {
           const FILE_PATH = path.join(__dirname, "../../files/apps.json");
-          // const apps = await file;
-          // console.log("⛴️ Bulk data received", apps);
-
-          const columns = [
-            "name",
-            "description",
-            "teaserdescription",
-            "ratings",
-            "logo",
-            "website",
-            "alternatives",
-            "tags",
-            "externalid",
-            "externalstatistics",
-          ];
+          const apps = await file;
           const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+          console.log("⛴️ Bulk data received", apps);
 
-          // fs.writeFileSync(
-          //   FILE_PATH,
-          //   apps.createReadStream().pipe(fs.createWriteStream(FILE_PATH))
-          // );
+          fs.writeFileSync(
+            FILE_PATH,
+            apps.createReadStream().pipe(fs.createWriteStream(FILE_PATH))
+          );
           //  Needed, otherwise the file is not there
           await sleep(500);
 
@@ -426,8 +413,8 @@ export default {
           await Promise.all(quotes);
 
           console.log("Upload worked 🤗");
-          // fs.unlinkSync(FILE_PATH);
-          // console.log("File deleted 🗑️");
+          fs.unlinkSync(FILE_PATH);
+          console.log("File deleted 🗑️");
 
           return true;
         } catch (err) {
