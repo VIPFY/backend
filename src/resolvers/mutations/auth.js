@@ -439,16 +439,27 @@ export default {
       const [emailExists] = await ctx.models.Login.findAll({
         where: {
           email,
-          companyban: { [ctx.models.Op.or]: [null, false] },
           deleted: { [ctx.models.Op.or]: [null, false] },
-          banned: { [ctx.models.Op.or]: [null, false] },
-          suspended: { [ctx.models.Op.or]: [null, false] },
         },
         raw: true,
       });
 
       if (!emailExists) {
         throw new Error(message);
+      }
+
+      if (emailExists.companyban) {
+        throw new Error("You have been banned by your company admin");
+      }
+      if (emailExists.banned) {
+        throw new Error(
+          "You have been banned. Please contact support@vipfy.store"
+        );
+      }
+      if (emailExists.suspended) {
+        throw new Error(
+          "You have been temporary suspended. Please contact support@vipfy.store"
+        );
       }
 
       let valid = false;

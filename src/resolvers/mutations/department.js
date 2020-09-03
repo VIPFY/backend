@@ -865,8 +865,8 @@ export default {
               { where: { unitid: userid }, transaction: ta }
             ),
           ]);
-          if (vipfyPlan.key && !vipfyPlan.key.vipfyTrial) {
-            models.BoughtPlanPeriod.update(
+          if (vipfyPlan && vipfyPlan.key && !vipfyPlan.key.vipfyTrial) {
+            await models.BoughtPlanPeriod.update(
               {
                 totalprice:
                   parseFloat(vipfyPlan.totalprice) -
