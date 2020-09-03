@@ -24,4 +24,5 @@ export const mutations = `
   createPlan(period: String!, planName: String!, price: String!, appid: ID!): Boolean
   cancelFinishStudy(participantID: ID!): Boolean!
   finishStudy(participantID: ID!): Boolean!
+  processMarketplaceApps(file: Upload!): Boolean!
   `;
