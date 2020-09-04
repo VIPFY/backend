@@ -218,7 +218,7 @@ export default {
         fromName: "VIPFY",
         personalizations: [{ to: [{ email }], dynamic_template_data: {} }],
       });
-      console.log("Serverlogs","Sent download link to " + email);
+      console.log("Serverlogs", "Sent download link to " + email);
 
       return true;
     } catch (err) {
@@ -1172,9 +1172,9 @@ export default {
               {
                 receiver: userid,
                 message: starttime
-                  ? `User ${unitid} has assigned Account ${licenceid} to User ${unitid} starting at ${
-                      moment(starttime).toDate
-                    }`
+                  ? `User ${unitid} has assigned Account ${licenceid} to User ${unitid} starting at ${moment(
+                      starttime
+                    ).toDate()}`
                   : `User ${unitid} has assigned Account ${licenceid} to User ${unitid}`,
                 icon: "business-time",
                 link: `dashboard`,
