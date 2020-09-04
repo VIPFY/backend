@@ -89,7 +89,9 @@ export default {
           hidden: false,
           owner: null,
         },
-        order: sortOptions ? [[sortOptions.name, sortOptions.order]] : [["name", "desc"]],
+        order: sortOptions
+          ? [[sortOptions.name, sortOptions.order]]
+          : [["name", "desc"]],
       });
 
       return allApps;
@@ -904,6 +906,7 @@ export default {
                 WHERE ((dd.boughtplanid = d3.boughtplanid) AND
                 (dd.departmentid = d3.departmentid) AND
                 usedby=:company and boughtplan_view.id=:orbitid)))))))
+                where boughtplan_view.id=:orbitid
         GROUP BY boughtplan_view.id, boughtplan_view.buyer, boughtplan_view.planid,
         boughtplan_view.buytime, boughtplan_view.endtime, boughtplan_view.key,
         boughtplan_view.disabled, boughtplan_view.payer, boughtplan_view.totalprice,
