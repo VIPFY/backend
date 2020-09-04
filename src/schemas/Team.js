@@ -43,7 +43,7 @@ export const queries = `
   `;
 
 export const mutations = `
-  createTeam(team: JSON!, addemployees: [JSON]!, apps: [JSON]!): ID! @deprecated(reason="use createTeamV2 instead")
+  createTeam(team: JSON!, addemployees: [JSON]!, apps: [JSON]!): ID! @deprecated(reason:"use createTeamV2 instead")
   createTeamV2(name: String!, profilepicture: Upload): Team!
   deleteTeam(teamid: ID!, deletejson: JSON, endtime: Date): Boolean!
   updateTeamPic(file: Upload!, teamid: ID!): Team!

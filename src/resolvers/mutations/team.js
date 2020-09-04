@@ -127,13 +127,16 @@ export default {
             { company }
           );
 
-          return await models.sequelize.query(
-            `SELECT * FROM team_view WHERE unitid = :teamid`,
-            {
-              replacements: { teamid: unit.dataValues.id },
-              type: models.sequelize.QueryTypes.SELECT,
-            }
-          );
+          return (
+            await models.sequelize.query(
+              `SELECT * FROM team_view WHERE unitid = :teamid`,
+              {
+                replacements: { teamid: unit.dataValues.id },
+                type: models.sequelize.QueryTypes.SELECT,
+                transaction: ta,
+              }
+            )
+          )[0];
         } catch (err) {
           console.error("\x1b[1m%s\x1b[0m", "LOG err", err);
           throw new NormalError({
