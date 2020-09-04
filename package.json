@@ -23,7 +23,7 @@
     "build": "shx rm -rf dist && babel src -d dist --ignore 'tests' --copy-files --source-maps && bash insert_profiling.sh",
     "prestart": "npm run build",
     "start": "node dist/index.js",
-    "start-dev": "ENVIRONMENT=development nodemon --exec babel-node src/index.js",
+    "start-dev": "ENVIRONMENT=development nodemon --ignore 'files/' --exec babel-node src/index.js",
     "test": "jest --verbose --no-cache --forceExit",
     "test-jest": "jest --verbose --no-cache --forceExit --detectOpenHandles ./complexTests/testCompanyLeaderAccess.spec.js",
     "test-with-db": "npm run prepare-test-db && ENVIRONMENT=testing jest --verbose --no-cache --forceExit",
