@@ -1,4 +1,6 @@
 import { decode } from "jsonwebtoken";
+import fs from "fs";
+import path from "path";
 import { requiresVipfyAdmin } from "../../helpers/permissions";
 import { createProduct } from "../../services/stripe";
 import { NormalError } from "../../errors";
@@ -357,5 +359,92 @@ export default {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }
+  ),
+
+  processMarketplaceApps: requiresVipfyAdmin().createResolver(
+    async (_p, { file }, { models }) =>
+      models.sequelize.transaction(async ta => {
+        try {
+          const FILE_PATH = path.join(__dirname, "../../files/apps.json");
+          const apps = await file;
+          const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+          console.log("⛴️ Bulk data received", apps);
+
+          fs.writeFileSync(
+            FILE_PATH,
+            apps.createReadStream().pipe(fs.createWriteStream(FILE_PATH))
+          );
+          //  Needed, otherwise the file is not there
+          await sleep(500);
+
+          const myFile = fs.readFileSync(FILE_PATH, { encoding: "utf-8" });
+          const jsonList = await JSON.parse(myFile);
+
+          const createPromises = jsonList.map(app =>
+            models.App.findOrCreate({
+              where: { externalid: app.externalid },
+              defaults: app,
+              transaction: ta,
+            })
+          );
+
+          const createdApps = await Promise.all(createPromises);
+          const appsToUpdate = [];
+          const deleteOldQuotes = [];
+          const quotes = [];
+
+          createdApps.forEach(([app, created]) => {
+            const jsonApp = jsonList.find(
+              node => node.externalid == app.externalid
+            );
+
+            if (!created) {
+              appsToUpdate.push(jsonApp);
+
+              deleteOldQuotes.push(
+                models.Quote.destroy({
+                  where: { appid: app.id },
+                  transaction: ta,
+                })
+              );
+            }
+
+            if (jsonApp.quotes) {
+              jsonApp.quotes.forEach(quote => {
+                quotes.push(
+                  models.Quote.create(
+                    { appid: app.dataValues.id, ...quote },
+                    { transaction: ta }
+                  )
+                );
+              });
+            }
+
+            // TODO: Update table with app alternatives as soon as Conrad is ready
+          });
+
+          const updatePromises = appsToUpdate.map(app =>
+            models.App.update(app, {
+              where: { externalid: app.externalid },
+              transaction: ta,
+            })
+          );
+
+          await Promise.all(updatePromises);
+          await Promise.all(deleteOldQuotes);
+          await Promise.all(quotes);
+
+          console.log("Upload worked 🤗");
+          fs.unlinkSync(FILE_PATH);
+          console.log("File deleted 🗑️");
+
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
   ),
 };
