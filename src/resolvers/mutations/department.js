@@ -22,7 +22,7 @@ import {
 } from "../../helpers/functions";
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
-import { uploadUserImage } from "../../services/aws";
+import { uploadUserImage, deleteUserImage } from "../../services/aws";
 
 export default {
   createEmployee: requiresRights(["create-employees"]).createResolver(
@@ -306,6 +306,7 @@ export default {
         .then(async ({ user }) => {
           await createNotification(
             {
+              receiver: unitid,
               message: `User ${user.id} was successfully created by User ${unitid}`,
               icon: "user-plus",
               link: "employeemanager",
@@ -1042,6 +1043,9 @@ export default {
             raw: true,
             transaction: ta,
           });
+          if (oldUnit.profilepicture) {
+            await deleteUserImage(oldUnit.profilepicture);
+          }
           const [, updatedUnit] = await models.Unit.update(
             { profilepicture },
             { where: { id: company }, returning: true, transaction: ta }
