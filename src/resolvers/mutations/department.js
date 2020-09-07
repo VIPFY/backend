@@ -306,6 +306,7 @@ export default {
         .then(async ({ user }) => {
           await createNotification(
             {
+              receiver: unitid,
               message: `User ${user.id} was successfully created by User ${unitid}`,
               icon: "user-plus",
               link: "employeemanager",

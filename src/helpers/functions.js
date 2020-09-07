@@ -165,7 +165,7 @@ export const createNotification = async (
     ) {
       informIndividuals.users
         .filter(
-          t => receivers.length == 0 || receivers.find(f => f.receiver != t)
+          t => receivers.length == 0 || !receivers.find(f => f.receiver == t)
         )
         .forEach(t =>
           receivers.push({
@@ -194,7 +194,7 @@ export const createNotification = async (
           .filter(
             t =>
               receivers.length == 0 ||
-              receivers.find(f => f.receiver != t.employee)
+              !receivers.find(f => f.receiver == t.employee)
           )
           .forEach(t =>
             receivers.push({
@@ -213,10 +213,10 @@ export const createNotification = async (
           `
           SELECT DISTINCT employee
           FROM department_employee_view
-          WHERE id in :teamid;
+          WHERE id in (:teams);
           `,
           {
-            replacements: { teamid: informTeams.teams },
+            replacements: { teams: informTeams.teams },
             type: models.sequelize.QueryTypes.SELECT,
             transaction,
           }
@@ -226,7 +226,7 @@ export const createNotification = async (
           .filter(
             t =>
               receivers.length == 0 ||
-              receivers.find(f => f.receiver != t.employee)
+              !receivers.find(f => f.receiver == t.employee)
           )
           .forEach(t =>
             receivers.push({
@@ -260,7 +260,7 @@ export const createNotification = async (
           .filter(
             a =>
               receivers.length == 0 ||
-              receivers.find(f => f.receiver != a.employee)
+              !receivers.find(f => f.receiver == a.employee)
           )
           .forEach(a =>
             receivers.push({
