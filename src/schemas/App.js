@@ -19,6 +19,9 @@ const appFields = `
   hidden: Boolean!
   owner: Department
   domains: [String]
+  ratings: Ratings
+  externalstatistics: ExternalStatistics
+  tags: [String]
 `;
 
 const basicLicenceFields = `
@@ -42,6 +45,33 @@ export const types = `
   type ExecuteApp {
     ${appFields}
     internaldata: JSON
+  }
+
+  type Ratings {
+    overallRating: Int
+    combinedCustomerSupportRating: Int
+    combinedEaseOfUseRating: Int
+    combinedFunctionalityRating: Int
+    valueForMoneyRating: Int
+    recommendationRating: Int
+    easeOfSetupRating: Int
+    easeOfAdminRating: Int
+  }
+
+  type IndustryDistribution {
+    Business: Int
+    ResearchAndDevelopment: Int
+    Education: Int
+    CustomerRelations: Int
+    Accounting: Int
+    Administration: Int
+    Design: Int
+  }
+
+  type ExternalStatistics {
+    jobDistribution: JSON
+    industryDistribution: IndustryDistribution
+    companySizes: JSON
   }
 
   type CompanyServiceNEW {

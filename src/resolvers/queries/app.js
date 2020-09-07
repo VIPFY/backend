@@ -65,6 +65,7 @@ export default {
     { models }
   ) => {
     try {
+      // TODO: [VIP-1374] Split up into our own apps and the scraped external apps
       const allApps = await models.AppDetails.findAll({
         limit,
         offset,
@@ -82,6 +83,10 @@ export default {
           "options",
           "color",
           "features",
+          "ratings",
+          "externalstatistics",
+          "alternatives",
+          "tags",
         ],
         where: {
           disabled: false,
