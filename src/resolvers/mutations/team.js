@@ -44,7 +44,7 @@ export default {
             {
               unitid: unit.dataValues.id,
               name,
-              internaldata: { created: Date.now(), ...teamdata },
+              internaldata: { ...teamdata },
             },
             { transaction: ta }
           );
