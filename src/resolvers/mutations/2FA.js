@@ -13,7 +13,7 @@ export default {
     async (_p, { userid, type, code, codeId }, { models, session }) => {
       try {
         let {
-          user: { unitid, company }
+          user: { unitid, company },
         } = decode(session.token);
 
         if (userid && userid != unitid) {
@@ -22,14 +22,14 @@ export default {
 
         const { secret, id } = await models.TwoFA.findOne({
           where: { unitid, type, verified: false, id: codeId },
-          raw: true
+          raw: true,
         });
 
         const validToken = Speakeasy.totp.verify({
           secret: secret.base32,
           encoding: "base32",
           token: code,
-          window: 2
+          window: 2,
         });
 
         if (!validToken) {
@@ -48,31 +48,35 @@ export default {
   validate2FA: async (_p, { userid, type, token, twoFAToken }, ctx) => {
     try {
       const { models, SECRET } = ctx;
-      const { secret, id } = await models.TwoFA.findOne({
-        where: { unitid: userid, type, verified: true, deleted: null },
-        raw: true
-      });
+
       await checkToken(twoFAToken, "2FAToken");
 
-      const validToken = Speakeasy.totp.verify({
-        secret: secret.base32,
-        encoding: "base32",
-        token,
-        window: 2
+      const tokens = await models.TwoFA.findAll({
+        where: { unitid: userid, type, verified: true, deleted: null },
+        raw: true,
       });
+
+      const validToken = tokens.find(({ secret, id }) =>
+        Speakeasy.totp.verify({
+          secret: secret.base32,
+          encoding: "base32",
+          token,
+          window: 2,
+        })
+      );
 
       if (validToken) {
         const p1 = models.Login.findOne({
           where: { unitid: userid },
-          raw: true
+          raw: true,
         });
 
         const p2 = models.TwoFA.update(
           {
             lastused: models.sequelize.fn("NOW"),
-            used: models.sequelize.literal("used + 1")
+            used: models.sequelize.literal("used + 1"),
           },
-          { where: { id } }
+          { where: { id: validToken.id } }
         );
 
         const p3 = models.Token.update(
@@ -95,7 +99,7 @@ export default {
             session: ctx.sessionID,
             ...ctx.userData,
             ...location,
-            loggedInAt: Date.now()
+            loggedInAt: Date.now(),
           })
         );
 
@@ -160,16 +164,16 @@ export default {
             models.TwoFA.update(
               { deleted: models.sequelize.fn("NOW") },
               { where: { unitid: userid }, transaction: ta }
-            )
+            ),
           ]);
 
           return true;
         } catch (err) {
           throw new NormalError({
             message: err.message,
-            internalData: { err }
+            internalData: { err },
           });
         }
       })
-  )
+  ),
 };
