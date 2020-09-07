@@ -65,8 +65,8 @@ export default {
     }
   ),
 
-  fetchPublicTeam: requiresAuth().createResolver(
-    async (_, { teamid }, { models, session }) => {
+  fetchPublicTeam: requiresAuth.createResolver(
+    async (_p, { teamid }, { models, session }) => {
       const {
         user: { company },
       } = await decode(session.token);
@@ -87,7 +87,7 @@ export default {
   ),
 
   fetchTeamName: requiresAuth.createResolver(
-    async (parent, { teamid }, { models }) => {
+    async (_parent, { teamid }, { models }) => {
       try {
         const team = await models.sequelize.query(
           `SELECT name FROM department_data WHERE unitid = :teamid`,
