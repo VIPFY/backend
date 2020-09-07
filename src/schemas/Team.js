@@ -5,6 +5,13 @@ export const types = `
     icon: String
   }
 
+  type PublicTeam {
+    id: ID!
+    name: String!
+    profilepicture: String
+    iscompany: Boolean
+  }
+
   type Team {
     id: ID!
     name: String!
@@ -39,7 +46,8 @@ export const queries = `
   fetchTeams(userid: ID!): [Team]
   fetchCompanyTeams: [Team]
   fetchTeam(teamid: ID!): Team
-  fetchTeamName(teamid: ID!): String
+  fetchTeamName(teamid: ID!): String  @deprecated(reason: "Use fetchPublicTeam")
+  fetchPublicTeam(teamid: ID!): PublicTeam
   `;
 
 export const mutations = `
