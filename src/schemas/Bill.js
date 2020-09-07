@@ -240,4 +240,6 @@ export const mutations = `
   saveVatStatus(vat: VatInput!, country: String!): Boolean!
   savePromoCode(promoCode: String!): Boolean!
   saveBillingEmails(emaildelete: [String]!, emailadd: [String]!): Boolean!
+
+  createStripeUser: Boolean!
 `;

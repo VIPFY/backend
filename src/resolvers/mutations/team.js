@@ -516,8 +516,8 @@ export default {
               level: 3,
             },
             ta,
-            { company },
-            { teamid }
+            { company, level: 2 },
+            { teamid, level: 2 }
           );
 
           // await createLog(ctx, "addServiceToTeam", { teamid, serviceid }, ta);
