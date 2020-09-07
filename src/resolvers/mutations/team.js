@@ -79,6 +79,74 @@ export default {
       })
   ),
 
+  createTeamV2: requiresRights(["create-team"]).createResolver(
+    async (_p, { name, profilepicture }, ctx) =>
+      ctx.models.sequelize.transaction(async ta => {
+        try {
+          const { models, session } = ctx;
+
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
+
+          const unitArgs = {};
+          if (profilepicture) {
+            const parsedFile = await profilepicture;
+            const pic = await uploadTeamImage(parsedFile, teamPicFolder);
+            unitArgs.profilepicture = pic;
+          }
+
+          const unit = await models.Unit.create(unitArgs, { transaction: ta });
+
+          const p1 = models.DepartmentData.create(
+            {
+              unitid: unit.dataValues.id,
+              name,
+            },
+            { transaction: ta, returning: true }
+          );
+
+          const p2 = models.ParentUnit.create(
+            { parentunit: company, childunit: unit.dataValues.id },
+            { transaction: ta }
+          );
+
+          const [department, parentUnit] = await Promise.all([p1, p2]);
+
+          await createLog(ctx, "createTeam", { department, unit });
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: `User ${unitid} has created Team ${unit.dataValues.id}`,
+              icon: "users",
+              link: "teammanger",
+              changed: ["companyTeams"],
+            },
+            ta,
+            { company }
+          );
+
+          return (
+            await models.sequelize.query(
+              `SELECT * FROM team_view WHERE unitid = :teamid`,
+              {
+                replacements: { teamid: unit.dataValues.id },
+                type: models.sequelize.QueryTypes.SELECT,
+                transaction: ta,
+              }
+            )
+          )[0];
+        } catch (err) {
+          console.error("\x1b[1m%s\x1b[0m", "LOG err", err);
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
+  ),
+
   deleteTeam: requiresRights(["delete-team"]).createResolver(
     async (_, { teamid, deletejson, endtime }, ctx) =>
       ctx.models.sequelize.transaction(async ta => {
