@@ -11,7 +11,7 @@ import {
   check2FARights,
   fetchSessions,
   parseSessions,
-  generateFakeKey
+  generateFakeKey,
 } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
 import { AuthError, NormalError } from "../../errors";
@@ -23,7 +23,7 @@ export default {
       if (session && session.token) {
         try {
           const {
-            user: { unitid }
+            user: { unitid },
           } = decode(session.token);
 
           const me = await models.User.findByPk(unitid);
@@ -33,9 +33,9 @@ export default {
             const hasTwoFa = await models.Login.findOne({
               where: {
                 unitid: me.dataValues.id,
-                twofactor: { [models.Op.not]: null }
+                twofactor: { [models.Op.not]: null },
               },
-              raw: true
+              raw: true,
             });
 
             if (hasTwoFa) {
@@ -60,7 +60,7 @@ export default {
         } catch (err) {
           throw new NormalError({
             message: `Me-Query-ERROR ${err.message}`,
-            internalData: { err }
+            internalData: { err },
           });
         }
       } else throw new AuthError();
@@ -72,14 +72,14 @@ export default {
       try {
         const user = await models.User.findOne({
           where: { id: userid, deleted: false },
-          raw: true
+          raw: true,
         });
 
         return parentAdminCheck(user);
       } catch (err) {
         throw new NormalError({
           message: `fetchSemiPublicUser-Query-ERROR ${err.message}`,
-          internalData: { err }
+          internalData: { err },
         });
       }
     }
@@ -89,7 +89,7 @@ export default {
     try {
       const validToken = await models.Token.findOne({
         where: { token, type: "signUp" },
-        raw: true
+        raw: true,
       });
 
       if (!validToken) {
@@ -110,7 +110,7 @@ export default {
     async (_p, { type, userid }, { models, session }) => {
       try {
         let {
-          user: { unitid, company }
+          user: { unitid, company },
         } = decode(session.token);
 
         if (userid && userid != unitid) {
@@ -124,7 +124,7 @@ export default {
             unitid,
             secret,
             type: "totp",
-            lastused: models.sequelize.fn("NOW")
+            lastused: models.sequelize.fn("NOW"),
           });
 
           const qrCode = await QRCode.toDataURL(secret.otpauth_url);
@@ -144,7 +144,7 @@ export default {
             pubKeyCredParams: [{ type: "public-key", alg: -7 }],
             attestation: "direct",
             timeout: 60000,
-            challenge
+            challenge,
           };
 
           return { yubikey };
@@ -157,7 +157,7 @@ export default {
 
   fetchUsersSessions: requiresRights([
     "show-sessions",
-    "myself"
+    "myself",
   ]).createResolver(async (_p, { userid }, { redis }) => {
     try {
       const sessions = await fetchSessions(redis, userid);
@@ -175,9 +175,9 @@ export default {
           email,
           deleted: { [ctx.models.Op.or]: [null, false] },
           banned: { [ctx.models.Op.or]: [null, false] },
-          suspended: { [ctx.models.Op.or]: [null, false] }
+          suspended: { [ctx.models.Op.or]: [null, false] },
         },
-        raw: true
+        raw: true,
       });
 
       if (!emailExists || !emailExists.passwordsalt) {
@@ -188,7 +188,7 @@ export default {
         id: email,
         salt: emailExists.passwordsalt,
         ops: 2,
-        mem: 67108864
+        mem: 67108864,
       };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
@@ -224,7 +224,7 @@ export default {
         const keys = await models.Key.findAll({
           where: { unitid, encryptedby: null },
           order: [["createdat", "DESC"]],
-          limit: 1
+          limit: 1,
         });
 
         if (keys.length == 0) {
@@ -245,19 +245,19 @@ export default {
           email,
           deleted: { [models.Op.or]: [null, false] },
           banned: { [models.Op.or]: [null, false] },
-          suspended: { [models.Op.or]: [null, false] }
+          suspended: { [models.Op.or]: [null, false] },
         },
-        raw: true
+        raw: true,
       });
 
       if (!emailExists || !emailExists.recoveryprivatekey) {
         const [{ salt }, { salt: publicKey }] = await Promise.all([
           generateFakeKey(email),
-          generateFakeKey("asdfasd4adfga3de")
+          generateFakeKey("asdfasd4adfga3de"),
         ]);
 
         const token = sign({ data: cryptoRandomString(10) }, salt, {
-          expiresIn: "1h"
+          expiresIn: "1h",
         });
 
         return { encryptedKey: salt, publicKey, token };
@@ -272,7 +272,7 @@ export default {
       );
 
       const token = sign({ encryptedSecret: buffer.toString("hex") }, SECRET, {
-        expiresIn: "1h"
+        expiresIn: "1h",
       });
 
       await redis.set(email, secret, "EX", 3600);
@@ -280,10 +280,10 @@ export default {
       return {
         encryptedKey: emailExists.recoveryprivatekey,
         publicKey: emailExists.recoverypublickey,
-        token
+        token,
       };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
-  }
+  },
 };
