@@ -409,8 +409,8 @@ export default {
               );
             }
 
-            if (jsonApp.quotes) {
-              jsonApp.quotes.forEach(quote => {
+            if (jsonApp.quotes && jsonApp.quotes.length > 0) {
+              Object.values(jsonApp.quotes).forEach(quote => {
                 quotes.push(
                   models.Quote.create(
                     { appid: app.dataValues.id, ...quote },
