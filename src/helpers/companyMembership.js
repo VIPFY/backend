@@ -5,7 +5,7 @@ const NodeCache = require("node-cache");
 const companyMembershipCache = new NodeCache({
   checkperiod: 300,
   stdTTL: 300,
-  deleteOnExpire: true
+  deleteOnExpire: true,
 });
 
 /*
@@ -25,12 +25,12 @@ export const checkCompanyMembership = async (
   if (entityName == "user") {
     const user = await models.User.findOne({
       where: { id: entityID },
-      raw: true
+      raw: true,
     });
 
     if (!user) {
       throw new RightsError({
-        message: "The provided id does not belong to an user!"
+        message: "The provided id does not belong to an user!",
       });
     }
   }
@@ -42,7 +42,7 @@ export const checkCompanyMembership = async (
 
     if (cacheItem === false) {
       throw new RightsError({
-        message: `This ${entityName} doesn't belong to the user's company!`
+        message: `This ${entityName} doesn't belong to the user's company!`,
       });
     } else if (cacheItem === true) {
       return true;
@@ -58,7 +58,7 @@ export const checkCompanyMembership = async (
     {
       replacements: { company, child: entityID },
       type: models.sequelize.QueryTypes.SELECT,
-      raw: true
+      raw: true,
     }
   );
 
@@ -66,7 +66,7 @@ export const checkCompanyMembership = async (
 
   if (!valid || valid.deleted || valid.suspended || valid.banned) {
     throw new RightsError({
-      message: "You can only edit valid units!"
+      message: "You can only edit valid units!",
     });
   }
 
@@ -75,14 +75,14 @@ export const checkCompanyMembership = async (
 
   if (!inDepartment) {
     throw new RightsError({
-      message: `This ${entityName} doesn't belong to the user's company!`
+      message: `This ${entityName} doesn't belong to the user's company!`,
     });
   }
 
   return true;
 };
 
-export const checkLicenceValidilty = async (models, company, licenceid) => {
+export const checkLicenceValidity = async (models, company, licenceid) => {
   const account = await models.sequelize.query(
     `
     SELECT l.id
@@ -95,13 +95,13 @@ export const checkLicenceValidilty = async (models, company, licenceid) => {
         AND l.disabled = false AND bd.disabled = false`,
     {
       replacements: { company, licenceid },
-      type: models.sequelize.QueryTypes.SELECT
+      type: models.sequelize.QueryTypes.SELECT,
     }
   );
 
   if (account.length != 1) {
     throw new RightsError({
-      message: "Account is disabled, terminated or outside company."
+      message: "Account is disabled, terminated or outside company.",
     });
   }
 };
@@ -116,13 +116,13 @@ export const checkLicenceMembership = async (models, company, licenceid) => {
         AND l.id = :licenceid`,
     {
       replacements: { company, licenceid },
-      type: models.sequelize.QueryTypes.SELECT
+      type: models.sequelize.QueryTypes.SELECT,
     }
   );
 
   if (account.length != 1) {
     throw new RightsError({
-      message: "Account doesn't belong to the user's company!"
+      message: "Account doesn't belong to the user's company!",
     });
   }
 };
@@ -136,13 +136,13 @@ export const checkOrbitMembership = async (models, company, orbitid) => {
         AND id = :orbitid`,
     {
       replacements: { company, orbitid },
-      type: models.sequelize.QueryTypes.SELECT
+      type: models.sequelize.QueryTypes.SELECT,
     }
   );
 
   if (orbit.length != 1) {
     throw new RightsError({
-      message: "Orbit doesn't belong to the user's company!"
+      message: "Orbit doesn't belong to the user's company!",
     });
   }
 };

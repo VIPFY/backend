@@ -475,7 +475,7 @@ export default {
             createNotification(
               {
                 receiver: unitid,
-                message: `User ${id} have updated the password for User ${unitid}`,
+                message: `User ${id} has updated User ${unitid}'s password`,
                 icon: "lock-alt",
                 link: "profile",
                 changed: ["me"],

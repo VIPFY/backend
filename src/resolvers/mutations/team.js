@@ -12,7 +12,7 @@ import { uploadTeamImage, deleteUserImage } from "../../services/aws";
 import {
   checkOrbitMembership,
   checkCompanyMembership,
-  checkLicenceValidilty,
+  checkLicenceValidity,
 } from "../../helpers/companyMembership";
 
 export default {
@@ -470,7 +470,7 @@ export default {
                 a.employeeid,
                 "employee"
               );
-              await checkLicenceValidilty(models, company, a.accountid);
+              await checkLicenceValidity(models, company, a.accountid);
 
               await models.LicenceRight.create(
                 {
