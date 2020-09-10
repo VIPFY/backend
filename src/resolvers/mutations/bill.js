@@ -101,7 +101,7 @@ export default {
                   ...payingoptions,
                   stripe: {
                     ...payingoptions.stripe,
-                    cards: [...payingoptions.stripe.cards, { ...card }],
+                    cards: [...(payingoptions.stripe.cards || []), { ...card }],
                   },
                 },
               },
@@ -170,15 +170,18 @@ export default {
         } = decode(session.token);
 
         try {
-          const departmentPromo = await models.Unit.findOne({
+          const department = await models.Unit.findOne({
             where: { id: company },
             transaction: ta,
           });
-          if (!vat.valid || !checkVat(`${country}${vat.vatNumber}`)) {
+          if (
+            !vat.valid ||
+            (vat.vatNumber && !(await checkVat(`${country}${vat.vatNumber}`)))
+          ) {
             await models.DepartmentData.update(
               {
                 legalinformation: {
-                  ...departmentPromo.legalinformation,
+                  ...department.legalinformation,
                   vatstatus: null,
                 },
               },
@@ -188,7 +191,7 @@ export default {
             await models.DepartmentData.update(
               {
                 legalinformation: {
-                  ...departmentPromo.legalinformation,
+                  ...department.legalinformation,
                   vatstatus: {
                     valid: vat.valid,
                     vatNumber: vat.vatNumber,
@@ -425,6 +428,7 @@ export default {
 
           if (
             !paymentData.name ||
+            !paymentData.legalinformation.vatstatus ||
             !paymentData.legalinformation.vatstatus.valid
           ) {
             throw new BillingError({
@@ -482,15 +486,19 @@ export default {
             name: paymentData.name,
             email: emails[0].email,
             phone: phone && phone[0].number,
-            tax_exempt: legalinformation.vatstatus.vatNumber
-              ? "reverse"
-              : "exempt",
-            tax_id_data: legalinformation.vatstatus.vatNumber && [
-              {
-                type: "eu_vat",
-                value: `${address.country}${legalinformation.vatstatus.vatNumber}`,
-              },
-            ],
+            tax_exempt:
+              legalinformation.vatstatus && legalinformation.vatstatus.vatNumber
+                ? "reverse"
+                : "exempt",
+            tax_id_data:
+              legalinformation.vatstatus && legalinformation.vatstatus.vatNumber
+                ? [
+                    {
+                      type: "eu_vat",
+                      value: `${address.country}${legalinformation.vatstatus.vatNumber}`,
+                    },
+                  ]
+                : undefined,
             address: {
               city: address.address.city,
               line1: address.address.street,
@@ -506,6 +514,7 @@ export default {
                 ...paymentData.payingoptions,
                 stripe: {
                   id: stripeCustomer.id,
+                  cards: [],
                 },
               },
             },
@@ -1475,9 +1484,10 @@ export default {
                 stripe: {
                   ...paymentData.payingoptions.stripe,
                   cards: [
-                    paymentData.payingoptions.stripe.cards.filter(
-                      c => c != paymentMethodId
-                    ),
+                    paymentData.payingoptions.stripe.cards &&
+                      paymentData.payingoptions.stripe.cards.filter(
+                        c => c != paymentMethodId
+                      ),
                   ],
                 },
               },
@@ -1522,7 +1532,10 @@ export default {
                 ...payingoptions,
                 stripe: {
                   ...payingoptions.stripe,
-                  cards: [paymentMethodId, ...payingoptions.stripe.cards],
+                  cards: [
+                    paymentMethodId,
+                    ...(payingoptions.stripe.cards || []),
+                  ],
                 },
               },
             },
@@ -1563,9 +1576,11 @@ export default {
             raw: true,
           });
 
-          const updatedOrdercards = paymentData.payingoptions.stripe.cards.filter(
-            sc => sc != paymentMethodId
-          );
+          const updatedOrdercards = paymentData.payingoptions.stripe.cards
+            ? paymentData.payingoptions.stripe.cards.filter(
+                sc => sc != paymentMethodId
+              )
+            : [];
 
           updatedOrdercards.splice(index, 0, paymentMethodId);
 
