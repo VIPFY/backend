@@ -612,7 +612,7 @@ export default {
       createNotification(
         {
           receiver: victimid,
-          message: `User ${unitid} have sign User ${victimid} out!`,
+          message: `User ${unitid} has signed User ${victimid} out!`,
           icon: "lock-alt",
           link: "profile",
           changed: ["me"],
