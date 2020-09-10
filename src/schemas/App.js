@@ -22,6 +22,7 @@ const appFields = `
   ratings: Ratings
   externalstatistics: ExternalStatistics
   tags: [String]
+  alternatives: JSON
 `;
 
 const basicLicenceFields = `
