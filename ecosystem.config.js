@@ -10,7 +10,7 @@ module.exports = {
       max_memory_restart: "1024M",
       env: {
         NODE_ENV: "production",
-        ENVIRONMENT: "production"
+        ENVIRONMENT: "production",
       },
       env_dev: {
         NODE_ENV: "production",
@@ -20,7 +20,7 @@ module.exports = {
         GCLOUD_TRACE_NEW_CONTEXT: 1,
         USE_SSH: 1,
         USE_VOYAGER: 1,
-        WINSTON: "gcp"
+        WINSTON: "gcp",
       },
       env_production: {
         NODE_ENV: "production",
@@ -29,7 +29,7 @@ module.exports = {
         SSL_CERT: "/etc/letsencrypt/live/vipfy.com/cert.pem",
         USE_SSH: 1,
         GCLOUD_TRACE_NEW_CONTEXT: 1,
-        WINSTON: "gcp"
+        WINSTON: "gcp",
       },
       env_conf: {
         NODE_ENV: "production",
@@ -39,15 +39,15 @@ module.exports = {
         GCLOUD_TRACE_NEW_CONTEXT: 1,
         USE_SSH: 1,
         USE_VOYAGER: 1,
-        WINSTON: "gcp"
+        WINSTON: "gcp",
       },
       env_aws: {
         NODE_ENV: "production",
         ENVIRONMENT: "production",
         PROXY_LEVELS: 1,
-        WINSTON: "generic"
-      }
-    }
+        WINSTON: "generic",
+      },
+    },
   ],
 
   /**
@@ -68,10 +68,10 @@ module.exports = {
         SSL_CERT: "/etc/letsencrypt/live/vipfy.com/cert.pem",
         USE_SSH: 1,
         GCLOUD_TRACE_NEW_CONTEXT: 1,
-        WINSTON: "gcp"
+        WINSTON: "gcp",
       },
       "post-deploy":
-        "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env production"
+        "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env production",
     },
     dev: {
       user: "node",
@@ -87,10 +87,10 @@ module.exports = {
         GCLOUD_TRACE_NEW_CONTEXT: 1,
         USE_SSH: 1,
         USE_VOYAGER: 1,
-        WINSTON: "gcp"
+        WINSTON: "gcp",
       },
       "post-deploy":
-        "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env dev"
+        "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env dev",
     },
     conf: {
       user: "node",
@@ -106,25 +106,25 @@ module.exports = {
         GCLOUD_TRACE_NEW_CONTEXT: 1,
         USE_SSH: 1,
         USE_VOYAGER: 1,
-        WINSTON: "gcp"
+        WINSTON: "gcp",
       },
       "post-deploy":
-        "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env conf"
+        "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && sh insert_profiling.sh && pm2 startOrRestart ecosystem.config.js --env conf",
     },
     aws1: {
       user: "node",
       host: "18.185.19.8",
-      ref: "origin/release/0.6",
+      ref: "origin/release/0.16",
       repo: "git@bitbucket.org:vipfymarketplace/vipfy-backend.git",
       path: "/var/www/vipfy-backend",
       env: {
         NODE_ENV: "production",
         ENVIRONMENT: "production",
         PROXY_LEVELS: 1,
-        WINSTON: "generic"
+        WINSTON: "generic",
       },
       "post-deploy":
-        "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && pm2 startOrRestart ecosystem.config.js --env aws"
-    }
-  }
+        "rm -rf node_modules/@vipfy-private/; npm install && rm -rf dist && node_modules/.bin/babel src -d dist --ignore tests --copy-files && pm2 startOrRestart ecosystem.config.js --env aws",
+    },
+  },
 };

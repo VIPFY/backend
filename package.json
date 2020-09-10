@@ -1,6 +1,6 @@
 {
   "name": "vipfy_graphql_server",
-  "version": "0.12.0-dev",
+  "version": "0.16.0",
   "author": {
     "name": "Pascal Clanget",
     "email": "pc@vipfy.store"
