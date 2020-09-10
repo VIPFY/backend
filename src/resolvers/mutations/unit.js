@@ -12,8 +12,6 @@ import {
   MIN_PASSWORD_LENGTH,
   MAX_PASSWORD_LENGTH,
   IMPERSONATE_PREFIX,
-  USER_SESSION_ID_PREFIX,
-  REDIS_SESSION_PREFIX,
 } from "../../constants";
 import { NormalError, RightsError } from "../../errors";
 import {
@@ -25,6 +23,7 @@ import {
   concatName,
   fetchSessions,
   hashPasskey,
+  endSession,
 } from "../../helpers/functions";
 import { uploadUserImage } from "../../services/aws";
 import { createAdminToken } from "../../helpers/auth";
@@ -275,22 +274,28 @@ export default {
           fromName: "VIPFY GmbH",
         });
 
-        if (logOut) {
-          const sessions = await fetchSessions(ctx.redis, unitid);
+        const sessions = (await fetchSessions(ctx.redis, unitid)).map(ses =>
+          JSON.parse(ses)
+        );
 
-          const sessionPromises = [];
+        const promises = [];
 
-          sessions.forEach(sessionString => {
-            sessionPromises.push(
-              ctx.redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
-            );
-          });
+        sessions.forEach(sessionItem => {
+          promises.push(endSession(ctx.redis, unitid, sessionItem.session));
+        });
+        await Promise.all(promises);
 
-          sessionPromises.push(
-            ctx.redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`)
-          );
-          await Promise.all(sessionPromises);
-        }
+        createNotification(
+          {
+            receiver: unitid,
+            message: `User ${id} has updated User ${unitid}'s password.`,
+            icon: "lock-alt",
+            link: "profile",
+            changed: ["me"],
+            level: 3,
+          },
+          null
+        );
 
         return {
           id: unitid,
@@ -457,36 +462,27 @@ export default {
               licences.map(l => l.save({ fields: ["key"], transaction }))
             );
 
-            // const employeeName = concatName(employee);
-            // const adminName = concatName(isAdmin);
+            const sessions = (await fetchSessions(ctx.redis, unitid)).map(ses =>
+              JSON.parse(ses)
+            );
+            const sessionPromises = [];
 
-            // await sendEmail({
-            //   templateId: "d-9beb3ea901d64894a8227c295aa8548e",
-            //   personalizations: [
-            //     {
-            //       to: [{ email: employee.emails[0] }],
-            //       dynamic_template_data: { employeeName, adminName, password }
-            //     }
-            //   ],
-            //   fromName: "VIPFY GmbH"
-            // });
+            sessions.forEach(sessionItem => {
+              promises.push(endSession(ctx.redis, unitid, sessionItem.session));
+            });
+            await Promise.all(sessionPromises);
 
-            if (logOut) {
-              const sessions = await fetchSessions(ctx.redis, unitid);
-
-              const sessionPromises = [];
-
-              sessions.forEach(sessionString => {
-                sessionPromises.push(
-                  ctx.redis.del(`${REDIS_SESSION_PREFIX}${sessionString}`)
-                );
-              });
-
-              sessionPromises.push(
-                ctx.redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`)
-              );
-              await Promise.all(sessionPromises);
-            }
+            createNotification(
+              {
+                receiver: unitid,
+                message: `User ${id} has updated User ${unitid}'s password`,
+                icon: "lock-alt",
+                link: "profile",
+                changed: ["me"],
+                level: 3,
+              },
+              null
+            );
 
             return {
               id: unitid,

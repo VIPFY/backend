@@ -588,23 +588,38 @@ export default {
     "delete-session",
   ]).createResolver(async (_p, { userid }, { session, redis }) => {
     try {
-      let {
+      const {
         user: { unitid },
       } = decode(session.token);
 
+      let victimid = unitid;
+
       if (unitid != userid) {
-        unitid = userid;
+        victimid = userid;
       }
 
-      const sessions = await fetchSessions(redis, unitid);
+      const sessions = (await fetchSessions(redis, victimid)).map(ses =>
+        JSON.parse(ses)
+      );
 
       const promises = [];
 
       sessions.forEach(sessionItem => {
-        promises.push(redis.del(`${REDIS_SESSION_PREFIX}${sessionItem}`));
+        promises.push(endSession(redis, victimid, sessionItem.session));
       });
-      promises.push(redis.del(`${USER_SESSION_ID_PREFIX}${unitid}`));
       await Promise.all(promises);
+
+      createNotification(
+        {
+          receiver: victimid,
+          message: `User ${unitid} has signed out User ${victimid}!`,
+          icon: "lock-alt",
+          link: "profile",
+          changed: ["me"],
+          level: 0,
+        },
+        null
+      );
 
       return true;
     } catch (err) {

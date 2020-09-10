@@ -7,14 +7,12 @@ import {
   createLog,
   createNotification,
   teamCheck,
-  companyCheck,
-  checkPlanValidity,
-  formatHumanName,
 } from "../../helpers/functions";
 import { uploadTeamImage, deleteUserImage } from "../../services/aws";
 import {
   checkOrbitMembership,
   checkCompanyMembership,
+  checkLicenceValidity,
 } from "../../helpers/companyMembership";
 
 export default {
@@ -177,6 +175,7 @@ export default {
                 "ownLicences",
                 "ownTeams",
                 "semiPublicUser",
+                "companyServices",
               ],
             },
             ta,
@@ -189,7 +188,7 @@ export default {
               const deleteUserJson = user;
               const userid = user.userid;
 
-              //START DELETE ONE EMPLOYEE
+              // START DELETE ONE EMPLOYEE
               const promises = [];
 
               // Delete all assignments of as
@@ -246,8 +245,8 @@ export default {
               );
               await Promise.all(promises);
 
-              //Check for other assignments
-              if (deleteUserJson.autodelete) {
+              // Check for other assignments
+              if (deletejson.autodelete) {
                 await Promise.all(
                   deleteUserJson.assignments.map(async asa => {
                     const licenceRight = await models.LicenceRight.findOne({
@@ -463,15 +462,17 @@ export default {
             { transaction: ta }
           );
 
-          const promises = [];
+          await Promise.all(
+            assignments.map(async a => {
+              await checkCompanyMembership(
+                models,
+                company,
+                a.employeeid,
+                "employee"
+              );
+              await checkLicenceValidity(models, company, a.accountid);
 
-          assignments.forEach(a => {
-            promises.push(
-              checkCompanyMembership(models, company, a.employeeid, "employee")
-            );
-
-            promises.push(
-              models.LicenceRight.create(
+              await models.LicenceRight.create(
                 {
                   view: true,
                   use: true,
@@ -481,11 +482,9 @@ export default {
                   options: { teamlicence: teamid },
                 },
                 ta
-              )
-            );
-          });
-
-          await Promise.all(promises);
+              );
+            })
+          );
 
           await createNotification(
             {

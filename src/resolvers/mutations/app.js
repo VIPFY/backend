@@ -22,7 +22,7 @@ import {
 import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
 import {
-  checkLicenceValidilty,
+  checkLicenceValidity,
   checkOrbitMembership,
 } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
@@ -1013,7 +1013,7 @@ export default {
 
           const { models, session } = ctx;
 
-          await checkLicenceValidilty(models, company, accountid);
+          await checkLicenceValidity(models, company, accountid);
 
           const oldaccount = await models.Account.findOne({
             where: { id: accountid },
@@ -1138,7 +1138,7 @@ export default {
 
           const { models } = ctx;
 
-          await checkLicenceValidilty(models, company, licenceid);
+          await checkLicenceValidity(models, company, licenceid);
 
           const licence = await models.LicenceData.findOne({
             where: { id: licenceid },
@@ -1520,7 +1520,7 @@ export default {
           raw: true,
         });
 
-        await checkLicenceValidilty(models, company, licence.id);
+        await checkLicenceValidity(models, company, licence.id);
 
         let end;
         if (isNull) {
