@@ -11,8 +11,14 @@ Client.setApiKey(
 
 const cryptoRandomString = require("crypto-random-string");
 
-export async function newsletterSignup(email, firstname, lastname) {
-  const token = cryptoRandomString(10);
+/**
+ * Creates an entry in the newsletter table and signs the user up in Sendgrid
+ * @param {string} email
+ * @param {string} [firstname]
+ * @param {string} [lastname]
+ */
+export async function newsletterSignup(email, firstname, lastname, ta) {
+  const token = await cryptoRandomString(10);
 
   let name = "";
 
@@ -24,7 +30,11 @@ export async function newsletterSignup(email, firstname, lastname) {
     name += ` ${lastname}`;
   }
 
-  await models.NewsletterSignup.create({ email, token, firstname, lastname });
+  await models.NewsletterSignup.create(
+    { email, token, firstname, lastname },
+    { transaction: ta }
+  );
+
   await sendEmail({
     templateId: "d-8059caceeda04753a138e623ba6f67e5",
     fromName: "VIPFY Newsletter",
@@ -35,10 +45,10 @@ export async function newsletterSignup(email, firstname, lastname) {
           name: name.trim(),
           url: `https://vipfy.store/verifyemail/${encodeURIComponent(
             email
-          )}/${token}`
-        }
-      }
-    ]
+          )}/${token}`,
+        },
+      },
+    ],
   });
   logger.debug("Newsletter signup done");
   return true;
@@ -46,7 +56,7 @@ export async function newsletterSignup(email, firstname, lastname) {
 
 export async function newsletterConfirmSignup(email, token) {
   const signup = await models.NewsletterSignup.findOne({
-    where: { email, token }
+    where: { email, token },
   });
 
   if (!signup) {
@@ -62,19 +72,19 @@ export async function newsletterConfirmSignup(email, token) {
 
   try {
     const unsentSignups = await models.NewsletterSignup.findAll({
-      where: { uploadedat: null, usedat: { [models.Op.ne]: null } }
+      where: { uploadedat: null, usedat: { [models.Op.ne]: null } },
     });
 
     const signups = unsentSignups.map(v => ({
       email: v.email,
       first_name: v.firstname,
-      last_name: v.lastname
+      last_name: v.lastname,
     }));
 
     const [, response] = await Client.request({
       method: "POST",
       url: "/v3/contactdb/recipients",
-      body: signups
+      body: signups,
     });
 
     logger.debug("Newsletter recipient upload", response);
