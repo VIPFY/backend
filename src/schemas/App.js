@@ -22,6 +22,7 @@ const appFields = `
   ratings: Ratings
   externalstatistics: ExternalStatistics
   tags: [String]
+  alternatives: [AppAlternative]
 `;
 
 const basicLicenceFields = `
@@ -45,6 +46,13 @@ export const types = `
   type ExecuteApp {
     ${appFields}
     internaldata: JSON
+  }
+
+  type AppAlternative {
+    app: AppDetails!
+    name: String!
+    rating: Float!
+    reviews: Int!
   }
 
   type Ratings {
