@@ -598,23 +598,63 @@ export default {
   //  * Adds a promocode to the customers account.
   //  * As this is on
   //  */
-  addPromocode: requiresAuth.createResolver(
-    async (_p, { promocode }, { models, session }) =>
-      models.sequelize.transaction(async ta => {
-        try {
-          const {
-            user: { unitid, company },
-          } = decode(session.token);
-          const valid = await models.PromocodePlan.findOne({
-            where: { code: promocode },
+  addPromocode: requiresAuth.createResolver(async (_p, { promocode }, ctx) =>
+    ctx.models.sequelize.transaction(async ta => {
+      const { models, session } = ctx;
+      try {
+        const {
+          user: { unitid, company },
+        } = decode(session.token);
+
+        // this is a hack, rework it at some point
+        if (promocode == "DISRUPT2020") {
+          const freeVipfyPlan = await models.Plan.find({
+            where: {
+              appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2",
+              enddate: {
+                [models.Op.or]: {
+                  [models.Op.is]: null,
+                  [models.Op.lt]: models.sequelize.fn("NOW"),
+                },
+              },
+              price: 0,
+            },
             raw: true,
-            transaction: ta,
           });
-          if (!valid) {
-            throw new Error(`The code ${promocode} is not valid`);
-          }
+
           const p1 = models.sequelize.query(
-            `SELECT bd.*, pd.name
+            `UPDATE boughplanperiod_data SET
+              endtime = GREATER(endtime, starttime + '2 months'::interval)
+              WHERE planid = :planid AND payer = :company
+            `,
+            {
+              replacements: { company, planid: freeVipfyPlan },
+              type: models.sequelize.QueryTypes.UPDATE,
+              transaction: ta,
+            }
+          );
+
+          const p2 = models.DepartmentData.update(
+            { promocode },
+            { where: { unitid: company }, returning: true, transaction: ta }
+          );
+
+          const p3 = createLog(ctx, "applyPromocode", { promocode }, ta);
+
+          await Promise.all([p1, p2, p3]);
+
+          return true;
+        }
+        const valid = await models.PromocodePlan.findOne({
+          where: { code: promocode },
+          raw: true,
+          transaction: ta,
+        });
+        if (!valid) {
+          throw new Error(`The code ${promocode} is not valid`);
+        }
+        const p1 = models.sequelize.query(
+          `SELECT bd.*, pd.name
             FROM boughtplan_view bd
                      LEFT JOIN plan_data pd on bd.planid = pd.id
                      LEFT JOIN app_data ad on pd.appid = ad.id
@@ -623,44 +663,44 @@ export default {
               AND (endtime > now() OR endtime isnull)
               AND bd.payer = :company;
           `,
-            {
-              replacements: { company },
-              type: models.sequelize.QueryTypes.SELECT,
-              transaction: ta,
-            }
-          );
-          const p2 = models.Plan.findOne({
-            where: { id: valid.planid, appid: 66 },
-            raw: true,
+          {
+            replacements: { company },
+            type: models.sequelize.QueryTypes.SELECT,
             transaction: ta,
-          });
-          const p3 = models.DepartmentData.update(
-            { promocode },
-            { where: { unitid: company }, returning: true, transaction: ta }
-          );
-          const [currentPlan, promoPlan, _d] = await Promise.all([p1, p2, p3]);
-          await models.BoughtPlan.create(
-            {
-              planid: promoPlan.id,
-              buyer: unitid,
-              payer: company,
-              predecessor: currentPlan[0].id,
-              alias: promoPlan.name,
-              disabled: false,
-              totalprice: 3.0,
-              buytime: currentPlan[0].endtime,
-              endtime: null,
-            },
-            { transaction: ta }
-          );
-          return true;
-        } catch (err) {
-          throw new NormalError({
-            message: err.message,
-            internalData: { err },
-          });
-        }
-      })
+          }
+        );
+        const p2 = models.Plan.findOne({
+          where: { id: valid.planid, appid: 66 },
+          raw: true,
+          transaction: ta,
+        });
+        const p3 = models.DepartmentData.update(
+          { promocode },
+          { where: { unitid: company }, returning: true, transaction: ta }
+        );
+        const [currentPlan, promoPlan, _d] = await Promise.all([p1, p2, p3]);
+        await models.BoughtPlan.create(
+          {
+            planid: promoPlan.id,
+            buyer: unitid,
+            payer: company,
+            predecessor: currentPlan[0].id,
+            alias: promoPlan.name,
+            disabled: false,
+            totalprice: 3.0,
+            buytime: currentPlan[0].endtime,
+            endtime: null,
+          },
+          { transaction: ta }
+        );
+        return true;
+      } catch (err) {
+        throw new NormalError({
+          message: err.message,
+          internalData: { err },
+        });
+      }
+    })
   ),
 
   applyPromocode: requiresAuth.createResolver(async (_p, { promocode }, ctx) =>
