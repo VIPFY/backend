@@ -608,7 +608,7 @@ export default {
 
         // this is a hack, rework it at some point
         if (promocode == "DISRUPT2020") {
-          const freeVipfyPlan = await models.Plan.find({
+          const freeVipfyPlan = await models.Plan.findOne({
             where: {
               appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2",
               enddate: {
