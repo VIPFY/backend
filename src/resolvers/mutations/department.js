@@ -624,7 +624,7 @@ export default {
 
           const p1 = models.sequelize.query(
             `UPDATE boughtplanperiod_data SET
-              endtime = GREATER(endtime, starttime + '2 months'::interval)
+              endtime = GREATEST(endtime, starttime + '2 months'::interval)
               WHERE planid = :planid AND payer = :company
             `,
             {
