@@ -628,7 +628,7 @@ export default {
               WHERE planid = :planid AND payer = :company
             `,
             {
-              replacements: { company, planid: freeVipfyPlan },
+              replacements: { company, planid: freeVipfyPlan.id },
               type: models.sequelize.QueryTypes.UPDATE,
               transaction: ta,
             }
