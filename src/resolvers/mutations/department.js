@@ -607,7 +607,7 @@ export default {
         } = decode(session.token);
 
         // this is a hack, rework it at some point
-        if (promocode == "DISRUPT2020") {
+        if (promocode.toLowerCase() == "disrupt2020") {
           const freeVipfyPlan = await models.Plan.findOne({
             where: {
               appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2",
