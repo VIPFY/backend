@@ -632,6 +632,17 @@ export default {
 
           await Promise.all([p1, p2, p3]);
 
+          await createNotification(
+            {
+              message: `User ${unitid} successfully applied the promocode ${promocode}`,
+              icon: "ticket-alt",
+              link: "employeemanager",
+              changed: ["vipfyPlan"],
+            },
+            ta,
+            { company, level: 3 }
+          );
+
           return true;
         }
         if (promocode.toLowerCase() == "kwtnewsletter2020") {
@@ -659,6 +670,17 @@ export default {
 
           await Promise.all([p1, p2, p3]);
 
+          await createNotification(
+            {
+              message: `User ${unitid} successfully applied the promocode ${promocode}`,
+              icon: "ticket-alt",
+              link: "employeemanager",
+              changed: ["vipfyPlan"],
+            },
+            ta,
+            { company, level: 3 }
+          );
+
           return true;
         }
         if (promocode.toLowerCase() == "kwtstartup2020") {
@@ -685,6 +707,17 @@ export default {
           const p3 = createLog(ctx, "applyPromocode", { promocode }, ta);
 
           await Promise.all([p1, p2, p3]);
+
+          await createNotification(
+            {
+              message: `User ${unitid} successfully applied the promocode ${promocode}`,
+              icon: "ticket-alt",
+              link: "employeemanager",
+              changed: ["vipfyPlan"],
+            },
+            ta,
+            { company, level: 3 }
+          );
 
           return true;
         }
