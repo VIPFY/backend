@@ -608,27 +608,70 @@ export default {
 
         // this is a hack, rework it at some point
         if (promocode.toLowerCase() == "disrupt2020") {
-          const freeVipfyPlan = await models.Plan.findOne({
-            where: {
-              appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2",
-              enddate: {
-                [models.Op.or]: {
-                  [models.Op.is]: null,
-                  [models.Op.lt]: models.sequelize.fn("NOW"),
-                },
-              },
-              price: 0,
-            },
-            raw: true,
-          });
-
           const p1 = models.sequelize.query(
             `UPDATE boughtplanperiod_data SET
               endtime = GREATEST(endtime, starttime + '2 months'::interval)
               WHERE planid = :planid AND payer = :company
             `,
             {
-              replacements: { company, planid: freeVipfyPlan.id },
+              replacements: {
+                company,
+                planid: "3adb8121-bcb1-4a82-a872-26aa614462cb",
+              },
+              type: models.sequelize.QueryTypes.UPDATE,
+              transaction: ta,
+            }
+          );
+
+          const p2 = models.DepartmentData.update(
+            { promocode },
+            { where: { unitid: company }, returning: true, transaction: ta }
+          );
+
+          const p3 = createLog(ctx, "applyPromocode", { promocode }, ta);
+
+          await Promise.all([p1, p2, p3]);
+
+          return true;
+        }
+        if (promocode.toLowerCase() == "kwtnewsletter2020") {
+          const p1 = models.sequelize.query(
+            `UPDATE boughtplanperiod_data SET
+              endtime = GREATEST(endtime, starttime + '3 months'::interval)
+              WHERE planid = :planid AND payer = :company
+            `,
+            {
+              replacements: {
+                company,
+                planid: "3adb8121-bcb1-4a82-a872-26aa614462cb",
+              },
+              type: models.sequelize.QueryTypes.UPDATE,
+              transaction: ta,
+            }
+          );
+
+          const p2 = models.DepartmentData.update(
+            { promocode },
+            { where: { unitid: company }, returning: true, transaction: ta }
+          );
+
+          const p3 = createLog(ctx, "applyPromocode", { promocode }, ta);
+
+          await Promise.all([p1, p2, p3]);
+
+          return true;
+        }
+        if (promocode.toLowerCase() == "kwtstartup2020") {
+          const p1 = models.sequelize.query(
+            `UPDATE boughtplanperiod_data SET
+              endtime = GREATEST(endtime, starttime + '12 months'::interval)
+              WHERE planid = :planid AND payer = :company
+            `,
+            {
+              replacements: {
+                company,
+                planid: "3adb8121-bcb1-4a82-a872-26aa614462cb",
+              },
               type: models.sequelize.QueryTypes.UPDATE,
               transaction: ta,
             }
