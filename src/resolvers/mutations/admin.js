@@ -383,7 +383,7 @@ export default {
           const createPromises = jsonList.map(app =>
             models.App.findOrCreate({
               where: { externalid: app.externalid },
-              defaults: app,
+              defaults: { ...app, logo: null },
               transaction: ta,
             })
           );
@@ -405,20 +405,21 @@ export default {
               for (const alternative of alternatives) {
                 const { externalid, ...props } = alternative;
 
-                const { id } = await models.App.findByPk(
-                  alternative.externalid,
-                  {
-                    raw: true,
-                  }
-                );
+                const appExists = await models.App.findOne({
+                  where: { externalid: alternative.externalid },
+                  raw: true,
+                  transaction: ta,
+                });
 
-                if (id) {
-                  normalizedAlternatives.push({ ...props, app: id });
+                if (appExists) {
+                  normalizedAlternatives.push({ ...props, app: appExists.id });
                 }
               }
+
+              jsonApp.alternatives = normalizedAlternatives;
             }
 
-            if (!created) {
+            if ((created && jsonApp.alternatives) || !created) {
               appsToUpdate.push(jsonApp);
 
               deleteOldQuotes.push(
