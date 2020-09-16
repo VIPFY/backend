@@ -405,14 +405,17 @@ export default {
               for (const alternative of alternatives) {
                 const { externalid, ...props } = alternative;
 
-                const appExists = await models.App.findOne({
+                const existingApp = await models.App.findOne({
                   where: { externalid: alternative.externalid },
                   raw: true,
                   transaction: ta,
                 });
 
-                if (appExists) {
-                  normalizedAlternatives.push({ ...props, app: appExists.id });
+                if (existingApp) {
+                  normalizedAlternatives.push({
+                    ...props,
+                    app: existingApp.id,
+                  });
                 }
               }
 
