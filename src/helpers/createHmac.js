@@ -19,8 +19,8 @@ export default {
    * @returns {*}
    */
   generateHmac: (string, key) => {
-    const crypt = crypto.createHmac("sha256", new Buffer(key, "utf-8"));
+    const crypt = crypto.createHmac("sha256", Buffer.from(key, "utf-8"));
     crypt.update(string);
-    return new Buffer(crypt.digest("hex")).toString("base64");
-  }
+    return Buffer.from(crypt.digest("hex")).toString("base64");
+  },
 };
