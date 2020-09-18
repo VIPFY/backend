@@ -121,12 +121,11 @@ export default {
           .utc()
           .valueOf()}.lzma`;
 
-        const { stream } = await data;
-
+        const { createReadStream } = await data;
         const Key = `${generatorid}/${pseudonymousid}/${pseudonymousdeviceid}/${filename}`;
         const Bucket = "vipfy-usagedata";
 
-        const Body = stream;
+        const Body = createReadStream();
 
         const params = {
           Key,
