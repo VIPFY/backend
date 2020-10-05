@@ -213,13 +213,24 @@ export default {
 
   sendDownloadLink: async (_p, { email, isMac }) => {
     try {
-      await sendEmail({
-        templateId: isMac
-          ? "d-e31dc52fbac54edba50f3e6586a714bb"
-          : "d-dbe6fd61bc654b81b036cfced48f2066",
-        fromName: "VIPFY",
-        personalizations: [{ to: [{ email }], dynamic_template_data: {} }],
-      });
+      if (isMac) {
+        await sendEmail({
+          templateId: "d-e31dc52fbac54edba50f3e6586a714bb",
+          fromName: "VIPFY",
+          personalizations: [
+            {
+              to: [{ email: "office@vipfy.store" }],
+              dynamic_template_data: { email },
+            },
+          ],
+        });
+      } else {
+        await sendEmail({
+          templateId: "d-dbe6fd61bc654b81b036cfced48f2066",
+          fromName: "VIPFY",
+          personalizations: [{ to: [{ email }], dynamic_template_data: {} }],
+        });
+      }
       console.log("Serverlogs", `Sent download link to ${email}`);
 
       return true;
