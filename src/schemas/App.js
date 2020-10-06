@@ -370,7 +370,7 @@ export const queries = `
 
 export const mutations = `
   sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
-  sendDownloadLink(email: String!): Boolean!
+  sendDownloadLink(email: String!, isMac: Boolean): Boolean!
   createOwnApp(ssoData: SSOInput!): IDID
 
   # Deletes a licence on a set date, if it is after the normal cancel period
