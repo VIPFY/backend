@@ -211,7 +211,7 @@ export default {
     }
   ),
 
-  sendDownloadLink: async (_p, { email }) => {
+  sendDownloadLink: async (_p, { email, isMac }) => {
     try {
       if (isMac) {
         await sendEmail({
