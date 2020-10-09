@@ -21,7 +21,7 @@ const appFields = `
   domains: [String]
   ratings: Ratings
   externalstatistics: ExternalStatistics
-  tags: [String]
+  tags: [Tag]
   alternatives: [AppAlternative]
 `;
 
@@ -43,9 +43,21 @@ export const types = `
     hasboughtplan: Boolean
   }
 
+  type AppAssessment {
+    id: ID!
+    type: String!
+    text: String!
+    unitid: Unit!
+    appid: App!
+  }
+
   type ExecuteApp {
     ${appFields}
     internaldata: JSON
+  }
+
+  type Tag {
+    name: String!
   }
 
   type AppAlternative {
@@ -118,6 +130,7 @@ export const types = `
     supportwebsite: String
     supportphone: String
     developerwebsite: String
+    assessments: [AppAssessment]
   }
 
   type TeamBoughtPlan {
