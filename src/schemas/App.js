@@ -58,6 +58,7 @@ export const types = `
 
   type Tag {
     name: String!
+    weight: Int!
   }
 
   type AppAlternative {
