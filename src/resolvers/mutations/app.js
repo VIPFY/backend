@@ -225,11 +225,23 @@ export default {
           ],
         });
       } else {
-        await sendEmail({
-          templateId: "d-dbe6fd61bc654b81b036cfced48f2066",
-          fromName: "VIPFY",
-          personalizations: [{ to: [{ email }], dynamic_template_data: {} }],
-        });
+        await Promise.all([
+          sendEmail({
+            templateId: "d-dbe6fd61bc654b81b036cfced48f2066",
+            fromName: "VIPFY",
+            personalizations: [{ to: [{ email }], dynamic_template_data: {} }],
+          }),
+          sendEmail({
+            templateId: "d-435a368f329e44439276369335c3d019",
+            fromName: "VIPFY Link Bot",
+            personalizations: [
+              {
+                to: [{ email: "office@vipfy.store" }],
+                dynamic_template_data: { email },
+              },
+            ],
+          }),
+        ]);
       }
       console.log("Serverlogs", `Sent download link to ${email}`);
 
