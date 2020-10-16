@@ -478,10 +478,14 @@ export default {
                 message: `User ${id} has updated User ${unitid}'s password`,
                 icon: "lock-alt",
                 link: "profile",
-                changed: ["me"],
+                changed: ["me", "semiPublicUser"],
                 level: 3,
               },
-              null
+              null,
+              {
+                company,
+                level: 1,
+              }
             );
 
             return {

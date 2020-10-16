@@ -29,19 +29,18 @@ export default {
           const me = await models.User.findByPk(unitid);
           const user = await parentAdminCheck(me);
 
-          if (me.dataValues.needstwofa) {
-            const hasTwoFa = await models.Login.findOne({
-              where: {
-                unitid: me.dataValues.id,
-                twofactor: { [models.Op.not]: null },
-              },
-              raw: true,
-            });
-
-            if (hasTwoFa) {
-              user.dataValues.needstwofa = false;
-            }
+          const hasTwoFa = await models.Login.findOne({
+            where: {
+              unitid: me.dataValues.id,
+              twofactor: { [models.Op.not]: null },
+            },
+            raw: true,
+          });
+          if (hasTwoFa) {
+            user.dataValues.twofa = [hasTwoFa.twofactor];
           }
+
+          // TODO: [VIP-1486] Maybe change schema later or change Login View
 
           const superSecretKey =
             process.env.PSEUDONYMIZATION_SECRET || "yzSlffJLHor0UPCCLYCL";
@@ -70,12 +69,27 @@ export default {
   fetchSemiPublicUser: requiresRights(["view-users"]).createResolver(
     async (_parent, { userid }, { models }) => {
       try {
-        const user = await models.User.findOne({
+        const me = await models.User.findOne({
           where: { id: userid, deleted: false },
           raw: true,
         });
 
-        return parentAdminCheck(user);
+        const user = await parentAdminCheck(me);
+
+        console.log(user);
+
+        const hasTwoFa = await models.Login.findOne({
+          where: {
+            unitid: user.id,
+            twofactor: { [models.Op.not]: null },
+          },
+          raw: true,
+        });
+        if (hasTwoFa) {
+          user.twofa = [hasTwoFa.twofactor];
+        }
+
+        return user;
       } catch (err) {
         throw new NormalError({
           message: `fetchSemiPublicUser-Query-ERROR ${err.message}`,
