@@ -101,7 +101,7 @@ const postprocessors = {
     }
     return value;
   },
-  LicenceOld: async (value, fields) => {
+  LicenceOld: async (value, _fields) => {
     if (value) {
       if (value.options) {
         if (value.options.teamlicence) {
@@ -114,7 +114,7 @@ const postprocessors = {
     }
     return value;
   },
-  Licence: async (value, fields) => {
+  Licence: async value => {
     if (value) {
       if (value.disabled) {
         value.key = null;
@@ -122,7 +122,7 @@ const postprocessors = {
     }
     return value;
   },
-  LicenceAssignment: async (value, fields) => {
+  LicenceAssignment: async value => {
     if (value) {
       if (value.options) {
         if (value.options.teamlicence) {
@@ -136,7 +136,7 @@ const postprocessors = {
     return value;
   },
   // Wird das benötigt?
-  CompanyService: async (value, fields) => {
+  CompanyService: async value => {
     if (value) {
       if (value.options) {
         if (value.options.teamlicence) {
@@ -149,7 +149,7 @@ const postprocessors = {
     }
     return value;
   },
-  TeamBoughtPlan: async (value, fields) => {
+  TeamBoughtPlan: async value => {
     if (value) {
       if (value.options) {
         if (value.options.teamlicence) {

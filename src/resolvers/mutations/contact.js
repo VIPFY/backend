@@ -629,4 +629,44 @@ export default {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
+
+  promoCodeRequest: async (_p, args, { models }) =>
+    models.sequelize.transaction(async ta => {
+      try {
+        const { fair, name, email, newsletter } = args;
+        const promises = [
+          models.TradeFair.create(
+            {
+              trade_fair: fair,
+              name,
+              email,
+              year: new Date().getFullYear(),
+            },
+            { transaction: ta }
+          ),
+        ];
+
+        if (newsletter) {
+          const [firstName, ...restName] = name.split(" ");
+          const lastName = restName.join(" ");
+          promises.push(newsletterSignup(email, firstName, lastName, ta));
+        }
+
+        await Promise.all(promises);
+        sendEmail({
+          templateId: "d-c359cc2705ab45699300584e13c5d70e",
+          fromName: "VIPFY Trade Fair Bot (beep beep)",
+          personalizations: [
+            {
+              to: [{ email: "marc@vipfy.store" }],
+              dynamic_template_data: { name, email, fair },
+            },
+          ],
+        });
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }),
 };

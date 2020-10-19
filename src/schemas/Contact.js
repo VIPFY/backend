@@ -13,6 +13,15 @@ export const types = `
     priority: Int
    }
 
+   type TradeFair {
+     id: ID!
+     name: String!
+     email: String!
+     created: Date!
+     trade_fair: String!
+     year: Int!
+   }
+
    type Email {
      ${common}
      unitid: Unit!
@@ -117,4 +126,5 @@ export const mutations = `
   deleteEmail(email: String!, forCompany: Boolean, userid: ID): Response!
 
   updateTags(model: String!, tags: [String]!): Response!
+  promoCodeRequest(fair: String!, name: String!, email: String!, newsletter: Boolean!): Boolean!
 `;
