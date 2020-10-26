@@ -222,7 +222,7 @@ export default {
             payer: company.id,
             creator: unit.id,
             totalprice: 0,
-            endtime: moment().add(1, "months").toDate(),
+            endtime: Infinity,
           },
           { transaction: ta }
         );
