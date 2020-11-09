@@ -1283,4 +1283,8 @@ export default {
         }
       })
   ),
+  appStarted: async (_p, { usercount }, ctx) => {
+    await createLog(ctx, "appStarted", { usercount }, null);
+    return true;
+  },
 };
