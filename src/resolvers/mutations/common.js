@@ -145,4 +145,8 @@ export default {
       }
     }
   ),
+  logEvent: async (_p, { eventtype, data }, ctx) => {
+    await createLog(ctx, eventtype, { data }, null);
+    return true;
+  },
 };
