@@ -146,7 +146,7 @@ export default {
     }
   ),
   logEvent: async (_p, { eventtype, data }, ctx) => {
-    await createLog(ctx, eventtype, { data }, null);
+    await createLog(ctx, `user-${eventtype}`, { data }, null);
     return true;
   },
 };
