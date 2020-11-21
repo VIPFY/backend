@@ -35,6 +35,8 @@ export default {
           })
           .spread(res => res);
 
+        // TODO: [VIP-1487] Rework detchDepartmentsData completly | added twofactor to dev -> needs to me changed in production!
+
         return departments;
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });

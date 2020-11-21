@@ -5,23 +5,21 @@ import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { NormalError } from "../../errors";
 import { createToken } from "../../helpers/auth";
 import { checkToken } from "../../helpers/token";
-import { check2FARights } from "../../helpers/functions";
+import { check2FARights, createNotification } from "../../helpers/functions";
 import { USER_SESSION_ID_PREFIX } from "../../constants";
 
 export default {
   verify2FA: requiresAuth.createResolver(
     async (_p, { userid, type, code, codeId }, { models, session }) => {
       try {
-        let {
+        const {
           user: { unitid, company },
         } = decode(session.token);
 
-        if (userid && userid != unitid) {
-          unitid = await check2FARights(userid, unitid, company);
-        }
+        userid = await check2FARights(userid, unitid, company);
 
         const { secret, id } = await models.TwoFA.findOne({
-          where: { unitid, type, verified: false, id: codeId },
+          where: { unitid: userid, type, verified: false, id: codeId },
           raw: true,
         });
 
@@ -37,6 +35,21 @@ export default {
         }
 
         await models.TwoFA.update({ verified: true }, { where: { id } });
+
+        await createNotification(
+          {
+            receiver: unitid,
+            message: `User ${unitid} successfully set up 2FA for User ${userid}`,
+            icon: "phone-laptop",
+            link: "profile",
+            changed: ["me", "semiPublicUser"],
+          },
+          null,
+          {
+            company,
+            level: 1,
+          }
+        );
 
         return true;
       } catch (err) {
@@ -122,11 +135,30 @@ export default {
   },
 
   force2FA: requiresRights(["force-2FA"]).createResolver(
-    async (_p, { userid }, { models }) => {
+    async (_p, { userid }, { models, session }) => {
       try {
         await models.Human.update(
           { needstwofa: true },
           { where: { unitid: userid } }
+        );
+
+        const {
+          user: { unitid, company },
+        } = decode(session.token);
+
+        await createNotification(
+          {
+            receiver: userid,
+            message: `User ${unitid} successfully forced 2FA for User ${userid}`,
+            icon: "phone-laptop",
+            link: "profile",
+            changed: ["me", "semiPublicUser"],
+          },
+          null,
+          {
+            company,
+            level: 1,
+          }
         );
 
         return true;
@@ -137,11 +169,30 @@ export default {
   ),
 
   unForce2FA: requiresRights(["force-2FA"]).createResolver(
-    async (_p, { userid }, { models }) => {
+    async (_p, { userid }, { models, session }) => {
       try {
         await models.Human.update(
           { needstwofa: false },
           { where: { unitid: userid } }
+        );
+
+        const {
+          user: { unitid, company },
+        } = decode(session.token);
+
+        await createNotification(
+          {
+            receiver: userid,
+            message: `User ${unitid} successfully unforced 2FA for User ${userid}`,
+            icon: "phone-laptop",
+            link: "profile",
+            changed: ["me", "semiPublicUser"],
+          },
+          null,
+          {
+            company,
+            level: 1,
+          }
         );
 
         return true;
@@ -152,7 +203,7 @@ export default {
   ),
 
   deactivate2FA: requiresRights(["force-2FA"]).createResolver(
-    async (_p, { userid }, { models }) =>
+    async (_p, { userid }, { models, session }) =>
       models.sequelize.transaction(async ta => {
         try {
           await Promise.all([
@@ -166,6 +217,25 @@ export default {
               { where: { unitid: userid }, transaction: ta }
             ),
           ]);
+
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
+
+          await createNotification(
+            {
+              receiver: userid,
+              message: `User ${unitid} successfully removed 2FA for User ${userid}`,
+              icon: "phone-laptop",
+              link: "profile",
+              changed: ["me", "semiPublicUser"],
+            },
+            null,
+            {
+              company,
+              level: 1,
+            }
+          );
 
           return true;
         } catch (err) {

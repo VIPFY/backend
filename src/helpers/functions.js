@@ -721,6 +721,10 @@ export const concatName = ({ firstname, middlename, lastname }) =>
 export const check2FARights = async (userid, unitid, company) => {
   await checkCompanyMembership(models, company, userid, "user");
 
+  if (userid == unitid) {
+    return userid;
+  }
+
   const hasRight = await models.Right.findOne({
     where: models.sequelize.and(
       { holder: unitid },

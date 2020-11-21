@@ -613,7 +613,10 @@ export default {
     }
   ),
 
-  fetchTotalUsageMinutes: requiresRights(["view-usage"]).createResolver(
+  fetchTotalUsageMinutes: requiresRights([
+    "myself",
+    "view-usage",
+  ]).createResolver(
     async (
       _p,
       { starttime, endtime, assignmentid, licenceid, boughtplanid, unitid },

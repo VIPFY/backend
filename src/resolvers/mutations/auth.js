@@ -572,9 +572,28 @@ export default {
   ),
 
   signOutUser: requiresRights(["delete-session"]).createResolver(
-    async (_p, { sessionID, userid }, { redis }) => {
+    async (_p, { sessionID, userid }, { session, redis }) => {
       try {
+        const {
+          user: { unitid, company },
+        } = decode(session.token);
         const remainingSessions = await endSession(redis, userid, sessionID);
+
+        await createNotification(
+          {
+            receiver: userid,
+            message: `User ${unitid} has sign User ${userid} out of a session`,
+            icon: "portal-exit",
+            link: "profile",
+            changed: ["me", "sessions"],
+            level: 3,
+          },
+          null,
+          {
+            company,
+            level: 2,
+          }
+        );
 
         return parseSessions(remainingSessions);
       } catch (err) {
@@ -589,7 +608,7 @@ export default {
   ]).createResolver(async (_p, { userid }, { session, redis }) => {
     try {
       const {
-        user: { unitid },
+        user: { unitid, company },
       } = decode(session.token);
 
       let victimid = unitid;
@@ -615,10 +634,14 @@ export default {
           message: `User ${unitid} has signed out User ${victimid}!`,
           icon: "lock-alt",
           link: "profile",
-          changed: ["me"],
-          level: 0,
+          changed: ["me", "sessions"],
+          level: 3,
         },
-        null
+        null,
+        {
+          company,
+          level: 1,
+        }
       );
 
       return true;
@@ -760,7 +783,7 @@ export default {
           }
 
           const {
-            user: { unitid },
+            user: { unitid, company },
           } = await decode(session.token);
 
           const findOldPassword = await models.Login.findOne({
@@ -834,9 +857,13 @@ export default {
                 message: "You successfully updated your password",
                 icon: "lock-alt",
                 link: "profile",
-                changed: [""],
+                changed: ["me", "semiPublicUser"],
               },
-              ta
+              ta,
+              {
+                company,
+                level: 1,
+              }
             ),
           ];
 
@@ -898,7 +925,7 @@ export default {
         try {
           const { models, session } = ctx;
           const {
-            user: { company },
+            user: { unitid, company },
           } = await decode(session.token);
 
           // check that user has rights
@@ -929,20 +956,104 @@ export default {
             ),
           ];
 
+          const employeeNames = [];
+          userids.forEach(id => {
+            employeeNames.push(`User ${id}`);
+          });
+
+          await createNotification(
+            {
+              message: `User ${unitid} has forced you to change your password`,
+              icon: "lock-alt",
+              link: "profile",
+              changed: ["me", "semiPublicUser"],
+              level: 3,
+            },
+            transaction,
+            {
+              company,
+              level: 2,
+              message: `User ${unitid} has forced ${employeeNames.join(
+                ", "
+              )} to change the password`,
+            },
+            null,
+            { users: userids }
+          );
+
+          await Promise.all(promises);
+
+          return { ok: true };
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
+  ),
+
+  unforcePasswordChange: requiresRights(["view-security"]).createResolver(
+    async (_p, { userids }, ctx) =>
+      ctx.models.sequelize.transaction(async transaction => {
+        try {
+          const { models, session } = ctx;
+          const {
+            user: { unitid, company },
+          } = await decode(session.token);
+
+          // check that user has rights
+          const checks = [];
           for (const userid of userids) {
-            promises.push(
-              createNotification(
-                {
-                  receiver: userid,
-                  message: "An admin forces you to update your password",
-                  icon: "lock-alt",
-                  link: "profile",
-                  changed: ["me"],
-                },
-                transaction
-              )
+            checks.push(
+              checkCompanyMembership(models, company, userid, "department")
             );
           }
+          await Promise.all(checks);
+
+          // execute
+          await models.Human.update(
+            { needspasswordchange: false },
+            {
+              where: { unitid: { [models.Op.in]: userids } },
+              transaction,
+            }
+          );
+
+          // log (not logging new/old human objects because of GDPR, change is trivial anyway)
+          const promises = [
+            createLog(
+              ctx,
+              "unforcePasswordChange",
+              { units: userids },
+              transaction
+            ),
+          ];
+
+          const employeeNames = [];
+          userids.forEach(id => {
+            employeeNames.push(`User ${id}`);
+          });
+
+          await createNotification(
+            {
+              message: `User ${unitid} has unforced you to change your password`,
+              icon: "lock-alt",
+              link: "profile",
+              changed: ["me", "semiPublicUser"],
+              level: 3,
+            },
+            transaction,
+            {
+              company,
+              level: 2,
+              message: `User ${unitid} has unforced ${employeeNames.join(
+                ", "
+              )} to change the password`,
+            },
+            null,
+            { users: userids }
+          );
 
           await Promise.all(promises);
 
