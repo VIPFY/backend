@@ -222,7 +222,7 @@ export default {
             payer: company.id,
             creator: unit.id,
             totalprice: 0,
-            endtime: moment().add(1, "months").toDate(),
+            endtime: Infinity,
           },
           { transaction: ta }
         );
@@ -1394,4 +1394,8 @@ export default {
         }
       })
   ),
+  appStarted: async (_p, { usercount }, ctx) => {
+    await createLog(ctx, "appStarted", { usercount }, null);
+    return true;
+  },
 };

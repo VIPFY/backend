@@ -118,4 +118,5 @@ export const mutations = `
 
   impersonate(userid: ID!): String!
   endImpersonation(token: String!): String!
+  appStarted(usercount: Int): Boolean
 `;
