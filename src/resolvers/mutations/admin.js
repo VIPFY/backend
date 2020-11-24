@@ -374,7 +374,7 @@ export default {
             FILE_PATH,
             apps.createReadStream().pipe(fs.createWriteStream(FILE_PATH))
           );
-          //  Needed, otherwise the file is not there
+          // Needed, otherwise the file is not there
           await sleep(500);
 
           const myFile = fs.readFileSync(FILE_PATH, { encoding: "utf-8" });
