@@ -31,7 +31,7 @@ export const sessionMiddleware = session({
     httpOnly: true,
     maxAge: SESSION_LIFETIME,
     // Required Setting for Chrome in future Releases, see VIP-1030
-    secure: ENVIRONMENT.toLowerCase() == "production",
+    secure: true, // localhost is also considered secure
     sameSite: "none",
   },
 });
