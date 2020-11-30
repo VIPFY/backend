@@ -28,7 +28,7 @@ export default {
 
           const me = await models.User.findByPk(unitid);
           const user = await parentAdminCheck(me);
-          console.log("\x1b[1m%s\x1b[0m", "LOG user", user);
+
           const hasTwoFa = await models.Login.findOne({
             where: {
               unitid: me.dataValues.id,
