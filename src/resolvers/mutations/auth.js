@@ -495,7 +495,6 @@ export default {
 
         // One is needed for the logger function to work correctly
         const fakeToken = await createToken(emailExists, ctx.SECRET);
-        // Does this work with 2FA?
 
         ctx.session.token = fakeToken;
         await createLog(ctx, "signIn-2FA", { user: emailExists, email }, null);
