@@ -55,6 +55,13 @@ export default {
             .update(deviceId)
             .digest("hex");
 
+          user.dataValues.permissions = {
+            ownAssignments: 15,
+            sso: true,
+            customServiceIntegration: true,
+            manageOwnAccounts: true,
+          };
+
           return user.dataValues;
         } catch (err) {
           throw new NormalError({

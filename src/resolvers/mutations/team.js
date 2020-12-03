@@ -2,12 +2,13 @@ import { decode } from "jsonwebtoken";
 import moment from "moment";
 import { teamPicFolder } from "../../constants";
 import { requiresRights } from "../../helpers/permissions";
-import { NormalError } from "../../errors";
+import { NormalError, VIPFYPlanLimit, VIPFYPlanError } from "../../errors";
 import {
   createLog,
   createNotification,
   teamCheck,
 } from "../../helpers/functions";
+import { checkVipfyPlanTeams } from "../../helpers/billing";
 import { uploadTeamImage, deleteUserImage } from "../../services/aws";
 import {
   checkOrbitMembership,
@@ -87,6 +88,8 @@ export default {
             user: { unitid, company },
           } = decode(session.token);
 
+          await checkVipfyPlanTeams({ company, transaction: ta });
+
           const unitArgs = {};
           if (profilepicture) {
             const parsedFile = await profilepicture;
@@ -136,7 +139,12 @@ export default {
             )
           )[0];
         } catch (err) {
-          console.error("\x1b[1m%s\x1b[0m", "LOG err", err);
+          if (err instanceof VIPFYPlanLimit) {
+            throw err;
+          }
+          if (err instanceof VIPFYPlanError) {
+            throw err;
+          }
           throw new NormalError({
             message: err.message,
             internalData: { err },

@@ -11,7 +11,7 @@ import {
   requiresRights,
   requiresVipfyManagement,
 } from "../../helpers/permissions";
-import { NormalError, VIPFYPlanError } from "../../errors";
+import { NormalError, VIPFYPlanError, VIPFYPlanLimit } from "../../errors";
 import {
   createLog,
   createNotification,
@@ -23,6 +23,7 @@ import {
 import { resetCompanyMembershipCache } from "../../helpers/companyMembership";
 import { sendEmail } from "../../helpers/email";
 import { uploadUserImage, deleteUserImage } from "../../services/aws";
+import { checkVipfyPlanUsers } from "../../helpers/billing";
 
 export default {
   createEmployee: requiresRights(["create-employees"]).createResolver(
@@ -95,6 +96,12 @@ export default {
             if (passwordsalt.length != 32) {
               throw new Error("Incompatible salt format, try updating VIPFY");
             }
+            // CHECK VIPFY PLAN
+            const vipfyPlan = await checkVipfyPlanUsers({
+              company,
+              transaction: ta,
+            });
+
             const data = {};
             if (file) {
               const parsedFile = await file;
@@ -104,31 +111,10 @@ export default {
               );
               data.profilepicture = profilepicture;
             }
-            const [unitData, [currentPlan]] = await Promise.all([
-              models.Unit.create(data, {
-                transaction: ta,
-              }),
-              models.sequelize.query(
-                `
-                SELECT bpv.*, pd.price as singleprice
-                FROM boughtplan_view bpv
-                        LEFT JOIN plan_data pd ON pd.id = bpv.planid
-                WHERE planid IN (SELECT pd.id
-                                FROM plan_data pd
-                                WHERE appid = 'aeb28408-464f-49f7-97f1-6a512ccf46c2')
-                  AND payer = :company
-                  AND (endtime IS NULL OR endtime > now())
-                  AND starttime < now()
-                  AND disabled = FALSE
-                ORDER BY starttime DESC;
-                `,
-                {
-                  replacements: { company },
-                  transaction: ta,
-                  type: models.sequelize.QueryTypes.SELECT,
-                }
-              ),
-            ]);
+            const unitData = await models.Unit.create(data, {
+              transaction: ta,
+            });
+
             const unit = unitData.get();
             const humanPromises = [
               models.Human.create(
@@ -152,23 +138,18 @@ export default {
                 },
                 { transaction: ta }
               ),
+              models.LicenceRight.create(
+                {
+                  licenceid: vipfyPlan.vipfyaccount,
+                  unitid: unit.id,
+                  use: true,
+                  view: true,
+                  alias: "Company User",
+                },
+                { transaction: ta }
+              ),
             ];
-            if (currentPlan.key && currentPlan.key.needsCustomerAction) {
-              expiredPlan = currentPlan;
-              throw new Error(402);
-            }
-            if (currentPlan.key && !currentPlan.key.vipfyTrial) {
-              humanPromises.push(
-                models.BoughtPlanPeriod.update(
-                  {
-                    totalprice:
-                      parseFloat(currentPlan.totalprice) +
-                      parseFloat(currentPlan.singleprice),
-                  },
-                  { where: { boughtplanid: currentPlan.id }, transaction: ta }
-                )
-              );
-            }
+
             // Create Emails
             emails.forEach(
               (email, index) =>
@@ -294,8 +275,11 @@ export default {
             });
             return { unitid, name, user };
           } catch (err) {
-            if (err.message == 402) {
-              throw new VIPFYPlanError({ data: { expiredPlan } });
+            if (err instanceof VIPFYPlanLimit) {
+              throw err;
+            }
+            if (err instanceof VIPFYPlanError) {
+              throw err;
             }
             throw new NormalError({
               message: err.message,
@@ -483,6 +467,13 @@ export default {
           const {
             user: { unitid: issuer, company },
           } = decode(session.token);
+          // Check if spot for Admin is left
+          const vipfyPlan = await checkVipfyPlanUsers({
+            company,
+            transaction,
+            userid: unitid,
+          });
+
           const p1 = models.Right.create(
             {
               holder: unitid,
@@ -501,7 +492,33 @@ export default {
             { transaction }
           );
           const p3 = createLog(ctx, "adminAdd", {}, transaction);
-          await Promise.all([p1, p2, p3]);
+
+          // End OLD USER Assignment
+          const p4 = models.LicenceRight.update(
+            {
+              endtime: moment.now(),
+            },
+            {
+              where: { id: vipfyPlan.assignmentid },
+              transaction,
+            }
+          );
+
+          // NEW ADMIN Assignment
+          const p5 = models.LicenceRight.create(
+            {
+              licenceid: vipfyPlan.vipfyaccount,
+              unitid,
+              use: true,
+              view: true,
+              edit: true,
+              delete: true,
+              alias: "Company Admin",
+            },
+            { transaction }
+          );
+
+          await Promise.all([p1, p2, p3, p4, p5]);
           await createNotification(
             {
               receiver: unitid,
@@ -518,6 +535,12 @@ export default {
           );
           return models.User.findByPk(unitid, { transaction });
         } catch (err) {
+          if (err instanceof VIPFYPlanLimit) {
+            throw err;
+          }
+          if (err instanceof VIPFYPlanError) {
+            throw err;
+          }
           throw new NormalError({
             message: err.message,
             internalData: { err },
@@ -536,6 +559,13 @@ export default {
           if (userid == unitid) {
             throw new Error("You can't take your own admin rights!");
           }
+          const vipfyPlan = await checkVipfyPlanUsers({
+            company,
+            transaction,
+            userid: unitid,
+            noCheck: true,
+          });
+
           const allAdmins = await models.sequelize.query(
             `
               SELECT DISTINCT ON (dev.employee) uv.*
@@ -570,7 +600,31 @@ export default {
             { replacements: { unitid, company }, transaction }
           );
           const p3 = createLog(ctx, "adminRemove", {}, transaction);
-          await Promise.all([p1, p2, p3]);
+
+          // End OLD ADMIN Assignment
+          const p4 = models.LicenceRight.update(
+            {
+              endtime: moment.now(),
+            },
+            {
+              where: { id: vipfyPlan.assignmentid },
+              transaction,
+            }
+          );
+
+          // NEW USER Assignment
+          const p5 = models.LicenceRight.create(
+            {
+              licenceid: vipfyPlan.vipfyaccount,
+              unitid,
+              use: true,
+              view: true,
+              alias: "Company User",
+            },
+            { transaction }
+          );
+
+          await Promise.all([p1, p2, p3, p4, p5]);
           await createNotification(
             {
               receiver: unitid,
@@ -587,6 +641,12 @@ export default {
           );
           return models.User.findByPk(unitid, { transaction });
         } catch (err) {
+          if (err instanceof VIPFYPlanLimit) {
+            throw err;
+          }
+          if (err instanceof VIPFYPlanError) {
+            throw err;
+          }
           throw new NormalError({
             message: err.message,
             internalData: { err },
@@ -618,19 +678,32 @@ export default {
             FROM boughtplan_view bd
                      LEFT JOIN plan_data pd on bd.planid = pd.id
                      LEFT JOIN app_data ad on pd.appid = ad.id
-            WHERE appid = 66
+            WHERE appid = :appid AND ad.name = :name
               AND buytime < now()
               AND (endtime > now() OR endtime isnull)
               AND bd.payer = :company;
           `,
             {
-              replacements: { company },
+              replacements: {
+                appid:
+                  process.env.ENVIRONMENT == "development"
+                    ? "aeb28408-464f-49f7-97f1-6a512ccf46c2"
+                    : "aeb28408-464f-49f7-97f1-6a512ccf46c2",
+                company,
+                name: "VIPFY",
+              },
               type: models.sequelize.QueryTypes.SELECT,
               transaction: ta,
             }
           );
           const p2 = models.Plan.findOne({
-            where: { id: valid.planid, appid: 66 },
+            where: {
+              id: valid.planid,
+              appid:
+                process.env.ENVIRONMENT == "development"
+                  ? "aeb28408-464f-49f7-97f1-6a512ccf46c2"
+                  : "aeb28408-464f-49f7-97f1-6a512ccf46c2",
+            },
             raw: true,
             transaction: ta,
           });
@@ -639,7 +712,10 @@ export default {
             { where: { unitid: company }, returning: true, transaction: ta }
           );
           const [currentPlan, promoPlan, _d] = await Promise.all([p1, p2, p3]);
-          await models.BoughtPlan.create(
+
+          // Very Old - need also Boughtplan Period
+          // Rethink what to do best
+          /*await models.BoughtPlan.create(
             {
               planid: promoPlan.id,
               buyer: unitid,
@@ -652,7 +728,7 @@ export default {
               endtime: null,
             },
             { transaction: ta }
-          );
+          );*/
           return true;
         } catch (err) {
           throw new NormalError({
@@ -754,33 +830,17 @@ export default {
           const {
             user: { unitid, company },
           } = decode(session.token);
-          const [oldUser, [vipfyPlan]] = await Promise.all([
-            models.User.findOne({
-              where: { id: userid },
-              transaction: ta,
-              raw: true,
-            }),
-            models.sequelize.query(
-              `
-            SELECT bpv.id, bpv.key, bpv.totalprice, pd.price as singleprice
-            FROM boughtplan_view bpv
-                    LEFT JOIN plan_data pd ON pd.id = bpv.planid
-            WHERE planid IN (SELECT pd.id
-                            FROM plan_data pd
-                            WHERE appid = 'aeb28408-464f-49f7-97f1-6a512ccf46c2')
-              AND payer = :company
-              AND (endtime IS NULL OR endtime < now())
-              AND starttime < now()
-              AND disabled = FALSE
-            ORDER BY starttime DESC;
-            `,
-              {
-                replacements: { company },
-                transaction: ta,
-                type: models.sequelize.QueryTypes.SELECT,
-              }
-            ),
-          ]);
+          const vipfyPlan = await checkVipfyPlanUsers({
+            company,
+            transaction: ta,
+            userid: unitid,
+            noCheck: true,
+          });
+          const oldUser = await models.User.findOne({
+            where: { id: userid },
+            transaction: ta,
+            raw: true,
+          });
           if (oldUser.assignments && autodelete) {
             await Promise.all(
               oldUser.assignments.map(async asid => {
@@ -866,16 +926,16 @@ export default {
               { where: { unitid: userid }, transaction: ta }
             ),
           ]);
-          if (vipfyPlan && vipfyPlan.key && !vipfyPlan.key.vipfyTrial) {
-            await models.BoughtPlanPeriod.update(
-              {
-                totalprice:
-                  parseFloat(vipfyPlan.totalprice) -
-                  parseFloat(vipfyPlan.singleprice),
-              },
-              { where: { boughtplanid: vipfyPlan.id }, transaction: ta }
-            );
-          }
+
+          await models.LicenceRight.update(
+            {
+              endtime: moment.now(),
+            },
+            {
+              where: { id: vipfyPlan.assignmentid },
+              transaction: ta,
+            }
+          );
           await Promise.all([
             createNotification(
               {
@@ -892,6 +952,12 @@ export default {
           ]);
           return true;
         } catch (err) {
+          if (err instanceof VIPFYPlanLimit) {
+            throw err;
+          }
+          if (err instanceof VIPFYPlanError) {
+            throw err;
+          }
           throw new NormalError({
             message: err.message,
             internalData: { err },

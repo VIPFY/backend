@@ -66,6 +66,7 @@ export const types = `
     appid: App!
     gotoplan: Plan
     hidden: Boolean!
+    settings: JSON
   }
 
   input PlanInput {
@@ -196,6 +197,11 @@ export const types = `
     selfCheck: Boolean
     vatNumber: String
   }
+
+  type ConfirmDetails{
+    users: [JSON]
+    teams: [String]
+  }
 `;
 
 export const queries = `
@@ -211,6 +217,9 @@ export const queries = `
 
   fetchAllBoughtPlansFromCompany(appid: ID!, external: Boolean): [BoughtPlan]!
   fetchBoughtPlansOfCompany(appid: ID!, external: Boolean): [BoughtPlan]!
+
+  fetchPlanConfirmDetails: ConfirmDetails
+  fetchVIPFYPlanOptions(type: String, id: ID): [Plan]
 `;
 
 export const mutations = `

@@ -1,6 +1,6 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
-import { NormalError } from "../../errors";
+import { NormalError, VIPFYPlanLimit, VIPFYPlanError } from "../../errors";
 import {
   requiresRights,
   requiresAuth,
@@ -14,6 +14,7 @@ import {
   concatName,
   formatFilename,
 } from "../../helpers/functions";
+import { checkVipfyPlanAssignments } from "../../helpers/billing";
 // import {
 //   addSubscriptionItem,
 //   abortSubscription,
@@ -1139,6 +1140,7 @@ export default {
           const { models } = ctx;
 
           await checkLicenceValidity(models, company, licenceid);
+          await checkVipfyPlanAssignments({ userid, transaction: ta });
 
           const licence = await models.LicenceData.findOne({
             where: { id: licenceid },
@@ -1206,6 +1208,12 @@ export default {
 
           return true;
         } catch (err) {
+          if (err instanceof VIPFYPlanLimit) {
+            throw err;
+          }
+          if (err instanceof VIPFYPlanError) {
+            throw err;
+          }
           throw new NormalError({
             message: err.message,
             internalData: { err },

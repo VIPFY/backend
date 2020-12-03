@@ -4,6 +4,11 @@ import { requiresRights, requiresAuth } from "../../helpers/permissions";
 // import { fetchCustomer } from "../../services/stripe";
 import { NormalError } from "../../errors";
 import { listCards } from "../../services/stripe";
+import {
+  checkVipfyPlanUsers,
+  checkVipfyPlanAssignments,
+  checkVipfyPlanTeams,
+} from "../../helpers/billing";
 
 export default {
   boughtPlans: requiresRights(["view-boughtplans"]).createResolver(
@@ -124,8 +129,7 @@ export default {
               }),
             companyName: paymentData.name,
             phone,
-            promoCode:
-              paymentData.payingoptions && paymentData.payingoptions.promoCode,
+            promoCode: paymentData.promocode,
           };
         }
 
@@ -332,6 +336,79 @@ export default {
         );
 
         return data;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+  fetchPlanConfirmDetails: requiresRights(["edit-paymentdata"]).createResolver(
+    async (_parent, _args, { session }) => {
+      try {
+        const {
+          user: { company },
+        } = decode(session.token);
+
+        const vipfyPlan = await checkVipfyPlanUsers({
+          company,
+          noCheck: true,
+        });
+
+        const userAssignmentsPromise = [];
+        const companyUsers = [];
+
+        vipfyPlan.members.forEach(m =>
+          userAssignmentsPromise.push(
+            checkVipfyPlanAssignments({
+              userid: m.userid,
+              noCheck: true,
+            })
+          )
+        );
+        const userAssignments = await Promise.all(userAssignmentsPromise);
+
+        vipfyPlan.members.forEach(m =>
+          companyUsers.push({
+            ...m,
+            assignments: userAssignments.find(uA => uA.userid == m.userid)
+              .assignments,
+          })
+        );
+
+        const teams = await checkVipfyPlanTeams({ company, noCheck: true });
+
+        return {
+          users: companyUsers,
+          teams,
+        };
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+  fetchVIPFYPlanOptions: requiresRights(["edit-paymentdata"]).createResolver(
+    async (_parent, { type, id }, { models, session }) => {
+      try {
+        if (type) {
+          const plans = await models.sequelize.query(
+            `SELECT * FROM plan_data WHERE settings -> :type is not null`,
+            {
+              replacements: { type },
+              type: models.sequelize.QueryTypes.SELECT,
+            }
+          );
+          return plans;
+        }
+        if (id) {
+          const plans = await models.sequelize.query(
+            `SELECT * FROM plan_data WHERE id = :id`,
+            {
+              replacements: { id },
+              type: models.sequelize.QueryTypes.SELECT,
+            }
+          );
+          return plans;
+        }
+        throw new Error("Not enough parameters provided");
       } catch (err) {
         throw new NormalError({ message: err.message, internalData: { err } });
       }
