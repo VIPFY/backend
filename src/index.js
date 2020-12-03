@@ -202,12 +202,14 @@ gqlserver.applyMiddleware({
             "https://www.vipfy.store",
             "https://dev.vipfy.store",
             "http://localhost:3000",
+            "http://localhost:6060",
             "https://aws.vipfy.store",
             "https://aws2.vipfy.store",
           ]
         : [
             "http://localhost:3000",
             "http://localhost:3001",
+            "http://localhost:6060",
             "https://aws2.vipfy.store",
             "http://localhost:9000",
           ],
@@ -258,12 +260,8 @@ app.get("/health_ujgz1pra68", async (_req, res) => {
   });
   result.postgres = seq[0].one == 1;
 
-  const testId = `healthcheck-${Math.random()
-    .toString(36)
-    .substring(7)}`;
-  const testValue = Math.random()
-    .toString(36)
-    .substring(7);
+  const testId = `healthcheck-${Math.random().toString(36).substring(7)}`;
+  const testValue = Math.random().toString(36).substring(7);
   const r1 = await redis.set(testId, testValue);
   const r2 = await redis.get(testId);
   const r3 = await redis.del(testId);
@@ -317,7 +315,7 @@ jobQueue.on("global:stalled", async (jobid, err) => {
 } */
 
 // error handling, must be last
-app.use(function(error, req, res, next) {
+app.use(function (error, req, res, next) {
   console.error(error);
   res.status(503);
   res.json({ errors: [error.message] });

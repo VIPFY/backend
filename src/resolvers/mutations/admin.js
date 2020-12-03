@@ -383,7 +383,7 @@ export default {
           const createPromises = jsonList.map(app =>
             models.App.findOrCreate({
               where: { externalid: app.externalid },
-              defaults: app,
+              defaults: { ...app, logo: null },
               transaction: ta,
             })
           );
@@ -393,12 +393,36 @@ export default {
           const deleteOldQuotes = [];
           const quotes = [];
 
-          createdApps.forEach(([app, created]) => {
-            const jsonApp = jsonList.find(
+          for (const [app, created] of createdApps) {
+            const findApp = jsonList.find(
               node => node.externalid == app.externalid
             );
 
-            if (!created) {
+            const { alternatives, ...jsonApp } = findApp;
+            const normalizedAlternatives = [];
+
+            if (alternatives && alternatives.length > 0) {
+              for (const alternative of alternatives) {
+                const { externalid, ...props } = alternative;
+
+                const existingApp = await models.App.findOne({
+                  where: { externalid: alternative.externalid },
+                  raw: true,
+                  transaction: ta,
+                });
+
+                if (existingApp) {
+                  normalizedAlternatives.push({
+                    ...props,
+                    app: existingApp.id,
+                  });
+                }
+              }
+
+              jsonApp.alternatives = normalizedAlternatives;
+            }
+
+            if ((created && jsonApp.alternatives) || !created) {
               appsToUpdate.push(jsonApp);
 
               deleteOldQuotes.push(
@@ -419,9 +443,7 @@ export default {
                 );
               });
             }
-
-            // TODO: Update table with app alternatives as soon as Conrad is ready
-          });
+          }
 
           const updatePromises = appsToUpdate.map(app =>
             models.App.update(app, {

@@ -21,7 +21,8 @@ const appFields = `
   domains: [String]
   ratings: Ratings
   externalstatistics: ExternalStatistics
-  tags: [String]
+  tags: [Tag]
+  alternatives: [AppAlternative]
 `;
 
 const basicLicenceFields = `
@@ -42,9 +43,29 @@ export const types = `
     hasboughtplan: Boolean
   }
 
+  type AppAssessment {
+    id: ID!
+    type: String!
+    text: String!
+    unitid: Unit!
+    appid: App!
+  }
+
   type ExecuteApp {
     ${appFields}
     internaldata: JSON
+  }
+
+  type Tag {
+    name: String!
+    weight: Int!
+  }
+
+  type AppAlternative {
+    app: AppDetails!
+    name: String!
+    rating: Float!
+    reviews: Int!
   }
 
   type Ratings {
@@ -110,6 +131,7 @@ export const types = `
     supportwebsite: String
     supportphone: String
     developerwebsite: String
+    assessments: [AppAssessment]
   }
 
   type TeamBoughtPlan {
@@ -362,7 +384,7 @@ export const queries = `
 
 export const mutations = `
   sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
-  sendDownloadLink(email: String!): Boolean!
+  sendDownloadLink(email: String!, isMac: Boolean): Boolean!
   createOwnApp(ssoData: SSOInput!): IDID
 
   # Deletes a licence on a set date, if it is after the normal cancel period

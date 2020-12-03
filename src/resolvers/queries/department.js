@@ -146,7 +146,11 @@ export default {
             .filter(plan => plan.options.users === null)
             .find(({ id }) => id == lastPlan.planid);
 
-          if (isPremiumPlan && currentPlan.key.needsCustomerAction) {
+          if (
+            isPremiumPlan &&
+            currentPlan.key &&
+            currentPlan.key.needsCustomerAction
+          ) {
             expiredPlan = {
               id: isPremiumPlan.id,
               endtime: lastPlan.endtime,

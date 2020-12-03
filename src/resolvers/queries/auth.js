@@ -52,7 +52,7 @@ export default {
 
           user.dataValues.pseudonymousdeviceid = crypto
             .createHmac("sha256", superSecretKey)
-            .update(deviceId)
+            .update(deviceId || "")
             .digest("hex");
 
           user.dataValues.permissions = {

@@ -173,24 +173,6 @@ export default {
             }
           );
 
-          await createNotification(
-            {
-              message: `User ${unitid} has deleted Team ${teamid}`,
-              icon: "users",
-              link: "teammanger",
-              changed: [
-                "companyTeams",
-                "ownLicences",
-                "ownTeams",
-                "semiPublicUser",
-                "companyServices",
-              ],
-            },
-            ta,
-            { company, level: 2 },
-            { teamid, level: 3 }
-          );
-
           await Promise.all(
             deletejson.users.map(async user => {
               const deleteUserJson = user;
@@ -328,6 +310,41 @@ export default {
             })
           );
 
+          // Find Accounts without users
+          if (deletejson.autodelete) {
+            const departmentApps = await models.DepartmentApp.findAll({
+              where: { departmentid: teamid },
+              transaction: ta,
+            });
+
+            await Promise.all(
+              departmentApps.map(async dA => {
+                const otherlicences = await models.sequelize.query(
+                  `Select distinct (lva.*)
+            from licence_view lva left outer join licence_view lvb on lva.boughtplanid = lvb.boughtplanid
+            where lvb.boughtplanid = :boughtplanid and lva.starttime < now() and lva.endtime > now();`,
+                  {
+                    replacements: { boughtplanid: dA.boughtplanid },
+                    type: models.sequelize.QueryTypes.SELECT,
+                    transaction: ta,
+                  }
+                );
+
+                if (otherlicences.length == 0) {
+                  await models.BoughtPlanPeriod.update(
+                    {
+                      endtime,
+                    },
+                    {
+                      where: { boughtplanid: dA.boughtplanid },
+                      transaction: ta,
+                    }
+                  );
+                }
+              })
+            );
+          }
+
           // End TeamOrbits
 
           const deletePromises = [];
@@ -359,6 +376,24 @@ export default {
           );
 
           await Promise.all(deletePromises);
+
+          await createNotification(
+            {
+              message: `User ${unitid} has deleted Team ${teamid}`,
+              icon: "users",
+              link: "teammanger",
+              changed: [
+                "companyTeams",
+                "ownLicences",
+                "ownTeams",
+                "semiPublicUser",
+                "companyServices",
+              ],
+            },
+            ta,
+            { company, level: 2 },
+            { teamid, level: 3 }
+          );
 
           await createLog(
             ctx,
@@ -931,7 +966,6 @@ export default {
                       { endtime },
                       {
                         where: {
-                          departmentid: licenceRight.options.teamlicence,
                           boughtplanid: boughtplan[0].boughtplanid,
                           endtime: Infinity,
                         },

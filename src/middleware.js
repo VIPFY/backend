@@ -32,8 +32,8 @@ export const sessionMiddleware = session({
     maxAge: SESSION_LIFETIME,
     // Required Setting for Chrome in future Releases, see VIP-1030
     secure: ENVIRONMENT.toLowerCase() == "production",
-    sameSite: "none"
-  }
+    sameSite: "none",
+  },
 });
 
 // eslint-disable-next-line
@@ -44,13 +44,13 @@ export const loggingMiddleWare = (req, res, next) => {
   const chunks = [];
 
   res.write = (...restArgs) => {
-    chunks.push(new Buffer(restArgs[0]));
+    chunks.push(Buffer.from(restArgs[0]));
     oldWrite.apply(res, restArgs);
   };
 
   res.end = async (...restArgs) => {
     if (restArgs[0]) {
-      chunks.push(new Buffer(restArgs[0]));
+      chunks.push(Buffer.from(restArgs[0]));
     }
 
     const body = Buffer.concat(chunks).toString("utf8");
