@@ -1,5 +1,5 @@
 import { decode } from "jsonwebtoken";
-import { NormalError } from "../../errors";
+import { NormalError, RightsError } from "../../errors";
 import { requiresRights, requiresAuth } from "../../helpers/permissions";
 import { checkCompanyMembership } from "../../helpers/companyMembership";
 
@@ -70,8 +70,8 @@ export default {
       const {
         user: { company },
       } = await decode(session.token);
-      await checkCompanyMembership(models, company, teamid, "team");
       try {
+        await checkCompanyMembership(models, company, teamid, "team");
         const team = await models.sequelize.query(
           `SELECT * FROM team_view WHERE unitid = :teamid`,
           {
@@ -81,6 +81,9 @@ export default {
         );
         return team && team[0];
       } catch (err) {
+        if (err instanceof RightsError) {
+          return null;
+        }
         throw new NormalError({ message: err.message, internalData: { err } });
       }
     }

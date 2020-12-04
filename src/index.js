@@ -205,6 +205,7 @@ gqlserver.applyMiddleware({
             "http://localhost:6060",
             "https://aws.vipfy.store",
             "https://aws2.vipfy.store",
+            "https://styleguidist.internal.vipfy.store",
           ]
         : [
             "http://localhost:3000",
@@ -212,6 +213,7 @@ gqlserver.applyMiddleware({
             "http://localhost:6060",
             "https://aws2.vipfy.store",
             "http://localhost:9000",
+            "https://styleguidist.internal.vipfy.store",
           ],
     credentials: true, // <-- REQUIRED backend setting for sessions
   },

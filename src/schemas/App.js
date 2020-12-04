@@ -69,14 +69,14 @@ export const types = `
   }
 
   type Ratings {
-    overallRating: Int
-    combinedCustomerSupportRating: Int
-    combinedEaseOfUseRating: Int
-    combinedFunctionalityRating: Int
-    valueForMoneyRating: Int
-    recommendationRating: Int
-    easeOfSetupRating: Int
-    easeOfAdminRating: Int
+    overallRating: Float
+    combinedCustomerSupportRating: Float
+    combinedEaseOfUseRating: Float
+    combinedFunctionalityRating: Float
+    valueForMoneyRating: Float
+    recommendationRating: Float
+    easeOfSetupRating: Float
+    easeOfAdminRating: Float
   }
 
   type IndustryDistribution {

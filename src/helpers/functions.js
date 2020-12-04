@@ -107,7 +107,7 @@ export const createLog = async (context, eventtype, eventdata, transaction) => {
   const {
     user: { unitid },
     impersonator,
-  } = decode(context.session.token);
+  } = decode(context.session.token) || { user: {} };
 
   await models.Log.create(
     {

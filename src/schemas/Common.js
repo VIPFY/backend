@@ -106,6 +106,7 @@ export const mutations = `
 
   # for uptime checks and dummy queries
   ping: Response!
+  logEvent(eventtype: String, data: JSON): Boolean
 `;
 
 export const subscriptions = `
