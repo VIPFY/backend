@@ -65,7 +65,7 @@ export const requiresAuth = createResolver(
       }
 
       const {
-        user: { company, unitid },
+        user: { unitid },
       } = verify(session.token, SECRET);
 
       const valid = await models.User.findOne({
