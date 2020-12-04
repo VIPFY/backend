@@ -198,8 +198,14 @@ export const types = `
     vatNumber: String
   }
 
+  type UserPlanDetails{
+    userid: String!
+    admin: Boolean
+    assignments: [String]
+  }
+
   type ConfirmDetails{
-    users: [JSON]
+    users: [UserPlanDetails]
     teams: [String]
   }
 `;
