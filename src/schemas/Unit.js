@@ -4,6 +4,7 @@ const userFields = `
   isadmin: Boolean!
   companyban: Boolean
   isonline: Boolean
+  permissions: Permissions
 `;
 
 const basicFields = `
@@ -18,6 +19,13 @@ const basicFields = `
 `;
 
 export const types = `
+  type Permissions {
+    customServiceIntegration: Boolean
+    manageOwnAccounts: Boolean
+    ownAssignments: Int
+    sso: Boolean
+  }
+
   type Unit {
     id: ID!
     profilepicture: String
@@ -55,7 +63,7 @@ export const types = `
     pseudonymousid: ID
     pseudonymousdeviceid: ID
     recoverypublickey: String
-    recoveryprivatekey: String  
+    recoveryprivatekey: String
   }
 
   type PublicUser {
@@ -105,6 +113,12 @@ export const types = `
     vacationdays: Float
     vacationrequests: [VacationRequestResponse]!
     vacationdaysperyear: JSON
+  }
+
+  type SignUpFinishResponse {
+    user: User!
+    company: Department
+    ok: Boolean
   }
 
   input UserInput {
@@ -172,7 +186,7 @@ export const mutations = `
   updateEmployeePic(file: Upload!, userid: ID!): SemiPublicUser!
 
   #Setup Finished
-  setupFinished(username: String, phoneNumber: String): Response!
+  setupFinished(username: String, phoneNumber: String): SignUpFinishResponse!
 
   # Agree to Vipfy Terms of Service and Privacy Agreement
   agreeTos: Response!

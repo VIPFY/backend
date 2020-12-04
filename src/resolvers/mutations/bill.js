@@ -618,9 +618,8 @@ export default {
 
           await removeCard(department.payingoptions.stripe.id, card);
 
-          const cards = department.payingoptions.stripe.cards.filter(
-            creditCard => creditCard.id != card
-          );
+          const cardsInter = [...department.payingoptions.stripe.cards];
+          const cards = cardsInter.filter(creditCard => creditCard.id != card);
 
           const updatedDepartment = await models.Unit.update(
             {
@@ -1533,8 +1532,8 @@ export default {
                 stripe: {
                   ...payingoptions.stripe,
                   cards: [
-                    paymentMethodId,
                     ...(payingoptions.stripe.cards || []),
+                    paymentMethodId,
                   ],
                 },
               },

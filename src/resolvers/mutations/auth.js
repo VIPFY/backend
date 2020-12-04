@@ -46,6 +46,7 @@ export default {
       personalKey,
       adminKey,
       passwordsalt,
+      improve,
     },
     ctx
   ) =>
@@ -113,7 +114,7 @@ export default {
             unitid: unit.id,
             firstlogin: false,
             needspasswordchange: false,
-            consent: null,
+            consent: improve,
             passkey: await hashPasskey(passkey),
             ...passwordMetrics,
             passwordsalt,
@@ -144,7 +145,7 @@ export default {
             currency: country.currency_iso_3_char_code,
             iscompany: true,
             isprivate,
-            name,
+            name: name && name != "" ? name : "My Company",
             legalinformation: {
               privacy: new Date(),
               termsOfService: new Date(),
@@ -163,8 +164,7 @@ export default {
           {
             disabled: false,
             usedby: company.id,
-            alias: "VIPFY Premium",
-            key: { vipfyTrial: true },
+            alias: "VIPFY",
           },
           { transaction: ta }
         );
@@ -215,14 +215,41 @@ export default {
         await models.BoughtPlanPeriod.create(
           {
             boughtplanid: vipfyPlan.dataValues.id,
-            planid:
-              ENVIRONMENT == "production"
-                ? "3adb8121-bcb1-4a82-a872-26aa614462cb"
-                : "12d791f2-50f6-45c8-b43a-71ba01581ae1",
+            planid: "33e55921-f895-4b05-af56-9c20ae29ee17",
             payer: company.id,
             creator: unit.id,
             totalprice: 0,
-            endtime: Infinity,
+            endtime: moment().add(14, "days").toDate(),
+            key: {
+              sso: true,
+              manageOwnAccounts: true,
+              customServiceIntegration: true,
+              maxTeams: 5,
+            },
+          },
+          { transaction: ta }
+        );
+
+        //CREATE VIPFY "Account/Licence"
+        const account = await models.LicenceData.create(
+          {
+            boughtplanid: vipfyPlan.dataValues.id,
+            agreed: true,
+            disabled: false,
+            alias: "VIPFY-Account",
+          },
+          { transaction: ta }
+        );
+
+        await models.LicenceRight.create(
+          {
+            licenceid: account.dataValues.id,
+            unitid: user.unitid,
+            use: true,
+            view: true,
+            edit: true,
+            delete: true,
+            alias: "Company Admin",
           },
           { transaction: ta }
         );
@@ -301,14 +328,26 @@ export default {
               firstlogin: false,
               statisticdata: { username },
             },
-            { where: { unitid }, transaction: ta, raw: true }
+            {
+              where: { unitid },
+              transaction: ta,
+              raw: true,
+              returning: true,
+              plain: true,
+            }
           );
         } else {
           p1 = models.Human.update(
             {
               firstlogin: false,
             },
-            { where: { unitid }, transaction: ta, raw: true }
+            {
+              where: { unitid },
+              transaction: ta,
+              raw: true,
+              returning: true,
+              plain: true,
+            }
           );
         }
 
@@ -324,12 +363,22 @@ export default {
           {
             setupfinished: true,
           },
-          { where: { unitid: company }, transaction: ta }
+          {
+            where: { unitid: company },
+            transaction: ta,
+            returning: true,
+            raw: true,
+            plain: true,
+          }
         );
 
-        await Promise.all([p1, p2, p3]);
+        const [user, , department] = await Promise.all([p1, p2, p3]);
 
-        return { ok: true };
+        return {
+          user: { id: user[1].unitid, ...user[1] },
+          company: { id: department[1].unitid, ...department[1] },
+          ok: true, // compatibility with <0.19
+        };
       } catch (err) {
         logger.info(err);
         throw new NormalError({ message: err.message, internalData: { err } });

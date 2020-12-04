@@ -10,11 +10,19 @@ export const implementDate = {
   description: "Date custom scalar type. Returns a large integer",
   parseValue: value => new Date(value), // value from the client
   serialize(value) {
-    if (value === Number.POSITIVE_INFINITY || value === "infinity") {
+    if (
+      value === Number.POSITIVE_INFINITY ||
+      value === "infinity" ||
+      value === "Infinity"
+    ) {
       return new Date(8640000000000000).getTime();
     }
 
-    if (value === Number.NEGATIVE_INFINITY || value === "-infinity") {
+    if (
+      value === Number.NEGATIVE_INFINITY ||
+      value === "-infinity" ||
+      value === "-Infinity"
+    ) {
       return new Date(-8640000000000000).getTime();
     }
 

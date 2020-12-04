@@ -65,7 +65,7 @@ export const requiresAuth = createResolver(
       }
 
       const {
-        user: { company, unitid },
+        user: { unitid },
       } = verify(session.token, SECRET);
 
       const valid = await models.User.findOne({
@@ -81,66 +81,6 @@ export const requiresAuth = createResolver(
         valid.banned
       ) {
         throw new Error("Login is currently not possible for you!");
-      }
-
-      const vipfyPlans = await models.Plan.findAll({
-        where: {
-          appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2",
-          enddate: {
-            [models.Op.or]: {
-              [models.Op.is]: null,
-              [models.Op.lt]: models.sequelize.fn("NOW"),
-            },
-          },
-        },
-        attributes: ["id", "price"],
-        raw: true,
-      });
-
-      const usersVIPFYplans = await models.BoughtPlanView.findAll({
-        where: {
-          payer: company,
-          planid: vipfyPlans.map(plan => plan.id),
-        },
-        order: [["endtime", "DESC"]],
-        raw: true,
-      });
-
-      const currentPlan = usersVIPFYplans.find(plan => {
-        if (plan.disabled) {
-          return false;
-        } else if (!plan.endtime) {
-          return true;
-        } else {
-          return plan.endtime > Date.now();
-        }
-      });
-
-      if (!currentPlan) {
-        await models.sequelize.transaction(async ta => {
-          const vipfyPlan = await models.BoughtPlan.create(
-            {
-              usedby: company,
-              alias: "VIPFY Basic",
-              disabled: false,
-              key: { needsCustomerAction: true },
-            },
-            { transaction: ta }
-          );
-
-          const vipfyFreePlan = vipfyPlans.find(plan => plan.price == 0);
-
-          await models.BoughtPlanPeriod.create(
-            {
-              boughtplanid: vipfyPlan.id,
-              planid: vipfyFreePlan.id,
-              payer: company,
-              creator: unitid,
-              totalprice: 0,
-            },
-            { transaction: ta }
-          );
-        });
       }
 
       return "authenticated!";
