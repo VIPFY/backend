@@ -198,7 +198,7 @@ export const mutations = `
 
   resendToken(token: String!): Boolean!
   setConsent(consent: Boolean!): User!
-  setVacationDays(year: Int!, days: Int!, userid: ID!): Boolean!
+  setVacationDays(year: Int!, days: Float!, userid: ID!): Boolean!
   updateEmployeePassword(unitid: ID!, password: String!, logOut: Boolean): UserSecurityOverview!
   updateEmployeePasswordEncrypted(unitid: ID!, recoveryPrivateKey: String, newPasskey: String!, passwordMetrics: PasswordMetricsInput!, logOut: Boolean, newKey: KeyInput!, deprecateAllExistingKeys: Boolean!, licenceUpdates: [licenceKeyUpdateInput!]!): UserSecurityOverview!
   updateMyConfig(config: JSON!): User!

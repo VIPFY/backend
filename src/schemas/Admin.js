@@ -25,4 +25,6 @@ export const mutations = `
   cancelFinishStudy(participantID: ID!): Boolean!
   finishStudy(participantID: ID!): Boolean!
   processMarketplaceApps(file: Upload!): Boolean!
+  requestVacationForEmployee(startDate: Date!, endDate: Date!, days: Int!, userid: ID!): VacationRequestResponse!
+  requestHalfVacationDayForEmployee(day: Date!, userid: ID!): VacationRequestResponse!
   `;
