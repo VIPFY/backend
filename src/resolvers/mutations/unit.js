@@ -671,7 +671,7 @@ export default {
         const {
           user: { company },
         } = decode(session.token);
-        console.log("\x1b[1m%s\x1b[0m", "LOG days", days);
+
         await models.sequelize.query(
           `
         INSERT into vacation_year_days_data(unitid, company, year, days)
