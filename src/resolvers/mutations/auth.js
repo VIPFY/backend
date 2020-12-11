@@ -220,12 +220,6 @@ export default {
             creator: unit.id,
             totalprice: 0,
             endtime: moment().add(14, "days").toDate(),
-            key: {
-              sso: true,
-              manageOwnAccounts: true,
-              customServiceIntegration: true,
-              maxTeams: 5,
-            },
           },
           { transaction: ta }
         );

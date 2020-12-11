@@ -673,63 +673,15 @@ export default {
           if (!valid) {
             throw new Error(`The code ${promocode} is not valid`);
           }
-          const p1 = models.sequelize.query(
-            `SELECT bd.*, pd.name
-            FROM boughtplan_view bd
-                     LEFT JOIN plan_data pd on bd.planid = pd.id
-                     LEFT JOIN app_data ad on pd.appid = ad.id
-            WHERE appid = :appid AND ad.name = :name
-              AND buytime < now()
-              AND (endtime > now() OR endtime isnull)
-              AND bd.payer = :company;
-          `,
-            {
-              replacements: {
-                appid:
-                  process.env.ENVIRONMENT == "development"
-                    ? "aeb28408-464f-49f7-97f1-6a512ccf46c2"
-                    : "aeb28408-464f-49f7-97f1-6a512ccf46c2",
-                company,
-                name: "VIPFY",
-              },
-              type: models.sequelize.QueryTypes.SELECT,
-              transaction: ta,
-            }
-          );
-          const p2 = models.Plan.findOne({
+          const promoPlan = await models.Plan.findOne({
             where: {
               id: valid.planid,
-              appid:
-                process.env.ENVIRONMENT == "development"
-                  ? "aeb28408-464f-49f7-97f1-6a512ccf46c2"
-                  : "aeb28408-464f-49f7-97f1-6a512ccf46c2",
+              appid: "aeb28408-464f-49f7-97f1-6a512ccf46c2",
             },
             raw: true,
             transaction: ta,
           });
-          const p3 = models.DepartmentData.update(
-            { promocode },
-            { where: { unitid: company }, returning: true, transaction: ta }
-          );
-          const [currentPlan, promoPlan, _d] = await Promise.all([p1, p2, p3]);
-
-          // Very Old - need also Boughtplan Period
-          // Rethink what to do best
-          /*await models.BoughtPlan.create(
-            {
-              planid: promoPlan.id,
-              buyer: unitid,
-              payer: company,
-              predecessor: currentPlan[0].id,
-              alias: promoPlan.name,
-              disabled: false,
-              totalprice: 3.0,
-              buytime: currentPlan[0].endtime,
-              endtime: null,
-            },
-            { transaction: ta }
-          );*/
-          return true;
+          return promoPlan;
         } catch (err) {
           throw new NormalError({
             message: err.message,
@@ -830,12 +782,6 @@ export default {
           const {
             user: { unitid, company },
           } = decode(session.token);
-          const vipfyPlan = await checkVipfyPlanUsers({
-            company,
-            transaction: ta,
-            userid: unitid,
-            noCheck: true,
-          });
           const oldUser = await models.User.findOne({
             where: { id: userid },
             transaction: ta,
@@ -926,14 +872,13 @@ export default {
               { where: { unitid: userid }, transaction: ta }
             ),
           ]);
-
-          await models.LicenceRight.update(
+          await models.sequelize.query(
+            `Update licenceright_data set endtime = now() where unitid = :userid and endtime > now()`,
             {
-              endtime: moment.now(),
-            },
-            {
-              where: { id: vipfyPlan.assignmentid },
-              transaction: ta,
+              replacements: {
+                userid,
+              },
+              raw: true,
             }
           );
           await Promise.all([

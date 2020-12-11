@@ -83,6 +83,7 @@ export const types = `
   type BoughtPlan {
     id: ID!
     buytime: String
+    starttime: Date
     alias: String
     endtime: String
     key: JSON
@@ -201,10 +202,11 @@ export const types = `
   type UserPlanDetails{
     userid: String!
     admin: Boolean
-    assignments: [String]
+    assignments: [LicenceAssignment]
   }
 
   type ConfirmDetails{
+    vipfyaccount: Account
     users: [UserPlanDetails]
     teams: [String]
   }
@@ -241,6 +243,8 @@ export const mutations = `
 
   buyVipfyPlan(planid: ID!): Response!
 
+  changeVIPFYPlan(planid: ID!): Boolean!
+
   # This function will be used by a cronjob which runs once a month
   createMonthlyInvoices: Boolean!
   downloadBill(billid: ID!): String!
@@ -257,4 +261,6 @@ export const mutations = `
   saveBillingEmails(emaildelete: [String]!, emailadd: [String]!): Boolean!
 
   createStripeUser: Boolean!
+
+  requestPromocode(firstName: String, lastName: String, companyName: String, phoneNumber: String, message: String, version: String): Boolean
 `;

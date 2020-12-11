@@ -20,10 +20,22 @@ import {
   removeSubscriptionItem,
   changeDefaultCard,
 } from "../../services/stripe";
-import { BillingError, NormalError, InvoiceError } from "../../errors";
+import {
+  BillingError,
+  NormalError,
+  InvoiceError,
+  VIPFYPlanLimit,
+  VIPFYPlanError,
+} from "../../errors";
 import logger from "../../loggers";
 import { getInvoiceLink } from "../../services/aws";
 import createMonthlyInvoice from "../../helpers/createInvoice";
+import {
+  checkVipfyPlanUsers,
+  checkVipfyPlanAssignments,
+  checkVipfyPlanTeams,
+} from "../../helpers/billing";
+import { sendEmail } from "../../helpers/email";
 
 const stripe = stripePackage(process.env.STRIPE_SECRET_KEY);
 
@@ -1684,5 +1696,261 @@ export default {
           return false;
         }
       })
+  ),
+
+  changeVIPFYPlan: requiresRights(["create-payment-data"]).createResolver(
+    async (_p, { planid }, ctx) =>
+      ctx.models.sequelize.transaction(async transaction => {
+        const { models, session } = ctx;
+        const {
+          user: { unitid, company },
+        } = decode(session.token);
+        try {
+          const oldVIPFYPlan = await checkVipfyPlanUsers({
+            company,
+            noCheck: true,
+          });
+
+          const userAssignmentsPromise = [];
+          const companyUsers = [];
+
+          oldVIPFYPlan.members.forEach(m =>
+            userAssignmentsPromise.push(
+              checkVipfyPlanAssignments({
+                userid: m.userid,
+                noCheck: true,
+              })
+            )
+          );
+          const userAssignments = await Promise.all(userAssignmentsPromise);
+
+          oldVIPFYPlan.members.forEach(m =>
+            companyUsers.push({
+              ...m,
+              assignments: userAssignments.find(uA => uA.userid == m.userid)
+                .assignments,
+            })
+          );
+
+          const teams = await checkVipfyPlanTeams({ company, noCheck: true });
+
+          const newVIPFYPlan = await models.sequelize.query(
+            `SELECT * FROM plan_data WHERE id = :planid`,
+            {
+              replacements: { planid },
+              type: models.sequelize.QueryTypes.SELECT,
+            }
+          );
+
+          // CHECK FOR LIMITS
+
+          const {
+            maxTeams,
+            maxUsers,
+            maxAdmins,
+            maxOwnAssignments,
+          } = newVIPFYPlan[0].options;
+
+          if (maxTeams && teams.length > maxTeams) {
+            throw new VIPFYPlanLimit({
+              data: {
+                limiter: "Teams",
+                amount: maxTeams,
+              },
+            });
+          }
+          if (maxUsers && companyUsers.length > maxUsers) {
+            throw new VIPFYPlanLimit({
+              data: {
+                limiter: "Users",
+                amount: maxUsers,
+              },
+            });
+          }
+          if (
+            maxAdmins &&
+            companyUsers.reduce(
+              (accumulator, currentValue) =>
+                accumulator + (currentValue.admin ? 1 : 0),
+              0
+            ) > maxAdmins
+          ) {
+            throw new VIPFYPlanLimit({
+              data: {
+                limiter: "Admins",
+                amount: maxAdmins,
+              },
+            });
+          }
+          if (
+            maxOwnAssignments &&
+            companyUsers.reduce(
+              (accumulator, currentValue) =>
+                accumulator +
+                (currentValue.assignments.length - 1 > maxOwnAssignments
+                  ? 1
+                  : 0),
+              0
+            ) > 0
+          ) {
+            throw new VIPFYPlanLimit({
+              data: {
+                limiter: "OwnAssignments",
+                amount: maxOwnAssignments,
+              },
+            });
+          }
+
+          // CHANGE PLAN
+
+          const VIPFYBoughtPlan = await models.sequelize.query(
+            `Select b2.id, b2.boughtplanid, b2.starttime, 
+            (Select EXTRACT (YEAR From p1.cancelperiod)) as cancelyear,
+            (Select EXTRACT (Month From p1.cancelperiod)) as cancelmonth from (
+              Select l1.boughtplanid, max(b1.endtime) as maxendtime
+              from boughtplanperiod_data b1 join licence_data l1 on
+              l1.boughtplanid = b1.boughtplanid where l1.id = :vipfyAccountId
+              GROUP BY l1.boughtplanid ) m1
+            left join boughtplanperiod_data b2
+              on m1.boughtplanid = b2.boughtplanid and endtime = maxendtime
+              left join plan_data p1 on p1.id = b2.planid`,
+            {
+              replacements: { vipfyAccountId: oldVIPFYPlan.vipfyaccount },
+              type: models.sequelize.QueryTypes.SELECT,
+              transaction,
+            }
+          );
+
+          // Calculate Costs
+          let totalprice = 0;
+          if (newVIPFYPlan[0].price > 0) {
+            totalprice = companyUsers.length * newVIPFYPlan[0].price;
+          }
+
+          // Calculate Enddate
+          let endtime;
+
+          if (VIPFYBoughtPlan.cancelyear || VIPFYBoughtPlan.cancelmonth) {
+            if (VIPFYBoughtPlan.cancelyear) {
+              endtime = moment(VIPFYBoughtPlan.starttime)
+                .startOf("month")
+                .add(VIPFYBoughtPlan.cancelyear, "years")
+                .format("DD.MM.YY");
+            } else {
+              endtime = moment()
+                .startOf("month")
+                .add(1, "months")
+                .format("DD.MM.YY");
+            }
+          }
+
+          await models.BoughtPlanPeriod.update(
+            {
+              endtime: endtime || moment.now(),
+            },
+            {
+              where: {
+                payer: company,
+                id: VIPFYBoughtPlan[0].id,
+              },
+              transaction,
+            }
+          );
+          await models.sequelize.query(
+            `UPDATE boughtplanperiod_data SET endtime = now()
+            WHERE id in (Select id from plan_data where appid='aeb28408-464f-49f7-97f1-6a512ccf46c2') 
+            AND payer = :company
+            and endtime > :endtime
+            `,
+            {
+              replacements: {
+                company,
+                endtime: endtime || "now()",
+              },
+              type: models.sequelize.QueryTypes.UPDATE,
+              transaction,
+            }
+          );
+          await models.BoughtPlanPeriod.create(
+            {
+              boughtplanid: VIPFYBoughtPlan[0].boughtplanid,
+              planid,
+              payer: company,
+              creator: unitid,
+              totalprice,
+              endtime: "infinity",
+              starttime: endtime,
+            },
+            { transaction }
+          );
+
+          await createLog(ctx, "changeVIPFYPlan", {
+            unitid,
+            company,
+            planid,
+            endtime,
+            boughtplanid: VIPFYBoughtPlan[0].boughtplanid,
+          });
+          return true;
+        } catch (err) {
+          if (err instanceof VIPFYPlanLimit) {
+            throw err;
+          }
+          if (err instanceof VIPFYPlanError) {
+            throw err;
+          }
+          throw new BillingError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
+  ),
+
+  requestPromocode: requiresAuth.createResolver(
+    async (
+      _parent,
+      { firstName, lastName, companyName, phoneNumber, message, version },
+      ctx
+    ) => {
+      try {
+        const {
+          user: { company, unitid },
+        } = decode(ctx.session.token);
+
+        await sendEmail({
+          templateId: "d-68a525a0ab9c49358399ccf59bfde936",
+          fromName: "VIPFY",
+          personalizations: [
+            {
+              to: [{ email: "office@vipfy.store" }],
+              dynamic_template_data: {
+                firstName,
+                lastName,
+                companyName,
+                phoneNumber,
+                message,
+                version,
+                unitid,
+              },
+            },
+          ],
+        });
+
+        await createLog(ctx, "requestPromoCode", {
+          unitid,
+          company,
+          firstName,
+          lastName,
+          companyName,
+          phoneNumber,
+          message,
+        });
+
+        return true;
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   ),
 };

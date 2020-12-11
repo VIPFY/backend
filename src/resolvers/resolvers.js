@@ -83,7 +83,10 @@ export default {
   Mutation,
   Date: implementDate,
   JSON: implementJSON,
-  Account: find({ assignments: "[LicenceAssignment]" }),
+  Account: find({
+    assignments: "[LicenceAssignment]",
+    boughtplanid: "BoughtPlanView",
+  }),
   Address: find({}),
   App: find(developerAndSupport),
   AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "BoughtPlanView" }),
@@ -100,6 +103,9 @@ export default {
     payer: "Unit",
   }),
   BoughtplanUsagePerUser: find({ boughtplan: "BoughtPlanView", unit: "User" }),
+  ConfirmDetails: find({
+    vipfyaccount: "Account",
+  }),
   Department: find({
     ...unit,
     adminkey: {
@@ -205,6 +211,9 @@ export default {
     assignments: "[LicenceAssignment]",
   }),
   UserSecurityOverview: find({ unitid: "User" }),
+  UserPlanDetails: find({
+    assignments: "[LicenceAssignment]",
+  }),
   Vacation: find({ unitid: "User" }),
   VIPFYOffice: find({ employees: "[User]" }),
   Website: find({}),

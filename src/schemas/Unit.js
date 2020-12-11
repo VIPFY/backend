@@ -4,7 +4,7 @@ const userFields = `
   isadmin: Boolean!
   companyban: Boolean
   isonline: Boolean
-  permissions: Permissions
+  permissions: JSON
 `;
 
 const basicFields = `
@@ -19,13 +19,6 @@ const basicFields = `
 `;
 
 export const types = `
-  type Permissions {
-    customServiceIntegration: Boolean
-    manageOwnAccounts: Boolean
-    ownAssignments: Int
-    sso: Boolean
-  }
-
   type Unit {
     id: ID!
     profilepicture: String

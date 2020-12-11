@@ -28,7 +28,7 @@ export const checkVipfyPlanUsers = async ({
       throw new VIPFYPlanLimit({
         data: {
           limiter: "Users",
-          maxUsers: vipfyPlan[0].options.maxUsers,
+          amount: vipfyPlan[0].options.maxUsers,
         },
       });
     }
@@ -190,7 +190,7 @@ export const checkVipfyPlanTeams = async ({
     ) {
       throw new VIPFYPlanLimit({
         data: {
-          limiter: "OwnAssignments",
+          limiter: "Teams",
           amount: vipfyPlan[0].options.maxTeams,
         },
       });

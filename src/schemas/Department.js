@@ -126,7 +126,7 @@ export const mutations = `
   # force the given users to change their password on next login
   forcePasswordChange(userids: [ID]!): Response!
   unforcePasswordChange(userids: [ID]!): Response!
-  addPromocode(promocode: String!): Boolean!
+  addPromocode(promocode: String!): Plan!
   applyPromocode(promocode: String!): Response!
   selectVIPFYPlan(planid: ID!, tos: Boolean!): Boolean!
   banEmployee(userid: ID!): Response!

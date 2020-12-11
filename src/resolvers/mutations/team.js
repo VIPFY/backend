@@ -173,55 +173,23 @@ export default {
             }
           );
 
-          await Promise.all(
-            deletejson.users.map(async user => {
-              const deleteUserJson = user;
-              const userid = user.userid;
+          if (deletejson) {
+            await Promise.all(
+              deletejson.users.map(async user => {
+                const deleteUserJson = user;
+                const userid = user.userid;
 
-              // START DELETE ONE EMPLOYEE
-              const promises = [];
+                // START DELETE ONE EMPLOYEE
+                const promises = [];
 
-              // Delete all assignments of as
-              await Promise.all(
-                deleteUserJson.assignments.map(async as => {
-                  if (as.bool) {
-                    promises.push(
-                      models.LicenceRight.update(
-                        {
-                          endtime,
-                        },
-                        {
-                          where: { id: as.id },
-                          transaction: ta,
-                        }
-                      )
-                    );
-                  } else {
-                    // Remove team tag and assignoption
-                    const checkassignment = await models.LicenceRight.findOne({
-                      where: { id: as.id },
-                      raw: true,
-                      transaction: ta,
-                    });
-                    if (
-                      checkassignment.tags &&
-                      checkassignment.tags.includes("teamlicence") &&
-                      checkassignment.options &&
-                      checkassignment.options.teamlicence == teamid
-                    ) {
-                      let newtags = checkassignment.tags;
-                      newtags.splice(
-                        checkassignment.tags.findIndex(e => e == "teamlicence"),
-                        1
-                      );
+                // Delete all assignments of as
+                await Promise.all(
+                  deleteUserJson.assignments.map(async as => {
+                    if (as.bool) {
                       promises.push(
                         models.LicenceRight.update(
                           {
-                            tags: newtags,
-                            options: {
-                              ...checkassignment.options,
-                              teamlicence: undefined,
-                            },
+                            endtime,
                           },
                           {
                             where: { id: as.id },
@@ -229,46 +197,61 @@ export default {
                           }
                         )
                       );
-                    }
-                  }
-                })
-              );
-              await Promise.all(promises);
-
-              // Check for other assignments
-              if (deletejson.autodelete) {
-                await Promise.all(
-                  deleteUserJson.assignments.map(async asa => {
-                    const licenceRight = await models.LicenceRight.findOne({
-                      where: { id: asa.id },
-                      raw: true,
-                      transaction: ta,
-                    });
-
-                    const licences = await models.sequelize.query(
-                      `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
-                      {
-                        replacements: { licenceid: licenceRight.licenceid },
-                        type: models.sequelize.QueryTypes.SELECT,
-                        transaction: ta,
-                      }
-                    );
-
-                    if (licences.length == 0) {
-                      await models.LicenceData.update(
+                    } else {
+                      // Remove team tag and assignoption
+                      const checkassignment = await models.LicenceRight.findOne(
                         {
-                          endtime,
-                        },
-                        {
-                          where: { id: licenceRight.licenceid },
+                          where: { id: as.id },
+                          raw: true,
                           transaction: ta,
                         }
                       );
+                      if (
+                        checkassignment.tags &&
+                        checkassignment.tags.includes("teamlicence") &&
+                        checkassignment.options &&
+                        checkassignment.options.teamlicence == teamid
+                      ) {
+                        let newtags = checkassignment.tags;
+                        newtags.splice(
+                          checkassignment.tags.findIndex(
+                            e => e == "teamlicence"
+                          ),
+                          1
+                        );
+                        promises.push(
+                          models.LicenceRight.update(
+                            {
+                              tags: newtags,
+                              options: {
+                                ...checkassignment.options,
+                                teamlicence: undefined,
+                              },
+                            },
+                            {
+                              where: { id: as.id },
+                              transaction: ta,
+                            }
+                          )
+                        );
+                      }
+                    }
+                  })
+                );
+                await Promise.all(promises);
 
-                      const otherlicences = await models.sequelize.query(
-                        `Select distinct (lva.*)
-                    from licence_view lva left outer join licence_view lvb on lva.boughtplanid = lvb.boughtplanid
-                    where lvb.id = :licenceid and lva.starttime < now() and lva.endtime > now();`,
+                // Check for other assignments
+                if (deletejson.autodelete) {
+                  await Promise.all(
+                    deleteUserJson.assignments.map(async asa => {
+                      const licenceRight = await models.LicenceRight.findOne({
+                        where: { id: asa.id },
+                        raw: true,
+                        transaction: ta,
+                      });
+
+                      const licences = await models.sequelize.query(
+                        `SELECT * FROM licence_view WHERE id = :licenceid and endtime > now() or endtime is null`,
                         {
                           replacements: { licenceid: licenceRight.licenceid },
                           type: models.sequelize.QueryTypes.SELECT,
@@ -276,9 +259,21 @@ export default {
                         }
                       );
 
-                      if (otherlicences.length == 0) {
-                        const boughtplan = await models.sequelize.query(
-                          `SELECT boughtplanid FROM licence_view WHERE id = :licenceid`,
+                      if (licences.length == 0) {
+                        await models.LicenceData.update(
+                          {
+                            endtime,
+                          },
+                          {
+                            where: { id: licenceRight.licenceid },
+                            transaction: ta,
+                          }
+                        );
+
+                        const otherlicences = await models.sequelize.query(
+                          `Select distinct (lva.*)
+                    from licence_view lva left outer join licence_view lvb on lva.boughtplanid = lvb.boughtplanid
+                    where lvb.id = :licenceid and lva.starttime < now() and lva.endtime > now();`,
                           {
                             replacements: { licenceid: licenceRight.licenceid },
                             type: models.sequelize.QueryTypes.SELECT,
@@ -286,63 +281,78 @@ export default {
                           }
                         );
 
-                        await models.BoughtPlanPeriod.update(
-                          {
-                            endtime,
-                          },
-                          {
-                            where: { boughtplanid: boughtplan[0].boughtplanid },
-                            transaction: ta,
-                          }
-                        );
-                      }
-                    }
-                  })
-                );
-              }
+                        if (otherlicences.length == 0) {
+                          const boughtplan = await models.sequelize.query(
+                            `SELECT boughtplanid FROM licence_view WHERE id = :licenceid`,
+                            {
+                              replacements: {
+                                licenceid: licenceRight.licenceid,
+                              },
+                              type: models.sequelize.QueryTypes.SELECT,
+                              transaction: ta,
+                            }
+                          );
 
-              await models.ParentUnit.destroy({
-                where: { parentunit: teamid, childunit: userid },
+                          await models.BoughtPlanPeriod.update(
+                            {
+                              endtime,
+                            },
+                            {
+                              where: {
+                                boughtplanid: boughtplan[0].boughtplanid,
+                              },
+                              transaction: ta,
+                            }
+                          );
+                        }
+                      }
+                    })
+                  );
+                }
+
+                await models.ParentUnit.destroy({
+                  where: { parentunit: teamid, childunit: userid },
+                  transaction: ta,
+                });
+
+                // END ONE EMPLOYEE DELETED
+              })
+            );
+
+            // Find Accounts without users
+            if (deletejson.autodelete) {
+              const departmentApps = await models.DepartmentApp.findAll({
+                where: { departmentid: teamid },
                 transaction: ta,
               });
 
-              // END ONE EMPLOYEE DELETED
-            })
-          );
-
-          // Find Accounts without users
-          if (deletejson.autodelete) {
-            const departmentApps = await models.DepartmentApp.findAll({
-              where: { departmentid: teamid },
-              transaction: ta,
-            });
-
-            await Promise.all(
-              departmentApps.map(async dA => {
-                const otherlicences = await models.sequelize.query(
-                  `Select distinct (lva.*)
+              await Promise.all(
+                departmentApps.map(async dA => {
+                  const otherlicences = await models.sequelize.query(
+                    `Select distinct (lva.*)
             from licence_view lva left outer join licence_view lvb on lva.boughtplanid = lvb.boughtplanid
             where lvb.boughtplanid = :boughtplanid and lva.starttime < now() and lva.endtime > now();`,
-                  {
-                    replacements: { boughtplanid: dA.boughtplanid },
-                    type: models.sequelize.QueryTypes.SELECT,
-                    transaction: ta,
-                  }
-                );
-
-                if (otherlicences.length == 0) {
-                  await models.BoughtPlanPeriod.update(
                     {
-                      endtime,
-                    },
-                    {
-                      where: { boughtplanid: dA.boughtplanid },
+                      replacements: { boughtplanid: dA.boughtplanid },
+                      type: models.sequelize.QueryTypes.SELECT,
                       transaction: ta,
                     }
                   );
-                }
-              })
-            );
+
+                  if (otherlicences.length == 0) {
+                    await models.BoughtPlanPeriod.update(
+                      {
+                        endtime,
+                      },
+                      {
+                        where: { boughtplanid: dA.boughtplanid },
+                        transaction: ta,
+                      }
+                    );
+                  }
+                })
+              );
+            }
           }
 
           // End TeamOrbits

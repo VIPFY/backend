@@ -375,8 +375,8 @@ export default {
         );
 
         const teams = await checkVipfyPlanTeams({ company, noCheck: true });
-
         return {
+          vipfyaccount: vipfyPlan.vipfyaccount,
           users: companyUsers,
           teams,
         };
@@ -388,21 +388,21 @@ export default {
   fetchVIPFYPlanOptions: requiresRights(["edit-paymentdata"]).createResolver(
     async (_parent, { type, id }, { models, session }) => {
       try {
-        if (type) {
-          const plans = await models.sequelize.query(
-            `SELECT * FROM plan_data WHERE settings -> :type is not null`,
-            {
-              replacements: { type },
-              type: models.sequelize.QueryTypes.SELECT,
-            }
-          );
-          return plans;
-        }
         if (id) {
           const plans = await models.sequelize.query(
             `SELECT * FROM plan_data WHERE id = :id`,
             {
               replacements: { id },
+              type: models.sequelize.QueryTypes.SELECT,
+            }
+          );
+          return plans;
+        }
+        if (type) {
+          const plans = await models.sequelize.query(
+            `SELECT * FROM plan_data WHERE settings -> :type is not null`,
+            {
+              replacements: { type },
               type: models.sequelize.QueryTypes.SELECT,
             }
           );

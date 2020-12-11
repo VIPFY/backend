@@ -14,7 +14,12 @@ import {
   generateFakeKey,
 } from "../../helpers/functions";
 import { requiresAuth, requiresRights } from "../../helpers/permissions";
-import { AuthError, NormalError } from "../../errors";
+import {
+  AuthError,
+  NormalError,
+  VIPFYPlanLimit,
+  VIPFYPlanError,
+} from "../../errors";
 
 export default {
   me: requiresAuth.createResolver(
@@ -55,15 +60,53 @@ export default {
             .update(deviceId || "")
             .digest("hex");
 
-          user.dataValues.permissions = {
-            ownAssignments: 15,
-            sso: true,
-            customServiceIntegration: true,
-            manageOwnAccounts: true,
-          };
+          const vipfyPlan = await models.sequelize.query(
+            `Select * from (
+              (SELECT userid, max(endtime) as endtime from
+                vipfy_plans where userid = :unitid and starttime <= now()
+                group by userid) a
+              left join vipfy_plans b
+              on a.userid = b.userid and a.endtime = b.endtime);`,
+            {
+              replacements: { unitid },
+              type: models.sequelize.QueryTypes.SELECT,
+            }
+          );
+
+          if (!vipfyPlan || vipfyPlan.length == 0) {
+            throw new VIPFYPlanError();
+          }
+          if (vipfyPlan[0].endtime <= moment.now()) {
+            throw new VIPFYPlanLimit({
+              data: {
+                limiter: "Time",
+                amount: vipfyPlan[0].endtime,
+              },
+            });
+          }
+
+          user.dataValues.permissions = vipfyPlan[0].options;
+          user.dataValues.permissions.endtime = vipfyPlan[0].endtime;
+          if (vipfyPlan[0].options.trial) {
+            const freePlan = await models.sequelize.query(
+              `SELECT * FROM plan_data WHERE settings -> :type is not null`,
+              {
+                replacements: { type: "mainFreePlan" },
+                type: models.sequelize.QueryTypes.SELECT,
+              }
+            );
+            user.dataValues.permissions.freePlanOptions = freePlan[0].options;
+          }
+          user.dataValues.permissions.planName = vipfyPlan[0].teaserdescription;
 
           return user.dataValues;
         } catch (err) {
+          if (err instanceof VIPFYPlanLimit) {
+            throw err;
+          }
+          if (err instanceof VIPFYPlanError) {
+            throw err;
+          }
           throw new NormalError({
             message: `Me-Query-ERROR ${err.message}`,
             internalData: { err },
