@@ -325,7 +325,7 @@ export const requiresVipfyAdmin = myself =>
           ...VIPFY_MANAGEMENT,
           "b65a0528-59b1-4137-887f-faf3d6a07fd7", // Lisa
           "84c3382a-63c1-479f-85cd-d16e9988aa8a", // Eva
-          "09d828f6-8cad-440f-8ab9-41fc9b870a64", // Janet
+          "f64c1f89-66d7-4338-930c-8e2a731bb644", // Janet
           "e72a945f-b29d-445b-ab68-d75d1070bdb6", // Conrad
           "ef08cbb6-d53c-4d0f-aa70-10a9df0b84d9", // Eva Kiszka's other account
         ];
