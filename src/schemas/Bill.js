@@ -244,6 +244,7 @@ export const mutations = `
   buyVipfyPlan(planid: ID!): Response!
 
   changeVIPFYPlan(planid: ID!): Boolean!
+  transformVIPFYPlan: Boolean!
 
   # This function will be used by a cronjob which runs once a month
   createMonthlyInvoices: Boolean!

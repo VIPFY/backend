@@ -1953,4 +1953,78 @@ export default {
       }
     }
   ),
+  /* Temporary Function to transform old VIPFY-Plans remove March 2021 */
+  transformVIPFYPlan: requiresAuth.createResolver(
+    async (_parent, _args, { models, session }) =>
+      models.sequelize.transaction(async transaction => {
+        try {
+          const {
+            user: { company, unitid },
+          } = decode(session.token);
+          const employees = await models.sequelize.query(
+            `SELECT DISTINCT department_employee_view.id, employee, isadmin
+              FROM department_employee_view left join users_view
+              on employee = users_view.id
+              WHERE department_employee_view.id = :company AND employee NOTNULL`,
+            {
+              replacements: { company },
+              type: models.sequelize.QueryTypes.SELECT,
+              transaction,
+            }
+          );
+          const boughtplan = await models.sequelize.query(
+            `Select * from boughtplanperiod_view left join plan_data
+            on planid=plan_data.id where payer= :company and
+            appid='aeb28408-464f-49f7-97f1-6a512ccf46c2'
+            order by endtime desc limit 1
+          `,
+            {
+              replacements: { company },
+              type: models.sequelize.QueryTypes.SELECT,
+              transaction,
+            }
+          );
+
+          const account = await models.LicenceData.create(
+            {
+              boughtplanid: boughtplan[0].boughtplanid,
+              agreed: true,
+              disabled: false,
+              alias: "VIPFY-Account",
+            },
+            { transaction }
+          );
+          const licenceRights = await Promise.all(
+            employees.map(e =>
+              models.LicenceRight.create(
+                {
+                  licenceid: account.dataValues.id,
+                  unitid: e.employee,
+                  use: true,
+                  view: true,
+                  edit: e.isadmin,
+                  delete: e.isadmin,
+                  alias: e.isadmin ? "Company Admin" : "Company User",
+                },
+                { transaction }
+              )
+            )
+          );
+          await createLog({ models, session }, "requestPromoCode", {
+            unitid,
+            company,
+            employees,
+            boughtplan,
+            account,
+            licenceRights,
+          });
+          return true;
+        } catch (err) {
+          throw new NormalError({
+            message: err.message,
+            internalData: { err },
+          });
+        }
+      })
+  ),
 };
