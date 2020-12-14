@@ -1,16 +1,12 @@
-import { decode, sign } from "jsonwebtoken";
-import uuid from "uuid";
+import { decode, verify } from "jsonwebtoken";
 import moment from "moment";
 // import { getLoginData } from "@vipfy-private/weebly";
-import * as Services from "@vipfy-private/services";
-import dd24Api from "../../services/dd24";
-import { NormalError, PartnerError } from "../../errors";
+import { NormalError } from "../../errors";
 import {
   requiresAuth,
   requiresRights,
   requiresVipfyAdmin,
 } from "../../helpers/permissions";
-import { companyCheck, concatName } from "../../helpers/functions";
 import freshdeskAPI from "../../services/freshdesk";
 
 export default {
@@ -105,28 +101,32 @@ export default {
     }
   },
 
-  fetchAppById: requiresRights(["view-apps"]).createResolver(
-    async (_parent, { id }, { models, session }) => {
-      try {
+  fetchAppById: async (_parent, { id }, { models, session, SECRET }) => {
+    try {
+      const filter = [null];
+
+      if (session && session.token) {
         const {
           user: { company },
-        } = decode(session.token);
+        } = verify(session.token, SECRET);
 
-        const app = await models.AppDetails.findOne({
-          where: {
-            id,
-            disabled: false,
-            deprecated: false,
-            owner: { [models.Op.or]: [null, company] },
-          },
-        });
-
-        return app;
-      } catch (err) {
-        throw new NormalError({ message: err.message, internalData: { err } });
+        filter.push(company);
       }
+
+      const app = await models.AppDetails.findOne({
+        where: {
+          id,
+          disabled: false,
+          deprecated: false,
+          owner: { [models.Op.or]: filter },
+        },
+      });
+
+      return app;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
     }
-  ),
+  },
 
   fetchAppNameByID: requiresAuth.createResolver(
     async (_parent, { id }, { models, session }) => {
