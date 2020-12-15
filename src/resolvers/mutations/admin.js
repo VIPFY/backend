@@ -1,11 +1,20 @@
 import { decode } from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
-import { requiresVipfyAdmin } from "../../helpers/permissions";
+import moment from "moment";
+import {
+  requiresVipfyAdmin,
+  requiresVipfyManagement,
+} from "../../helpers/permissions";
 import { createProduct } from "../../services/stripe";
 import { NormalError } from "../../errors";
-import { createLog, formatFilename } from "../../helpers/functions";
+import {
+  createLog,
+  createNotification,
+  formatFilename,
+} from "../../helpers/functions";
 import { uploadAppImage, deleteAppImage } from "../../services/aws";
+import { sendEmail } from "../../helpers/email";
 
 const processMultipleFiles = async (upload, folder) => {
   const pic = await upload;
@@ -468,5 +477,135 @@ export default {
           });
         }
       })
+  ),
+
+  requestVacationForEmployee: requiresVipfyManagement().createResolver(
+    async (_p, { startDate, endDate, days, userid }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
+
+          const startdate = moment(startDate);
+          const enddate = moment(endDate);
+
+          const computeVacationDays = (date, fullDays) => {
+            if (fullDays == 1) {
+              return 1;
+            }
+
+            const clonedDate = moment(date);
+            let offDays = 0;
+
+            for (let i = 0; i < fullDays; i++) {
+              clonedDate.add(i < 2 ? i : 1, "days");
+
+              if (
+                clonedDate.isoWeekday() == 6 ||
+                clonedDate.isoWeekday() == 7 ||
+                clonedDate.isHoliday(["SL"]).holidayName
+              ) {
+                offDays++;
+              }
+            }
+
+            return fullDays - offDays;
+          };
+
+          const computedDays = computeVacationDays(
+            startdate,
+            moment
+              .duration(
+                moment(enddate)
+                  .endOf("day")
+                  // Otherwise it won't be a full day
+                  .add(1, "day")
+                  .diff(startdate.startOf("day"))
+              )
+              .days()
+          );
+
+          if (computedDays != days) {
+            throw new Error(
+              "The days don't match the length of the vacation duration!"
+            );
+          }
+
+          const request = await await models.VacationRequest.create(
+            {
+              unitid: userid,
+              startdate: startdate.format("LL"),
+              enddate: enddate.format("LL"),
+              days,
+              decided: models.sequelize.fn("NOW"),
+              requested: models.sequelize.fn("NOW"),
+              status: "CONFIRMED",
+            },
+            { transaction: ta }
+          );
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Vacation request successfully created",
+              icon: "umbrella-beach",
+              link: "vacation",
+              changed: ["vacationRequest"],
+            },
+            ta,
+            { company, message: `User ${userid} requested a vacation` }
+          );
+
+          return request;
+        });
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
+  ),
+
+  requestHalfVacationDayForEmployee: requiresVipfyManagement().createResolver(
+    async (_p, { day, userid }, { models, session }) => {
+      try {
+        return await models.sequelize.transaction(async ta => {
+          const {
+            user: { unitid, company },
+          } = decode(session.token);
+
+          const request = await models.VacationRequest.create(
+            {
+              unitid: userid,
+              startdate: day,
+              enddate: day,
+              days: 0.5,
+              decided: models.sequelize.fn("NOW"),
+              status: "CONFIRMED",
+              requested: models.sequelize.fn("NOW"),
+            },
+            { transaction: ta }
+          );
+
+          await createNotification(
+            {
+              receiver: unitid,
+              message: "Vacation request successfully created",
+              icon: "umbrella-beach",
+              link: "vacation",
+              changed: ["vacationRequest"],
+            },
+            ta,
+            {
+              company,
+              message: `User ${userid} requested half a vacation day`,
+            }
+          );
+
+          return request;
+        });
+      } catch (err) {
+        throw new NormalError({ message: err.message, internalData: { err } });
+      }
+    }
   ),
 };
