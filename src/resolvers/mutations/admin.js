@@ -1,7 +1,7 @@
 import { decode } from "jsonwebtoken";
 import fs from "fs";
 import path from "path";
-import moment from "moment";
+import moment from "moment-feiertage";
 import {
   requiresVipfyAdmin,
   requiresVipfyManagement,
@@ -9,12 +9,12 @@ import {
 import { createProduct } from "../../services/stripe";
 import { NormalError } from "../../errors";
 import {
+  computeVacatationDays,
   createLog,
   createNotification,
   formatFilename,
 } from "../../helpers/functions";
 import { uploadAppImage, deleteAppImage } from "../../services/aws";
-import { sendEmail } from "../../helpers/email";
 
 const processMultipleFiles = async (upload, folder) => {
   const pic = await upload;
@@ -487,44 +487,7 @@ export default {
             user: { unitid, company },
           } = decode(session.token);
 
-          const startdate = moment(startDate);
-          const enddate = moment(endDate);
-
-          const computeVacationDays = (date, fullDays) => {
-            if (fullDays == 1) {
-              return 1;
-            }
-
-            const clonedDate = moment(date);
-            let offDays = 0;
-
-            for (let i = 0; i < fullDays; i++) {
-              clonedDate.add(i < 2 ? i : 1, "days");
-
-              if (
-                clonedDate.isoWeekday() == 6 ||
-                clonedDate.isoWeekday() == 7 ||
-                clonedDate.isHoliday(["SL"]).holidayName
-              ) {
-                offDays++;
-              }
-            }
-
-            return fullDays - offDays;
-          };
-
-          const computedDays = computeVacationDays(
-            startdate,
-            moment
-              .duration(
-                moment(enddate)
-                  .endOf("day")
-                  // Otherwise it won't be a full day
-                  .add(1, "day")
-                  .diff(startdate.startOf("day"))
-              )
-              .days()
-          );
+          const computedDays = computeVacatationDays(startDate, endDate);
 
           if (computedDays != days) {
             throw new Error(
@@ -532,11 +495,11 @@ export default {
             );
           }
 
-          const request = await await models.VacationRequest.create(
+          const request = await models.VacationRequest.create(
             {
               unitid: userid,
-              startdate: startdate.format("LL"),
-              enddate: enddate.format("LL"),
+              startdate: moment(startDate).format("LL"),
+              enddate: moment(endDate).format("LL"),
               days,
               decided: models.sequelize.fn("NOW"),
               requested: models.sequelize.fn("NOW"),

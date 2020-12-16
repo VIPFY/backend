@@ -315,7 +315,7 @@ export default {
   ),
 
   fetchLicence: requiresRights(["myself", "view-licences"]).createResolver(
-    async (_parent, { licenceid }, { models }, _info) => {
+    async (_parent, { licenceid }, { models }) => {
       try {
         const licence = await models.LicenceDataFiltered.findOne({
           where: { id: licenceid },
@@ -812,6 +812,7 @@ export default {
       }
     }
   ),
+
   fetchSupportRequests: requiresAuth.createResolver(
     async (_p, _args, { models, session }) => {
       try {
@@ -835,6 +836,7 @@ export default {
       }
     }
   ),
+
   fetchExecutionApps: requiresVipfyAdmin().createResolver(
     async (_p, { appid }, { models }) => {
       try {
@@ -934,4 +936,14 @@ export default {
       }
     }
   ),
+
+  fetchCategories: async (_p, _args, { models }) => {
+    try {
+      const categories = await models.AppDetails.findOne();
+      console.log("\x1b[1m%s\x1b[0m", "LOG categories", categories);
+      return ["hi"];
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
 };
