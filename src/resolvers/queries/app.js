@@ -936,14 +936,4 @@ export default {
       }
     }
   ),
-
-  fetchCategories: async (_p, _args, { models }) => {
-    try {
-      const categories = await models.AppDetails.findOne();
-      console.log("\x1b[1m%s\x1b[0m", "LOG categories", categories);
-      return ["hi"];
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
-    }
-  },
 };
