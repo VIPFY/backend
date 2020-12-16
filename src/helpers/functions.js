@@ -1,4 +1,4 @@
-import moment from "moment";
+import moment from "moment-feiertage";
 import * as soap from "soap";
 import models from "@vipfy-private/sequelize-setup";
 import zxcvbn from "zxcvbn";
@@ -6,6 +6,7 @@ import iplocate from "node-iplocate";
 import bcrypt from "bcrypt";
 import { decode } from "jsonwebtoken";
 import crypto from "crypto";
+import { v4 as uuid } from "uuid";
 import { createSubscription } from "../services/stripe";
 import { NormalError, RightsError } from "../errors";
 import {
@@ -16,7 +17,6 @@ import {
 } from "../constants";
 import { checkCompanyMembership } from "./companyMembership";
 import { createToken } from "./auth";
-import { v4 as uuid } from "uuid";
 
 /* eslint-disable no-return-assign */
 
@@ -920,4 +920,59 @@ export function generateFakeKey(email, short) {
     ops: 2,
     mem: 67108864,
   };
+}
+
+/**
+ * Computes the amount of days an employee wants to take off
+ *
+ * @param {Date} startDate Beginning of the vacation
+ * @param {Date} endDate End of the vacation
+ *
+ * @returns {number} Amount of vacation days
+ */
+export function computeVacatationDays(startDate, endDate) {
+  const startdate = moment(startDate);
+  const enddate = moment(endDate);
+
+  function computeDuration(date, fullDays) {
+    if (fullDays == 1) {
+      return 1;
+    }
+
+    const clonedDate = moment(date);
+    let offDays = 0;
+
+    for (let i = 0; i < fullDays; i++) {
+      clonedDate.add(i < 2 ? i : 1, "days");
+
+      if (clonedDate.isoWeekday() >= 6) {
+        offDays++;
+      } else {
+        /* eslint-disable-next-line */
+        if (
+          clonedDate.format("DD.MM") == "24.12" ||
+          clonedDate.format("DD.MM") == "31.12"
+        ) {
+          offDays += 0.5;
+        } else if (clonedDate.isHoliday("SL")) {
+          offDays++;
+        }
+      }
+    }
+
+    return fullDays - offDays;
+  }
+
+  return computeDuration(
+    startdate,
+    moment
+      .duration(
+        moment(enddate)
+          .endOf("day")
+          // Otherwise it won't be a full day
+          .add(1, "day")
+          .diff(startdate.startOf("day"))
+      )
+      .days()
+  );
 }
