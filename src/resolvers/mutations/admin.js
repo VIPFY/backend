@@ -450,17 +450,19 @@ export default {
               });
             }
 
-            if (created && jsonApp.assessments.length > 0) {
+            if (jsonApp.assessments.length > 0) {
               jsonApp.assessments.forEach(assessment => {
+                const assesmentData = {
+                  ...assessment,
+                  appid: jsonApp.id,
+                  // A unitid is needed and by using VIPFYs, Assessments can be properly identified
+                  unitid: vipfyID,
+                };
+
                 assessmentPromises.push(
                   models.AppAssessment.findOrCreate({
-                    where: { text: assessment.text, unitid: vipfyID },
-                    defaults: {
-                      ...assessment,
-                      appid: app.id,
-                      // A unitid is needed and by using VIPFYs, assessments can be properly identified
-                      unitid: vipfyID,
-                    },
+                    where: assesmentData,
+                    defaults: assesmentData,
                     transaction: ta,
                   })
                 );
