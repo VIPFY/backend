@@ -22,7 +22,7 @@ const appFields = `
   ratings: Ratings
   externalstatistics: ExternalStatistics
   tags: [Tag]
-  alternatives: [AppAlternative]
+  alternatives: [AppDetails]
 `;
 
 const basicLicenceFields = `
@@ -59,13 +59,6 @@ export const types = `
   type Tag {
     name: String!
     weight: Int!
-  }
-
-  type AppAlternative {
-    app: AppDetails!
-    name: String!
-    rating: Float!
-    reviews: Int!
   }
 
   type Ratings {
@@ -339,7 +332,8 @@ export const queries = `
   # Returns all apps in Vipfy
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
   fetchMarketplaceApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
-  
+  fetchCategories: [String!]!
+
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
   fetchAppNameByID(id: ID!): AppDetails

@@ -90,7 +90,6 @@ export default {
   AppDetails: find(developerAndSupport),
   // Does this work?
   AppUsage: find({ app: "App" }),
-  AppAlternative: find({ app: "AppDetail" }),
   Bill: find(unit),
   BillPosition: find({ billid: "Bill" }),
   BoughtPlan: find({

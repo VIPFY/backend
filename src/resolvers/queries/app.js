@@ -936,4 +936,34 @@ export default {
       }
     }
   ),
+
+  fetchCategories: async (_p, _args, { models }) => {
+    try {
+      const allTags = await models.sequelize.query(
+        `
+        SELECT tags FROM app_data
+        WHERE cardinality(tags) > 0 ;
+        `,
+        { type: models.sequelize.QueryTypes.SELECT }
+      );
+
+      const tags = allTags
+        .flatMap(acc => acc.tags)
+        .reduce((acc, cV) => {
+          if (acc[cV.name]) {
+            acc[cV.name] += cV.weight;
+          } else {
+            acc[cV.name] = cV.weight;
+          }
+
+          return acc;
+        }, {});
+
+      const top12 = Object.keys(tags).sort((a, b) => tags[b] - tags[a]);
+
+      return top12;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
 };

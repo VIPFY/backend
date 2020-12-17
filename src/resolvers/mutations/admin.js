@@ -374,6 +374,7 @@ export default {
     async (_p, { file }, { models }) =>
       models.sequelize.transaction(async ta => {
         try {
+          const vipfyID = "ff18ee19-b247-45aa-bcab-7b9992a593cd";
           const FILE_PATH = path.join(__dirname, "../../files/apps.json");
           const apps = await file;
           const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -388,11 +389,10 @@ export default {
 
           const myFile = fs.readFileSync(FILE_PATH, { encoding: "utf-8" });
           const jsonList = await JSON.parse(myFile);
-
           const createPromises = jsonList.map(app =>
             models.App.findOrCreate({
               where: { externalid: app.externalid },
-              defaults: { ...app, logo: null },
+              defaults: app,
               transaction: ta,
             })
           );
@@ -401,6 +401,7 @@ export default {
           const appsToUpdate = [];
           const deleteOldQuotes = [];
           const quotes = [];
+          const assessmentPromises = [];
 
           for (const [app, created] of createdApps) {
             const findApp = jsonList.find(
@@ -412,19 +413,15 @@ export default {
 
             if (alternatives && alternatives.length > 0) {
               for (const alternative of alternatives) {
-                const { externalid, ...props } = alternative;
-
                 const existingApp = await models.App.findOne({
-                  where: { externalid: alternative.externalid },
+                  where: { externalid: alternative.toString() },
+                  attributes: ["id"],
                   raw: true,
                   transaction: ta,
                 });
 
                 if (existingApp) {
-                  normalizedAlternatives.push({
-                    ...props,
-                    app: existingApp.id,
-                  });
+                  normalizedAlternatives.push(existingApp.id);
                 }
               }
 
@@ -452,6 +449,23 @@ export default {
                 );
               });
             }
+
+            if (created && jsonApp.assessments.length > 0) {
+              jsonApp.assessments.forEach(assessment => {
+                assessmentPromises.push(
+                  models.AppAssessment.findOrCreate({
+                    where: { text: assessment.text, unitid: vipfyID },
+                    defaults: {
+                      ...assessment,
+                      appid: app.id,
+                      // A unitid is needed and by using VIPFYs, assessments can be properly identified
+                      unitid: vipfyID,
+                    },
+                    transaction: ta,
+                  })
+                );
+              });
+            }
           }
 
           const updatePromises = appsToUpdate.map(app =>
@@ -463,7 +477,7 @@ export default {
 
           await Promise.all(updatePromises);
           await Promise.all(deleteOldQuotes);
-          await Promise.all(quotes);
+          await Promise.all([...quotes, ...assessmentPromises]);
 
           console.log("Upload worked 🤗");
           fs.unlinkSync(FILE_PATH);
