@@ -429,6 +429,7 @@ export default {
             }
 
             if ((created && jsonApp.alternatives) || !created) {
+              jsonApp.features = { ...app.features, ...jsonApp.features };
               appsToUpdate.push(jsonApp);
 
               deleteOldQuotes.push(
