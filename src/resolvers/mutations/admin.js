@@ -443,7 +443,7 @@ export default {
               Object.values(jsonApp.quotes).forEach(quote => {
                 quotes.push(
                   models.Quote.create(
-                    { appid: app.dataValues.id, ...quote },
+                    { appid: app.id, ...quote },
                     { transaction: ta }
                   )
                 );
@@ -454,7 +454,7 @@ export default {
               jsonApp.assessments.forEach(assessment => {
                 const assesmentData = {
                   ...assessment,
-                  appid: jsonApp.id,
+                  appid: app.id,
                   // A unitid is needed and by using VIPFYs, Assessments can be properly identified
                   unitid: vipfyID,
                 };

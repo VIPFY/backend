@@ -69,12 +69,12 @@ const Mutation = Object.assign(
   teamMutations
 );
 
-const unit = { unitid: "Unit" };
 const unitAndPlan = { sponsor: "Unit", planid: "Plan" };
 const developerAndSupport = {
   developer: "Unit",
   supportunit: "Unit",
   owner: "Unit",
+  alternatives: "[AppDetails]",
 };
 const plans = { appid: "App", gotoplan: "Plan" };
 
@@ -90,7 +90,7 @@ export default {
   AppDetails: find(developerAndSupport),
   // Does this work?
   AppUsage: find({ app: "App" }),
-  Bill: find(unit),
+  Bill: find({ unitid: "Unit" }),
   BillPosition: find({ billid: "Bill" }),
   BoughtPlan: find({
     buyer: "Unit",
@@ -100,14 +100,14 @@ export default {
   }),
   BoughtplanUsagePerUser: find({ boughtplan: "BoughtPlanView", unit: "User" }),
   Department: find({
-    ...unit,
+    unitid: "Unit",
     adminkey: {
       datatype: "Key",
       multiple: true,
       query: "SELECT * FROM key_data WHERE publickey=:key",
     },
   }),
-  DepartmentData: find(unit),
+  DepartmentData: find({ unitid: "Unit" }),
   DepartmentEmail: find({ departmentid: "Department", emailownerid: "Unit" }),
   DepartmentEmployee: find({
     id: "Department",
@@ -115,7 +115,7 @@ export default {
     employee: "User",
   }),
   Domain: find({ boughtplanid: "BoughtPlanView" }),
-  Email: find(unit),
+  Email: find({ unitid: "Unit" }),
   LicenceOld: find({
     unitid: "User",
     boughtplanid: "BoughtPlanView",
