@@ -23,6 +23,7 @@ const appFields = `
   externalstatistics: ExternalStatistics
   tags: [Tag]
   alternatives: [AppDetails]
+  priceatvendor: String
 `;
 
 const basicLicenceFields = `
@@ -70,21 +71,22 @@ export const types = `
     recommendationRating: Float
     easeOfSetupRating: Float
     easeOfAdminRating: Float
+    externalReviewCount: Int
   }
 
-  type IndustryDistribution {
-    Business: Int
-    ResearchAndDevelopment: Int
-    Education: Int
-    CustomerRelations: Int
-    Accounting: Int
-    Administration: Int
-    Design: Int
+  type JobIndustryDistribution {
+    Business: Float
+    Accounting: Float
+    Administration: Float
+    ResearchAndDevelopment: Float
+    CustomerRelations: Float
+    Design: Float
+    Education: Float
   }
 
   type ExternalStatistics {
-    jobDistribution: JSON
-    industryDistribution: IndustryDistribution
+    jobDistribution: JobIndustryDistribution
+    industryDistribution: JobIndustryDistribution
     companySizes: JSON
   }
 
@@ -125,6 +127,16 @@ export const types = `
     supportphone: String
     developerwebsite: String
     assessments: [AppAssessment]
+    quotes: [Quote]
+  }
+
+  type Quote {
+    id: ID!
+    name: String!
+    quote: String!
+    appid: AppDetails!
+    job: String!
+    industry: String!
   }
 
   type TeamBoughtPlan {
