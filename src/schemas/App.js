@@ -345,10 +345,12 @@ export const queries = `
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
   fetchMarketplaceApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
   fetchCategories: [String!]!
+  fetchMarketplaceAppsByTag(tag: String!, limit: Int, offset: Int): [AppDetails!]!
 
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
   fetchAppNameByID(id: ID!): AppDetails
+  fetchAppsByName(names: [String!]!): [AppDetails]!
 
   fetchAppByDomain(domain: String, hostname: String): AppDetails
   fetchLicenceAssignmentsByDomain(domain: String, hostname: String): [LicenceAssignment]

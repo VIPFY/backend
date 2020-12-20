@@ -149,6 +149,21 @@ export default {
     }
   ),
 
+  fetchAppsByName: async (_parent, { names }, { models }) => {
+    try {
+      return await models.AppDetails.findAll({
+        where: {
+          name: { [models.Op.in]: names },
+          disabled: true, // CHANGE BACK TO FALSE, ONLY FOR TESTING!
+          deprecated: false,
+          owner: null,
+        },
+      });
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
+
   fetchAppByDomain: requiresRights(["view-apps"]).createResolver(
     async (_parent, { domain, hostname }, { models, session }) => {
       try {
@@ -940,10 +955,7 @@ export default {
   fetchCategories: async (_p, _args, { models }) => {
     try {
       const allTags = await models.sequelize.query(
-        `
-        SELECT tags FROM app_data
-        WHERE cardinality(tags) > 0 ;
-        `,
+        `SELECT tags FROM app_data WHERE cardinality(tags) > 0;`,
         { type: models.sequelize.QueryTypes.SELECT }
       );
 
@@ -962,6 +974,31 @@ export default {
       const top12 = Object.keys(tags).sort((a, b) => tags[b] - tags[a]);
 
       return top12;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
+
+  fetchMarketplaceAppsByTag: async (_p, args, { models }) => {
+    try {
+      const { tag, limit = 50, offset = 0 } = args;
+
+      const apps = await models.sequelize.query(
+        `
+        SELECT id, name, logo, icon, color, avgstars, ad.tags
+        FROM app_details ad
+        WHERE exists (
+          SELECT 1 FROM unnest(ad.tags) o(tags) where o.tags ->> 'name' = :tag
+        )
+        LIMIT :limit OFFSET :offset
+        `,
+        {
+          replacements: { limit, offset, tag },
+          type: models.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      return apps;
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
