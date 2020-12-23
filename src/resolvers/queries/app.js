@@ -8,6 +8,7 @@ import {
   requiresVipfyAdmin,
 } from "../../helpers/permissions";
 import freshdeskAPI from "../../services/freshdesk";
+import fs from "fs";
 
 export default {
   allApps: requiresAuth.createResolver(
@@ -154,7 +155,7 @@ export default {
       return await models.AppDetails.findAll({
         where: {
           name: { [models.Op.in]: names },
-          disabled: true, // CHANGE BACK TO FALSE, ONLY FOR TESTING!
+          //    disabled: true, // CHANGE BACK TO FALSE, ONLY FOR TESTING!
           deprecated: false,
           owner: null,
         },
@@ -971,9 +972,16 @@ export default {
           return acc;
         }, {});
 
-      const top12 = Object.keys(tags).sort((a, b) => tags[b] - tags[a]);
+      const categories = Object.keys(tags).sort((a, b) => tags[b] - tags[a]);
 
-      return top12;
+      // fs.writeFile("categories.txt", categories.join("\n"), err => {
+      //   if (err) console.log(err);
+      //   else {
+      //     console.log("File written successfully\n");
+      //   }
+      // });
+
+      return categories;
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
