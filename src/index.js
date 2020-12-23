@@ -205,6 +205,7 @@ gqlserver.applyMiddleware({
             "http://localhost:6060",
             "https://aws.vipfy.store",
             "https://aws2.vipfy.store",
+            "https://aws3.vipfy.store",
             "https://styleguidist.internal.vipfy.store",
           ]
         : [
@@ -213,6 +214,7 @@ gqlserver.applyMiddleware({
             "http://localhost:6060",
             "http://localhost:9000",
             "https://aws2.vipfy.store",
+            "https://aws3.vipfy.store",
             "https://styleguidist.internal.vipfy.store",
             "https://marketplace.dev.vipfy.store",
           ],

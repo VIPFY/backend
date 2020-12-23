@@ -339,7 +339,7 @@ export const queries = `
   # Returns all apps in Vipfy
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
   fetchMarketplaceApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
-
+  
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
   fetchAppNameByID(id: ID!): AppDetails

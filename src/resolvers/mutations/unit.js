@@ -24,6 +24,7 @@ import {
   fetchSessions,
   hashPasskey,
   endSession,
+  computeVacatationDays,
 } from "../../helpers/functions";
 import { uploadUserImage } from "../../services/aws";
 import { createAdminToken } from "../../helpers/auth";
@@ -696,44 +697,7 @@ export default {
             user: { unitid, company },
           } = decode(session.token);
 
-          const startdate = moment(startDate);
-          const enddate = moment(endDate);
-
-          const computeVacationDays = (date, fullDays) => {
-            if (fullDays == 1) {
-              return 1;
-            }
-
-            const clonedDate = moment(date);
-            let offDays = 0;
-
-            for (let i = 0; i < fullDays; i++) {
-              clonedDate.add(i < 2 ? i : 1, "days");
-
-              if (
-                clonedDate.isoWeekday() == 6 ||
-                clonedDate.isoWeekday() == 7 ||
-                clonedDate.isHoliday(["SL"]).holidayName
-              ) {
-                offDays++;
-              }
-            }
-
-            return fullDays - offDays;
-          };
-
-          const computedDays = computeVacationDays(
-            startdate,
-            moment
-              .duration(
-                moment(enddate)
-                  .endOf("day")
-                  // Otherwise it won't be a full day
-                  .add(1, "day")
-                  .diff(startdate.startOf("day"))
-              )
-              .days()
-          );
+          const computedDays = computeVacatationDays(startDate, endDate);
 
           if (computedDays != days) {
             throw new Error(
@@ -745,8 +709,8 @@ export default {
             await models.VacationRequest.create(
               {
                 unitid,
-                startdate: startdate.format("LL"),
-                enddate: enddate.format("LL"),
+                startdate: moment(startDate).format("LL"),
+                enddate: moment(endDate).format("LL"),
                 days,
                 requested: models.sequelize.fn("NOW"),
               },
