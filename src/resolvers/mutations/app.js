@@ -9,8 +9,6 @@ import {
 import {
   createLog,
   createNotification,
-  checkPlanValidity,
-  companyCheck,
   concatName,
   formatFilename,
 } from "../../helpers/functions";
@@ -20,7 +18,6 @@ import { checkVipfyPlanAssignments } from "../../helpers/billing";
 //   abortSubscription,
 //   cancelPurchase
 // } from "../../services/stripe";
-import logger from "../../loggers";
 import { uploadAppImage } from "../../services/aws";
 import {
   checkLicenceValidity,
@@ -2169,4 +2166,22 @@ export default {
       }
     }
   ),
+
+  searchMarketplace: async (_p, { appName }, { models }) => {
+    try {
+      const apps = await models.AppDetails.findAll({
+        where: {
+          name: {
+            [models.Op.like]: `%${appName.toLowerCase()}%`,
+          },
+          owner: null,
+          disabled: true, // CHANGE TO FALSE, ONLY HERE FOR TESTING
+        },
+      });
+
+      return apps;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
 };

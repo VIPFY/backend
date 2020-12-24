@@ -394,6 +394,7 @@ export const mutations = `
   sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
   sendDownloadLink(email: String!, isMac: Boolean): Boolean!
   createOwnApp(ssoData: SSOInput!): IDID
+  searchMarketplace(appName: String!): [AppDetails]!
 
   # Deletes a licence on a set date, if it is after the normal cancel period
   # deprecated
@@ -416,7 +417,6 @@ export const mutations = `
   deleteService(serviceid: ID!): Boolean!
 
   updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
-
 
   createAccount(orbitid: ID!, alias: String, logindata: JSON!, starttime: Date, endtime: Date, options: JSON): Account!
   changeAccount(accountid: ID!, alias: String, logindata: JSON, starttime: Date, endtime: Date, options: JSON): Account
