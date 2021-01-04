@@ -149,6 +149,21 @@ export default {
     }
   ),
 
+  fetchAppsByName: async (_parent, { names }, { models }) => {
+    try {
+      return await models.AppDetails.findAll({
+        where: {
+          name: { [models.Op.in]: names },
+          //    disabled: true, // CHANGE BACK TO FALSE, ONLY FOR TESTING!
+          deprecated: false,
+          owner: null,
+        },
+      });
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
+
   fetchAppByDomain: requiresRights(["view-apps"]).createResolver(
     async (_parent, { domain, hostname }, { models, session }) => {
       try {
@@ -936,4 +951,29 @@ export default {
       }
     }
   ),
+
+  fetchMarketplaceAppsByTag: async (_p, args, { models }) => {
+    try {
+      const { tag, limit = 50, offset = 0 } = args;
+
+      const apps = await models.sequelize.query(
+        `
+        SELECT id, name, logo, icon, color, avgstars, ad.tags
+        FROM app_details ad
+        WHERE exists (
+          SELECT 1 FROM unnest(ad.tags) o(tags) where o.tags ->> 'name' = :tag
+        )
+        LIMIT :limit OFFSET :offset
+        `,
+        {
+          replacements: { limit, offset, tag },
+          type: models.sequelize.QueryTypes.SELECT,
+        }
+      );
+
+      return apps;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
 };

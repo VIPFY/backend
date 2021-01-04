@@ -22,7 +22,8 @@ const appFields = `
   ratings: Ratings
   externalstatistics: ExternalStatistics
   tags: [Tag]
-  alternatives: [AppAlternative]
+  alternatives: [AppDetails]
+  priceatvendor: String
 `;
 
 const basicLicenceFields = `
@@ -61,13 +62,6 @@ export const types = `
     weight: Int!
   }
 
-  type AppAlternative {
-    app: AppDetails!
-    name: String!
-    rating: Float!
-    reviews: Int!
-  }
-
   type Ratings {
     overallRating: Float
     combinedCustomerSupportRating: Float
@@ -77,21 +71,22 @@ export const types = `
     recommendationRating: Float
     easeOfSetupRating: Float
     easeOfAdminRating: Float
+    externalReviewCount: Int
   }
 
-  type IndustryDistribution {
-    Business: Int
-    ResearchAndDevelopment: Int
-    Education: Int
-    CustomerRelations: Int
-    Accounting: Int
-    Administration: Int
-    Design: Int
+  type JobIndustryDistribution {
+    Business: Float
+    Accounting: Float
+    Administration: Float
+    ResearchAndDevelopment: Float
+    CustomerRelations: Float
+    Design: Float
+    Education: Float
   }
 
   type ExternalStatistics {
-    jobDistribution: JSON
-    industryDistribution: IndustryDistribution
+    jobDistribution: JobIndustryDistribution
+    industryDistribution: JobIndustryDistribution
     companySizes: JSON
   }
 
@@ -132,6 +127,16 @@ export const types = `
     supportphone: String
     developerwebsite: String
     assessments: [AppAssessment]
+    quotes: [Quote]
+  }
+
+  type Quote {
+    id: ID!
+    name: String!
+    quote: String!
+    appid: AppDetails!
+    job: String!
+    industry: String!
   }
 
   type TeamBoughtPlan {
@@ -339,10 +344,12 @@ export const queries = `
   # Returns all apps in Vipfy
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
   fetchMarketplaceApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
-  
+  fetchMarketplaceAppsByTag(tag: String!, limit: Int, offset: Int): [AppDetails!]!
+
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
   fetchAppNameByID(id: ID!): AppDetails
+  fetchAppsByName(names: [String!]!): [AppDetails]!
 
   fetchAppByDomain(domain: String, hostname: String): AppDetails
   fetchLicenceAssignmentsByDomain(domain: String, hostname: String): [LicenceAssignment]
@@ -386,6 +393,8 @@ export const mutations = `
   sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
   sendDownloadLink(email: String!, isMac: Boolean): Boolean!
   createOwnApp(ssoData: SSOInput!): IDID
+  searchMarketplace(appName: String!): [AppDetails]!
+  createCategoriesFile: Boolean!
 
   # Deletes a licence on a set date, if it is after the normal cancel period
   # deprecated
@@ -408,7 +417,6 @@ export const mutations = `
   deleteService(serviceid: ID!): Boolean!
 
   updateLicenceSpeed(licenceid: ID!, speed: Int!, working: Boolean!, oldspeed: Int): Boolean!
-
 
   createAccount(orbitid: ID!, alias: String, logindata: JSON!, starttime: Date, endtime: Date, options: JSON): Account!
   changeAccount(accountid: ID!, alias: String, logindata: JSON, starttime: Date, endtime: Date, options: JSON): Account

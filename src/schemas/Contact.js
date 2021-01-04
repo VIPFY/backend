@@ -111,6 +111,7 @@ export const mutations = `
   updateAddress(id: ID, address: AddressInput): Address!
   deleteAddress(id: ID!, department: Boolean): Response!
   contact(contactData: ContactInput!): Boolean!
+  showInterest(email: String!, appName: String!, appID: ID!): Boolean!
 
   createPhone(phoneData: PhoneInput!, department: Boolean, userid: ID): Phone!
   updatePhone(id: ID, phone: PhoneInput, userid: ID): Phone!

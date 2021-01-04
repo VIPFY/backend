@@ -8,7 +8,7 @@ import {
 } from "../../helpers/newsletter";
 import logger from "../../loggers";
 import { googleMapsClient } from "../../services/gcloud";
-import { sendEmail } from "../../helpers/email";
+import { emailRegex, sendEmail } from "../../helpers/email";
 
 /* eslint-disable prefer-const */
 
@@ -623,6 +623,34 @@ export default {
       });
 
       await Promise.all([reply, toVipfy]);
+
+      return true;
+    } catch (err) {
+      throw new NormalError({ message: err.message, internalData: { err } });
+    }
+  },
+
+  showInterest: async (_p, { email, appName, appID }, { models }) => {
+    try {
+      if (!email.match(emailRegex)) {
+        throw new Error("Not a valid email!");
+      }
+
+      await models.AppInterest.create({
+        email,
+        appid: appID,
+      });
+
+      await sendEmail({
+        templateId: "d-7d0ed02be9df4816a5b82cfd7afb8a4d",
+        fromName: "VIPFY Trade Fair Bot (beep beep)",
+        personalizations: [
+          {
+            to: [{ email: "marketplace-interest@vipfy.store" }],
+            dynamic_template_data: { email, appName, appID },
+          },
+        ],
+      });
 
       return true;
     } catch (err) {

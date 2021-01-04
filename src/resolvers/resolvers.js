@@ -69,12 +69,12 @@ const Mutation = Object.assign(
   teamMutations
 );
 
-const unit = { unitid: "Unit" };
 const unitAndPlan = { sponsor: "Unit", planid: "Plan" };
 const developerAndSupport = {
   developer: "Unit",
   supportunit: "Unit",
   owner: "Unit",
+  alternatives: "[AppDetails]",
 };
 const plans = { appid: "App", gotoplan: "Plan" };
 
@@ -88,10 +88,8 @@ export default {
   App: find(developerAndSupport),
   AppBoughtPlanResponse: find({ usedby: "Unit", boughtplan: "BoughtPlanView" }),
   AppDetails: find(developerAndSupport),
-  // Does this work?
   AppUsage: find({ app: "App" }),
-  AppAlternative: find({ app: "AppDetail" }),
-  Bill: find(unit),
+  Bill: find({ unitid: "Unit" }),
   BillPosition: find({ billid: "Bill" }),
   BoughtPlan: find({
     buyer: "Unit",
@@ -100,15 +98,19 @@ export default {
     payer: "Unit",
   }),
   BoughtplanUsagePerUser: find({ boughtplan: "BoughtPlanView", unit: "User" }),
+  CompanyService: find({
+    app: "App",
+    orbitids: "[Orbit]",
+  }),
   Department: find({
-    ...unit,
+    unitid: "Unit",
     adminkey: {
       datatype: "Key",
       multiple: true,
       query: "SELECT * FROM key_data WHERE publickey=:key",
     },
   }),
-  DepartmentData: find(unit),
+  DepartmentData: find({ unitid: "Unit" }),
   DepartmentEmail: find({ departmentid: "Department", emailownerid: "Unit" }),
   DepartmentEmployee: find({
     id: "Department",
@@ -116,7 +118,15 @@ export default {
     employee: "User",
   }),
   Domain: find({ boughtplanid: "BoughtPlanView" }),
-  Email: find(unit),
+  Email: find({ unitid: "Unit" }),
+  Key: find({
+    unitid: "User",
+    encryptedby: {
+      datatype: "Key",
+      multiple: true,
+      query: "SELECT * FROM key_data WHERE publickey=:key",
+    },
+  }),
   LicenceOld: find({
     unitid: "User",
     boughtplanid: "BoughtPlanView",
@@ -136,14 +146,6 @@ export default {
     vacationid: "Vacation",
   }),
   Log: find({ user: "User", sudoer: "User" }),
-  Key: find({
-    unitid: "User",
-    encryptedby: {
-      datatype: "Key",
-      multiple: true,
-      query: "SELECT * FROM key_data WHERE publickey=:key",
-    },
-  }),
   Message: find({ receiver: "Human" }),
   MessageData: find({ sender: "User", receiver: "MessageGroup" }),
   MessageGroupMembership: find({ groupid: "MessageGroup", unitid: "User" }),
@@ -169,9 +171,18 @@ export default {
   PlansRunning: find({ appid: "App" }),
   Promo: find(unitAndPlan),
   PromosRunning: find(unitAndPlan),
+  Quote: find({ appid: "AppDetails" }),
   Review: find({ unitid: "User", appid: "App", answerto: "Review" }),
   ReviewHelpful: find({ unitid: "User", reviewid: "Review" }),
   Right: find({ holder: "Unit", forunit: "Unit" }),
+  SemiPublicUser: find({
+    company: "Department",
+    emails: "[Email]",
+    addresses: "[Address]",
+    phones: "[Phone]",
+    vacations: "[Vacation]",
+    assignments: "[LicenceAssignment]",
+  }),
   SimpleStats: find({ usedby: "Unit", boughtplan: "BoughtPlanView" }),
   StartGroupResponse: find({ messagegroup: "MessageGroup" }),
   Team: find({
@@ -179,10 +190,6 @@ export default {
     employees: "[User]",
     licences: "[LicenceDataFiltered]",
     services: "[Orbit]",
-  }),
-  CompanyService: find({
-    app: "App",
-    orbitids: "[Orbit]",
   }),
   TeamBoughtPlan: find({
     departmentid: "Team",
@@ -192,14 +199,6 @@ export default {
   User: find({
     company: "Department",
     emails: "[Email]",
-    phones: "[Phone]",
-    vacations: "[Vacation]",
-    assignments: "[LicenceAssignment]",
-  }),
-  SemiPublicUser: find({
-    company: "Department",
-    emails: "[Email]",
-    addresses: "[Address]",
     phones: "[Phone]",
     vacations: "[Vacation]",
     assignments: "[LicenceAssignment]",
