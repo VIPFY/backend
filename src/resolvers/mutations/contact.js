@@ -642,12 +642,12 @@ export default {
       });
 
       await sendEmail({
-        templateId: "d-c359cc2705ab45699300584e13c5d70e", // Placeholder till real template is available
+        templateId: "d-7d0ed02be9df4816a5b82cfd7afb8a4d",
         fromName: "VIPFY Trade Fair Bot (beep beep)",
         personalizations: [
           {
-            to: [{ email: "marc@vipfy.store" }],
-            dynamic_template_data: { email },
+            to: [{ email: "marketplace-interest@vipfy.store" }],
+            dynamic_template_data: { email, appName, appID },
           },
         ],
       });

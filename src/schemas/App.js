@@ -344,7 +344,6 @@ export const queries = `
   # Returns all apps in Vipfy
   allApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
   fetchMarketplaceApps(limit: Int, offset: Int, sortOptions: SortOptions): [AppDetails]!
-  fetchCategories: [String!]!
   fetchMarketplaceAppsByTag(tag: String!, limit: Int, offset: Int): [AppDetails!]!
 
   # Returns a specific app by id
@@ -395,6 +394,7 @@ export const mutations = `
   sendDownloadLink(email: String!, isMac: Boolean): Boolean!
   createOwnApp(ssoData: SSOInput!): IDID
   searchMarketplace(appName: String!): [AppDetails]!
+  createCategoriesFile: Boolean!
 
   # Deletes a licence on a set date, if it is after the normal cancel period
   # deprecated

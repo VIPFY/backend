@@ -399,7 +399,7 @@ export default {
 
           const createdApps = await Promise.all(createPromises);
           const appsToUpdate = [];
-          const deleteOldQuotes = [];
+          const deleteOld = [];
           const quotes = [];
           const assessmentPromises = [];
 
@@ -432,7 +432,7 @@ export default {
               jsonApp.features = { ...app.features, ...jsonApp.features };
               appsToUpdate.push(jsonApp);
 
-              deleteOldQuotes.push(
+              deleteOld.push(
                 models.Quote.destroy({
                   where: { appid: app.id },
                   transaction: ta,
@@ -460,10 +460,15 @@ export default {
                   unitid: vipfyID,
                 };
 
+                deleteOld.push(
+                  models.AppAssessment.destroy({
+                    where: { appid: app.id },
+                    transaction: ta,
+                  })
+                );
+
                 assessmentPromises.push(
-                  models.AppAssessment.findOrCreate({
-                    where: assesmentData,
-                    defaults: assesmentData,
+                  models.AppAssessment.create(assesmentData, {
                     transaction: ta,
                   })
                 );
@@ -479,7 +484,7 @@ export default {
           );
 
           await Promise.all(updatePromises);
-          await Promise.all(deleteOldQuotes);
+          await Promise.all(deleteOld);
           await Promise.all([...quotes, ...assessmentPromises]);
 
           console.log("Upload worked 🤗");
