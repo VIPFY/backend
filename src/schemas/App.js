@@ -338,6 +338,10 @@ export const types = `
     planid: ID!
   }
 
+  type MarketplaceResponse {
+    apps: [AppDetails]!
+    categories: [String]!
+  }
 `;
 
 export const queries = `
@@ -393,7 +397,7 @@ export const mutations = `
   sendSupportRequest(topic: String!, description: String!, component: String!, internal: Boolean!): Boolean!
   sendDownloadLink(email: String!, isMac: Boolean): Boolean!
   createOwnApp(ssoData: SSOInput!): IDID
-  searchMarketplace(appName: String!): [AppDetails]!
+  searchMarketplace(searchTerm: String!): MarketplaceResponse!
   createCategoriesFile: Boolean!
 
   # Deletes a licence on a set date, if it is after the normal cancel period

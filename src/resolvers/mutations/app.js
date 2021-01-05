@@ -1,6 +1,7 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
 import fs from "fs";
+import path from "path";
 import { NormalError, VIPFYPlanLimit, VIPFYPlanError } from "../../errors";
 import {
   requiresRights,
@@ -2168,12 +2169,18 @@ export default {
     }
   ),
 
-  searchMarketplace: async (_p, { appName }, { models }) => {
+  searchMarketplace: async (_p, { searchTerm }, { models }) => {
     try {
+      const categories = await fs
+        .readFileSync(path.join(__dirname, "../../../categories.txt"))
+        .toString()
+        .split("\n")
+        .filter(category => category.includes(searchTerm.toLowerCase()));
+
       const apps = await models.AppDetails.findAll({
         where: {
           name: {
-            [models.Op.like]: `%${appName.toLowerCase()}%`,
+            [models.Op.like]: `%${searchTerm.toLowerCase()}%`,
           },
           owner: null,
           disabled: true, // CHANGE TO FALSE, ONLY HERE FOR TESTING
@@ -2181,7 +2188,7 @@ export default {
         LIMIT: 25,
       });
 
-      return apps;
+      return { categories, apps };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
@@ -2208,7 +2215,7 @@ export default {
 
       const categories = Object.keys(tags).sort((a, b) => tags[b] - tags[a]);
 
-      fs.writeFile("categories.txt", categories.join("\n"), err => {
+      await fs.writeFile("categories.txt", categories.join("\n"), err => {
         if (err) console.log(err);
         else {
           console.log("File written successfully\n");

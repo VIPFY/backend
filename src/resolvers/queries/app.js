@@ -1,6 +1,5 @@
 import { decode, verify } from "jsonwebtoken";
 import moment from "moment";
-// import { getLoginData } from "@vipfy-private/weebly";
 import { NormalError } from "../../errors";
 import {
   requiresAuth,
