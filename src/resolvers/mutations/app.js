@@ -1,6 +1,7 @@
 import { decode } from "jsonwebtoken";
 import moment from "moment";
 import fs from "fs";
+import path from "path";
 import { NormalError, VIPFYPlanLimit, VIPFYPlanError } from "../../errors";
 import {
   requiresRights,
@@ -2168,12 +2169,18 @@ export default {
     }
   ),
 
-  searchMarketplace: async (_p, { appName }, { models }) => {
+  searchMarketplace: async (_p, { searchTerm }, { models }) => {
     try {
+      const categories = await fs
+        .readFileSync(path.join(__dirname, "../../../categories.txt"))
+        .toString()
+        .split("\n")
+        .filter(category => category.includes(searchTerm.toLowerCase()));
+
       const apps = await models.AppDetails.findAll({
         where: {
           name: {
-            [models.Op.like]: `%${appName.toLowerCase()}%`,
+            [models.Op.like]: `%${searchTerm.toLowerCase()}%`,
           },
           owner: null,
           disabled: true, // CHANGE TO FALSE, ONLY HERE FOR TESTING
@@ -2181,41 +2188,7 @@ export default {
         LIMIT: 25,
       });
 
-      return apps;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
-    }
-  },
-
-  createCategoriesFile: async (_p, _args, { models }) => {
-    try {
-      const allTags = await models.sequelize.query(
-        `SELECT tags FROM app_data WHERE cardinality(tags) > 0;`,
-        { type: models.sequelize.QueryTypes.SELECT }
-      );
-
-      const tags = allTags
-        .flatMap(acc => acc.tags)
-        .reduce((acc, cV) => {
-          if (acc[cV.name]) {
-            acc[cV.name] += cV.weight;
-          } else {
-            acc[cV.name] = cV.weight;
-          }
-
-          return acc;
-        }, {});
-
-      const categories = Object.keys(tags).sort((a, b) => tags[b] - tags[a]);
-
-      fs.writeFile("categories.txt", categories.join("\n"), err => {
-        if (err) console.log(err);
-        else {
-          console.log("File written successfully\n");
-        }
-      });
-
-      return true;
+      return { categories, apps };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
