@@ -2193,38 +2193,4 @@ export default {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
   },
-
-  createCategoriesFile: async (_p, _args, { models }) => {
-    try {
-      const allTags = await models.sequelize.query(
-        `SELECT tags FROM app_data WHERE cardinality(tags) > 0;`,
-        { type: models.sequelize.QueryTypes.SELECT }
-      );
-
-      const tags = allTags
-        .flatMap(acc => acc.tags)
-        .reduce((acc, cV) => {
-          if (acc[cV.name]) {
-            acc[cV.name] += cV.weight;
-          } else {
-            acc[cV.name] = cV.weight;
-          }
-
-          return acc;
-        }, {});
-
-      const categories = Object.keys(tags).sort((a, b) => tags[b] - tags[a]);
-
-      await fs.writeFile("categories.txt", categories.join("\n"), err => {
-        if (err) console.log(err);
-        else {
-          console.log("File written successfully\n");
-        }
-      });
-
-      return true;
-    } catch (err) {
-      throw new NormalError({ message: err.message, internalData: { err } });
-    }
-  },
 };

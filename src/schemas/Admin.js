@@ -24,6 +24,7 @@ export const mutations = `
   createPlan(period: String!, planName: String!, price: String!, appid: ID!): Boolean
   cancelFinishStudy(participantID: ID!): Boolean!
   finishStudy(participantID: ID!): Boolean!
+  createCategoriesFile: Boolean!
   processMarketplaceApps(file: Upload!): Boolean!
   requestVacationForEmployee(startDate: Date!, endDate: Date!, days: Float!, userid: ID!): VacationRequestResponse!
   requestHalfVacationDayForEmployee(day: Date!, userid: ID!): VacationRequestResponse!

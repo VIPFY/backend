@@ -398,7 +398,6 @@ export const mutations = `
   sendDownloadLink(email: String!, isMac: Boolean): Boolean!
   createOwnApp(ssoData: SSOInput!): IDID
   searchMarketplace(searchTerm: String!): MarketplaceResponse!
-  createCategoriesFile: Boolean!
 
   # Deletes a licence on a set date, if it is after the normal cancel period
   # deprecated
