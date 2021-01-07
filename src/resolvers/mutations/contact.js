@@ -635,11 +635,7 @@ export default {
       if (!email.match(emailRegex)) {
         throw new Error("Not a valid email!");
       }
-
-      await models.AppInterest.create({
-        email,
-        appid: appID,
-      });
+      await models.AppInterest.create({ email, appid: appID });
 
       await sendEmail({
         templateId: "d-7d0ed02be9df4816a5b82cfd7afb8a4d",
