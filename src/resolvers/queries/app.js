@@ -953,19 +953,19 @@ export default {
 
   fetchMarketplaceAppsByTag: async (_p, args, { models }) => {
     try {
-      const { tag, limit = 50, offset = 0 } = args;
-
+      const { tag, limit = 50, offset = 0, dontFetch } = args;
       const apps = await models.sequelize.query(
         `
         SELECT id, name, logo, icon, color, avgstars, ad.tags
         FROM app_details ad
         WHERE exists (
-          SELECT 1 FROM unnest(ad.tags) o(tags) where o.tags ->> 'name' = :tag
+          SELECT 1 FROM unnest(ad.tags) o(tags) WHERE o.tags ->> 'name' = :tag
         )
+        ${dontFetch ? "AND name NOT LIKE ALL(ARRAY[:dontFetch])" : ""}
         LIMIT :limit OFFSET :offset
         `,
         {
-          replacements: { limit, offset, tag },
+          replacements: { limit, offset, tag, dontFetch },
           type: models.sequelize.QueryTypes.SELECT,
         }
       );
