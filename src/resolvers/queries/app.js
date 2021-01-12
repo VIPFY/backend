@@ -85,7 +85,6 @@ export default {
           "category",
         ],
         where: {
-          disabled: false,
           deprecated: false,
           hidden: false,
           showinmarketplace: true,
