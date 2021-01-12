@@ -6,6 +6,7 @@
 
 import express from "express";
 import fs from "fs";
+import path from "path";
 import https from "https";
 import http from "http";
 import { performance } from "perf_hooks";
@@ -153,12 +154,18 @@ if (ENVIRONMENT == "production") {
   };
 }
 
+const categories = fs
+  .readFileSync(path.join(__dirname, "../categories.txt"))
+  .toString()
+  .split("\n");
+
 const gqlserver = new ApolloServer({
   schema,
   formatError,
   context: ({ req }) => ({
     models,
     redis,
+    categories,
     userData: {
       browser: req.headers["user-agent"],
       language: req.headers["accept-language"],

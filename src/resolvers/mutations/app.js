@@ -2157,13 +2157,11 @@ export default {
     }
   ),
 
-  searchMarketplace: async (_p, { searchTerm }, { models }) => {
+  searchMarketplace: async (_p, { searchTerm }, { models, categories }) => {
     try {
-      const categories = await fs
-        .readFileSync(path.join(__dirname, "../../../categories.txt"))
-        .toString()
-        .split("\n")
-        .filter(category => category.includes(searchTerm.toLowerCase()));
+      const filtered = categories.filter(category =>
+        category.includes(searchTerm.toLowerCase())
+      );
 
       const apps = await models.AppDetails.findAll({
         where: {
@@ -2174,7 +2172,7 @@ export default {
         LIMIT: 25,
       });
 
-      return { categories, apps };
+      return { categories: filtered, apps };
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
