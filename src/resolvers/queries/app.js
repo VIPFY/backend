@@ -148,8 +148,7 @@ export default {
 
   fetchAppsByName: async (_parent, { names }, { models }) => {
     try {
-      console.log("\x1b[1m%s\x1b[0m", "LOG names", names);
-      const app = await models.AppDetails.findAll({
+      return await models.AppDetails.findAll({
         where: {
           name: { [models.Op.in]: names },
           showinmarketplace: true,
@@ -157,8 +156,6 @@ export default {
           owner: null,
         },
       });
-      console.log("\x1b[1m%s\x1b[0m", "LOG app", app);
-      return app;
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
