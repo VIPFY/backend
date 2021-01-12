@@ -2171,7 +2171,7 @@ export default {
             [models.Op.like]: `%${searchTerm.toLowerCase()}%`,
           },
           owner: null,
-          disabled: true, // CHANGE TO FALSE, ONLY HERE FOR TESTING
+          showinmarketplace: true,
         },
         LIMIT: 25,
       });
