@@ -84,7 +84,7 @@ export default {
           "tags",
         ],
         where: {
-          disabled: false,
+          showinmarketplace: true,
           deprecated: false,
           hidden: false,
           owner: null,
@@ -153,7 +153,7 @@ export default {
       return await models.AppDetails.findAll({
         where: {
           name: { [models.Op.in]: names },
-          //    disabled: true, // CHANGE BACK TO FALSE, ONLY FOR TESTING!
+          showinmarketplace: true,
           deprecated: false,
           owner: null,
         },
@@ -961,6 +961,7 @@ export default {
         WHERE exists (
           SELECT 1 FROM unnest(ad.tags) o(tags) WHERE o.tags ->> 'name' = :tag
         )
+        AND showinmarketplace IS NOT NULL
         ${dontFetch ? "AND name NOT LIKE ALL(ARRAY[:dontFetch])" : ""}
         LIMIT :limit OFFSET :offset
         `,

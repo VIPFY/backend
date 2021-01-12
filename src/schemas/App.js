@@ -24,6 +24,7 @@ const appFields = `
   tags: [Tag]
   alternatives: [AppDetails]
   priceatvendor: String
+  showinmarketplace: Boolean!
 `;
 
 const basicLicenceFields = `
