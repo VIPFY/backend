@@ -355,7 +355,7 @@ export const queries = `
   # Returns a specific app by id
   fetchAppById(id: ID!): AppDetails
   fetchAppNameByID(id: ID!): AppDetails
-  fetchAppsByName(names: [String!]!): [AppDetails]!
+  fetchMarketplaceAppsByName(names: [String!]!): [AppDetails]!
 
   fetchAppByDomain(domain: String, hostname: String): AppDetails
   fetchLicenceAssignmentsByDomain(domain: String, hostname: String): [LicenceAssignment]

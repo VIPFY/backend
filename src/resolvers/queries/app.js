@@ -146,7 +146,7 @@ export default {
     }
   ),
 
-  fetchAppsByName: async (_parent, { names }, { models }) => {
+  fetchMarketplaceAppsByName: async (_parent, { names }, { models }) => {
     try {
       return await models.AppDetails.findAll({
         where: {
