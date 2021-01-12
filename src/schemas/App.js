@@ -25,6 +25,7 @@ const appFields = `
   alternatives: [AppDetails]
   priceatvendor: String
   showinmarketplace: Boolean!
+  category: String
 `;
 
 const basicLicenceFields = `

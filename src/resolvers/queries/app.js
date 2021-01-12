@@ -56,45 +56,43 @@ export default {
 
   fetchMarketplaceApps: async (
     _P,
-    { limit, offset, sortOptions },
+    { limit = 50, offset, sortOptions },
     { models }
   ) => {
     try {
       // TODO: [VIP-1374] Split up into our own apps and the scraped external apps
-      const allApps = await models.AppDetails.findAll({
+      return await models.AppDetails.findAll({
         limit,
         offset,
         attributes: [
           "id",
-          "description",
-          "teaserdescription",
-          "name",
-          "logo",
           "icon",
-          "needssubdomain",
-          "developername",
-          "developerwebsite",
-          "images",
-          "options",
-          "color",
+          "logo",
+          "disabled",
+          "name",
+          "teaserdescription",
           "features",
-          "ratings",
-          "externalstatistics",
-          "alternatives",
-          "tags",
+          "cheapestprice",
+          "avgstars",
+          "cheapestpromo",
+          "needssubdomain",
+          "options",
+          "developer",
+          "developername",
+          "supportunit",
+          "color",
+          "hidden",
+          "category",
         ],
         where: {
-          showinmarketplace: true,
+          disabled: false,
           deprecated: false,
           hidden: false,
+          showinmarketplace: true,
           owner: null,
         },
-        order: sortOptions
-          ? [[sortOptions.name, sortOptions.order]]
-          : [["name", "desc"]],
+        order: sortOptions ? [[sortOptions.name, sortOptions.order]] : "",
       });
-
-      return allApps;
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
@@ -150,7 +148,8 @@ export default {
 
   fetchAppsByName: async (_parent, { names }, { models }) => {
     try {
-      return await models.AppDetails.findAll({
+      console.log("\x1b[1m%s\x1b[0m", "LOG names", names);
+      const app = await models.AppDetails.findAll({
         where: {
           name: { [models.Op.in]: names },
           showinmarketplace: true,
@@ -158,6 +157,8 @@ export default {
           owner: null,
         },
       });
+      console.log("\x1b[1m%s\x1b[0m", "LOG app", app);
+      return app;
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
@@ -953,15 +954,17 @@ export default {
 
   fetchMarketplaceAppsByTag: async (_p, args, { models }) => {
     try {
-      const { tag, limit = 50, offset = 0, dontFetch } = args;
+      const { tag, limit = 100, offset = 0, dontFetch } = args;
       const apps = await models.sequelize.query(
         `
-        SELECT id, name, logo, icon, color, avgstars, ad.tags
+        SELECT id, name, logo, icon, category, color, avgstars, ad.tags
         FROM app_details ad
         WHERE exists (
           SELECT 1 FROM unnest(ad.tags) o(tags) WHERE o.tags ->> 'name' = :tag
         )
-        AND showinmarketplace IS NOT NULL
+        AND showinmarketplace = true
+        AND ratings->>'externalReviewCount' != 'null'
+        AND category IS NOT NULL
         ${dontFetch ? "AND name NOT LIKE ALL(ARRAY[:dontFetch])" : ""}
         LIMIT :limit OFFSET :offset
         `,

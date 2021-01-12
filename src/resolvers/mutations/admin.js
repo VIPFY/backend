@@ -597,7 +597,12 @@ export default {
   createCategoriesFile: requiresVipfyAdmin(async (_p, _args, { models }) => {
     try {
       const allTags = await models.sequelize.query(
-        `SELECT tags FROM app_data WHERE cardinality(tags) > 0;`,
+        `SELECT tags FROM app_data WHERE cardinality(tags) > 0
+          AND showinmarketplace = true
+          AND ratings->>'externalReviewCount' != 'null'
+         ORDER BY ratings->'externalReviewCount'
+         DESC
+         LIMIT 5000;`,
         { type: models.sequelize.QueryTypes.SELECT }
       );
 
@@ -613,7 +618,9 @@ export default {
           return acc;
         }, {});
 
-      const categories = Object.keys(tags).sort((a, b) => tags[b] - tags[a]);
+      const categories = Object.keys(tags)
+        .sort((a, b) => tags[b] - tags[a])
+        .slice(0, 500);
 
       await fs.writeFile("categories.txt", categories.join("\n"), err => {
         if (err) console.log(err);
