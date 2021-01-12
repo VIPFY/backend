@@ -2167,7 +2167,7 @@ export default {
 
       const apps = await models.AppDetails.findAll({
         where: {
-          name: { [models.Op.ilike]: `%${searchTerm}%` },
+          name: { [models.Op.iLike]: `%${searchTerm}%` },
           owner: null,
           showinmarketplace: true,
         },
