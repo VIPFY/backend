@@ -211,38 +211,26 @@ export default {
     }
   ),
 
-  sendDownloadLink: async (_p, { email, isMac }) => {
+  sendDownloadLink: async (_p, { email }) => {
     try {
-      if (isMac) {
-        await sendEmail({
-          templateId: "d-e31dc52fbac54edba50f3e6586a714bb",
+      await Promise.all([
+        sendEmail({
+          templateId: "d-dbe6fd61bc654b81b036cfced48f2066",
           fromName: "VIPFY",
+          personalizations: [{ to: [{ email }], dynamic_template_data: {} }],
+        }),
+        sendEmail({
+          templateId: "d-435a368f329e44439276369335c3d019",
+          fromName: "VIPFY Link Bot",
           personalizations: [
             {
               to: [{ email: "office@vipfy.store" }],
               dynamic_template_data: { email },
             },
           ],
-        });
-      } else {
-        await Promise.all([
-          sendEmail({
-            templateId: "d-dbe6fd61bc654b81b036cfced48f2066",
-            fromName: "VIPFY",
-            personalizations: [{ to: [{ email }], dynamic_template_data: {} }],
-          }),
-          sendEmail({
-            templateId: "d-435a368f329e44439276369335c3d019",
-            fromName: "VIPFY Link Bot",
-            personalizations: [
-              {
-                to: [{ email: "office@vipfy.store" }],
-                dynamic_template_data: { email },
-              },
-            ],
-          }),
-        ]);
-      }
+        }),
+      ]);
+
       console.log("Serverlogs", `Sent download link to ${email}`);
 
       return true;
