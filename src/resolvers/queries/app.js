@@ -147,14 +147,20 @@ export default {
 
   fetchMarketplaceAppsByName: async (_parent, { names }, { models }) => {
     try {
-      return await models.AppDetails.findAll({
-        where: {
-          name: { [models.Op.in]: names },
-          showinmarketplace: true,
-          deprecated: false,
-          owner: null,
-        },
-      });
+      const apps = await Promise.all(
+        names.map(name =>
+          models.AppDetails.findOne({
+            where: {
+              name: { [models.Op.iLike]: name },
+              showinmarketplace: true,
+              deprecated: false,
+              owner: null,
+            },
+          })
+        )
+      );
+
+      return apps;
     } catch (err) {
       throw new NormalError({ message: err.message, internalData: { err } });
     }
@@ -953,15 +959,18 @@ export default {
       const { tag, limit = 100, offset = 0, dontFetch } = args;
       const apps = await models.sequelize.query(
         `
-        SELECT id, name, logo, icon, category, color, avgstars, ad.tags
+        SELECT id, name, logo, icon, category, color, avgstars, description,
+               teaserdescription, ad.tags,
+               (SELECT (tag->>'weight')::integer FROM unnest(ad.tags) x(tag) WHERE tag->>'name' = :tag LIMIT 1) as weight
         FROM app_details ad
         WHERE exists (
           SELECT 1 FROM unnest(ad.tags) o(tags) WHERE o.tags ->> 'name' = :tag
         )
-        AND showinmarketplace = true
-        AND ratings->>'externalReviewCount' != 'null'
-        AND category IS NOT NULL
-        ${dontFetch ? "AND name NOT LIKE ALL(ARRAY[:dontFetch])" : ""}
+          AND showinmarketplace = true
+          AND ratings->>'externalReviewCount' != 'null'
+          AND category IS NOT NULL
+          ${dontFetch ? "AND name NOT LIKE ALL(ARRAY[:dontFetch])" : ""}
+        ORDER BY weight DESC 
         LIMIT :limit OFFSET :offset
         `,
         {
