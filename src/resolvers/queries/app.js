@@ -960,7 +960,7 @@ export default {
       const apps = await models.sequelize.query(
         `
         SELECT id, name, logo, icon, category, color, avgstars, description,
-               teaserdescription, ad.tags,
+               teaserdescription, ratings, ad.tags,
                (SELECT (tag->>'weight')::integer FROM unnest(ad.tags) x(tag) WHERE tag->>'name' = :tag LIMIT 1) as weight
         FROM app_details ad
         WHERE exists (
